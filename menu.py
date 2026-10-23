@@ -12,12 +12,13 @@ from PyQt6.QtWidgets import (
 from config import CFG
 from overlay import volume_color
 
-COLUMNS = ["Oggetto", "Vendor", "Tipo", "Prezzo", "Prezzo max rank", "Volume 24h", "Aggiornato"]
-C_NAME, C_VENDOR, C_KIND, C_PRICE, C_PMAX, C_VOL, C_UPD = range(7)
+COLUMNS = ["Oggetto", "Vendor", "Standing", "Tipo", "Prezzo", "Prezzo max rank", "Volume 24h", "Aggiornato"]
+C_NAME, C_VENDOR, C_STANDING, C_KIND, C_PRICE, C_PMAX, C_VOL, C_UPD = range(8)
 KIND_LABEL = {"mod": "Mod", "arcane": "Arcane", "altro": "Altro"}
 PRICE_COLOR = QColor(120, 200, 255)
 MAXRANK_COLOR = QColor(255, 205, 110)
 DIM_COLOR = QColor(130, 130, 130)
+STANDING_COLOR = QColor(190, 160, 255)
 
 STYLE = """
 QWidget { background: #161a22; color: #e6e6e6; font-size: 13px; }
@@ -83,6 +84,19 @@ class Cell(QTableWidgetItem):
         if isinstance(other, Cell):
             return self.key < other.key
         return super().__lt__(other)
+
+
+def standing_cell(entries):
+    """Costo in standing: un valore, oppure 'min – max' se varia da vendor a vendor; dettaglio nel tooltip."""
+    if not entries:
+        return Cell("", (0, 0))
+    costs = [e["s"] for e in entries]
+    lo, hi = min(costs), max(costs)
+    f = lambda n: f"{n:,}".replace(",", ".")
+    cell = Cell(f(lo) if lo == hi else f"{f(lo)} – {f(hi)}", (1, lo), STANDING_COLOR)
+    cell.setToolTip("\n".join(f"{e['v']}: {f(e['s'])}" + (f" (rank {e['r']})" if e.get("r") else "")
+                             for e in entries))
+    return cell
 
 
 def _num(v):
@@ -158,7 +172,7 @@ class PriceList(QWidget):
         hdr.setSectionResizeMode(C_NAME, QHeaderView.ResizeMode.Stretch)
         hdr.setSectionResizeMode(C_VENDOR, QHeaderView.ResizeMode.Interactive)
         self.table.setColumnWidth(C_VENDOR, 190)
-        for c in range(C_KIND, len(COLUMNS)):
+        for c in range(C_STANDING, len(COLUMNS)):
             hdr.setSectionResizeMode(c, QHeaderView.ResizeMode.ResizeToContents)
         hdr.setSortIndicator(C_NAME, Qt.SortOrder.AscendingOrder)
 
@@ -208,7 +222,7 @@ class PriceList(QWidget):
                 and (vendor is None or vendor in r["vendors"])]
 
         # ricostruisce solo se i dati sono cambiati (o ogni 30 s per far avanzare "x min fa")
-        sig = hash(tuple((r["slug"], r["price"], r["pmax"], r["vol"], r["updated"]) for r in rows))
+        sig = hash(tuple((r["slug"], len(r["standing"]), r["price"], r["pmax"], r["vol"], r["updated"]) for r in rows))
         now = time.monotonic()
         if not force and sig == self._sig and now - self._built < 30:
             return
@@ -230,6 +244,7 @@ class PriceList(QWidget):
             cells = [
                 Cell(r["name"], r["name"].lower(), center=False),
                 Cell(vend, vend.lower(), center=False),
+                standing_cell(r["standing"]),
                 Cell(KIND_LABEL.get(r["kind"], r["kind"]), r["kind"]),
                 Cell("–" if p is None else f"{p}p", _num(p), PRICE_COLOR if p is not None else DIM_COLOR),
                 (Cell("–" if pm is None else f"{pm}p", _num(pm), MAXRANK_COLOR if pm is not None else DIM_COLOR)

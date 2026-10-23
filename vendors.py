@@ -86,6 +86,7 @@ class VendorIndex:
     def __init__(self, name_slug: dict):
         self.name_slug = name_slug              # {nome normalizzato: slug} dal catalogo del market
         self.by_slug = {}                       # slug -> [vendor, ...]
+        self.standing = {}                      # slug -> [{"v": vendor, "s": costo in standing, "r": rank richiesto}]
         self.vendor_names = []
         self.rebuild()
 
@@ -95,15 +96,21 @@ class VendorIndex:
         baro = (_read(BARO_FILE) or {}).get("names") or []
         if baro:
             vendors[BARO] = baro
-        by_slug = {}
+        by_slug, standing = {}, {}
         for vname, entries in vendors.items():
             for e in entries:
+                cost = rank = None
+                if isinstance(e, dict):                             # {"n": nome | [blueprint, base], "s": standing, "r": rank}
+                    cost, rank, e = e.get("s"), e.get("r"), e.get("n")
                 for cand in ([e] if isinstance(e, str) else e):     # [nome blueprint, nome base]: il primo che esiste
                     slug = self.name_slug.get(norm(cand))
                     if slug:
                         by_slug.setdefault(slug, set()).add(vname)
+                        if cost:
+                            standing.setdefault(slug, []).append({"v": vname, "s": cost, "r": rank or 0})
                         break
         self.by_slug = {s: sorted(v) for s, v in by_slug.items()}
+        self.standing = {s: sorted(v, key=lambda x: (x["s"], x["v"])) for s, v in standing.items()}
         self.vendor_names = sorted({v for vs in self.by_slug.values() for v in vs})
 
     # ---------- Baro ----------

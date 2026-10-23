@@ -28,7 +28,7 @@ Warframe deve essere in finestra senza bordi (Borderless).
 Finestra con **tutti gli oggetti scambiabili venduti dai vendor** (84 vendor e sindacati, ~3500 voci
 da `vendors.json`, più Baro Ki'Teer): appena la apri ci sono già tutti, anche senza prezzo
 (prezzo «–», aggiornato «mai»). Colonne: nome, vendor che lo vendono, tipo (Mod / Arcane / Altro),
-prezzo, prezzo a rank massimo (mod e arcane), volume 24 h (colorato come nell'overlay), ultimo
+**costo in standing** (se un oggetto costa standing a più vendor mostra «min – max», dettaglio e rank richiesto nel tooltip; è il costo base, senza gli sconti di rank), prezzo, prezzo a rank massimo (mod e arcane), volume 24 h (colorato come nell'overlay), ultimo
 aggiornamento. Clic sulle intestazioni per ordinare; ricerca, filtro per **vendor** e per tipo.
 
 **Aggiornare i dati dal listino**
@@ -43,6 +43,8 @@ aggiornamento. Clic sulle intestazioni per ordinare; ricerca, filtro per **vendo
 
 Mentre il listino è aperto le scansioni sono sospese e le etichette nascoste (altrimenti l'OCR
 leggerebbe i nomi del listino); alla chiusura riprende da sola.
+
+Il listino contiene solo oggetti **scambiabili**: i nomi vengono associati al catalogo di warframe.market, quindi tutto ciò che non si può scambiare resta fuori.
 
 **Limiti**: la lista dei vendor viene dai dati pubblici del gioco; vendor assenti da quei dati
 (es. Varzia, onori Arbitrations) non sono inclusi. `vendors.json` si rigenera con

@@ -167,6 +167,7 @@ class Market:
         """Tutti gli oggetti del listino: quelli dei vendor (anche senza dati) e quelli visti a schermo."""
         rows = []
         by_slug = self.vendors.by_slug if self.vendors else {}
+        standing = self.vendors.standing if self.vendors else {}
         with self._store_lock:
             for slug in set(self._data) | set(by_slug):
                 e = self._data.get(slug, {})
@@ -183,6 +184,7 @@ class Market:
                     "price": e.get("price"), "pmax": e.get("pmax"), "vol": e.get("vol"),
                     "updated": max(times) if times else None,
                     "vendors": by_slug.get(slug, []),
+                    "standing": standing.get(slug, []),
                 })
         rows.sort(key=lambda r: r["name"].lower())
         return rows

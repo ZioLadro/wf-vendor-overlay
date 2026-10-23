@@ -96,30 +96,35 @@ def main():
 
     vendors, total, missing = {}, 0, []
 
-    def add(vendor: str, store_item: str):
+    def add(vendor: str, store_item: str, standing=None, rank=None):
+        """Aggiunge una voce; `standing` = costo in standing (None se non si paga in standing)."""
         nonlocal total
         total += 1
         r = resolve(store_item)
         if r is None:
             missing.append(store_item)
             return
-        lst = vendors.setdefault(vendor, [])
-        if r not in lst:
-            lst.append(r)
+        lst = vendors.setdefault(vendor, {})
+        key = json.dumps(r, ensure_ascii=False)
+        e = lst.setdefault(key, {"n": r})
+        if standing:                                   # la stessa voce puo' comparire due volte: tiene la piu' economica
+            if "s" not in e or standing < e["s"]:
+                e["s"], e["r"] = int(standing), int(rank or 0)
 
     for key, v in fetch("ExportVendors", cache).items():
         for it in v.get("items", []):
-            add(vendor_name(key), it.get("storeItem", ""))
+            syn = it.get("syndicate") or {}
+            add(vendor_name(key), it.get("storeItem", ""), syn.get("standingCost"), syn.get("minRank"))
     for sid, s in fetch("ExportSyndicates", cache).items():
         if sid.startswith("RadioLegion"):
             continue
         vname = lang.get(s.get("name", ""), sid)
         for f in s.get("favours", []):
-            add(vname, f.get("storeItem", ""))
+            add(vname, f.get("storeItem", ""), f.get("standingCost"), f.get("requiredLevel"))
 
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
            "source": "calamity-inc/warframe-public-export-plus",
-           "vendors": {k: v for k, v in sorted(vendors.items()) if v}}
+           "vendors": {k: list(v.values()) for k, v in sorted(vendors.items()) if v}}
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     n_items = sum(len(v) for v in out["vendors"].values())
     print(f"{len(out['vendors'])} vendor, {n_items} voci -> {a.out} (nomi risolti: {total - len(missing)}/{total})")
