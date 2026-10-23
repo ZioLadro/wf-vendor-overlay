@@ -1,9 +1,11 @@
 """Shared pieces of the price-list window: style, colours, sortable cells, tray icon."""
+import re
 import time
+from urllib.parse import quote
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QBrush, QColor, QFont, QIcon, QPainter, QPixmap
-from PyQt6.QtWidgets import QTableWidgetItem
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QBrush, QColor, QDesktopServices, QFont, QGuiApplication, QIcon, QPainter, QPixmap
+from PyQt6.QtWidgets import QMenu, QTableWidgetItem
 
 from i18n import t
 
@@ -110,3 +112,42 @@ def standing_cell(entries):
     cell.setToolTip("\n".join(
         f"{e['v']}: {thousands(e['s'])}" + (t("tip.rank", n=e["r"]) if e.get("r") else "") for e in entries))
     return cell
+
+
+# ---------- links and right-click menu on item names ----------
+def market_url(slug: str) -> str:
+    return "https://warframe.market/items/" + quote(slug)
+
+
+def wiki_url(name: str) -> str:
+    """Wiki page of an item. Market names of sets end in " Set" (the wiki page is the item itself).
+    Special:Search with "go" opens the page directly when the title exists, and a search otherwise."""
+    title = re.sub(r"\s+Set$", "", name).strip()
+    return "https://wiki.warframe.com/w/Special:Search?go=Go&search=" + quote(title)
+
+
+def attach_item_menu(table, name_col: int):
+    """Right-click on a row: open the item on warframe.market / on the wiki, or copy its name.
+    The name cell of each row must carry the market slug in Qt.UserRole."""
+    table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+
+    def show(pos):
+        row = table.rowAt(pos.y())
+        cell = table.item(row, name_col) if row >= 0 else None
+        slug = cell.data(Qt.ItemDataRole.UserRole) if cell else None
+        if not slug:
+            return
+        name = cell.text()
+        menu = QMenu(table)
+        a_market = menu.addAction(t("menu.market"))
+        a_wiki = menu.addAction(t("menu.wiki"))
+        a_copy = menu.addAction(t("menu.copy"))
+        chosen = menu.exec(table.viewport().mapToGlobal(pos))
+        if chosen is a_market:
+            QDesktopServices.openUrl(QUrl(market_url(slug)))
+        elif chosen is a_wiki:
+            QDesktopServices.openUrl(QUrl(wiki_url(name)))
+        elif chosen is a_copy:
+            QGuiApplication.clipboard().setText(name)
+
+    table.customContextMenuRequested.connect(show)

@@ -4,11 +4,11 @@ import time
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
-    QAbstractItemView, QComboBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QProgressBar,
+    QAbstractItemView, QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QProgressBar,
     QPushButton, QTabWidget, QTableWidget, QVBoxLayout, QWidget,
 )
 
-from config import CFG
+from config import CFG, save_config
 from i18n import t
 from overlay import volume_color
 from recommend_tab import RecommendTab
@@ -16,7 +16,7 @@ from refresher import Refresher
 from settings_tab import SettingsTab
 from uiutil import (
     DIM_COLOR, HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, STYLE, Cell, age_text, kind_label,
-    make_icon, num_key, standing_cell,  # noqa: F401  (make_icon re-exported for main.py)
+    attach_item_menu, make_icon, num_key, standing_cell,  # noqa: F401  (make_icon re-exported for main.py)
 )
 
 C_NAME, C_VENDOR, C_STANDING, C_KIND, C_PRICE, C_PMAX, C_VOL, C_UPD = range(8)
@@ -40,6 +40,9 @@ class PricesTab(QWidget):
         self.kind.addItem(t("prices.alltypes"), None)
         for k in ("mod", "arcane", "other"):
             self.kind.addItem(kind_label(k), k)
+        self.hide_zero = QCheckBox(t("prices.hide_zero"))
+        self.hide_zero.setToolTip(t("prices.hide_zero.tip"))
+        self.hide_zero.setChecked(bool(CFG["hide_zero_volume"]))
         self.count = QLabel("")
         self.count.setStyleSheet(MUTED_STYLE)
         self.fill_vendors()
@@ -48,6 +51,7 @@ class PricesTab(QWidget):
         top.addWidget(self.search, 1)
         top.addWidget(self.vendor)
         top.addWidget(self.kind)
+        top.addWidget(self.hide_zero)
         top.addWidget(self.count)
 
         self.btn_vis = QPushButton(t("prices.update_shown"))
@@ -90,6 +94,8 @@ class PricesTab(QWidget):
         lay.addWidget(self.table, 1)
         lay.addWidget(hint)
 
+        attach_item_menu(self.table, C_NAME)
+        self.hide_zero.toggled.connect(self._hide_zero_changed)
         self.search.textChanged.connect(lambda _: self.refresh(force=True))
         self.kind.currentIndexChanged.connect(lambda _: self.refresh(force=True))
         self.vendor.currentIndexChanged.connect(lambda _: self.refresh(force=True))
@@ -108,6 +114,10 @@ class PricesTab(QWidget):
         self.vendor.setCurrentIndex(max(0, self.vendor.findData(cur)))
         self.vendor.blockSignals(False)
 
+    def _hide_zero_changed(self, on):
+        save_config({"hide_zero_volume": bool(on)})
+        self.refresh(force=True)
+
     def set_busy(self, busy: bool):
         for b in (self.btn_vis, self.btn_sel):
             b.setEnabled(not busy)
@@ -119,8 +129,9 @@ class PricesTab(QWidget):
         kind = self.kind.currentData()
         vendor = self.vendor.currentData()
         total = len(rows)
+        hide0 = self.hide_zero.isChecked()
         rows = [r for r in rows if (kind is None or r["kind"] == kind) and q in r["name"].lower()
-                and (vendor is None or vendor in r["vendors"])]
+                and (vendor is None or vendor in r["vendors"]) and not (hide0 and r["vol"] == 0)]
 
         # rebuild only when the data changed (or every 30 s so "x min ago" moves on)
         sig = hash(tuple((r["slug"], len(r["standing"]), r["price"], r["pmax"], r["vol"], r["updated"])

@@ -16,7 +16,7 @@ import requests
 
 from config import APP_DIR, CFG
 from matcher import Match, Matcher, norm  # noqa: F401  (norm/Match riesportati)
-from vendors import VendorIndex
+from vendors import BARO, VendorIndex
 
 BASE = "https://api.warframe.market/v2"
 V1 = "https://api.warframe.market/v1"
@@ -165,17 +165,17 @@ class Market:
             return {k: e.get(k) for k in ("price", "pmax", "pt", "vol", "vt")} if e else None
 
     def snapshot(self) -> list:
-        """All price-list items: the vendors' ones (even without data) and the ones seen on screen."""
+        """The price-list items: those with a standing cost, plus Baro Ki'Teer's (even without market data)."""
         rows = []
         by_slug = self.vendors.by_slug if self.vendors else {}
         standing = self.vendors.standing if self.vendors else {}
         with self._store_lock:
-            for slug in set(self._data) | set(by_slug):
+            for slug in set(by_slug):
+                if slug not in standing and BARO not in by_slug[slug]:
+                    continue                    # no standing cost and not Baro's: not listed
                 e = self._data.get(slug, {})
                 info = self._info.get(slug, {})
                 times = [t for t in (e.get("pt"), e.get("vt")) if t]
-                if not times and slug not in by_slug:
-                    continue
                 rows.append({
                     "slug": slug,
                     "name": info.get("name") or slug.replace("_", " ").title(),
@@ -191,7 +191,12 @@ class Market:
         return rows
 
     def vendor_names(self) -> list:
-        return self.vendors.vendor_names if self.vendors else []
+        """Vendors that still have items in the list (those paying in other currencies drop out)."""
+        if not self.vendors:
+            return []
+        return sorted({v for slug, vs in self.vendors.by_slug.items()
+                       if slug in self.vendors.standing or BARO in vs for v in vs
+                       if v == BARO or any(e["v"] == v for e in self.vendors.standing.get(slug, []))})
 
     def refresh_many(self, slugs, cancel, progress=None, max_age=0):
         """Updates price and volume of the given items one after the other (3 requests/s limit).

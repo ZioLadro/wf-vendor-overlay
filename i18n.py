@@ -40,6 +40,11 @@ EN = {
     "kind.other": "Other",
     "tip.rank": " (rank {n})",
     "tip.price_at_rank": "Price at rank {n}",
+    "menu.market": "Open on warframe.market",
+    "menu.wiki": "Open on the Warframe wiki",
+    "menu.copy": "Copy name",
+    "prices.hide_zero": "Hide zero volume",
+    "prices.hide_zero.tip": "Hide the items with zero trades in the last 24 hours (items without data yet stay visible)",
     # ---- window / tabs ----
     "window.title": "WF Vendor Overlay · Price list",
     "tab.prices": "Price list",
@@ -76,7 +81,8 @@ EN = {
                    "at max rank). Volume = trades closed in the last 24 hours. Standing = base cost "
                    "(no rank discounts); \"min – max\" when it differs between vendors (see tooltip). "
                    "\"–\" = nobody selling online; \"never\" = data not collected yet. "
-                   "Only tradable items are listed.",
+                   "Only tradable items with a standing cost (plus Baro Ki'Teer's) are listed. "
+                   "Right-click an item for the market or wiki page.",
     # ---- update jobs ----
     "job.stop": "Stop",
     "job.nothing": "Nothing to update",
@@ -129,6 +135,8 @@ EN = {
     "set.auto_detect.tip": "Detect a vendor being opened or its list changing by itself",
     "set.show_volume": "Show volume on the overlay",
     "set.show_volume.tip": "Show the coloured trade-volume label under each item",
+    "set.hide_zero_volume": "Hide zero-volume items",
+    "set.hide_zero_volume.tip": "Price list: hide the items with zero trades in the last 24 hours",
     "set.key_menu": "Price list key",
     "set.key_menu.tip": "Opens/closes this window. Format: <f7>, <ctrl>+<f7>, …",
     "set.key_scan": "Scan key",
@@ -215,6 +223,11 @@ IT = {
     "kind.other": "Altro",
     "tip.rank": " (rank {n})",
     "tip.price_at_rank": "Prezzo a rank {n}",
+    "menu.market": "Apri su warframe.market",
+    "menu.wiki": "Apri sulla wiki di Warframe",
+    "menu.copy": "Copia il nome",
+    "prices.hide_zero": "Nascondi volume zero",
+    "prices.hide_zero.tip": "Nasconde gli oggetti con zero scambi nelle ultime 24 ore (quelli senza dati restano visibili)",
     "window.title": "WF Vendor Overlay · Listino prezzi",
     "tab.prices": "Listino prezzi",
     "tab.recommend": "Consigli",
@@ -248,7 +261,8 @@ IT = {
                    "a rank massimo). Volume = scambi chiusi nelle ultime 24 ore. Standing = costo base "
                    "(senza sconti di rank); «min – max» se cambia da vendor a vendor (vedi tooltip). "
                    "«–» = nessun venditore online; «mai» = dato non ancora raccolto. "
-                   "Sono elencati solo gli oggetti scambiabili.",
+                   "Sono elencati solo gli oggetti scambiabili con un costo in standing (più quelli di Baro Ki'Teer). "
+                   "Clic destro su un oggetto per la pagina del market o della wiki.",
     "job.stop": "Ferma",
     "job.nothing": "Nessun oggetto da aggiornare",
     "job.confirm.title": "Aggiornamento lungo",
@@ -298,6 +312,8 @@ IT = {
     "set.auto_detect.tip": "Rileva da solo l'apertura di un vendor o il cambio della sua lista",
     "set.show_volume": "Mostra il volume nell'overlay",
     "set.show_volume.tip": "Mostra l'etichetta colorata del volume sotto ogni oggetto",
+    "set.hide_zero_volume": "Nascondi gli oggetti a volume zero",
+    "set.hide_zero_volume.tip": "Listino: nasconde gli oggetti con zero scambi nelle ultime 24 ore",
     "set.key_menu": "Tasto listino prezzi",
     "set.key_menu.tip": "Apre/chiude questa finestra. Formato: <f7>, <ctrl>+<f7>, …",
     "set.key_scan": "Tasto scansione",

@@ -51,6 +51,7 @@ DEFAULTS = {
     "volume_low": 10,
     "volume_high": 50,
     "volume_offset_y": 2,        # pixels between the item name and the volume label
+    "hide_zero_volume": False,   # hide items with zero trades in the last 24 h (price list)
     # recommendations
     "rec_min_volume": 10,        # ignore items traded less than this in 24 h
     "rec_min_price": 5,          # ignore items cheaper than this (platinum)

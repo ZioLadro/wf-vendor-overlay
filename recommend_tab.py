@@ -10,7 +10,8 @@ from i18n import t
 from overlay import volume_color
 from recommend import recommend
 from uiutil import (
-    HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, STANDING_COLOR, Cell, kind_label, thousands,
+    HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, STANDING_COLOR, Cell, attach_item_menu, kind_label,
+    thousands,
 )
 
 
@@ -72,6 +73,7 @@ class RecommendTab(QWidget):
         lay.addWidget(self.table, 1)
         lay.addWidget(hint)
 
+        attach_item_menu(self.table, 1)
         self.fill_vendors()
         self.vendor.currentIndexChanged.connect(lambda _: self.refresh(force=True))
         self.kind.currentIndexChanged.connect(lambda _: self.refresh(force=True))
@@ -125,6 +127,7 @@ class RecommendTab(QWidget):
                 Cell(f"{p['score']:.1f}", p["score"]),
             ]
             cells[1].setToolTip(kind_label(p["kind"]))
+            cells[1].setData(Qt.ItemDataRole.UserRole, p["slug"])
             for c, cell in enumerate(cells):
                 tb.setItem(i, c, cell)
         tb.setSortingEnabled(True)

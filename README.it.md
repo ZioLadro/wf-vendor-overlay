@@ -30,14 +30,17 @@ Tre schede. Mentre la finestra è aperta le scansioni sono sospese e le etichett
 l'OCR leggerebbe i nomi del listino); alla chiusura riprende da sola.
 
 ### Listino prezzi
-Tutti gli **oggetti scambiabili venduti dai vendor** (84 vendor e sindacati, ~3500 voci da
-`vendors.json`, più Baro Ki'Teer): ci sono già tutti fin dall'inizio, anche senza dati (prezzo `–`,
-aggiornato `mai`). Colonne: nome, vendor che lo vendono, **costo in standing**, tipo (Mod / Arcane / Altro),
+Tutti gli **oggetti scambiabili che costano standing** (da `vendors.json`: vendor e sindacati), più tutto
+ciò che vende **Baro Ki'Teer**: ci sono già tutti fin dall'inizio, anche senza dati (prezzo `–`,
+aggiornato `mai`). Gli oggetti che non costano standing (e non sono di Baro) non sono elencati. Colonne: nome, vendor che lo vendono, **costo in standing**, tipo (Mod / Arcane / Altro),
 prezzo, prezzo a rank massimo (mod e arcane), volume 24 h (colorato come nell'overlay), ultimo
 aggiornamento. Clic sulle intestazioni per ordinare; ricerca e filtri per vendor e tipo.
 
 - Il costo in standing viene dai dati del gioco. È il costo base, senza sconti di rank. Se un oggetto
   costa standing a più vendor vedi `min – max`; il tooltip mostra vendor, costo e rank richiesto.
+- **Nascondi volume zero** nasconde gli oggetti senza scambi nelle ultime 24 ore (quelli senza dati restano visibili).
+- **Clic destro** sul nome di un oggetto (qui e in Consigli): aprilo su warframe.market, apri la sua pagina
+  sulla wiki di Warframe (una ricerca che va dritta alla pagina se il titolo esiste) o copia il nome.
 - Sono elencati solo gli oggetti **scambiabili**: i nomi vengono associati al catalogo di warframe.market,
   quindi tutto ciò che non si può scambiare resta fuori.
 - **Aggiorna elenco mostrato** aggiorna prezzo e volume di tutte le righe visibili (filtri compresi;
@@ -104,6 +107,7 @@ Tutto sta in `%LOCALAPPDATA%\WFVendorOverlay`:
 | `refresh_skip_age` / `refresh_confirm_over` / `baro_refresh_days` | soglia di «aggiorna mostrato» (300 s) / conferma sopra N oggetti (150) / aggiornamento Baro (7 giorni) |
 | `volume_low` / `volume_high` | volume rosso fino a `low`, verde da `high` (10 / 50) |
 | `volume_offset_y` / `show_volume` | distanza dell'etichetta del volume (2 px) / mostrala |
+| `hide_zero_volume` | nasconde gli oggetti a volume zero nel listino (false) |
 | `match_threshold` | soglia di somiglianza dei nomi (90) |
 | `watch_interval`, `watch_interval_moving`, `auto_settle_polls`, `auto_motion_frac`, `auto_min_gap`, `scroll_debounce` | sensibilità del rilevamento |
 | `ocr_threads`, `ocr_priority`, `publish_throttle`, `menu_refresh_ms` | prestazioni |

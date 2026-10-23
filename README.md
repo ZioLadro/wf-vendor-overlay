@@ -29,14 +29,17 @@ Three tabs. While the window is open, scans are suspended and the labels hidden 
 read the list's own names); scanning resumes when you close it.
 
 ### Price list
-All the **tradable items sold by the vendors** (84 vendors and syndicates, ~3500 entries from
-`vendors.json`, plus Baro Ki'Teer): they are all there from the start, even without data (price `–`,
-updated `never`). Columns: name, vendors that sell it, **standing cost**, type (Mod / Arcane / Other),
+All the **tradable items that cost standing** (from `vendors.json`: vendors and syndicates), plus everything
+sold by **Baro Ki'Teer**: they are all there from the start, even without data (price `–`, updated `never`).
+Items that do not cost standing (and are not Baro's) are not listed. Columns: name, vendors that sell it, **standing cost**, type (Mod / Arcane / Other),
 price, max-rank price (mods and arcanes), 24 h volume (coloured like the overlay), last update. Click the
 headers to sort; search box and vendor/type filters.
 
 - Standing cost comes from the game data. It is the base cost, without rank discounts. If an item costs
   standing at several vendors you see `min – max`; the tooltip shows vendor, cost and required rank.
+- **Hide zero volume** hides the items with no trades in the last 24 hours (items without data stay visible).
+- **Right-click** an item name (here and in Recommendations): open it on warframe.market, open its page on
+  the Warframe wiki (a search that jumps straight to the page when the title exists), or copy the name.
 - Only **tradable** items are listed: names are matched against the warframe.market catalog, so
   anything that cannot be traded is left out.
 - **Update shown** refreshes price and volume of every visible row (filters included; it skips data newer
@@ -103,6 +106,7 @@ Everything lives in `%LOCALAPPDATA%\WFVendorOverlay`:
 | `refresh_skip_age` / `refresh_confirm_over` / `baro_refresh_days` | update-shown skip age (300 s) / confirm above N items (150) / Baro refresh (7 days) |
 | `volume_low` / `volume_high` | volume red up to `low`, green from `high` (10 / 50) |
 | `volume_offset_y` / `show_volume` | distance of the volume label (2 px) / show it |
+| `hide_zero_volume` | hide zero-volume items in the price list (false) |
 | `match_threshold` | name similarity threshold (90) |
 | `watch_interval`, `watch_interval_moving`, `auto_settle_polls`, `auto_motion_frac`, `auto_min_gap`, `scroll_debounce` | detection sensitivity |
 | `ocr_threads`, `ocr_priority`, `publish_throttle`, `menu_refresh_ms` | performance |
