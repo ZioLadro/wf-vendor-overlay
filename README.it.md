@@ -62,7 +62,8 @@ I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispi
   (`MiscItems`, `RawUpgrades`, `Upgrades`, `Recipes`… con percorsi `ItemType`, risolti con `gamenames.json`
   incluso), qualunque JSON che abbini nomi e quantità (liste `{"name": …, "count": …}` o `{"Serration": 2}`),
   e righe CSV/TXT come `Serration, 2, 10` (nome, quantità, rank facoltativo), `3x Mirage Prime Set` oppure
-  `Ash Prime Blueprint x2`. I nomi vengono associati al catalogo del market (piccoli errori sono tollerati);
+  `Ash Prime Blueprint x2`. **Ricarica file** rilegge l'ultimo file importato, comodo quando un altro tuo strumento lo aggiorna.
+  I nomi vengono associati al catalogo del market (piccoli errori sono tollerati);
   quelli non riconosciuti vengono elencati dopo l'importazione. Non provato con vere esportazioni del gioco,
   solo con file di queste forme.
 - **Categorie**: Set, Parti di Warframe, Parti di armi, Mod, Arcane, Reliquie, Altro (ricavate dai tag di

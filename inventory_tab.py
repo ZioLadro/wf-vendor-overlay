@@ -1,5 +1,6 @@
 """Inventory tab: your items with market prices, filters like AlecaFrame's, and one-click sell orders."""
 import json
+import os
 import time
 
 from PyQt6.QtCore import QStringListModel, Qt
@@ -211,6 +212,8 @@ class InventoryTab(QWidget):
 
         self.btn_import = QPushButton(t("inv.import"))
         self.btn_import.setToolTip(t("inv.import.tip"))
+        self.btn_reload = QPushButton(t("inv.reload"))
+        self.btn_reload.setToolTip(t("inv.reload.tip"))
         self.btn_paste = QPushButton(t("inv.paste"))
         self.btn_add = QPushButton(t("inv.add"))
         self.btn_edit = QPushButton(t("inv.edit"))
@@ -221,7 +224,7 @@ class InventoryTab(QWidget):
         self.btn_sell.setToolTip(t("inv.sell.tip"))
         self.btn_account = QPushButton("")
         actions = QHBoxLayout()
-        for b in (self.btn_import, self.btn_paste, self.btn_add, self.btn_edit, self.btn_remove):
+        for b in (self.btn_import, self.btn_reload, self.btn_paste, self.btn_add, self.btn_edit, self.btn_remove):
             actions.addWidget(b)
         actions.addStretch(1)
         actions.addWidget(self.btn_prices)
@@ -268,6 +271,7 @@ class InventoryTab(QWidget):
         self.exclude_max.toggled.connect(self._exclude_changed)
         self.btn_import.clicked.connect(self.import_file)
         self.btn_paste.clicked.connect(self.paste_list)
+        self.btn_reload.clicked.connect(self.reload_file)
         self.btn_add.clicked.connect(self.add_item)
         self.btn_edit.clicked.connect(self.edit_item)
         self.table.doubleClicked.connect(lambda _: self.edit_item())
@@ -376,12 +380,12 @@ class InventoryTab(QWidget):
                 f"{q}× {n}" for n, q in res.unmatched[:200]))
         box.exec()
 
-    def _apply_import(self, res):
-        if self.inv.items:
+    def _apply_import(self, res, confirm=True):
+        if confirm and self.inv.items:
             ans = QMessageBox.question(self, t("inv.import"), t("inv.import.replace", n=len(self.inv.items)))
             if ans != QMessageBox.StandardButton.Yes:
                 return
-        self.inv.replace_with(res)
+        self.inv.replace_with(res, res.path)
         self._report(res, True)
         self.refresh(force=True)
 
@@ -398,6 +402,22 @@ class InventoryTab(QWidget):
             self._report(res, False)
             return
         self._apply_import(res)
+
+    def reload_file(self):
+        """Re-reads the file of the last import (e.g. after another tool refreshed it)."""
+        path = self.inv.path
+        if not path or not os.path.exists(path):
+            QMessageBox.information(self, t("inv.reload"), t("inv.reload.missing", path=path or "–"))
+            return
+        try:
+            res = parse_file(path, self.market)
+        except Exception as e:
+            QMessageBox.warning(self, t("inv.import"), t("inv.import.failed", err=e))
+            return
+        if not res.matched:
+            self._report(res, False)
+            return
+        self._apply_import(res, confirm=False)
 
     def paste_list(self):
         text, ok = QInputDialog.getMultiLineText(self, t("inv.paste"), t("inv.paste.prompt"))

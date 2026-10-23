@@ -61,6 +61,7 @@ Your items with their market prices, and one-click sell orders (inspired by Alec
   with `ItemType` paths, resolved through the bundled `gamenames.json`), any JSON that pairs item names with
   quantities (`{"name": …, "count": …}` lists or `{"Serration": 2}`), and CSV/TXT lines such as
   `Serration, 2, 10` (name, quantity, optional rank), `3x Mirage Prime Set` or `Ash Prime Blueprint x2`.
+  **Reload file** re-reads the last imported file, handy when another tool of yours refreshes it.
   Names are matched to the market catalog (small typos are tolerated); the ones that cannot be matched are
   listed after the import. Not tested against real game exports, only against files of those shapes.
 - **Categories**: Sets, Warframe parts, Weapon parts, Mods, Arcanes, Relics, Other (derived from the

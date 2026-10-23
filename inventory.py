@@ -35,6 +35,7 @@ class ImportResult:
     items: dict = field(default_factory=dict)       # slug -> {"n": int, "m": int}
     unmatched: list = field(default_factory=list)   # [(raw name, quantity)]
     lines: int = 0                                  # entries read from the file
+    path: str = ""                                  # file it was read from
     source: str = ""
 
     @property
@@ -47,6 +48,7 @@ class Inventory:
         self.items = {}        # slug -> {"n": int, "m": int}
         self.orders = {}       # slug -> last order placed from the app: {"id","price","qty","rank","t"}
         self.imported = None   # timestamp of the last import
+        self.path = ""         # file of the last import (for "Reload file")
         self.source = ""
         self.load()
 
@@ -61,10 +63,10 @@ class Inventory:
         self.items = {k: {"n": int(v.get("n", 0)), "m": int(v.get("m", 0))}
                       for k, v in (d.get("items") or {}).items() if isinstance(v, dict)}
         self.orders = {k: v for k, v in (d.get("orders") or {}).items() if isinstance(v, dict)}
-        self.imported, self.source = d.get("imported"), d.get("source", "")
+        self.imported, self.source, self.path = d.get("imported"), d.get("source", ""), d.get("path", "")
 
     def save(self):
-        payload = {"version": 1, "imported": self.imported, "source": self.source,
+        payload = {"version": 1, "imported": self.imported, "source": self.source, "path": self.path,
                    "items": self.items, "orders": self.orders}
         tmp = INV_FILE.with_suffix(".tmp")
         try:
@@ -90,12 +92,12 @@ class Inventory:
 
     def clear(self):
         self.items.clear()
-        self.imported, self.source = None, ""
+        self.imported, self.source, self.path = None, "", ""
         self.save()
 
-    def replace_with(self, result: ImportResult):
+    def replace_with(self, result: ImportResult, path: str = ""):
         self.items = {k: dict(v) for k, v in result.items.items()}
-        self.imported, self.source = int(time.time()), result.source
+        self.imported, self.source, self.path = int(time.time()), result.source, path
         self.save()
 
     def record_order(self, slug: str, order_id, price: int, qty: int, rank: int):
@@ -279,6 +281,7 @@ def parse_file(path, market) -> ImportResult:
     p = Path(path)
     text = p.read_text(encoding="utf-8-sig", errors="replace")
     res = ImportResult(source=p.name)
+    res.path = str(p)
     stripped = text.lstrip()
     if p.suffix.lower() in (".json", ".dat") or stripped[:1] in "{[":
         try:
