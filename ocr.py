@@ -1,4 +1,4 @@
-"""Cattura schermo + OCR + individuazione degli oggetti."""
+"""Screen capture + OCR + item detection."""
 import os
 from dataclasses import dataclass
 
@@ -18,7 +18,7 @@ class Line:
 
 
 def capture():
-    """Screenshot del monitor 1 (BGR) + info monitor."""
+    """Screenshot of monitor 1 (BGR) + monitor info."""
     with mss.mss() as sct:
         mon = sct.monitors[1]
         shot = sct.grab(mon)
@@ -26,8 +26,8 @@ def capture():
 
 
 class Grabber:
-    """Cattura riutilizzabile per il monitoraggio (usare sempre nello stesso thread).
-    Restituisce una vista BGRA senza copie: usa sempre [..., :3] per i canali colore."""
+    """Reusable capture for monitoring (always use it from the same thread).
+    Returns a BGRA view without copies: always use [..., :3] for the colour channels."""
 
     def __init__(self):
         self._sct = None
@@ -44,7 +44,7 @@ class Grabber:
 
 
 def make_engine(threads: int = 0):
-    """Motore OCR con thread limitati e senza il classificatore di orientamento (inutile qui)."""
+    """OCR engine with limited threads and without the orientation classifier (useless here)."""
     from rapidocr import RapidOCR
     n = threads or max(1, min(3, (os.cpu_count() or 4) // 4))
     return RapidOCR(params={
@@ -68,7 +68,7 @@ def read_lines(img, engine) -> list:
 
 
 def candidates(lines):
-    """Righe singole + coppie di righe verticalmente adiacenti (nomi su due righe)."""
+    """Single lines + pairs of vertically adjacent lines (names split over two lines)."""
     cands = list(lines)
     for a in lines:
         for b in lines:
@@ -90,7 +90,7 @@ def _overlap(a, b) -> bool:
 
 
 def find_items(market, lines, threshold: int = 90):
-    """Ritorna [(Line, Match)] senza box sovrapposti, preferendo i match migliori."""
+    """Returns [(Line, Match)] with no overlapping boxes, preferring the best matches."""
     hits = []
     for c in candidates(lines):
         m = market.match(c.text, threshold)
@@ -105,7 +105,7 @@ def find_items(market, lines, threshold: int = 90):
 
 
 def gray_patch(img, box):
-    """Ritaglio in scala di grigi di un box (x, y, w, h) in pixel catturati."""
+    """Greyscale crop of a box (x, y, w, h) in captured pixels."""
     x, y, w, h = [int(round(v)) for v in box]
     H, W = img.shape[:2]
     x0, y0, x1, y1 = max(0, x), max(0, y), min(W, x + w), min(H, y + h)
@@ -115,7 +115,7 @@ def gray_patch(img, box):
 
 
 def _ncc(a, b) -> float:
-    """Correlazione normalizzata tra due ritagli (1 = stessa struttura, ~0 = contenuto diverso)."""
+    """Normalised correlation between two crops (1 = same structure, ~0 = different content)."""
     a = a.astype(np.float32) - a.mean()
     b = b.astype(np.float32) - b.mean()
     den = float(np.sqrt((a * a).mean() * (b * b).mean()))
@@ -123,19 +123,19 @@ def _ncc(a, b) -> float:
 
 
 def screen_changed(img, boxes, refs, min_corr=0.6, min_std=8.0, flat_std=3.0, min_boxes=0.34):
-    """True se il contenuto sotto almeno 1/3 dei nomi e' cambiato (scroll, vendor chiuso, altra pagina).
+    """True if the content under at least 1/3 of the names has changed (scroll, vendor closed, other page).
 
-    Confronta la *struttura* del testo (correlazione), non la luminosita': un riflesso o l'evidenziazione
-    di una riga non contano, mentre sparire del testo o comparire di un'altra scena si'.
+    It compares the *structure* of the text (correlation), not the brightness: a glare or a highlighted
+    row does not count, while text disappearing or another scene appearing does.
     """
     changed = total = 0
     for box, ref in zip(boxes, refs):
         if ref is None or float(ref.std()) < min_std:
-            continue                         # riferimento senza testo: non informativo
+            continue                         # reference without text: not informative
         total += 1
         cur = gray_patch(img, box)
         if cur is None or cur.shape != ref.shape or float(cur.std()) < flat_std:
-            changed += 1                     # fuori schermo, o zona diventata uniforme
+            changed += 1                     # off screen, or the area became uniform
         elif _ncc(ref, cur) < min_corr:
             changed += 1
     return total > 0 and changed / total >= min_boxes

@@ -1,8 +1,8 @@
-"""Client warframe.market: catalogo, fuzzy match, prezzi (v2) e volumi (v1).
+"""warframe.market client: catalog, fuzzy match, prices (v2) and volumes (v1).
 
-Rispetta il limite di 3 richieste/secondo e mette tutto in cache.
-NB: i volumi usano l'endpoint v1 /items/{slug}/statistics (deprecato ma attivo);
-se smette di funzionare l'overlay mostra solo il prezzo.
+Respects the 3 requests/second limit and caches everything.
+NB: volumes use the v1 endpoint /items/{slug}/statistics (deprecated but alive);
+if it stops working the overlay only shows the price.
 """
 import json
 import os
@@ -28,12 +28,12 @@ HEADERS = {
     "User-Agent": "WFVendorOverlay/1.2",
 }
 CACHE_FILE = APP_DIR / "items_cache.json"
-STORE_FILE = APP_DIR / "prices.json"   # prezzi/volumi raccolti (persistenti)
-HIST_MIN_GAP = 900                         # una voce di storico ogni 15 minuti al massimo
-HIST_MAX = 48                              # voci di storico per oggetto
-PRUNE_AGE = 30 * 24 * 3600                 # dimentica oggetti non aggiornati da 30 giorni
+STORE_FILE = APP_DIR / "prices.json"   # collected prices/volumes (persistent)
+HIST_MIN_GAP = 900                         # at most one history entry every 15 minutes
+HIST_MAX = 48                              # history entries per item
+PRUNE_AGE = 30 * 24 * 3600                 # forget items not updated for 30 days
 CATALOG_TTL = 24 * 3600
-MIN_INTERVAL = 0.35  # ~2.9 richieste/s
+MIN_INTERVAL = 0.35  # ~2.9 requests/s
 
 class Market:
     def __init__(self):
@@ -44,7 +44,7 @@ class Market:
         self._info = {}      # slug -> {"name","max_rank","kind"}
         self._dirty = False
         self._matcher = Matcher([])
-        self.vendors = None          # VendorIndex: quali vendor vendono ogni oggetto
+        self.vendors = None          # VendorIndex: which vendors sell each item
         self._load_store()
         self._load_catalog()
 
@@ -66,14 +66,14 @@ class Market:
     def _get(self, path: str):
         return self._request(BASE + path)["data"]
 
-    # ---------- catalogo ----------
+    # ---------- catalog ----------
     @staticmethod
     def _kind(tags) -> str:
         if "mod" in tags:
             return "mod"
         if "arcane_enhancement" in tags or "arcane" in tags:
             return "arcane"
-        return "altro"
+        return "other"
 
     def _load_catalog(self):
         rows = None
@@ -81,7 +81,7 @@ class Market:
             try:
                 rows = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
                 if not all(isinstance(r, list) and len(r) >= 4 for r in rows):
-                    rows = None          # cache di una versione precedente (senza rank/tipo)
+                    rows = None          # cache from an older version (no rank/kind)
             except Exception:
                 rows = None
         if rows is None:
@@ -92,14 +92,15 @@ class Market:
                     rows.append([name, it["slug"], int(it.get("maxRank") or 0),
                                  self._kind(it.get("tags") or [])])
             CACHE_FILE.write_text(json.dumps(rows), encoding="utf-8")
-        self._info = {r[1]: {"name": r[0], "max_rank": r[2], "kind": r[3]} for r in rows}
+        self._info = {r[1]: {"name": r[0], "max_rank": r[2],
+                            "kind": "other" if r[3] == "altro" else r[3]} for r in rows}   # "altro": old cache
         self._matcher = Matcher(rows)
         self.vendors = VendorIndex({norm(r[0]): r[1] for r in rows})
         self._migrate()
 
     def _migrate(self):
-        """Dati salvati da versioni senza prezzo a rank massimo: per mod/arcane il vecchio prezzo
-        mescolava tutti i rank, quindi lo scarta (verra' rilevato di nuovo)."""
+        """Data saved by versions without the max-rank price: for mods/arcanes the old price
+        mixed all ranks, so it is dropped (it will be collected again)."""
         with self._store_lock:
             for slug, e in self._data.items():
                 if self._info.get(slug, {}).get("max_rank", 0) > 0 and "pmax" not in e:
@@ -117,7 +118,7 @@ class Market:
     def match(self, text: str, threshold: int = 90):
         return self._matcher.match(text, threshold)
 
-    # ---------- archivio persistente ----------
+    # ---------- persistent store ----------
     def _load_store(self):
         try:
             data = json.loads(STORE_FILE.read_text(encoding="utf-8")).get("prices", {})
@@ -144,7 +145,7 @@ class Market:
             self._dirty = True
 
     def flush(self):
-        """Salva su disco (scrittura atomica) se ci sono novita'."""
+        """Saves to disk (atomic write) if anything changed."""
         with self._store_lock:
             if not self._dirty:
                 return
@@ -158,13 +159,13 @@ class Market:
                 pass
 
     def cached(self, slug: str):
-        """Ultimi dati noti (anche vecchi): {"price","pmax","pt","vol","vt"} oppure None."""
+        """Last known data (even if old): {"price","pmax","pt","vol","vt"} or None."""
         with self._store_lock:
             e = self._data.get(slug)
             return {k: e.get(k) for k in ("price", "pmax", "pt", "vol", "vt")} if e else None
 
     def snapshot(self) -> list:
-        """Tutti gli oggetti del listino: quelli dei vendor (anche senza dati) e quelli visti a schermo."""
+        """All price-list items: the vendors' ones (even without data) and the ones seen on screen."""
         rows = []
         by_slug = self.vendors.by_slug if self.vendors else {}
         standing = self.vendors.standing if self.vendors else {}
@@ -178,7 +179,7 @@ class Market:
                 rows.append({
                     "slug": slug,
                     "name": info.get("name") or slug.replace("_", " ").title(),
-                    "kind": info.get("kind", "altro"),
+                    "kind": info.get("kind", "other"),
                     "ranked": info.get("max_rank", 0) > 0,
                     "max_rank": info.get("max_rank", 0),
                     "price": e.get("price"), "pmax": e.get("pmax"), "vol": e.get("vol"),
@@ -193,11 +194,11 @@ class Market:
         return self.vendors.vendor_names if self.vendors else []
 
     def refresh_many(self, slugs, cancel, progress=None, max_age=0):
-        """Aggiorna prezzo e volume degli oggetti indicati, uno dopo l'altro (limite 3 richieste/s).
+        """Updates price and volume of the given items one after the other (3 requests/s limit).
 
-        cancel: threading.Event per interrompere. progress(fatti, totale, errori) dopo ogni oggetto.
-        max_age: salta i dati piu' recenti di questi secondi (0 = forza l'aggiornamento).
-        Ritorna (fatti, errori, interrotto)."""
+        cancel: threading.Event to stop. progress(done, total, errors) after every item.
+        max_age: skip data newer than this many seconds (0 = force the update).
+        Returns (done, errors, interrupted)."""
         slugs = list(slugs)
         done = errors = streak = 0
         for i, slug in enumerate(slugs):
@@ -218,7 +219,7 @@ class Market:
                 progress(done, len(slugs), errors)
             if done % 15 == 0:
                 self.flush()
-            if streak >= 8:               # rete assente o API non raggiungibile: inutile insistere
+            if streak >= 8:               # no network or API unreachable: pointless to insist
                 break
         self.flush()
         return done, errors, cancel.is_set() or done < len(slugs)
@@ -229,17 +230,17 @@ class Market:
             e = self._data.get(slug)
             return bool(e and e.get(key) and time.time() - e[key] < max_age)
 
-    # ---------- prezzi ----------
+    # ---------- prices ----------
     @staticmethod
     def _low3(values):
         values = sorted(values)
         return int(statistics.median(values[:3])) if values else None
 
     def prices(self, slug: str, max_age=None):
-        """(prezzo, prezzo_rank_massimo): mediana dei 3 ordini di vendita piu' bassi di utenti
-        online/in gioco. Per mod e arcane `prezzo` e' quello a rank 0 e il secondo valore e' a rank
-        massimo; per gli altri oggetti il secondo valore e' None.
-        Usa i dati salvati se hanno meno di max_age secondi."""
+        """(price, max_rank_price): median of the 3 lowest sell orders from online/in-game users.
+        For mods and arcanes `price` is the rank 0 one and the second value is at max rank;
+        for every other item the second value is None.
+        Uses the saved data if it is less than max_age seconds old."""
         mr = self._info.get(slug, {}).get("max_rank", 0)
         if self._fresh(slug, "pt", max_age):
             with self._store_lock:
@@ -261,9 +262,9 @@ class Market:
     def price(self, slug: str, max_age=None):
         return self.prices(slug, max_age)[0]
 
-    # ---------- volumi ----------
+    # ---------- volumes ----------
     def volume_24h(self, slug: str, max_age=None):
-        """Numero di scambi chiusi nelle ultime 24 ore."""
+        """Number of trades closed in the last 24 hours."""
         if self._fresh(slug, "vt", max_age):
             return self._data[slug]["vol"]
         data = self._request(f"{V1}/items/{slug}/statistics")

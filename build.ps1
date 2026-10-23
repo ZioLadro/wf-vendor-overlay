@@ -1,14 +1,14 @@
-# Crea l'eseguibile con PyInstaller. Esegui dalla cartella del progetto, con l'ambiente .venv (Python 3.12):
-#   powershell -ExecutionPolicy Bypass -File build.ps1            -> cartella dist\WFVendorOverlay (consigliato)
-#   powershell -ExecutionPolicy Bypass -File build.ps1 -Console   -> con finestra console (per vedere gli errori)
-#   powershell -ExecutionPolicy Bypass -File build.ps1 -OneFile   -> singolo .exe (avvio piu' lento)
+# Builds the executable with PyInstaller. Run from the project folder, with the .venv environment (Python 3.12):
+#   powershell -ExecutionPolicy Bypass -File build.ps1            -> dist\WFVendorOverlay folder (recommended)
+#   powershell -ExecutionPolicy Bypass -File build.ps1 -Console   -> with a console window (to see errors)
+#   powershell -ExecutionPolicy Bypass -File build.ps1 -OneFile   -> single .exe (slower startup)
 param([switch]$Console, [switch]$OneFile)
 $ErrorActionPreference = "Stop"
 $py = ".venv\Scripts\python.exe"
-if (-not (Test-Path $py)) { throw "Ambiente .venv non trovato. Crealo con: py -3.12 -m venv .venv" }
+if (-not (Test-Path $py)) { throw ".venv environment not found. Create it with: py -3.12 -m venv .venv" }
 
 & $py -m pip install --upgrade pyinstaller
-Write-Host "Controllo i modelli OCR..."
+Write-Host "Checking the OCR models..."
 & $py prepare_models.py
 
 $piArgs = @("--noconfirm", "--clean", "--name", "WFVendorOverlay",
@@ -20,4 +20,4 @@ if (-not $Console) { $piArgs += "--noconsole" }
 $piArgs += "main.py"
 
 & $py -m PyInstaller @piArgs
-Write-Host "Fatto. Eseguibile in: dist\WFVendorOverlay"
+Write-Host "Done. Executable in: dist\WFVendorOverlay"

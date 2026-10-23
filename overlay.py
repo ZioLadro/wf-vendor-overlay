@@ -1,7 +1,7 @@
-"""Overlay trasparente, sempre in primo piano e click-through (PyQt6).
+"""Transparent, always-on-top, click-through overlay (PyQt6).
 
-Per ogni oggetto: prezzo a destra del nome; volume (rosso = basso, verde = alto)
-in basso, centrato sotto il nome.
+For every item: the price to the right of the name; the volume (red = low, green = high)
+below it, centred under the name.
 """
 import math
 
@@ -13,7 +13,7 @@ from config import CFG
 
 
 def volume_color(v: float) -> QColor:
-    """Rosso fino a volume_low, verde da volume_high in su, sfumatura logaritmica in mezzo."""
+    """Red up to volume_low, green from volume_high up, logarithmic blend in between."""
     lo = max(1.0, float(CFG["volume_low"]))
     hi = max(lo + 1.0, float(CFG["volume_high"]))
     if v <= lo:
@@ -22,7 +22,7 @@ def volume_color(v: float) -> QColor:
         t = 1.0
     else:
         t = math.log(v / lo) / math.log(hi / lo)
-    return QColor.fromHsv(int(120 * t), 235, 255)     # 0 = rosso, 60 = giallo, 120 = verde
+    return QColor.fromHsv(int(120 * t), 235, 255)     # 0 = red, 60 = yellow, 120 = green
 
 
 class Overlay(QWidget):
@@ -67,7 +67,7 @@ class Overlay(QWidget):
         vol_font = QFont("Segoe UI", 9, QFont.Weight.Bold)
 
         for it in self.items:
-            # prezzo: a destra del nome
+            # price: to the right of the name
             p.setFont(price_font)
             fm = p.fontMetrics()
             text = it["label"]
@@ -78,7 +78,7 @@ class Overlay(QWidget):
             self._pill(p, QRectF(x, y, w, h), text,
                        QColor(120, 200, 255) if ok else QColor(150, 150, 150))
 
-            # volume: sotto il nome, centrato, colorato in base al valore
+            # volume: below the name, centred, coloured by value
             v = it.get("vol")
             if CFG["show_volume"] and v is not None:
                 p.setFont(vol_font)

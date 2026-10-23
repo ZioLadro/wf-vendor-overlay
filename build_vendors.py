@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Genera vendors.json: gli oggetti venduti da ogni vendor/sindacato di Warframe (nomi inglesi).
+"""Generates vendors.json: the items sold by every Warframe vendor/syndicate (English names), with standing costs.
 
-Fonte: https://github.com/calamity-inc/warframe-public-export-plus (dati ufficiali del gioco convertiti).
-Uso:   python build_vendors.py [--out vendors.json] [--cache cartella_download]
-I nomi vengono poi associati agli oggetti scambiabili di warframe.market dal programma (solo quelli
-che esistono sul market compaiono nel listino). Baro Ki'Teer non e' in questi dati: vedi baro.py.
+Source: https://github.com/calamity-inc/warframe-public-export-plus (converted official game data).
+Usage:  python build_vendors.py [--out vendors.json] [--cache download_folder]
+The program then matches the names to tradable warframe.market items (only items that exist on the
+market appear in the price list). Baro Ki'Teer is not in this data: see vendors.py.
 """
 import argparse
 import json
@@ -21,10 +21,10 @@ NAME_FILES = ["ExportUpgrades", "ExportWarframes", "ExportWeapons", "ExportResou
               "ExportCustoms", "ExportSentinels", "ExportFlavour", "ExportKeys", "ExportFusionBundles"]
 VENDOR_PREFIX = "/Lotus/Types/Game/VendorManifests/"
 
-REGION = {"Deimos": "Deimos", "Duviri": "Duviri", "EntratiLabs": "Cavia", "Events": "Evento",
-          "FocusSchools": "Focus", "GameModes": "Modalità", "Hubs": "Hub", "Kahl": "Kahl",
+REGION = {"Deimos": "Deimos", "Duviri": "Duviri", "EntratiLabs": "Cavia", "Events": "Event",
+          "FocusSchools": "Focus", "GameModes": "Game modes", "Hubs": "Hub", "Kahl": "Kahl",
           "Ostron": "Cetus", "Solaris": "Fortuna", "Tau": "Tau", "TheHex": "1999", "Zariman": "Zariman"}
-OVERRIDE = {   # nomi piu' chiari per i vendor principali
+OVERRIDE = {   # clearer names for the main vendors
     "Hubs/TeshinHardModeVendorManifest": "Teshin (Steel Path)",
     "Duviri/AcrithisVendorManifest": "Acrithis (Duviri)",
     "Kahl/ChipperVendorManifest": "Chipper (Kahl)",
@@ -58,7 +58,7 @@ def words(s: str) -> str:
 def vendor_name(key: str) -> str:
     short = key[len(VENDOR_PREFIX):]
     if short.startswith("Events/RadioLegion"):
-        return "Nightwave (Nora)"                      # tutte le stagioni insieme
+        return "Nightwave (Nora)"                      # all seasons together
     if short in OVERRIDE:
         return OVERRIDE[short]
     parts = short.split("/")
@@ -69,14 +69,14 @@ def vendor_name(key: str) -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(Path(__file__).with_name("vendors.json")))
-    ap.add_argument("--cache", default=None, help="cartella dove salvare i download (default: temporanea)")
-    ap.add_argument("--report", action="store_true", help="stampa la copertura dei nomi")
+    ap.add_argument("--cache", default=None, help="folder where downloads are saved (default: temporary)")
+    ap.add_argument("--report", action="store_true", help="print name coverage")
     a = ap.parse_args()
     cache = Path(a.cache) if a.cache else Path(tempfile.mkdtemp(prefix="wfvendors_"))
     cache.mkdir(parents=True, exist_ok=True)
 
     lang = fetch("dict.en", cache)
-    names = {}                                         # uniqueName -> nome inglese
+    names = {}                                         # uniqueName -> English name
     for fn in NAME_FILES:
         for path, e in fetch(fn, cache).items():
             if isinstance(e, dict) and lang.get(e.get("name", "")):
@@ -84,7 +84,7 @@ def main():
     recipes = fetch("ExportRecipes", cache)
 
     def resolve(store_item: str):
-        """Ritorna 'Nome' oppure ['Nome Blueprint', 'Nome'] per i blueprint, None se sconosciuto."""
+        """Returns 'Name' or ['Name Blueprint', 'Name'] for blueprints, None if unknown."""
         path = store_item.replace("/StoreItems", "", 1)
         if path in names:
             return names[path]
@@ -97,7 +97,7 @@ def main():
     vendors, total, missing = {}, 0, []
 
     def add(vendor: str, store_item: str, standing=None, rank=None):
-        """Aggiunge una voce; `standing` = costo in standing (None se non si paga in standing)."""
+        """Adds an entry; `standing` = standing cost (None if it is not paid in standing)."""
         nonlocal total
         total += 1
         r = resolve(store_item)
@@ -107,7 +107,7 @@ def main():
         lst = vendors.setdefault(vendor, {})
         key = json.dumps(r, ensure_ascii=False)
         e = lst.setdefault(key, {"n": r})
-        if standing:                                   # la stessa voce puo' comparire due volte: tiene la piu' economica
+        if standing:                                   # the same entry can appear twice: keep the cheapest
             if "s" not in e or standing < e["s"]:
                 e["s"], e["r"] = int(standing), int(rank or 0)
 
@@ -127,11 +127,11 @@ def main():
            "vendors": {k: list(v.values()) for k, v in sorted(vendors.items()) if v}}
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     n_items = sum(len(v) for v in out["vendors"].values())
-    print(f"{len(out['vendors'])} vendor, {n_items} voci -> {a.out} (nomi risolti: {total - len(missing)}/{total})")
+    print(f"{len(out['vendors'])} vendors, {n_items} entries -> {a.out} (names resolved: {total - len(missing)}/{total})")
     if a.report:
         for k, v in out["vendors"].items():
             print(f"  {len(v):4d}  {k}")
-        print("non risolti, esempi:", missing[:12])
+        print("unresolved, examples:", missing[:12])
 
 
 if __name__ == "__main__":

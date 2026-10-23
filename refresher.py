@@ -1,0 +1,66 @@
+"""Background refresh of prices/volumes shared by all the tabs of the price-list window."""
+import threading
+
+from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtWidgets import QMessageBox
+
+from config import CFG
+from i18n import t
+
+
+class Refresher(QObject):
+    started = pyqtSignal(int)             # total number of items
+    progress = pyqtSignal(int, int, int)  # done, total, errors   (emitted from the worker thread)
+    finished = pyqtSignal(str)            # final message
+
+    def __init__(self, market, parent_widget):
+        super().__init__(parent_widget)
+        self.market, self.parent_widget = market, parent_widget
+        self._cancel = threading.Event()
+        self._thread = None
+
+    @property
+    def busy(self) -> bool:
+        return bool(self._thread and self._thread.is_alive())
+
+    def cancel(self):
+        self._cancel.set()
+
+    def start(self, slugs, max_age) -> bool:
+        """Starts the update. Asks for confirmation first when the batch is large."""
+        slugs = list(dict.fromkeys(slugs))
+        if self.busy:
+            return False
+        if not slugs:
+            self.finished.emit(t("job.nothing"))
+            return False
+        if len(slugs) > int(CFG["refresh_confirm_over"]):
+            eta = int(len(slugs) * 2 * 0.35)           # 2 requests per item, ~3 per second
+            ans = QMessageBox.question(
+                self.parent_widget, t("job.confirm.title"),
+                t("job.confirm.text", n=len(slugs), minutes=eta // 60 + 1, requests=len(slugs) * 2))
+            if ans != QMessageBox.StandardButton.Yes:
+                return False
+        self._cancel.clear()
+        self.started.emit(len(slugs))
+        market, cancel = self.market, self._cancel
+
+        def run():
+            try:
+                done, errors, stopped = market.refresh_many(
+                    slugs, cancel, lambda d, n, e: self.progress.emit(d, n, e), max_age)
+                if cancel.is_set():
+                    msg = t("job.stopped", done=done, total=len(slugs))
+                elif stopped:
+                    msg = t("job.aborted", done=done, total=len(slugs))
+                else:
+                    msg = t("job.done", n=done)
+                if errors:
+                    msg += t("job.errors", n=errors)
+            except Exception as e:
+                msg = t("status.error", err=e)
+            self.finished.emit(msg)
+
+        self._thread = threading.Thread(target=run, daemon=True)
+        self._thread.start()
+        return True

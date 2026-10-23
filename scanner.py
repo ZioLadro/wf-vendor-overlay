@@ -1,11 +1,11 @@
-"""Logica di scansione.
+"""Scanning logic.
 
-- thread unico che esegue le richieste: "open" (nuovo vendor / F8), "scroll", "refresh" (solo dati)
-- ogni invalidazione (scroll, cambio schermo, F9) incrementa `gen`: i risultati vecchi vengono scartati
-- i dati salvati compaiono subito, poi vengono aggiornati in background
-- un thread di monitoraggio rileva l'apertura di un vendor, rinfresca i dati ogni refresh_interval e
-  nasconde le etichette appena il vendor viene chiuso (anche mentre i prezzi si stanno ancora caricando)
-- mentre il listino prezzi e' aperto le scansioni sono sospese (altrimenti leggerebbe i nomi del listino)
+- a single thread runs the requests: "open" (new vendor / F8), "scroll", "refresh" (data only)
+- every invalidation (scroll, screen change, F9) increments `gen`: stale results are discarded
+- saved data shows up immediately, then is refreshed in the background
+- a monitoring thread detects a vendor being opened, refreshes data every refresh_interval and
+  hides the labels as soon as the vendor is closed (even while prices are still loading)
+- while the price list is open, scans are suspended (otherwise it would read the list's own names)
 """
 import threading
 import time
@@ -13,6 +13,7 @@ import time
 import numpy as np
 
 from config import CFG
+from i18n import t
 from ocr import Grabber, screen_changed
 
 PRIO = {"refresh": 1, "scroll": 2, "open": 3}
@@ -22,15 +23,15 @@ def fmt_price(it: dict) -> str:
     if not it["price_done"]:
         return "…"
     if it["price_err"]:
-        return "n/d"                      # errore di rete / dati non disponibili
-    text = f"{it['price']}p" if it["price"] is not None else "–"   # "–" = nessun venditore online
-    if it.get("ranked"):                                          # mod / arcane: aggiunge il rank massimo
+        return t("price.na")                      # network error / data unavailable
+    text = f"{it['price']}p" if it["price"] is not None else "–"   # "–" = no seller online
+    if it.get("ranked"):                                          # mods / arcanes: also show the max-rank price
         text += f" · max {it['pmax']}p" if it.get("pmax") is not None else " · max –"
     return text
 
 
 class Scanner:
-    """bridge deve avere .results/.status/.clear con metodo .emit(); ocr ha .scan()."""
+    """bridge must have .results/.status/.clear signals with an .emit() method; ocr has .scan()."""
 
     def __init__(self, market, bridge, screen_w: float, ocr):
         self.market, self.bridge, self.screen_w, self.ocr = market, bridge, screen_w, ocr
@@ -41,19 +42,19 @@ class Scanner:
         self.pending = None
         self.manual = False
         self.busy = False
-        self.suspended = False   # True mentre il listino prezzi e' aperto
-        self.items = []          # oggetti attualmente mostrati
-        self.ref = None          # dati per rilevare il cambio schermo
-        self.version = 0         # cresce a ogni pubblicazione di etichette
-        self.scan_epoch = 0      # cresce a ogni scansione avviata
+        self.suspended = False   # True while the price list is open
+        self.items = []          # items currently shown
+        self.ref = None          # data used to detect a screen change
+        self.version = 0         # grows at every label publication
+        self.scan_epoch = 0      # grows at every scan started
         self.last_refresh = 0.0
         self._timer = None
         threading.Thread(target=self._loop, daemon=True).start()
         threading.Thread(target=self._watch, daemon=True).start()
 
-    # ---------- API chiamata da hotkey / mouse ----------
+    # ---------- API called by hotkeys / mouse ----------
     def scan_now(self):
-        """F8: scansiona subito (riattiva se in pausa)."""
+        """F8: scan now (resumes if paused)."""
         self.active = True
         self._cancel_timer()
         with self.cv:
@@ -61,17 +62,17 @@ class Scanner:
         self._request("open", manual=True)
 
     def stop(self):
-        """F9: pausa."""
+        """F9: pause."""
         self.active = False
         self._cancel_timer()
         with self.cv:
             self.pending = None
         self._invalidate()
         self.market.flush()
-        self.bridge.status.emit("In pausa: F8 per riprendere")
+        self.bridge.status.emit(t("status.paused", key=CFG["key_scan"].strip("<>").upper()))
 
     def set_suspended(self, flag: bool):
-        """Listino aperto: nasconde le etichette e ferma le scansioni; alla chiusura riscansiona."""
+        """Price list open: hides the labels and stops scanning; rescans when it closes."""
         if flag == self.suspended:
             return
         self.suspended = flag
@@ -81,12 +82,12 @@ class Scanner:
                 self.pending = None
             self._invalidate()
         elif self.active:
-            t = threading.Timer(0.5, lambda: self._request("open"))   # lascia sparire la finestra
+            t = threading.Timer(0.5, lambda: self._request("open"))   # let the window disappear
             t.daemon = True
             t.start()
 
     def on_scroll(self):
-        """Rotellina: nasconde subito le etichette e riscansiona a scroll finito."""
+        """Mouse wheel: hides the labels at once and rescans when scrolling stops."""
         if not self.active or self.suspended:
             return
         self._invalidate()
@@ -95,7 +96,7 @@ class Scanner:
         self._timer.daemon = True
         self._timer.start()
 
-    # ---------- interni ----------
+    # ---------- internals ----------
     def _invalidate(self):
         with self.cv:
             self.gen += 1
@@ -132,12 +133,12 @@ class Scanner:
                 else:
                     self._scan(gen, kind, manual)
             except Exception as e:
-                self.bridge.status.emit(f"Errore: {e}")
+                self.bridge.status.emit(t("status.error", err=e))
             finally:
                 self.busy = False
 
     def _publish(self, items, gen, force=False):
-        """Ridisegna l'overlay; durante gli aggiornamenti al massimo ogni publish_throttle secondi."""
+        """Redraws the overlay; while updating, at most once every publish_throttle seconds."""
         if self.gen != gen:
             return
         now = time.monotonic()
@@ -148,7 +149,7 @@ class Scanner:
         self.bridge.results.emit([dict(i) for i in items])
 
     def _apply_cache(self, it):
-        """Mostra subito gli ultimi dati salvati (se non troppo vecchi)."""
+        """Shows the last saved data right away (if not too old)."""
         e = self.market.cached(it["slug"])
         if not e:
             return
@@ -159,7 +160,7 @@ class Scanner:
             it["vol"] = e.get("vol")
 
     def _update(self, items, gen, max_age):
-        """Aggiorna prezzi e poi volumi (solo se piu' vecchi di max_age), pubblicando man mano."""
+        """Updates prices and then volumes (only if older than max_age), publishing as it goes."""
         for it in items:
             if self.gen != gen:
                 return False
@@ -181,10 +182,10 @@ class Scanner:
                 try:
                     it["vol"] = self.market.volume_24h(it["slug"], max_age)
                 except Exception:
-                    pass                      # tiene il vecchio valore (o nessuno)
+                    pass                      # keep the old value (or none)
                 if it["vol"] != before:
                     self._publish(items, gen)
-        self._publish(items, gen, force=True)   # stato finale sempre mostrato
+        self._publish(items, gen, force=True)   # the final state is always shown
         return True
 
     def _scan(self, gen: int, kind: str, manual: bool):
@@ -192,9 +193,9 @@ class Scanner:
             return
         self.scan_epoch += 1
         if manual:
-            self.bridge.status.emit("Scansione…")
+            self.bridge.status.emit(t("status.scanning"))
         self.bridge.clear.emit()
-        time.sleep(0.12)                     # lascia sparire le vecchie etichette
+        time.sleep(0.12)                     # let the old labels disappear
         if self.gen != gen:
             return
         hits, mon_w, patches = self.ocr.scan()
@@ -203,7 +204,7 @@ class Scanner:
         if not hits:
             self.items = []
             if manual:
-                self.bridge.status.emit("Nessun oggetto riconosciuto")
+                self.bridge.status.emit(t("status.none"))
             return
 
         ratio = self.screen_w / mon_w
@@ -218,10 +219,10 @@ class Scanner:
             self._apply_cache(it)
             it["label"] = fmt_price(it)
         self.items = items
-        # riferimento per capire quando il vendor viene chiuso: ritagli dello screenshot della scansione
+        # reference to tell when the vendor is closed: crops of the scan's screenshot
         self.ref = {"gen": gen, "boxes": [(h[0], h[1], h[2], h[3]) for h in hits], "patches": patches}
-        self._publish(items, gen, force=True)   # prima i dati salvati, poi l'aggiornamento
-        # all'apertura aggiorna i dati piu' vecchi di open_max_age; durante lo scroll basta la cache recente
+        self._publish(items, gen, force=True)   # saved data first, then the update
+        # on open, refresh data older than open_max_age; while scrolling, recent cache is enough
         max_age = CFG["open_max_age"] if kind == "open" else CFG["refresh_interval"]
         self._update(items, gen, max_age)
         self.last_refresh = time.time()
@@ -235,25 +236,25 @@ class Scanner:
         self.last_refresh = time.time()
         self.market.flush()
 
-    # ---------- monitoraggio ----------
+    # ---------- monitoring ----------
     def _watch(self):
-        """Ogni watch_interval: rinfresco periodico dei dati e rilevamento dello schermo.
+        """Every watch_interval: periodic data refresh and screen detection.
 
-        - vendor mostrato: se il contenuto sotto i nomi cambia (scroll, vendor chiuso, altra pagina)
-          nasconde subito le etichette. Il controllo c'e' SEMPRE, anche mentre i prezzi si caricano
-        - nessun vendor: quando lo schermo cambia molto e poi si ferma -> scansione automatica
+        - vendor shown: if the content under the names changes (scroll, vendor closed, other page)
+          the labels are hidden at once. The check ALWAYS runs, even while prices are loading
+        - no vendor shown: when the screen changes a lot and then settles -> automatic scan
         """
         grab = Grabber()
-        prev, dirty, stable, last_auto, epoch, streak = None, True, 0, 0.0, self.scan_epoch, 0   # dirty: scansiona subito all'avvio
+        prev, dirty, stable, last_auto, epoch, streak = None, True, 0, 0.0, self.scan_epoch, 0   # dirty: scan right away at startup
         while True:
-            # durante il gioco (schermo in continuo movimento) controlla meno spesso: conta solo quando si ferma
+            # while playing (constantly moving screen) check less often: only the moment it stops matters
             time.sleep(CFG["watch_interval_moving"] if streak >= 3 else CFG["watch_interval"])
             if not self.active or self.suspended:
                 prev, dirty, stable, streak = None, False, 0, 0
                 continue
             now = time.time()
             if self.items and not self.busy and now - self.last_refresh >= CFG["refresh_interval"]:
-                self.last_refresh = now      # evita richieste doppie mentre e' in coda
+                self.last_refresh = now      # avoid duplicate requests while it is queued
                 self._request("refresh")
 
             ref = self.ref
@@ -269,7 +270,7 @@ class Scanner:
             if showing:
                 prev, streak = None, 0
                 if screen_changed(img, ref["boxes"], ref["patches"]):
-                    self._invalidate()       # vendor chiuso o lista cambiata: via le etichette
+                    self._invalidate()       # vendor closed or list changed: drop the labels
                     dirty, stable = True, 0
                 continue
 
@@ -278,10 +279,10 @@ class Scanner:
                       and (np.abs(fp - prev) > 25).mean() > CFG["auto_motion_frac"])
             prev = fp
             streak = streak + 1 if moving else 0
-            if epoch != self.scan_epoch:     # e' partita una scansione: riparti da zero
+            if epoch != self.scan_epoch:     # a scan started: start over
                 epoch, dirty, stable = self.scan_epoch, False, 0
 
-            # nessun vendor mostrato: aspetta che lo schermo cambi e poi si fermi
+            # no vendor shown: wait for the screen to change and then settle
             if moving:
                 dirty, stable = True, 0
             else:

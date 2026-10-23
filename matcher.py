@@ -1,4 +1,4 @@
-"""Fuzzy match dei nomi letti dall'OCR con il catalogo di warframe.market (con memo)."""
+"""Fuzzy matching of OCR-read names against the warframe.market catalog (memoized)."""
 import re
 from collections import namedtuple
 
@@ -15,7 +15,7 @@ def norm(s: str) -> str:
 
 class Matcher:
     def __init__(self, pairs):
-        self.pairs = [(p[0], p[1]) for p in pairs]      # [(nome, slug)]
+        self.pairs = [(p[0], p[1]) for p in pairs]      # [(name, slug)]
         self._norms = [norm(n) for n, _ in self.pairs]
         self._memo = {}
 
