@@ -57,7 +57,9 @@ Your items with their market prices, and one-click sell orders (inspired by Alec
 - **Where the items come from.** Warframe keeps your inventory on DE's servers, not in a local file, so it
   cannot be read from disk (and this program never reads the game's memory or network traffic). You build
   it by **Import file…** (replaces the inventory), **Paste list…**, or **Add item…** / **Edit** by hand.
-  Accepted files: a *raw Warframe-style inventory* JSON (`MiscItems`, `RawUpgrades`, `Upgrades`, `Recipes`…
+  Accepted files: a **`lastData.dat`** (the AlecaFrame-style encrypted inventory file; decrypted locally with the
+  `cryptography` package; the Import dialog opens in `%LOCALAPPDATA%\AlecaFrame` if that folder exists),
+  a *raw Warframe-style inventory* JSON (`MiscItems`, `RawUpgrades`, `Upgrades`, `Recipes`…
   with `ItemType` paths, resolved through the bundled `gamenames.json`), any JSON that pairs item names with
   quantities (`{"name": …, "count": …}` lists or `{"Serration": 2}`), and CSV/TXT lines such as
   `Serration, 2, 10` (name, quantity, optional rank), `3x Mirage Prime Set` or `Ash Prime Blueprint x2`.

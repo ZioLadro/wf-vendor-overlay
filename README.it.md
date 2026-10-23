@@ -58,7 +58,9 @@ I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispi
 - **Da dove vengono gli oggetti.** Warframe tiene il tuo inventario sui server di DE, non in un file locale,
   quindi non si può leggere da disco (e questo programma non legge mai la memoria o il traffico di rete del
   gioco). Lo costruisci con **Importa file…** (sostituisce l'inventario), **Incolla lista…**, oppure
-  **Aggiungi oggetto…** / **Modifica** a mano. File accettati: un JSON di *inventario grezzo in stile Warframe*
+  **Aggiungi oggetto…** / **Modifica** a mano. File accettati: un **`lastData.dat`** (il file di inventario cifrato in stile AlecaFrame; decifrato in locale con il
+  pacchetto `cryptography`; la finestra di importazione si apre in `%LOCALAPPDATA%\AlecaFrame` se la cartella esiste),
+  un JSON di *inventario grezzo in stile Warframe*
   (`MiscItems`, `RawUpgrades`, `Upgrades`, `Recipes`… con percorsi `ItemType`, risolti con `gamenames.json`
   incluso), qualunque JSON che abbini nomi e quantità (liste `{"name": …, "count": …}` o `{"Serration": 2}`),
   e righe CSV/TXT come `Serration, 2, 10` (nome, quantità, rank facoltativo), `3x Mirage Prime Set` oppure

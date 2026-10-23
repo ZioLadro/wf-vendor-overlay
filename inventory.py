@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from config import APP_DIR
+from i18n import t
 
 INV_FILE = APP_DIR / "inventory.json"
 BUNDLED_NAMES = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "gamenames.json"
@@ -277,9 +278,43 @@ def parse_text(text: str, market, res=None) -> ImportResult:
     return res
 
 
+# lastData.dat (AlecaFrame-style): the inventory JSON, PKCS#7-padded and AES-128-CBC encrypted with a
+# fixed key and IV (published in the open-source tools that write this file). Values transcribed from
+# a third-party source: if a file cannot be decoded, the error says so instead of importing garbage.
+DAT_KEY = bytes([76, 69, 79, 45, 65, 76, 69, 67, 9, 69, 79, 45, 65, 76, 69, 67])
+DAT_IV = bytes([49, 50, 70, 71, 66, 51, 54, 45, 76, 69, 51, 45, 113, 61, 57, 0])
+
+
+def decrypt_last_data(raw: bytes) -> str:
+    """Decrypts the contents of a lastData.dat file into the inventory JSON text. Raises ValueError."""
+    try:
+        from cryptography.hazmat.primitives import padding
+        from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+    except ImportError:
+        raise ValueError(t("inv.dat.nolib"))
+    if not raw or len(raw) % 16:
+        raise ValueError(t("inv.dat.failed"))
+    try:
+        dec = Cipher(algorithms.AES(DAT_KEY), modes.CBC(DAT_IV)).decryptor()
+        padded = dec.update(raw) + dec.finalize()
+        unpad = padding.PKCS7(128).unpadder()
+        text = (unpad.update(padded) + unpad.finalize()).decode("utf-8")
+        json.loads(text)                                  # must be JSON, otherwise the key does not fit
+        return text
+    except Exception:
+        raise ValueError(t("inv.dat.failed"))
+
+
 def parse_file(path, market) -> ImportResult:
     p = Path(path)
-    text = p.read_text(encoding="utf-8-sig", errors="replace")
+    raw = p.read_bytes()
+    head = raw.lstrip(b"\xef\xbb\xbf \t\r\n")[:1]
+    if head in (b"{", b"["):
+        text = raw.decode("utf-8-sig", errors="replace")
+    elif p.suffix.lower() == ".dat" or b"\x00" in raw[:2048]:
+        text = decrypt_last_data(raw)
+    else:
+        text = raw.decode("utf-8-sig", errors="replace")
     res = ImportResult(source=p.name)
     res.path = str(p)
     stripped = text.lstrip()

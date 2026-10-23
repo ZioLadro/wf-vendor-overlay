@@ -6,3 +6,4 @@ rapidfuzz>=3.0
 rapidocr>=3.0
 onnxruntime
 pynput>=1.7
+cryptography>=41

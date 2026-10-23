@@ -390,7 +390,11 @@ class InventoryTab(QWidget):
         self.refresh(force=True)
 
     def import_file(self):
-        path, _ = QFileDialog.getOpenFileName(self, t("inv.import"), "", t("inv.import.filter"))
+        start = os.path.dirname(self.inv.path) if self.inv.path else ""
+        if not start:
+            aleca = os.path.join(os.environ.get("LOCALAPPDATA", ""), "AlecaFrame")
+            start = aleca if os.path.isdir(aleca) else ""
+        path, _ = QFileDialog.getOpenFileName(self, t("inv.import"), start, t("inv.import.filter"))
         if not path:
             return
         try:
