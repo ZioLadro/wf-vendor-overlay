@@ -25,7 +25,7 @@ vendor) and **max-rank** price. The volume is the total of the trades of all ran
 - Warframe must run in **Borderless** windowed mode.
 
 ## Price list window (F7)
-Three tabs. While the window is open, scans are suspended and the labels hidden (otherwise the OCR would
+Four tabs. While the window is open, scans are suspended and the labels hidden (otherwise the OCR would
 read the list's own names); scanning resumes when you close it.
 
 ### Price list
@@ -50,6 +50,33 @@ headers to sort; search box and vendor/type filters.
   for confirmation. Closing the window stops any update. Data stays saved in `prices.json`.
 - **Update Baro list**: Baro is not in the game data; his historical list is read from the wiki (and from
   his current inventory) and reloads by itself at startup every `baro_refresh_days` days.
+
+### Inventory
+Your items with their market prices, and one-click sell orders (inspired by AlecaFrame's Inventory tab).
+
+- **Where the items come from.** Warframe keeps your inventory on DE's servers, not in a local file, so it
+  cannot be read from disk (and this program never reads the game's memory or network traffic). You build
+  it by **Import file…** (replaces the inventory), **Paste list…**, or **Add item…** / **Edit** by hand.
+  Accepted files: a *raw Warframe-style inventory* JSON (`MiscItems`, `RawUpgrades`, `Upgrades`, `Recipes`…
+  with `ItemType` paths, resolved through the bundled `gamenames.json`), any JSON that pairs item names with
+  quantities (`{"name": …, "count": …}` lists or `{"Serration": 2}`), and CSV/TXT lines such as
+  `Serration, 2, 10` (name, quantity, optional rank), `3x Mirage Prime Set` or `Ash Prime Blueprint x2`.
+  Names are matched to the market catalog (small typos are tolerated); the ones that cannot be matched are
+  listed after the import. Not tested against real game exports, only against files of those shapes.
+- **Categories**: Sets, Warframe parts, Weapon parts, Mods, Arcanes, Relics, Other (derived from the
+  warframe.market tags). **Filters** like AlecaFrame's: minimum platinum (5 / 10 / 15), more than one owned,
+  part type (prime / normal), vaulted (when the market data says so), listed from here, plus
+  **Exclude max-rank mods/arcanes** (they leave the list and the total).
+- **Prices**: value = copies × rank 0 price + max-rank copies × max-rank price; **Update prices**
+  refreshes the shown items. Right-click a name for the market / wiki page.
+- **Sell…** places a **sell order** on warframe.market for every selected item. Sign in first (email and
+  password, sent only to warframe.market; **only the session token is stored**, in `market_session.json`;
+  *Sign out* deletes it). For each order a window shows quantity, rank (mods/arcanes), price (market price
+  + `sell_price_offset`) and **the exact request that will be sent**; nothing is sent until you press
+  *Place order*. The app remembers the orders it placed (*Listed* column); it does not read your other orders.
+  **Caveat:** sign-in and order creation use the v1 REST API as documented by community client libraries and
+  could not be tried against the live site while developing: check the first order on warframe.market.
+  Accounts that sign in with Discord/Google may not work.
 
 ### Recommendations
 What is worth buying with standing, for every (item, vendor) pair that has a standing cost:
@@ -92,8 +119,9 @@ The OCR models are bundled. If Warframe runs as administrator, run the overlay a
 ## Files and settings
 Everything lives in `%LOCALAPPDATA%\WFVendorOverlay`:
 - `config.json` settings · `prices.json` collected prices and volumes · `items_cache.json` market catalog ·
-  `baro.json` Baro's list · `vendors.json` (optional, overrides the bundled one) · `overlay.log` errors
-  (useful with the exe).
+  `baro.json` Baro's list · `inventory.json` your inventory and the orders placed from the app ·
+  `market_session.json` warframe.market session token · `vendors.json` / `gamenames.json` (optional, override
+  the bundled ones) · `overlay.log` errors (useful with the exe).
 
 | key | meaning (default) |
 |---|---|
@@ -110,6 +138,7 @@ Everything lives in `%LOCALAPPDATA%\WFVendorOverlay`:
 | `match_threshold` | name similarity threshold (90) |
 | `watch_interval`, `watch_interval_moving`, `auto_settle_polls`, `auto_motion_frac`, `auto_min_gap`, `scroll_debounce` | detection sensitivity |
 | `ocr_threads`, `ocr_priority`, `publish_throttle`, `menu_refresh_ms` | performance |
+| `inv_exclude_maxed`, `sell_price_offset` | inventory: leave out max-rank mods/arcanes / price offset when selling (0) |
 | `rec_min_volume`, `rec_min_price`, `rec_top` | recommendations filters |
 
 ## Performance
@@ -128,6 +157,7 @@ The scan (OCR) is the heavy part. To avoid disturbing the game:
 `ocr.py` capture and OCR · `matcher.py` name matching · `market.py` catalog, prices, volumes, JSON store ·
 `vendors.py` / `build_vendors.py` / `vendors.json` vendor catalog and standing costs ·
 `menu.py` price-list window · `recommend.py` + `recommend_tab.py` recommendations ·
+`inventory.py` + `inventory_tab.py` inventory and imports · `market_auth.py` sign-in and sell orders ·
 `settings_tab.py` settings · `refresher.py` bulk updates · `uiutil.py` shared UI pieces ·
 `overlay.py` graphics · `config.py` settings storage · `i18n.py` translations ·
 `build.ps1` / `prepare_models.py` executable.
@@ -141,4 +171,4 @@ The scan (OCR) is the heavy part. To avoid disturbing the game:
 - The vendor list comes from the game's public data: vendors missing from it (e.g. Varzia, Arbitrations
   honors) are not included. Regenerate with `python build_vendors.py` (a copy in
   `%LOCALAPPDATA%\WFVendorOverlay\vendors.json` takes precedence).
-- Your own standing is not read: Warframe keeps it on DE's servers, not in local files.
+- Your own standing and inventory are not read from the game: Warframe keeps them on DE's servers, not in local files.

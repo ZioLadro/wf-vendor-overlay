@@ -26,7 +26,7 @@ nel vendor) e prezzo a **rank massimo**. Il volume resta il totale degli scambi 
 - Warframe deve essere in finestra senza bordi (**Borderless**).
 
 ## Finestra del listino (F7)
-Tre schede. Mentre la finestra è aperta le scansioni sono sospese e le etichette nascoste (altrimenti
+Quattro schede. Mentre la finestra è aperta le scansioni sono sospese e le etichette nascoste (altrimenti
 l'OCR leggerebbe i nomi del listino); alla chiusura riprende da sola.
 
 ### Listino prezzi
@@ -51,6 +51,35 @@ aggiornamento. Clic sulle intestazioni per ordinare; ricerca e filtri per vendor
   chiede conferma. Chiudere la finestra ferma l'aggiornamento. I dati restano salvati in `prices.json`.
 - **Aggiorna elenco Baro**: Baro non è nei dati del gioco; il suo elenco storico si legge dalla wiki
   (e dal suo inventario attuale) e si ricarica da solo all'avvio ogni `baro_refresh_days` giorni.
+
+### Inventario
+I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispirato alla scheda Inventory di AlecaFrame).
+
+- **Da dove vengono gli oggetti.** Warframe tiene il tuo inventario sui server di DE, non in un file locale,
+  quindi non si può leggere da disco (e questo programma non legge mai la memoria o il traffico di rete del
+  gioco). Lo costruisci con **Importa file…** (sostituisce l'inventario), **Incolla lista…**, oppure
+  **Aggiungi oggetto…** / **Modifica** a mano. File accettati: un JSON di *inventario grezzo in stile Warframe*
+  (`MiscItems`, `RawUpgrades`, `Upgrades`, `Recipes`… con percorsi `ItemType`, risolti con `gamenames.json`
+  incluso), qualunque JSON che abbini nomi e quantità (liste `{"name": …, "count": …}` o `{"Serration": 2}`),
+  e righe CSV/TXT come `Serration, 2, 10` (nome, quantità, rank facoltativo), `3x Mirage Prime Set` oppure
+  `Ash Prime Blueprint x2`. I nomi vengono associati al catalogo del market (piccoli errori sono tollerati);
+  quelli non riconosciuti vengono elencati dopo l'importazione. Non provato con vere esportazioni del gioco,
+  solo con file di queste forme.
+- **Categorie**: Set, Parti di Warframe, Parti di armi, Mod, Arcane, Reliquie, Altro (ricavate dai tag di
+  warframe.market). **Filtri** come quelli di AlecaFrame: platino minimo (5 / 10 / 15), più di uno posseduto,
+  tipo di parte (prime / normale), vaulted (quando lo dicono i dati del market), in vendita da qui, più
+  **Escludi mod/arcane a rank massimo** (escono dalla lista e dal totale).
+- **Prezzi**: valore = copie × prezzo a rank 0 + copie a rank massimo × prezzo a rank massimo;
+  **Aggiorna prezzi** aggiorna gli oggetti mostrati. Clic destro sul nome per la pagina del market / wiki.
+- **Vendi…** piazza un **ordine di vendita** su warframe.market per ogni oggetto selezionato. Prima accedi
+  (email e password, inviate solo a warframe.market; **si salva solo il token di sessione** in
+  `market_session.json`; *Esci* lo cancella). Per ogni ordine una finestra mostra quantità, rank
+  (mod/arcane), prezzo (prezzo di mercato + `sell_price_offset`) e **la richiesta esatta che verrà inviata**;
+  non parte nulla finché non premi *Piazza ordine*. Il programma ricorda gli ordini che ha piazzato
+  (colonna *In vendita*); non legge gli altri tuoi ordini.
+  **Attenzione:** accesso e creazione degli ordini usano le API REST v1 come documentate dalle librerie
+  della community e non si sono potuti provare sul sito vero durante lo sviluppo: controlla il primo ordine
+  su warframe.market. Gli account che accedono con Discord/Google potrebbero non funzionare.
 
 ### Consigli
 Cosa conviene comprare con lo standing, per ogni coppia (oggetto, vendor) con un costo in standing:
@@ -93,8 +122,9 @@ I modelli OCR sono inclusi. Se Warframe gira come amministratore, avvia l'overla
 ## File e impostazioni
 Tutto sta in `%LOCALAPPDATA%\WFVendorOverlay`:
 - `config.json` impostazioni · `prices.json` prezzi e volumi raccolti · `items_cache.json` catalogo del market ·
-  `baro.json` elenco di Baro · `vendors.json` (facoltativo, ha la precedenza su quello incluso) ·
-  `overlay.log` errori (utile con l'exe).
+  `baro.json` elenco di Baro · `inventory.json` il tuo inventario e gli ordini piazzati dal programma ·
+  `market_session.json` token di sessione di warframe.market · `vendors.json` / `gamenames.json` (facoltativi,
+  hanno la precedenza su quelli inclusi) · `overlay.log` errori (utile con l'exe).
 
 | chiave | significato (default) |
 |---|---|
@@ -111,6 +141,7 @@ Tutto sta in `%LOCALAPPDATA%\WFVendorOverlay`:
 | `match_threshold` | soglia di somiglianza dei nomi (90) |
 | `watch_interval`, `watch_interval_moving`, `auto_settle_polls`, `auto_motion_frac`, `auto_min_gap`, `scroll_debounce` | sensibilità del rilevamento |
 | `ocr_threads`, `ocr_priority`, `publish_throttle`, `menu_refresh_ms` | prestazioni |
+| `inv_exclude_maxed`, `sell_price_offset` | inventario: esclude mod/arcane a rank massimo / scostamento sul prezzo di vendita (0) |
 | `rec_min_volume`, `rec_min_price`, `rec_top` | filtri dei consigli |
 
 ## Prestazioni
@@ -130,6 +161,7 @@ La scansione (OCR) è la parte pesante. Per non disturbare il gioco:
 `ocr.py` cattura e OCR · `matcher.py` riconoscimento nomi · `market.py` catalogo, prezzi, volumi, archivio JSON ·
 `vendors.py` / `build_vendors.py` / `vendors.json` catalogo dei vendor e costi in standing ·
 `menu.py` finestra del listino · `recommend.py` + `recommend_tab.py` consigli ·
+`inventory.py` + `inventory_tab.py` inventario e importazioni · `market_auth.py` accesso e ordini di vendita ·
 `settings_tab.py` impostazioni · `refresher.py` aggiornamenti in blocco · `uiutil.py` parti comuni dell'interfaccia ·
 `overlay.py` grafica · `config.py` impostazioni · `i18n.py` traduzioni ·
 `build.ps1` / `prepare_models.py` eseguibile.
@@ -143,4 +175,4 @@ La scansione (OCR) è la parte pesante. Per non disturbare il gioco:
 - La lista dei vendor viene dai dati pubblici del gioco: i vendor assenti (es. Varzia, onori Arbitrations)
   non sono inclusi. Si rigenera con `python build_vendors.py` (una copia in
   `%LOCALAPPDATA%\WFVendorOverlay\vendors.json` ha la precedenza).
-- Il tuo standing non viene letto: Warframe lo tiene sui server di DE, non in file locali.
+- Il tuo standing e il tuo inventario non vengono letti dal gioco: Warframe li tiene sui server di DE, non in file locali.

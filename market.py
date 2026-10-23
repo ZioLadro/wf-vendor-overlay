@@ -45,17 +45,22 @@ class Market:
         self._dirty = False
         self._matcher = Matcher([])
         self.vendors = None          # VendorIndex: which vendors sell each item
+        self._name_slug = {}         # normalised name -> slug
         self._load_store()
         self._load_catalog()
 
     # ---------- HTTP ----------
+    def throttle(self):
+        """Blocks until the next request is allowed (shared by every call to warframe.market)."""
+        with self._lock:
+            wait = MIN_INTERVAL - (time.monotonic() - self._last)
+            if wait > 0:
+                time.sleep(wait)
+            self._last = time.monotonic()
+
     def _request(self, url: str):
         for attempt in range(2):
-            with self._lock:
-                wait = MIN_INTERVAL - (time.monotonic() - self._last)
-                if wait > 0:
-                    time.sleep(wait)
-                self._last = time.monotonic()
+            self.throttle()
             r = requests.get(url, headers=HEADERS, timeout=10)
             if r.status_code == 429 and attempt == 0:
                 time.sleep(1.5)
@@ -75,13 +80,34 @@ class Market:
             return "arcane"
         return "other"
 
+    @staticmethod
+    def _category(name: str, tags) -> str:
+        """Inventory category (set / relic / mod / arcane / warframe_part / weapon_part / other),
+        from the market tags with the item name as a fallback."""
+        tags = {str(x).lower() for x in tags}
+        if "set" in tags or name.endswith(" Set"):
+            return "set"
+        if "relic" in tags or name.endswith(" Relic"):
+            return "relic"
+        if "mod" in tags:
+            return "mod"
+        if "arcane_enhancement" in tags or "arcane" in tags:
+            return "arcane"
+        if tags & {"component", "blueprint"} or re.search(r"\bBlueprint$", name):
+            if "warframe" in tags:
+                return "warframe_part"
+            if tags & {"primary", "secondary", "melee", "archwing", "sentinel", "companion", "weapon",
+                       "kitgun", "zaw", "necramech", "robotic"}:
+                return "weapon_part"
+        return "other"
+
     def _load_catalog(self):
         rows = None
         if CACHE_FILE.exists() and time.time() - CACHE_FILE.stat().st_mtime < CATALOG_TTL:
             try:
                 rows = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-                if not all(isinstance(r, list) and len(r) >= 4 for r in rows):
-                    rows = None          # cache from an older version (no rank/kind)
+                if not all(isinstance(r, list) and len(r) >= 7 for r in rows):
+                    rows = None          # cache from an older version (no id/category)
             except Exception:
                 rows = None
         if rows is None:
@@ -89,13 +115,16 @@ class Market:
             for it in self._get("/items"):
                 name = (it.get("i18n", {}).get("en", {}) or {}).get("name") or it.get("name")
                 if name and it.get("slug"):
-                    rows.append([name, it["slug"], int(it.get("maxRank") or 0),
-                                 self._kind(it.get("tags") or [])])
+                    tags = it.get("tags") or []
+                    rows.append([name, it["slug"], int(it.get("maxRank") or 0), self._kind(tags),
+                                 it.get("id") or "", self._category(name, tags), it.get("vaulted")])
             CACHE_FILE.write_text(json.dumps(rows), encoding="utf-8")
         self._info = {r[1]: {"name": r[0], "max_rank": r[2],
-                            "kind": "other" if r[3] == "altro" else r[3]} for r in rows}   # "altro": old cache
+                            "kind": "other" if r[3] == "altro" else r[3],
+                            "id": r[4], "category": r[5], "vaulted": r[6]} for r in rows}
         self._matcher = Matcher(rows)
-        self.vendors = VendorIndex({norm(r[0]): r[1] for r in rows})
+        self._name_slug = {norm(r[0]): r[1] for r in rows}
+        self.vendors = VendorIndex(self._name_slug)
         self._migrate()
 
     def _migrate(self):
@@ -110,6 +139,10 @@ class Market:
 
     def info(self, slug: str) -> dict:
         return self._info.get(slug, {})
+
+    def slug_for_name(self, name: str):
+        """Market slug for an item name (exact match after normalisation), or None."""
+        return self._name_slug.get(norm(name))
 
     # ---------- matching ----------
     def pairs(self):

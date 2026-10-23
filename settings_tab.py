@@ -54,6 +54,10 @@ GROUPS = [
         ("ocr_priority", "choice", [("normal", "normal"), ("below_normal", "below_normal"), ("idle", "idle")], True),
         ("publish_throttle", "float", (0.0, 2, 2), False),
     ]),
+    ("inventory", [
+        ("inv_exclude_maxed", "bool", None, False),
+        ("sell_price_offset", "int", (-100, 100), False),
+    ]),
     ("recommendations", [
         ("rec_min_volume", "int", (0, 100000), False),
         ("rec_min_price", "int", (0, 100000), False),

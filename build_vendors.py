@@ -18,7 +18,7 @@ import requests
 
 BASE = "https://raw.githubusercontent.com/calamity-inc/warframe-public-export-plus/senpai/"
 NAME_FILES = ["ExportUpgrades", "ExportWarframes", "ExportWeapons", "ExportResources", "ExportGear",
-              "ExportCustoms", "ExportSentinels", "ExportFlavour", "ExportKeys", "ExportFusionBundles"]
+              "ExportCustoms", "ExportArcanes", "ExportSentinels", "ExportFlavour", "ExportKeys", "ExportFusionBundles"]
 VENDOR_PREFIX = "/Lotus/Types/Game/VendorManifests/"
 
 REGION = {"Deimos": "Deimos", "Duviri": "Duviri", "EntratiLabs": "Cavia", "Events": "Event",
@@ -69,6 +69,8 @@ def vendor_name(key: str) -> str:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(Path(__file__).with_name("vendors.json")))
+    ap.add_argument("--names-out", default=str(Path(__file__).with_name("gamenames.json")),
+                    help="where to write gamenames.json (game path -> English name, for inventory imports)")
     ap.add_argument("--cache", default=None, help="folder where downloads are saved (default: temporary)")
     ap.add_argument("--report", action="store_true", help="print name coverage")
     a = ap.parse_args()
@@ -82,6 +84,14 @@ def main():
             if isinstance(e, dict) and lang.get(e.get("name", "")):
                 names.setdefault(path, lang[e["name"]])
     recipes = fetch("ExportRecipes", cache)
+
+    # game path -> name tables used to read raw inventory files (ItemType paths)
+    recipe_names = {path: names[r["resultType"]] for path, r in recipes.items()
+                    if isinstance(r, dict) and r.get("resultType") in names}
+    relic_names = {}
+    for path, r in fetch("ExportRelics", cache).items():
+        if isinstance(r, dict) and r.get("era") and r.get("category"):
+            relic_names[path] = f"{r['era']} {r['category']} Relic"      # all refinements share one market item
 
     def resolve(store_item: str):
         """Returns 'Name' or ['Name Blueprint', 'Name'] for blueprints, None if unknown."""
@@ -126,6 +136,9 @@ def main():
            "source": "calamity-inc/warframe-public-export-plus",
            "vendors": {k: list(v.values()) for k, v in sorted(vendors.items()) if v}}
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    Path(a.names_out).write_text(json.dumps(
+        {"generated": out["generated"], "names": names, "recipes": recipe_names, "relics": relic_names},
+        ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     n_items = sum(len(v) for v in out["vendors"].values())
     print(f"{len(out['vendors'])} vendors, {n_items} entries -> {a.out} (names resolved: {total - len(missing)}/{total})")
     if a.report:

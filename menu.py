@@ -9,7 +9,10 @@ from PyQt6.QtWidgets import (
 )
 
 from config import CFG, save_config
+from inventory import Inventory
+from inventory_tab import InventoryTab
 from i18n import t
+from market_auth import MarketAccount
 from overlay import volume_color
 from recommend_tab import RecommendTab
 from refresher import Refresher
@@ -233,11 +236,15 @@ class PriceList(QWidget):
 
         self.refresher = Refresher(market, self)
         self.prices = PricesTab(market, self.refresher)
+        self.inventory = Inventory()
+        self.account = MarketAccount(market)
+        self.inv_tab = InventoryTab(market, self.refresher, self.inventory, self.account)
         self.recommend = RecommendTab(market, self.refresher)
         self.settings = SettingsTab()
         self.settings.restart_requested.connect(self.restart_requested)
         self.tabs = QTabWidget()
         self.tabs.addTab(self.prices, t("tab.prices"))
+        self.tabs.addTab(self.inv_tab, t("tab.inventory"))
         self.tabs.addTab(self.recommend, t("tab.recommend"))
         self.tabs.addTab(self.settings, t("tab.settings"))
 
@@ -269,6 +276,8 @@ class PriceList(QWidget):
         w = self.tabs.currentWidget()
         if w is self.prices:
             self.prices.refresh(force=force)
+        elif w is self.inv_tab:
+            self.inv_tab.refresh(force=force)
         elif w is self.recommend:
             self.recommend.refresh(force=force)
 
@@ -277,6 +286,7 @@ class PriceList(QWidget):
         self.btn_stop.setEnabled(busy)
         self.prices.set_busy(busy)
         self.recommend.set_busy(busy)
+        self.inv_tab.set_busy(busy)
 
     def _on_started(self, total):
         self._set_busy(True)
