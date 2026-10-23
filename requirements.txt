@@ -1,0 +1,8 @@
+PyQt6>=6.6
+mss>=9.0
+numpy
+requests
+rapidfuzz>=3.0
+rapidocr>=3.0
+onnxruntime
+pynput>=1.7
