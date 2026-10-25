@@ -27,6 +27,10 @@ def _set_priority(level: str):
         pass
 
 
+def dbg_img_active(cfg):
+    return bool(cfg.get("debug_image"))
+
+
 def serve(conn, pairs, cfg):
     """Process loop: receives ("scan",) / ("catalog", pairs) / ("quit",)."""
     if sys.stdout is None:
@@ -44,12 +48,14 @@ def serve(conn, pairs, cfg):
 
     import numpy as np
     from matcher import Matcher
+    from winrect import capture_region
     from ocr import find_items, gray_patch, make_engine, read_lines
 
     engine = make_engine(threads)
     matcher = Matcher(pairs)
     threshold = cfg.get("threshold", 90)
     sct = None
+    origin = [0, 0, 0]          # offset of the captured region in the monitor, monitor width
     last_fp = last_hits = last_patches = None
     conn.send(("ready",))
 
@@ -63,10 +69,15 @@ def serve(conn, pairs, cfg):
         try:
             if sct is None:
                 sct = mss.mss()
-            shot = sct.grab(sct.monitors[1])
+            mon = sct.monitors[1]
+            reg = capture_region(mon, cfg.get("only_warframe", False))
+            if reg is None:
+                return None
+            shot = sct.grab(reg[0])
         except Exception:
             sct = None
             raise
+        origin[:] = [reg[1], reg[2], mon["width"]]
         return np.ascontiguousarray(np.asarray(shot)[:, :, :3])
 
     while True:
@@ -84,11 +95,18 @@ def serve(conn, pairs, cfg):
             continue
         try:
             bgr = grab()
-            w = bgr.shape[1]
+            if bgr is None:                       # the game is not the active window: nothing to read
+                last_fp = last_hits = last_patches = None
+                conn.send(("ok", [], 1, [], (0, 0)))
+                continue
+            w = origin[2] or bgr.shape[1]
+            if dbg_img_active(cfg):
+                origin[:] = [0, 0, bgr.shape[1]]
+                w = bgr.shape[1]
             fp = bgr[::16, ::16].mean(axis=2)
             if (last_hits is not None and last_fp is not None and fp.shape == last_fp.shape
                     and (np.abs(fp - last_fp) > 20).mean() < 0.001):
-                conn.send(("ok", last_hits, w, last_patches))   # identical screen: reuse the result
+                conn.send(("ok", last_hits, w, last_patches, tuple(origin[:2])))   # identical screen: reuse the result
                 continue
             hits = [(c.x, c.y, c.w, c.h, m.slug, m.score)
                     for c, m in find_items(matcher, read_lines(bgr, engine), threshold)]
@@ -96,7 +114,7 @@ def serve(conn, pairs, cfg):
             # when the vendor is closed or the list changes
             patches = [gray_patch(bgr, h[:4]) for h in hits]
             last_fp, last_hits, last_patches = fp, hits, patches
-            conn.send(("ok", hits, w, patches))
+            conn.send(("ok", hits, w, patches, tuple(origin[:2])))
         except Exception as e:
             last_fp = last_hits = last_patches = None
             conn.send(("err", f"{type(e).__name__}: {e}"))
@@ -111,6 +129,7 @@ class OcrClient:
         self._lock = threading.Lock()
         self._proc = self._conn = None
         self._ready = False
+        self.origin = (0, 0)       # offset of the last captured region inside the monitor
         self._start()
 
     def _start(self):
@@ -146,6 +165,7 @@ class OcrClient:
                 raise RuntimeError("OCR process died, restarting")
             if msg[0] == "err":
                 raise RuntimeError(msg[1])
+            self.origin = tuple(msg[4]) if len(msg) > 4 else (0, 0)
             return msg[1], msg[2], msg[3]
 
     def close(self):

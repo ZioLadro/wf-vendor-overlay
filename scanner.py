@@ -199,6 +199,7 @@ class Scanner:
         if self.gen != gen:
             return
         hits, mon_w, patches = self.ocr.scan()
+        ox, oy = getattr(self.ocr, "origin", (0, 0))
         if self.gen != gen:
             return
         if not hits:
@@ -209,7 +210,7 @@ class Scanner:
 
         ratio = self.screen_w / mon_w
         items = [
-            {"x": x * ratio, "y": y * ratio, "w": w * ratio, "h": h * ratio,
+            {"x": (x + ox) * ratio, "y": (y + oy) * ratio, "w": w * ratio, "h": h * ratio,
              "slug": slug, "price": None, "pmax": None, "vol": None,
              "ranked": self.market.info(slug).get("max_rank", 0) > 0,
              "price_done": False, "price_err": False, "label": "…"}
@@ -244,7 +245,7 @@ class Scanner:
           the labels are hidden at once. The check ALWAYS runs, even while prices are loading
         - no vendor shown: when the screen changes a lot and then settles -> automatic scan
         """
-        grab = Grabber()
+        grab = Grabber(CFG["only_warframe"])
         prev, dirty, stable, last_auto, epoch, streak = None, True, 0, 0.0, self.scan_epoch, 0   # dirty: scan right away at startup
         while True:
             # while playing (constantly moving screen) check less often: only the moment it stops matters
@@ -264,7 +265,12 @@ class Scanner:
             try:
                 img = grab.grab()
             except Exception:
-                grab = Grabber()
+                grab = Grabber(CFG["only_warframe"])
+                continue
+            if img is None:                  # Warframe is not the active window
+                if showing:
+                    self._invalidate()
+                prev, dirty, stable, streak = None, True, 0, 0
                 continue
 
             if showing:

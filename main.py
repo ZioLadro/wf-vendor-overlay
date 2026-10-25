@@ -59,6 +59,7 @@ def main():
         "threads": CFG["ocr_threads"],
         "priority": CFG["ocr_priority"],
         "threshold": CFG["match_threshold"],
+        "only_warframe": CFG["only_warframe"],
     })
     overlay.show_status(t("status.ready", menu=_k(CFG["key_menu"]), scan=_k(CFG["key_scan"]),
                           pause=_k(CFG["key_clear"]), quit=_k(CFG["key_quit"])), 6000)

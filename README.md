@@ -24,6 +24,8 @@ vendor) and **max-rank** price. The volume is the total of the trades of all ran
   **F10** quit. The same actions are in the tray icon menu (click on the icon = price list).
 - Warframe must run in **Borderless** windowed mode.
 
+The OCR reads **only the Warframe window**, and only while it is the active window (Windows; setting *Read only the Warframe window*, turn it off if the game is not detected, e.g. cloud gaming). Labels are hidden when you switch to another window.
+
 ## Price list window (F7)
 The window **opens by itself when the program starts** (setting *Open the price list at start*). Six tabs. While the window is open, scans are suspended and the labels hidden (otherwise the OCR would
 read the list's own names); scanning resumes when you close it.
@@ -172,7 +174,7 @@ The scan (OCR) is the heavy part. To avoid disturbing the game:
 
 ## Source files
 `main.py` startup · `scanner.py` scans, automatic detection, refreshes · `ocr_worker.py` OCR process ·
-`ocr.py` capture and OCR · `matcher.py` name matching · `market.py` catalog, prices, volumes, JSON store ·
+`ocr.py` capture and OCR · `winrect.py` game window position · `matcher.py` name matching · `market.py` catalog, prices, volumes, JSON store ·
 `vendors.py` / `build_vendors.py` / `vendors.json` vendor catalog and standing costs ·
 `menu.py` price-list window · `recommend.py` + `recommend_tab.py` recommendations ·
 `inventory.py` + `inventory_tab.py` inventory and imports · `market_auth.py` sign-in and sell orders ·

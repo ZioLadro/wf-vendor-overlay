@@ -52,6 +52,7 @@ DEFAULTS = {
     "volume_high": 50,
     "volume_offset_y": 2,        # pixels between the item name and the volume label
     "hide_zero_volume": False,   # hide items with zero trades in the last 24 h (price list)
+    "only_warframe": True,       # read only the Warframe window, and only while it is the active window
     # profile and world state
     "open_list_on_start": True,  # open the price-list window when the program starts
     "profile_reload_s": 60,      # re-read the imported standing file when it changed (0 = never)

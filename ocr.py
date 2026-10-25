@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import mss
 import numpy as np
 
+from winrect import capture_region
 
 
 @dataclass
@@ -29,14 +30,19 @@ class Grabber:
     """Reusable capture for monitoring (always use it from the same thread).
     Returns a BGRA view without copies: always use [..., :3] for the colour channels."""
 
-    def __init__(self):
+    def __init__(self, only_warframe=False):
         self._sct = None
+        self.only_warframe = only_warframe
 
     def grab(self):
+        """BGRA image of the game window (or of the monitor), None if the game is not the active window."""
         try:
             if self._sct is None:
                 self._sct = mss.mss()
-            shot = self._sct.grab(self._sct.monitors[1])
+            reg = capture_region(self._sct.monitors[1], self.only_warframe)
+            if reg is None:
+                return None
+            shot = self._sct.grab(reg[0])
         except Exception:
             self._sct = None
             raise

@@ -25,6 +25,8 @@ nel vendor) e prezzo a **rank massimo**. Il volume resta il totale degli scambi 
   (clic sull'icona = listino).
 - Warframe deve essere in finestra senza bordi (**Borderless**).
 
+L'OCR legge **solo la finestra di Warframe**, e solo quando è la finestra attiva (Windows; impostazione *Leggi solo la finestra di Warframe*, disattivala se il gioco non viene rilevato, es. cloud gaming). Le etichette si nascondono quando passi a un'altra finestra.
+
 ## Finestra del listino (F7)
 La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). Sei schede. Mentre la finestra è aperta le scansioni sono sospese e le etichette nascoste (altrimenti
 l'OCR leggerebbe i nomi del listino); alla chiusura riprende da sola.
@@ -178,7 +180,7 @@ La scansione (OCR) è la parte pesante. Per non disturbare il gioco:
 
 ## File del codice
 `main.py` avvio · `scanner.py` scansioni, rilevamento automatico, aggiornamenti · `ocr_worker.py` processo OCR ·
-`ocr.py` cattura e OCR · `matcher.py` riconoscimento nomi · `market.py` catalogo, prezzi, volumi, archivio JSON ·
+`ocr.py` cattura e OCR · `winrect.py` posizione della finestra del gioco · `matcher.py` riconoscimento nomi · `market.py` catalogo, prezzi, volumi, archivio JSON ·
 `vendors.py` / `build_vendors.py` / `vendors.json` catalogo dei vendor e costi in standing ·
 `menu.py` finestra del listino · `recommend.py` + `recommend_tab.py` consigli ·
 `inventory.py` + `inventory_tab.py` inventario e importazioni · `market_auth.py` accesso e ordini di vendita ·

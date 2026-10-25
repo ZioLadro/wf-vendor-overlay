@@ -16,6 +16,7 @@ GROUPS = [
     ("general", [
         ("language", "choice", LANGUAGES, True),
         ("start_active", "bool", None, True),
+        ("only_warframe", "bool", None, True),
         ("auto_detect", "bool", None, False),
         ("show_volume", "bool", None, False),
         ("hide_zero_volume", "bool", None, False),
