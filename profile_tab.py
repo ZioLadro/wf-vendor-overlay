@@ -1,10 +1,11 @@
 """Profile tab: your standing per syndicate (imported from lastData.dat / companion JSON, or typed by hand)."""
 import os
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QLabel, QMessageBox, QPushButton, QSpinBox,
                              QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
 
+from config import CFG
 from i18n import t
 from standing import ProfileError, get_store, read_file, syndicate_name
 from uiutil import HINT_STYLE
@@ -27,9 +28,9 @@ class ProfileTab(QWidget):
         top.addWidget(self.btn)
         top.addWidget(self.btn_reload)
         top.addStretch(1)
-        self.table = QTableWidget(0, 4)
+        self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels([t("profile.col.syn"), t("profile.col.standing"),
-                                              t("profile.col.rank"), t("profile.col.source")])
+                                              t("profile.col.rank"), t("profile.col.daily"), t("profile.col.source")])
         self.table.verticalHeader().setVisible(False)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -43,6 +44,24 @@ class ProfileTab(QWidget):
         lay.addWidget(hint)
         self._shown = -1
         self.refresh()
+        # re-read the file by itself when it changed (cheap check: only the modification time)
+        self._timer = QTimer(self, timeout=self.auto_reload)
+        every = int(CFG["profile_reload_s"])
+        if every > 0:
+            self._timer.start(every * 1000)
+            QTimer.singleShot(1500, self.auto_reload)
+
+    def auto_reload(self):
+        path = self.store.path
+        if not path or not os.path.exists(path):
+            return
+        try:
+            if os.path.getmtime(path) == self.store.mtime:
+                return
+            self.store.apply_profile(path, read_file(path))
+        except (OSError, ProfileError):
+            return
+        self.refresh(force=True)
 
     # ---------- table ----------
     def _tags(self):
@@ -69,7 +88,10 @@ class ProfileTab(QWidget):
             rk.editingFinished.connect(lambda tg=tag, w=sp, rw=rk: self._edited(tg, w, rw))
             self.table.setCellWidget(r, 2, rk)
             src = t("profile.src.none") if not f else (t("profile.src.manual") if f.get("manual") else t("profile.src.file"))
-            self.table.setItem(r, 3, QTableWidgetItem(src))
+            d = f.get("daily") if f else None
+            self.table.setItem(r, 3, QTableWidgetItem("" if d is None else f"{d:,}".replace(",", " ")))
+            self.table.item(r, 3).setToolTip(t("profile.daily.tip"))
+            self.table.setItem(r, 4, QTableWidgetItem(src))
         self.btn_reload.setEnabled(bool(self.store.path))
         if self.store.fetched:
             mr = f"MR {self.store.mr}" if self.store.mr is not None else ""
@@ -85,7 +107,7 @@ class ProfileTab(QWidget):
         self._shown = self.store.version
         for r in range(self.table.rowCount()):
             if self.table.item(r, 0).data(Qt.ItemDataRole.UserRole) == tag:
-                self.table.item(r, 3).setText(t("profile.src.manual"))
+                self.table.item(r, 4).setText(t("profile.src.manual"))
 
     # ---------- import ----------
     def import_file(self):

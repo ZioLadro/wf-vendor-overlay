@@ -105,7 +105,8 @@ Passando il mouse su una riga vedi quanti ne puoi permettere con il tuo standing
 Standing e rank per fazione, più il grado di maestria, **letti dal `lastData.dat` di AlecaFrame** (o dal JSON
 dell'app companion) con **Importa lo standing da file…**; *Ricarica il file* lo rilegge dopo che AlecaFrame l'ha
 aggiornato. Puoi anche scrivere o correggere ogni valore a mano (restano fino alla prossima importazione). È
-un'istantanea: ricaricala dopo aver speso standing. Lo standing negativo indica la fazione opposta (ne puoi comprare 0).
+un'istantanea: ricaricala dopo aver speso standing. Il file viene **riletto da solo** quando cambia (controllo ogni 60 s, impostazione *Controllo file standing*, 0 = spento; serve il riavvio). La colonna *Rimasto oggi* è lo standing che puoi ancora guadagnare oggi (limite giornaliero).
+Lo standing negativo indica la fazione opposta (ne puoi comprare 0).
 
 ### Mondo
 Fenditure, invasioni, sortita, cicli e inventario attuale di Baro Ki'Teer (con i prezzi in platino se noti),

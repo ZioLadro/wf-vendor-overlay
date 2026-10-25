@@ -21,6 +21,25 @@ def syndicate_name(tag: str) -> str:
     return game_names().get("syndicates", {}).get(tag) or tag
 
 
+DAILY_ALIAS = {"Pvp": "ConclaveSyndicate", "Cavia": "EntratiLabSyndicate", "Ventkids": "VentKidsSyndicate"}
+DAILY_SHARED = ("SteelMeridianSyndicate", "ArbitersSyndicate", "CephalonSudaSyndicate", "NewLokaSyndicate",
+                "PerrinSyndicate", "RedVeilSyndicate")      # the six original syndicates share one daily cap
+
+
+def parse_daily(res: dict) -> dict:
+    """{tag: standing you can still earn today} from the DailyAffiliation* fields."""
+    out = {}
+    for k, v in res.items():
+        if k.startswith("DailyAffiliation") and isinstance(v, (int, float)):
+            suf = k[len("DailyAffiliation"):]
+            if not suf:
+                for tag in DAILY_SHARED:
+                    out[tag] = int(v)
+            else:
+                out[DAILY_ALIAS.get(suf, suf + "Syndicate")] = int(v)
+    return out
+
+
 def parse_profile(data) -> dict:
     """{"mr": int|None, "factions": {tag: {"standing": int, "rank": int|None}}} from the profile JSON.
     Tolerant: looks for the first result and any list of {Tag, Standing, Title} affiliations."""
@@ -39,6 +58,9 @@ def parse_profile(data) -> dict:
             st, rk = a.get("Standing"), a.get("Title")
             factions[str(a["Tag"])] = {"standing": int(st) if isinstance(st, (int, float)) else 0,
                                        "rank": int(rk) if isinstance(rk, (int, float)) else None}
+    for tag, left in parse_daily(res).items():
+        if tag in factions:
+            factions[tag]["daily"] = left
     return {"mr": int(mr) if isinstance(mr, (int, float)) else None, "factions": factions}
 
 
@@ -70,6 +92,7 @@ class StandingStore:
     def __init__(self):
         self.name = ""
         self.path = ""
+        self.mtime = 0
         self.mr = None
         self.fetched = None
         self.factions = {}     # tag -> {"standing": int, "rank": int|None, "manual": bool}
@@ -95,16 +118,22 @@ class StandingStore:
             pass
 
     def apply_profile(self, path: str, profile: dict):
+        try:
+            self.mtime = os.path.getmtime(path)
+        except OSError:
+            self.mtime = 0
         self.path, self.mr, self.fetched = path, profile["mr"], int(time.time())
         for tag, f in profile["factions"].items():
-            self.factions[tag] = {"standing": f["standing"], "rank": f["rank"], "manual": False}
+            self.factions[tag] = {"standing": f["standing"], "rank": f["rank"], "manual": False,
+                                  "daily": f.get("daily")}
         self.version += 1
         self.save()
 
     def set_manual(self, tag: str, standing: int, rank=None):
         cur = self.factions.get(tag, {})
         self.factions[tag] = {"standing": max(0, int(standing)),
-                              "rank": cur.get("rank") if rank is None else rank, "manual": True}
+                              "rank": cur.get("rank") if rank is None else rank, "manual": True,
+                              "daily": cur.get("daily")}
         self.version += 1
         self.save()
 

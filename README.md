@@ -100,7 +100,8 @@ Hovering a row shows how many you can afford with your standing (Profile tab).
 Your standing and rank per syndicate, plus your mastery rank, **read from the AlecaFrame `lastData.dat`** (or the
 companion-app JSON) with **Import standing from file…**; *Reload file* re-reads it after AlecaFrame refreshed it.
 You can also type or correct any value by hand (kept until the next import). It is a snapshot: reload after spending
-standing. Negative standing means you are in the opposite faction (you can buy 0).
+standing. The file is **re-read automatically** when it changes (checked every 60 s, setting *Standing file check*, 0 = off; restart to apply). The *Left today* column is the standing you can still earn today (daily cap).
+Negative standing means you are in the opposite faction (you can buy 0).
 
 ### World
 Fissures, invasions, sortie, cycles and Baro Ki'Teer's current stock (with platinum prices when known), from the
