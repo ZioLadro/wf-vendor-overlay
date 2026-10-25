@@ -70,7 +70,7 @@ def serve(conn, pairs, cfg):
             if sct is None:
                 sct = mss.mss()
             mon = sct.monitors[1]
-            reg = capture_region(mon, cfg.get("only_warframe", False))
+            reg = capture_region(mon, cfg.get("only_warframe", False), (cfg.get("main_pid", 0),))
             if reg is None:
                 return None
             shot = sct.grab(reg[0])
@@ -86,6 +86,7 @@ def serve(conn, pairs, cfg):
         except (EOFError, OSError):
             return
         cmd = msg[0]
+        exclude = msg[1] if cmd == "scan" and len(msg) > 1 else None
         if cmd == "quit":
             return
         if cmd == "catalog":
@@ -100,6 +101,9 @@ def serve(conn, pairs, cfg):
                 conn.send(("ok", [], 1, [], (0, 0), "nowindow"))
                 continue
             w = origin[2] or bgr.shape[1]
+            for (ex, ey, ew, eh) in exclude or ():      # areas of this program's own windows: not read
+                x0, y0 = max(0, int(ex) - origin[0]), max(0, int(ey) - origin[1])
+                bgr[y0:max(y0, int(ey + eh) - origin[1]), x0:max(x0, int(ex + ew) - origin[0])] = 0
             if dbg_img_active(cfg):
                 origin[:] = [0, 0, bgr.shape[1]]
                 w = bgr.shape[1]
@@ -144,7 +148,7 @@ class OcrClient:
         self.close()
         self._start()
 
-    def scan(self, timeout: float = 120.0):
+    def scan(self, timeout: float = 120.0, exclude=None):
         """Returns ([(x, y, w, h, slug, score)], screen_width_in_pixels, reference_crops)."""
         with self._lock:
             if not self._proc.is_alive():
@@ -156,7 +160,7 @@ class OcrClient:
                         raise TimeoutError("OCR did not start")
                     self._conn.recv()
                     self._ready = True
-                self._conn.send(("scan",))
+                self._conn.send(("scan", list(exclude or ())))
                 if not self._conn.poll(timeout):
                     self._restart()
                     raise TimeoutError("OCR too slow")

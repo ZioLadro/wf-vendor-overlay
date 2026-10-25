@@ -5,7 +5,7 @@
 - saved data shows up immediately, then is refreshed in the background
 - a monitoring thread detects a vendor being opened, refreshes data every refresh_interval and
   hides the labels as soon as the vendor is closed (even while prices are still loading)
-- while the price list is open, scans are suspended (otherwise it would read the list's own names)
+- the price list can stay open: its rectangle is blanked before the OCR (it must not read its own names)
 """
 import threading
 import time
@@ -43,7 +43,8 @@ class Scanner:
         self.pending = None
         self.manual = False
         self.busy = False
-        self.suspended = False   # True while the price list is open
+        self.suspended = False   # (legacy) True = no scanning at all
+        self.exclude_provider = None   # returns the price list's rectangle in screen pixels (or None): not read
         self.items = []          # items currently shown
         self.ref = None          # data used to detect a screen change
         self.version = 0         # grows at every label publication
@@ -71,6 +72,13 @@ class Scanner:
         self._invalidate()
         self.market.flush()
         self.bridge.status.emit(t("status.paused", key=CFG["key_scan"].strip("<>").upper()))
+
+    def list_changed(self):
+        """The price list opened/closed: rescan shortly so its area is excluded (or read again)."""
+        if self.active:
+            t = threading.Timer(0.5, lambda: self._request("open"))
+            t.daemon = True
+            t.start()
 
     def set_suspended(self, flag: bool):
         """Price list open: hides the labels and stops scanning; rescans when it closes."""
@@ -212,7 +220,11 @@ class Scanner:
         time.sleep(0.12)                     # let the old labels disappear
         if self.gen != gen:
             return
-        hits, mon_w, patches = self.ocr.scan()
+        try:
+            ex = self.exclude_provider() if self.exclude_provider else None
+        except Exception:
+            ex = None
+        hits, mon_w, patches = self.ocr.scan(exclude=[ex] if ex else None)
         ox, oy = getattr(self.ocr, "origin", (0, 0))
         if self.gen != gen:
             return
@@ -260,6 +272,7 @@ class Scanner:
           the labels are hidden at once. The check ALWAYS runs, even while prices are loading
         - no vendor shown: when the screen changes a lot and then settles -> automatic scan
         """
+        nones = 0
         grab = Grabber(CFG["only_warframe"])
         prev, dirty, stable, last_auto, epoch, streak = None, True, 0, 0.0, self.scan_epoch, 0   # dirty: scan right away at startup
         while True:
@@ -283,10 +296,13 @@ class Scanner:
                 grab = Grabber(CFG["only_warframe"])
                 continue
             if img is None:                  # Warframe is not the active window
-                if showing:
-                    self._invalidate()
-                prev, dirty, stable, streak = None, True, 0, 0
+                nones += 1
+                if nones >= 4:               # a short flicker of the foreground window must not hide the labels
+                    if showing:
+                        self._invalidate()
+                    prev, dirty, stable, streak = None, True, 0, 0
                 continue
+            nones = 0
 
             if showing:
                 prev, streak = None, 0

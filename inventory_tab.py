@@ -423,6 +423,22 @@ class InventoryTab(QWidget):
             return
         self._apply_import(res, confirm=False)
 
+    def auto_reload(self):
+        """Silently re-reads the imported file when it changed on disk (AlecaFrame rewrites it every time you enter
+        or leave a mission). Only the modification time is checked each time."""
+        path = self.inv.path
+        if not path or not os.path.exists(path):
+            return
+        try:
+            if os.path.getmtime(path) <= (self.inv.imported or 0):
+                return
+            res = parse_file(path, self.market)
+        except Exception:
+            return
+        if res.matched:
+            self.inv.replace_with(res, res.path)
+            self.refresh(force=True)
+
     def paste_list(self):
         text, ok = QInputDialog.getMultiLineText(self, t("inv.paste"), t("inv.paste.prompt"))
         if not ok or not text.strip():

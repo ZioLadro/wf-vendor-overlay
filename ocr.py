@@ -33,13 +33,14 @@ class Grabber:
     def __init__(self, only_warframe=False):
         self._sct = None
         self.only_warframe = only_warframe
+        self._pids = (os.getpid(),)
 
     def grab(self):
         """BGRA image of the game window (or of the monitor), None if the game is not the active window."""
         try:
             if self._sct is None:
                 self._sct = mss.mss()
-            reg = capture_region(self._sct.monitors[1], self.only_warframe)
+            reg = capture_region(self._sct.monitors[1], self.only_warframe, self._pids)
             if reg is None:
                 return None
             shot = self._sct.grab(reg[0])

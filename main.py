@@ -60,6 +60,7 @@ def main():
         "priority": CFG["ocr_priority"],
         "threshold": CFG["match_threshold"],
         "only_warframe": CFG["only_warframe"],
+        "main_pid": __import__("os").getpid(),
     })
     overlay.show_status(t("status.ready", menu=_k(CFG["key_menu"]), scan=_k(CFG["key_scan"]),
                           pause=_k(CFG["key_clear"]), quit=_k(CFG["key_quit"])), 6000)
@@ -72,10 +73,11 @@ def main():
 
     scanner = Scanner(market, bridge, overlay.geometry().width(), ocr)
 
-    # price list: while it is open, scans are suspended (it must not read the list's own names)
+    # price list: stays usable while it is open; its own area is blanked before the OCR (it must not read its own names)
     pricelist = PriceList(market)
     pricelist.setWindowIcon(icon)
-    pricelist.visibility.connect(scanner.set_suspended)
+    scanner.exclude_provider = pricelist.screen_rect_px
+    pricelist.visibility.connect(lambda _v: scanner.list_changed())
     bridge.menu.connect(pricelist.toggle)
     if CFG["open_list_on_start"]:
         QTimer.singleShot(800, pricelist.toggle)      # open the price list when the program starts

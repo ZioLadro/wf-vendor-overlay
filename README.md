@@ -31,8 +31,7 @@ On the game screen, the **top 10 recommended items** (same ranking as the Recomm
 Every tab shows a **player strip**: name (click to set it, the game files do not contain it), mastery rank, trades left, and a badge per syndicate with your rank and standing (hover for the daily standing left). Badges are drawn with the syndicate colours; to use the real logos put `<SyndicateTag>.png` files (e.g. `CetusSyndicate.png`) in the `icons` folder of the data folder. Nightwave series are not shown.
 
 ## Price list window (F7)
-The window **opens by itself when the program starts** (setting *Open the price list at start*). Six tabs. While the window is open, scans are suspended and the labels hidden (otherwise the OCR would
-read the list's own names); scanning resumes when you close it.
+The window **opens by itself when the program starts** (setting *Open the price list at start*). Six tabs. The overlay keeps working while the window is open: the window's own area is blanked before the OCR, so it never reads its own names.
 
 ### Price list
 All the **tradable items that cost standing** (from `vendors.json`: vendors and syndicates), plus everything
@@ -106,7 +105,7 @@ Hovering a row shows how many you can afford with your standing (Profile tab).
 Your standing and rank per syndicate, plus your mastery rank, **read from the AlecaFrame `lastData.dat`** (or the
 companion-app JSON) with **Import standing from file…**; *Reload file* re-reads it after AlecaFrame refreshed it.
 You can also type or correct any value by hand (kept until the next import). It is a snapshot: reload after spending
-standing. The file is **re-read automatically** when it changes (checked every 60 s, setting *Standing file check*, 0 = off; restart to apply). The *Left today* column is the standing you can still earn today (daily cap).
+standing. The file is **re-read automatically** when it changes (checked every 10 s, setting *AlecaFrame file check*, 0 = off; restart to apply). AlecaFrame rewrites the file every time you enter or leave a mission, so standing and inventory update at the same moments (only while AlecaFrame is running). The *Left today* column is the standing you can still earn today (daily cap).
 The file stores your *total* standing; the program subtracts the start of your current rank, so the numbers match the game (e.g. 68 195 / 132 000). Type values as the game shows them.
 Negative standing means you are in the opposite faction (you can buy 0).
 

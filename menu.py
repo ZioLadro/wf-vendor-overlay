@@ -275,6 +275,9 @@ class PriceList(QWidget):
         lay.addWidget(self.tabs, 1)
         lay.addLayout(bottom)
 
+        self._file_timer = QTimer(self, timeout=self.inv_tab.auto_reload)
+        if int(CFG["profile_reload_s"]) > 0:
+            self._file_timer.start(int(CFG["profile_reload_s"]) * 1000)
         self._timer = QTimer(self, timeout=self._tick)
         self.tabs.currentChanged.connect(lambda _: self._tick(force=True))
         self.btn_stop.clicked.connect(self.refresher.cancel)
@@ -321,6 +324,13 @@ class PriceList(QWidget):
         self._tick(force=True)
 
     # ---------- window ----------
+    def screen_rect_px(self):
+        """This window's rectangle in physical screen pixels (None if hidden): the OCR must not read it."""
+        if not self.isVisible():
+            return None
+        g, r = self.frameGeometry(), self.devicePixelRatioF()
+        return (g.x() * r, g.y() * r, g.width() * r, g.height() * r)
+
     def toggle(self):
         if self.isVisible():
             self.hide()

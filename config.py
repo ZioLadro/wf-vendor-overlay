@@ -58,7 +58,7 @@ DEFAULTS = {
     "only_warframe": True,       # read only the Warframe window, and only while it is the active window
     # profile and world state
     "open_list_on_start": True,  # open the price-list window when the program starts
-    "profile_reload_s": 60,      # re-read the imported standing file when it changed (0 = never)
+    "profile_reload_s": 10,      # re-read the imported AlecaFrame file (standing, inventory) when it changed (0 = never)
     "world_refresh_s": 60,       # world state refresh period while its tab is open (seconds)
     # inventory
     "inv_exclude_maxed": False,  # inventory: leave out mods/arcanes that are at max rank

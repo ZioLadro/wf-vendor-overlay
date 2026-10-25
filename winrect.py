@@ -52,7 +52,15 @@ def _find_window():
     return _hwnd
 
 
-def warframe_client_rect(require_foreground=True):
+def _pid_of(u, h):
+    import ctypes
+    from ctypes import wintypes
+    pid = wintypes.DWORD()
+    u.GetWindowThreadProcessId(h, ctypes.byref(pid))
+    return pid.value
+
+
+def warframe_client_rect(require_foreground=True, own_pids=()):
     """(left, top, width, height) of the game's client area in screen pixels, or None if the game is not
     running / minimised / not the foreground window. Only meaningful on Windows."""
     ctypes, u = _user32()
@@ -64,8 +72,11 @@ def warframe_client_rect(require_foreground=True):
     h = _find_window()
     if not h or u.IsIconic(h):
         return None
-    if require_foreground and u.GetForegroundWindow() != h:
-        return None
+    if require_foreground:
+        fg = u.GetForegroundWindow()
+        # the game, or this program's own windows (price list, overlay): the player is still 'in' the game
+        if fg != h and (not fg or (_pid_of(u, fg) != _pid_of(u, h) and _pid_of(u, fg) not in own_pids)):
+            return None
     rc = wintypes.RECT()
     if not u.GetClientRect(h, ctypes.byref(rc)):
         return None
@@ -75,14 +86,14 @@ def warframe_client_rect(require_foreground=True):
     return (pt.x, pt.y, w, hgt) if w > 0 and hgt > 0 else None
 
 
-def capture_region(mon: dict, only_warframe: bool):
+def capture_region(mon: dict, only_warframe: bool, own_pids=()):
     """Part of monitor `mon` to capture: ({"left","top","width","height"}, ox, oy), or None = do not capture.
     ox/oy: offset of the region inside the monitor. Without the option (or off Windows): the whole monitor."""
     whole = ({"left": mon["left"], "top": mon["top"], "width": mon["width"], "height": mon["height"]}, 0, 0)
     if not only_warframe or sys.platform != "win32":
         return whole
     try:
-        r = warframe_client_rect()
+        r = warframe_client_rect(own_pids=own_pids)
     except Exception:
         return whole                      # never block scanning because of an API problem
     if r is None:

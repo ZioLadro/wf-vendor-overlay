@@ -32,8 +32,7 @@ Sullo schermo di gioco, i **primi 10 oggetti consigliati** (stessa classifica de
 Ogni scheda mostra una **barra del giocatore**: nome (clicca per impostarlo, i file del gioco non lo contengono), grado di maestria, scambi rimasti e un badge per fazione con rank e standing (mouse sopra: standing giornaliero rimasto). I badge sono disegnati con i colori delle fazioni; per i logo veri metti file `<TagFazione>.png` (es. `CetusSyndicate.png`) nella cartella `icons` della cartella dei dati. Le serie Nightwave non sono mostrate.
 
 ## Finestra del listino (F7)
-La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). Sei schede. Mentre la finestra è aperta le scansioni sono sospese e le etichette nascoste (altrimenti
-l'OCR leggerebbe i nomi del listino); alla chiusura riprende da sola.
+La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). Sei schede. L'overlay continua a funzionare con la finestra aperta: l'area della finestra viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 
 ### Listino prezzi
 Tutti gli **oggetti scambiabili che costano standing** (da `vendors.json`: vendor e sindacati), più tutto
@@ -111,7 +110,7 @@ Passando il mouse su una riga vedi quanti ne puoi permettere con il tuo standing
 Standing e rank per fazione, più il grado di maestria, **letti dal `lastData.dat` di AlecaFrame** (o dal JSON
 dell'app companion) con **Importa lo standing da file…**; *Ricarica il file* lo rilegge dopo che AlecaFrame l'ha
 aggiornato. Puoi anche scrivere o correggere ogni valore a mano (restano fino alla prossima importazione). È
-un'istantanea: ricaricala dopo aver speso standing. Il file viene **riletto da solo** quando cambia (controllo ogni 60 s, impostazione *Controllo file standing*, 0 = spento; serve il riavvio). La colonna *Rimasto oggi* è lo standing che puoi ancora guadagnare oggi (limite giornaliero).
+un'istantanea: ricaricala dopo aver speso standing. Il file viene **riletto da solo** quando cambia (controllo ogni 10 s, impostazione *Controllo file AlecaFrame*, 0 = spento; serve il riavvio). AlecaFrame riscrive il file ogni volta che entri o esci da una missione, quindi standing e inventario si aggiornano negli stessi momenti (solo con AlecaFrame in esecuzione). La colonna *Rimasto oggi* è lo standing che puoi ancora guadagnare oggi (limite giornaliero).
 Il file contiene lo standing *totale*; il programma sottrae l'inizio del tuo rank attuale, così i numeri coincidono con il gioco (es. 68 195 / 132 000). Scrivi i valori come li mostra il gioco.
 Lo standing negativo indica la fazione opposta (ne puoi comprare 0).
 
