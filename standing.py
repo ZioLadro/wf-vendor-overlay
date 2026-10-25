@@ -52,12 +52,16 @@ def parse_profile(data) -> dict:
     aff = res.get("Affiliations")
     if aff is None and isinstance(data, dict):
         aff = data.get("Affiliations")
+    rank_min = game_names().get("rank_min", {})
     factions = {}
     for a in aff or []:
         if isinstance(a, dict) and a.get("Tag"):
             st, rk = a.get("Standing"), a.get("Title")
-            factions[str(a["Tag"])] = {"standing": int(st) if isinstance(st, (int, float)) else 0,
-                                       "rank": int(rk) if isinstance(rk, (int, float)) else None}
+            st = int(st) if isinstance(st, (int, float)) else 0
+            rk = int(rk) if isinstance(rk, (int, float)) else None
+            # the file keeps the TOTAL standing; the game (and the vendor) shows it from the start of your rank
+            base = rank_min.get(str(a["Tag"]), {}).get(str(rk), 0) if rk and rk > 0 else 0
+            factions[str(a["Tag"])] = {"standing": st - base if st >= base else st, "rank": rk}
     for tag, left in parse_daily(res).items():
         if tag in factions:
             factions[tag]["daily"] = left

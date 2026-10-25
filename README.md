@@ -103,6 +103,7 @@ Your standing and rank per syndicate, plus your mastery rank, **read from the Al
 companion-app JSON) with **Import standing from file…**; *Reload file* re-reads it after AlecaFrame refreshed it.
 You can also type or correct any value by hand (kept until the next import). It is a snapshot: reload after spending
 standing. The file is **re-read automatically** when it changes (checked every 60 s, setting *Standing file check*, 0 = off; restart to apply). The *Left today* column is the standing you can still earn today (daily cap).
+The file stores your *total* standing; the program subtracts the start of your current rank, so the numbers match the game (e.g. 68 195 / 132 000). Type values as the game shows them.
 Negative standing means you are in the opposite faction (you can buy 0).
 
 ### World

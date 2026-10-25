@@ -108,6 +108,7 @@ Standing e rank per fazione, più il grado di maestria, **letti dal `lastData.da
 dell'app companion) con **Importa lo standing da file…**; *Ricarica il file* lo rilegge dopo che AlecaFrame l'ha
 aggiornato. Puoi anche scrivere o correggere ogni valore a mano (restano fino alla prossima importazione). È
 un'istantanea: ricaricala dopo aver speso standing. Il file viene **riletto da solo** quando cambia (controllo ogni 60 s, impostazione *Controllo file standing*, 0 = spento; serve il riavvio). La colonna *Rimasto oggi* è lo standing che puoi ancora guadagnare oggi (limite giornaliero).
+Il file contiene lo standing *totale*; il programma sottrae l'inizio del tuo rank attuale, così i numeri coincidono con il gioco (es. 68 195 / 132 000). Scrivi i valori come li mostra il gioco.
 Lo standing negativo indica la fazione opposta (ne puoi comprare 0).
 
 ### Mondo
