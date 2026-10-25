@@ -25,7 +25,7 @@ vendor) and **max-rank** price. The volume is the total of the trades of all ran
 - Warframe must run in **Borderless** windowed mode.
 
 ## Price list window (F7)
-Four tabs. While the window is open, scans are suspended and the labels hidden (otherwise the OCR would
+The window **opens by itself when the program starts** (setting *Open the price list at start*). Six tabs. While the window is open, scans are suspended and the labels hidden (otherwise the OCR would
 read the list's own names); scanning resumes when you close it.
 
 ### Price list
@@ -37,6 +37,8 @@ headers to sort; search box and vendor/type filters.
 
 - Standing cost comes from the game data. It is the base cost, without rank discounts. If an item costs
   standing at several vendors you see `min – max`; the tooltip shows vendor, cost and required rank.
+- **Hover** an item name (or its standing cell): how many you can buy with your standing, per syndicate
+  (`floor(standing / cost)`), and whether your rank is enough. It uses the numbers of the Profile tab.
 - **Hide zero volume** hides the items with no trades in the last 24 hours (items without data stay visible).
 - **Right-click** an item name (here and in Recommendations): open it on warframe.market, open its page on
   the Warframe wiki (a search that jumps straight to the page when the title exists), or copy the name.
@@ -92,7 +94,19 @@ The score discounts items that rarely sell: a high price is worthless if nobody 
 than the **minimum volume** or cheaper than the **minimum price** (both editable in the tab) are left out.
 Prices are the rank 0 ones (what the vendor actually sells). Filter by vendor or type. Items that have no
 market data yet cannot be rated: **Fetch missing data** downloads them (pick one vendor first to keep it quick).
-The program does not know how much standing you have, so check the required rank yourself.
+Hovering a row shows how many you can afford with your standing (Profile tab).
+
+### Profile
+Type your in-game name and press **Fetch profile**: mastery rank and standing/rank per syndicate are read
+from your *public* profile (no password, no game memory). You can also type or correct any value by hand. It is a
+snapshot: fetch again after spending standing. The raw answer is saved as `profile_raw.json`.
+I could not test this against the live server from where it was written: if the format changed, type the values by hand.
+
+### World
+Fissures, invasions, sortie, cycles and Baro Ki'Teer's current stock (with platinum prices when known), from the
+community mirror `api.warframestat.us`. Refreshes while the tab is open (setting *World state refresh*).
+
+*Not included:* full inventory/foundry (only the companion-app JSON exists, use the Inventory import), remaining daily standing, drop tables, EE.log parsing.
 
 ### Settings
 Every setting of the program, grouped (general, hotkeys, detection, data, appearance, performance,

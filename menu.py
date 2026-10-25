@@ -14,9 +14,12 @@ from inventory_tab import InventoryTab
 from i18n import t
 from market_auth import MarketAccount
 from overlay import volume_color
+from profile_tab import ProfileTab
 from recommend_tab import RecommendTab
 from refresher import Refresher
 from settings_tab import SettingsTab
+from standing import afford_text, get_store
+from world_tab import WorldTab
 from uiutil import (
     DIM_COLOR, HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, STYLE, Cell, age_text, kind_label,
     attach_item_menu, make_icon, num_key, standing_cell,  # noqa: F401  (make_icon re-exported for main.py)
@@ -137,7 +140,7 @@ class PricesTab(QWidget):
                 and (vendor is None or vendor in r["vendors"]) and not (hide0 and r["vol"] == 0)]
 
         # rebuild only when the data changed (or every 30 s so "x min ago" moves on)
-        sig = hash(tuple((r["slug"], len(r["standing"]), r["price"], r["pmax"], r["vol"], r["updated"])
+        sig = hash((get_store().version,) + tuple((r["slug"], len(r["standing"]), r["price"], r["pmax"], r["vol"], r["updated"])
                          for r in rows))
         now = time.monotonic()
         if not force and sig == self._sig and now - self._built < 30:
@@ -170,6 +173,7 @@ class PricesTab(QWidget):
             ]
             cells[0].setData(Qt.ItemDataRole.UserRole, r["slug"])
             cells[1].setToolTip("\n".join(r["vendors"]))
+            cells[0].setToolTip(afford_text(r["standing"]))
             if r["ranked"]:
                 cells[C_PMAX].setToolTip(t("tip.price_at_rank", n=r["max_rank"]))
             for c, cell in enumerate(cells):
@@ -240,12 +244,16 @@ class PriceList(QWidget):
         self.account = MarketAccount(market)
         self.inv_tab = InventoryTab(market, self.refresher, self.inventory, self.account)
         self.recommend = RecommendTab(market, self.refresher)
+        self.profile = ProfileTab(market)
+        self.world = WorldTab(market)
         self.settings = SettingsTab()
         self.settings.restart_requested.connect(self.restart_requested)
         self.tabs = QTabWidget()
         self.tabs.addTab(self.prices, t("tab.prices"))
         self.tabs.addTab(self.inv_tab, t("tab.inventory"))
         self.tabs.addTab(self.recommend, t("tab.recommend"))
+        self.tabs.addTab(self.profile, t("tab.profile"))
+        self.tabs.addTab(self.world, t("tab.world"))
         self.tabs.addTab(self.settings, t("tab.settings"))
 
         # status bar shared by the tabs (progress of the updates)
@@ -280,6 +288,10 @@ class PriceList(QWidget):
             self.inv_tab.refresh(force=force)
         elif w is self.recommend:
             self.recommend.refresh(force=force)
+        elif w is self.profile:
+            self.profile.refresh(force=force)
+        elif w is self.world:
+            self.world.refresh(force=force)
 
     def _set_busy(self, busy: bool):
         self.bar.setVisible(busy)

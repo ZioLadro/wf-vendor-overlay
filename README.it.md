@@ -26,7 +26,7 @@ nel vendor) e prezzo a **rank massimo**. Il volume resta il totale degli scambi 
 - Warframe deve essere in finestra senza bordi (**Borderless**).
 
 ## Finestra del listino (F7)
-Quattro schede. Mentre la finestra è aperta le scansioni sono sospese e le etichette nascoste (altrimenti
+La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). Sei schede. Mentre la finestra è aperta le scansioni sono sospese e le etichette nascoste (altrimenti
 l'OCR leggerebbe i nomi del listino); alla chiusura riprende da sola.
 
 ### Listino prezzi
@@ -38,6 +38,8 @@ aggiornamento. Clic sulle intestazioni per ordinare; ricerca e filtri per vendor
 
 - Il costo in standing viene dai dati del gioco. È il costo base, senza sconti di rank. Se un oggetto
   costa standing a più vendor vedi `min – max`; il tooltip mostra vendor, costo e rank richiesto.
+- **Passando il mouse** sul nome (o sul costo in standing): quanti ne puoi comprare con il tuo standing, per
+  fazione (`floor(standing / costo)`), e se il tuo rank basta. Usa i numeri della scheda Profilo.
 - **Nascondi volume zero** nasconde gli oggetti senza scambi nelle ultime 24 ore (quelli senza dati restano visibili).
 - **Clic destro** sul nome di un oggetto (qui e in Consigli): aprilo su warframe.market, apri la sua pagina
   sulla wiki di Warframe (una ricerca che va dritta alla pagina se il titolo esiste) o copia il nome.
@@ -95,7 +97,21 @@ Il punteggio penalizza gli oggetti che si vendono poco: un prezzo alto non serve
 Gli oggetti scambiati meno del **volume minimo** o che costano meno del **prezzo minimo** (modificabili
 nella scheda) sono esclusi. I prezzi sono a rank 0 (ciò che vende davvero il vendor). Filtra per vendor
 o tipo. Gli oggetti senza dati di mercato non si possono valutare: **Scarica i dati mancanti** li scarica
-(scegli prima un vendor per fare in fretta). Il programma non conosce il tuo standing: controlla tu il rank richiesto.
+(scegli prima un vendor per fare in fretta).
+
+Passando il mouse su una riga vedi quanti ne puoi permettere con il tuo standing (scheda Profilo).
+
+### Profilo
+Scrivi il nome in gioco e premi **Scarica profilo**: grado di maestria e standing/rank per fazione vengono letti
+dal tuo profilo *pubblico* (niente password, niente memoria del gioco). Puoi anche scrivere o correggere ogni valore
+a mano. È un'istantanea: riscaricala dopo aver speso standing. La risposta grezza è salvata in `profile_raw.json`.
+Non ho potuto provarlo sul server reale da dove è stato scritto: se il formato è cambiato, inserisci i valori a mano.
+
+### Mondo
+Fenditure, invasioni, sortita, cicli e inventario attuale di Baro Ki'Teer (con i prezzi in platino se noti),
+dal mirror della community `api.warframestat.us`. Si aggiorna mentre la scheda è aperta (impostazione *Aggiornamento mondo*).
+
+*Non inclusi:* inventario/foundry completo (esiste solo il JSON dell'app companion: usa l'importazione dell'Inventario), standing giornaliero rimasto, tabelle drop, lettura di EE.log.
 
 ### Impostazioni
 Tutte le impostazioni del programma, raggruppate (generali, tasti, rilevamento, dati, aspetto,

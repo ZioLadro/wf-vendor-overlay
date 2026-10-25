@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
 
 from config import CFG, save_config
 from i18n import t
+from standing import afford_text
 from overlay import volume_color
 from recommend import recommend
 from uiutil import (
@@ -126,7 +127,8 @@ class RecommendTab(QWidget):
                 Cell(f"{p['ppk']:.1f}", p["ppk"], MAXRANK_COLOR),
                 Cell(f"{p['score']:.1f}", p["score"]),
             ]
-            cells[1].setToolTip(kind_label(p["kind"]))
+            cells[1].setToolTip(kind_label(p["kind"]) + "\n\n" + afford_text(
+                [{"v": p["vendor"], "s": p["cost"], "r": p["rank"], "t": p.get("tag")}]))
             cells[1].setData(Qt.ItemDataRole.UserRole, p["slug"])
             for c, cell in enumerate(cells):
                 tb.setItem(i, c, cell)

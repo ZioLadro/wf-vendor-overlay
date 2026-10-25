@@ -88,6 +88,8 @@ def main():
     # game path -> name tables used to read raw inventory files (ItemType paths)
     recipe_names = {path: names[r["resultType"]] for path, r in recipes.items()
                     if isinstance(r, dict) and r.get("resultType") in names}
+    syndicate_names = {sid: lang.get(sy.get("name", ""), sid)
+                       for sid, sy in fetch("ExportSyndicates", cache).items() if isinstance(sy, dict)}
     relic_names = {}
     for path, r in fetch("ExportRelics", cache).items():
         if isinstance(r, dict) and r.get("era") and r.get("category"):
@@ -106,7 +108,7 @@ def main():
 
     vendors, total, missing = {}, 0, []
 
-    def add(vendor: str, store_item: str, standing=None, rank=None):
+    def add(vendor: str, store_item: str, standing=None, rank=None, tag=None):
         """Adds an entry; `standing` = standing cost (None if it is not paid in standing)."""
         nonlocal total
         total += 1
@@ -120,24 +122,28 @@ def main():
         if standing:                                   # the same entry can appear twice: keep the cheapest
             if "s" not in e or standing < e["s"]:
                 e["s"], e["r"] = int(standing), int(rank or 0)
+                if tag:
+                    e["t"] = tag                           # syndicate tag: links the cost to the player's standing
 
     for key, v in fetch("ExportVendors", cache).items():
         for it in v.get("items", []):
             syn = it.get("syndicate") or {}
-            add(vendor_name(key), it.get("storeItem", ""), syn.get("standingCost"), syn.get("minRank"))
+            add(vendor_name(key), it.get("storeItem", ""), syn.get("standingCost"), syn.get("minRank"),
+                syn.get("tag"))
     for sid, s in fetch("ExportSyndicates", cache).items():
         if sid.startswith("RadioLegion"):
             continue
         vname = lang.get(s.get("name", ""), sid)
         for f in s.get("favours", []):
-            add(vname, f.get("storeItem", ""), f.get("standingCost"), f.get("requiredLevel"))
+            add(vname, f.get("storeItem", ""), f.get("standingCost"), f.get("requiredLevel"), sid)
 
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
            "source": "calamity-inc/warframe-public-export-plus",
            "vendors": {k: list(v.values()) for k, v in sorted(vendors.items()) if v}}
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     Path(a.names_out).write_text(json.dumps(
-        {"generated": out["generated"], "names": names, "recipes": recipe_names, "relics": relic_names},
+        {"generated": out["generated"], "names": names, "recipes": recipe_names, "relics": relic_names,
+         "syndicates": syndicate_names},
         ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     n_items = sum(len(v) for v in out["vendors"].values())
     print(f"{len(out['vendors'])} vendors, {n_items} entries -> {a.out} (names resolved: {total - len(missing)}/{total})")

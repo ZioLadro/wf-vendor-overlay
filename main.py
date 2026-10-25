@@ -28,7 +28,7 @@ def _k(name: str) -> str:
 def main():
     # heavy imports in here: the OCR process (which re-reads this file) does not load them
     from pynput import keyboard, mouse
-    from PyQt6.QtCore import QObject, pyqtSignal
+    from PyQt6.QtCore import QObject, QTimer, pyqtSignal
     from PyQt6.QtGui import QAction
     from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
@@ -76,6 +76,8 @@ def main():
     pricelist.setWindowIcon(icon)
     pricelist.visibility.connect(scanner.set_suspended)
     bridge.menu.connect(pricelist.toggle)
+    if CFG["open_list_on_start"]:
+        QTimer.singleShot(800, pricelist.toggle)      # open the price list when the program starts
 
     def restart():
         """Starts a new instance and quits this one (used by Settings → Save and restart)."""

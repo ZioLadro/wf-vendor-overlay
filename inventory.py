@@ -115,7 +115,7 @@ def game_names() -> dict:
     """{"names": {path: name}, "recipes": {path: result name}, "relics": {path: name}} (bundled file)."""
     global _names_cache
     if _names_cache is None:
-        _names_cache = {"names": {}, "recipes": {}, "relics": {}}
+        _names_cache = {"names": {}, "recipes": {}, "relics": {}, "syndicates": {}}
         for f in (BUNDLED_NAMES, USER_NAMES):
             try:
                 d = json.loads(f.read_text(encoding="utf-8"))

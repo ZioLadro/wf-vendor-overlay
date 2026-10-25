@@ -100,15 +100,15 @@ class VendorIndex:
         by_slug, standing = {}, {}
         for vname, entries in vendors.items():
             for e in entries:
-                cost = rank = None
+                cost = rank = tag = None
                 if isinstance(e, dict):                             # {"n": name | [blueprint, base], "s": standing, "r": rank}
-                    cost, rank, e = e.get("s"), e.get("r"), e.get("n")
+                    cost, rank, tag, e = e.get("s"), e.get("r"), e.get("t"), e.get("n")
                 for cand in ([e] if isinstance(e, str) else e):     # [blueprint name, base name]: the first that exists
                     slug = self.name_slug.get(norm(cand))
                     if slug:
                         by_slug.setdefault(slug, set()).add(vname)
                         if cost:
-                            standing.setdefault(slug, []).append({"v": vname, "s": cost, "r": rank or 0})
+                            standing.setdefault(slug, []).append({"v": vname, "s": cost, "r": rank or 0, "t": tag})
                         break
         self.by_slug = {s: sorted(v) for s, v in by_slug.items()}
         self.standing = {s: sorted(v, key=lambda x: (x["s"], x["v"])) for s, v in standing.items()}

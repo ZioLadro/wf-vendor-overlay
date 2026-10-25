@@ -35,7 +35,7 @@ def recommend(rows, vendor=None, kind=None, min_volume=None, min_price=None, top
                 continue
             ppk = price / e["s"] * 1000
             picks.append({"slug": r["slug"], "name": r["name"], "kind": r["kind"], "vendor": e["v"],
-                          "cost": e["s"], "rank": e.get("r", 0), "price": price, "pmax": r["pmax"],
+                          "cost": e["s"], "tag": e.get("t"), "rank": e.get("r", 0), "price": price, "pmax": r["pmax"],
                           "vol": vol, "ppk": ppk, "score": ppk * min(1.0, vol / target)})
     picks.sort(key=lambda p: (-p["score"], -p["vol"], p["name"]))
     return picks[:top], list(dict.fromkeys(missing))

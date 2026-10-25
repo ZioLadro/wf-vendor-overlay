@@ -19,6 +19,8 @@ GROUPS = [
         ("auto_detect", "bool", None, False),
         ("show_volume", "bool", None, False),
         ("hide_zero_volume", "bool", None, False),
+        ("open_list_on_start", "bool", None, False),
+        ("world_refresh_s", "int", (15, 3600), False),
     ]),
     ("hotkeys", [
         ("key_menu", "text", None, True),

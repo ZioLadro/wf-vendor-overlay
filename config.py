@@ -52,6 +52,10 @@ DEFAULTS = {
     "volume_high": 50,
     "volume_offset_y": 2,        # pixels between the item name and the volume label
     "hide_zero_volume": False,   # hide items with zero trades in the last 24 h (price list)
+    # profile and world state
+    "open_list_on_start": True,  # open the price-list window when the program starts
+    "player_name": "",           # in-game name, to fetch your public profile (standing per syndicate)
+    "world_refresh_s": 60,       # world state refresh period while its tab is open (seconds)
     # inventory
     "inv_exclude_maxed": False,  # inventory: leave out mods/arcanes that are at max rank
     "sell_price_offset": 0,      # added to the market price when suggesting a sell price (e.g. -1)

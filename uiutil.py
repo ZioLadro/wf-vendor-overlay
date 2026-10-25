@@ -8,6 +8,7 @@ from PyQt6.QtGui import QBrush, QColor, QDesktopServices, QFont, QGuiApplication
 from PyQt6.QtWidgets import QMenu, QTableWidgetItem
 
 from i18n import t
+from standing import afford_text
 
 PRICE_COLOR = QColor(120, 200, 255)
 MAXRANK_COLOR = QColor(255, 205, 110)
@@ -110,7 +111,8 @@ def standing_cell(entries):
     lo, hi = min(costs), max(costs)
     cell = Cell(thousands(lo) if lo == hi else f"{thousands(lo)} – {thousands(hi)}", (1, lo), STANDING_COLOR)
     cell.setToolTip("\n".join(
-        f"{e['v']}: {thousands(e['s'])}" + (t("tip.rank", n=e["r"]) if e.get("r") else "") for e in entries))
+        f"{e['v']}: {thousands(e['s'])}" + (t("tip.rank", n=e["r"]) if e.get("r") else "") for e in entries)
+                    + "\n\n" + afford_text(entries))
     return cell
 
 
