@@ -97,7 +97,7 @@ def serve(conn, pairs, cfg):
             bgr = grab()
             if bgr is None:                       # the game is not the active window: nothing to read
                 last_fp = last_hits = last_patches = None
-                conn.send(("ok", [], 1, [], (0, 0)))
+                conn.send(("ok", [], 1, [], (0, 0), "nowindow"))
                 continue
             w = origin[2] or bgr.shape[1]
             if dbg_img_active(cfg):
@@ -129,6 +129,7 @@ class OcrClient:
         self._lock = threading.Lock()
         self._proc = self._conn = None
         self._ready = False
+        self.skipped = ""
         self.origin = (0, 0)       # offset of the last captured region inside the monitor
         self._start()
 
@@ -166,6 +167,7 @@ class OcrClient:
             if msg[0] == "err":
                 raise RuntimeError(msg[1])
             self.origin = tuple(msg[4]) if len(msg) > 4 else (0, 0)
+            self.skipped = msg[5] if len(msg) > 5 else ""
             return msg[1], msg[2], msg[3]
 
     def close(self):

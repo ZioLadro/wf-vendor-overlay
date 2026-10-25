@@ -18,8 +18,29 @@ def _find_window():
     from ctypes import wintypes
     buf = ctypes.create_unicode_buffer(256)
 
+    def exe_of(h):
+        try:
+            pid = wintypes.DWORD()
+            u.GetWindowThreadProcessId(h, ctypes.byref(pid))
+            k = ctypes.windll.kernel32
+            ph = k.OpenProcess(0x1000, False, pid.value)      # PROCESS_QUERY_LIMITED_INFORMATION
+            if not ph:
+                return ""
+            try:
+                n = wintypes.DWORD(520)
+                path = ctypes.create_unicode_buffer(520)
+                return path.value.rsplit("\\", 1)[-1].lower() if k.QueryFullProcessImageNameW(ph, 0, path, ctypes.byref(n)) else ""
+            finally:
+                k.CloseHandle(ph)
+        except Exception:
+            return ""
+
     def is_wf(h):
-        return bool(u.IsWindow(h)) and u.IsWindowVisible(h) and u.GetWindowTextW(h, buf, 256) and buf.value == TITLE
+        if not (u.IsWindow(h) and u.IsWindowVisible(h)):
+            return False
+        if u.GetWindowTextW(h, buf, 256) and buf.value == TITLE:
+            return True
+        return exe_of(h).startswith("warframe") and u.GetWindowTextW(h, buf, 256) > 0   # title changed: go by the program
 
     if _hwnd and is_wf(_hwnd):
         return _hwnd

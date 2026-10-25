@@ -5,7 +5,7 @@ To use real logos, put PNG files named <SyndicateTag>.png (e.g. CetusSyndicate.p
 inside the program's data folder (%LOCALAPPDATA%\\WFVendorOverlay\\icons)."""
 from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QColor, QFont, QPainter, QPixmap
-from PyQt6.QtWidgets import QFrame, QHBoxLayout, QInputDialog, QLabel, QScrollArea, QWidget
+from PyQt6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QInputDialog, QLabel, QWidget
 
 from config import APP_DIR, CFG, save_config
 from i18n import t
@@ -15,6 +15,7 @@ from uiutil import MUTED_STYLE, thousands
 
 ICON_DIR = APP_DIR / "icons"
 SIZE = 28
+PER_COL = 4
 _cache = {}
 
 
@@ -52,26 +53,16 @@ class PlayerBar(QFrame):
         self.info.setToolTip(t("bar.name.tip"))
         self.info.setCursor(Qt.CursorShape.PointingHandCursor)
         self.info.mousePressEvent = lambda e: self.ask_name()
-        self.inner = QWidget()
-        self.lay = QHBoxLayout(self.inner)
-        self.lay.setContentsMargins(0, 0, 0, 0)
-        self.lay.setSpacing(10)
-        self.scroll = QScrollArea()
-        self.scroll.setWidget(self.inner)
-        self.scroll.setWidgetResizable(False)
-        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.scroll.setFixedHeight(SIZE + 32)
-        top = QHBoxLayout()
-        top.setContentsMargins(0, 0, 0, 0)
-        top.addWidget(self.info)
-        top.addStretch(1)
-        from PyQt6.QtWidgets import QVBoxLayout
-        lay = QVBoxLayout(self)
+        self.grid_w = QWidget()
+        self.grid = QGridLayout(self.grid_w)
+        self.grid.setContentsMargins(0, 0, 0, 0)
+        self.grid.setHorizontalSpacing(14)
+        self.grid.setVerticalSpacing(2)
+        lay = QHBoxLayout(self)
         lay.setContentsMargins(8, 4, 8, 4)
-        lay.setSpacing(2)
-        lay.addLayout(top)
-        lay.addWidget(self.scroll)
+        lay.setSpacing(18)
+        lay.addWidget(self.info, 0, Qt.AlignmentFlag.AlignTop)
+        lay.addWidget(self.grid_w, 1)
         self.refresh()
 
     def ask_name(self):
@@ -94,12 +85,12 @@ class PlayerBar(QFrame):
         name = CFG["player_name"] or t("bar.noname")
         parts = [f"<b>{name}</b>", f"MR {s.mr}" if s.mr is not None else "MR –",
                  t("bar.trades", n=s.trades if s.trades is not None else "–")]
-        self.info.setText("   ·   ".join(parts))
-        while self.lay.count():
-            it = self.lay.takeAt(0)
+        self.info.setText("<br>".join(parts))
+        while self.grid.count():
+            it = self.grid.takeAt(0)
             if it.widget():
                 it.widget().deleteLater()
-        for tag in self._tags():
+        for i, tag in enumerate(self._tags()):
             f = s.get(tag)
             w = QWidget()
             h = QHBoxLayout(w)
@@ -118,6 +109,5 @@ class PlayerBar(QFrame):
             w.setToolTip(syndicate_name(tag) + "\n" + (
                 t("bar.syn.tip", rank=f.get("rank", "–"), standing=thousands(f["standing"])) if f else t("bar.syn.none"))
                 + (("\n" + t("bar.syn.daily", n=thousands(left))) if left is not None else ""))
-            self.lay.addWidget(w)
-        n = self.lay.count()
-        self.inner.setFixedSize(max(1, n * (SIZE + 4 + 56 + 10)), SIZE + 4)
+            self.grid.addWidget(w, i % PER_COL, i // PER_COL)      # columns of 4, filled top to bottom
+        self.grid.setColumnStretch(self.grid.columnCount(), 1)

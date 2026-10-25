@@ -219,7 +219,7 @@ class Scanner:
         if not hits:
             self.items = []
             if manual:
-                self.bridge.status.emit(t("status.none"))
+                self.bridge.status.emit(t("status.nowindow") if getattr(self.ocr, "skipped", "") else t("status.none"))
             return
 
         ratio = self.screen_w / mon_w
