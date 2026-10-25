@@ -13,7 +13,7 @@ on:
         description: "Existing tag to build (e.g. v0.1.0)"
         required: true
 env:
-  TAG: ${{ inputs.tag || github.ref_name }}
+  TAG: ${{ startsWith(inputs.tag || github.ref_name, 'v') && (inputs.tag || github.ref_name) || format('v{0}', inputs.tag) }}   # 0.1.0 is accepted as v0.1.0
 permissions:
   contents: write
 jobs:
