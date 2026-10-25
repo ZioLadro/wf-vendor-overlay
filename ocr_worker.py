@@ -113,7 +113,20 @@ def serve(conn, pairs, cfg):
                     and (np.abs(fp - last_fp) > 20).mean() < 0.001):
                 conn.send(("ok", last_hits, w, last_patches, tuple(origin[:2]), "", last_texts, bgr.shape[0]))   # identical screen: reuse the result
                 continue
-            lines = read_lines(bgr, engine)
+            small, k = bgr, 1.0
+            if cfg.get("mask_panel"):             # the vendor's left info panel (below the title) is not read
+                small = bgr.copy()
+                hh, ww = small.shape[:2]
+                small[int(hh * 0.2):int(hh * 0.93), :int(ww * 0.31)] = 0
+            tw = int(cfg.get("ocr_width") or 0)
+            if 0 < tw < small.shape[1]:           # shrunk: much faster, same items read
+                import cv2
+                k = tw / small.shape[1]
+                small = cv2.resize(small, None, fx=k, fy=k, interpolation=cv2.INTER_AREA)
+            lines = read_lines(small, engine)
+            if k != 1.0:                          # back to the coordinates of the real image
+                for ln in lines:
+                    ln.x, ln.y, ln.w, ln.h = ln.x / k, ln.y / k, ln.w / k, ln.h / k
             hits = [(c.x, c.y, c.w, c.h, m.slug, m.score) for c, m in find_items(matcher, lines, threshold)]
             # all the text read (the vendor's name is somewhere in it): (text, x, y, w, h)
             texts = [(ln.text, ln.x, ln.y, ln.w, ln.h) for ln in lines if len(ln.text) >= 4 and ln.score >= 0.5][:200]

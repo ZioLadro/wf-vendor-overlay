@@ -176,7 +176,7 @@ Everything lives in `%LOCALAPPDATA%\WFVendorOverlay`:
 | `hide_zero_volume` | hide zero-volume items in the price list (false) |
 | `match_threshold` | name similarity threshold (90) |
 | `watch_interval`, `watch_interval_moving`, `auto_settle_polls`, `auto_motion_frac`, `auto_min_gap`, `scroll_debounce` | detection sensitivity |
-| `ocr_threads`, `ocr_priority`, `publish_throttle`, `menu_refresh_ms` | performance |
+| `ocr_threads`, `ocr_width`, `ocr_mask_panel`, `ocr_priority`, `publish_throttle`, `menu_refresh_ms` | performance |
 | `inv_exclude_maxed`, `sell_price_offset` | inventory: leave out max-rank mods/arcanes / price offset when selling (0) |
 | `rec_min_volume`, `rec_min_price`, `rec_top` | recommendations filters |
 

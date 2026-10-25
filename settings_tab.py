@@ -65,6 +65,8 @@ GROUPS = [
     ]),
     ("performance", [
         ("ocr_threads", "int", (0, 16), True),
+        ("ocr_width", "int", (0, 3840), True),
+        ("ocr_mask_panel", "bool", None, True),
         ("ocr_priority", "choice", [("normal", "normal"), ("below_normal", "below_normal"), ("idle", "idle")], True),
         ("publish_throttle", "float", (0.0, 2, 2), False),
     ]),

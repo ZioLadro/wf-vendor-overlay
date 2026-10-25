@@ -60,6 +60,8 @@ def main():
     ocr = OcrClient(market.pairs(), {
         "threads": CFG["ocr_threads"],
         "priority": CFG["ocr_priority"],
+        "ocr_width": CFG["ocr_width"],
+        "mask_panel": CFG["ocr_mask_panel"],
         "threshold": CFG["match_threshold"],
         "only_warframe": CFG["only_warframe"],
         "main_pid": __import__("os").getpid(),

@@ -181,7 +181,7 @@ Tutto sta in `%LOCALAPPDATA%\WFVendorOverlay`:
 | `hide_zero_volume` | nasconde gli oggetti a volume zero nel listino (false) |
 | `match_threshold` | soglia di somiglianza dei nomi (90) |
 | `watch_interval`, `watch_interval_moving`, `auto_settle_polls`, `auto_motion_frac`, `auto_min_gap`, `scroll_debounce` | sensibilità del rilevamento |
-| `ocr_threads`, `ocr_priority`, `publish_throttle`, `menu_refresh_ms` | prestazioni |
+| `ocr_threads`, `ocr_width`, `ocr_mask_panel`, `ocr_priority`, `publish_throttle`, `menu_refresh_ms` | prestazioni |
 | `inv_exclude_maxed`, `sell_price_offset` | inventario: esclude mod/arcane a rank massimo / scostamento sul prezzo di vendita (0) |
 | `rec_min_volume`, `rec_min_price`, `rec_top` | filtri dei consigli |
 

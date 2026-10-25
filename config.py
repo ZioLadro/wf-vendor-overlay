@@ -32,6 +32,8 @@ DEFAULTS = {
     # performance
     "ocr_threads": 0,            # OCR threads (0 = automatic: about 1/4 of the cores, from 1 to 3)
     "ocr_priority": "below_normal",  # OCR process priority: normal | below_normal | idle
+    "ocr_width": 1400,           # the screenshot is shrunk to this width before the OCR (0 = full size): faster
+    "ocr_mask_panel": False,     # do not read the left info panel of the vendor (a bit faster)
     "menu_refresh_ms": 2000,     # how often the open price list redraws
     "refresh_skip_age": 300,     # "Update shown" skips data newer than N seconds
     "refresh_confirm_over": 150, # ask for confirmation when updating more than N items at once
