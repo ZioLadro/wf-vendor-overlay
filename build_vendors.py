@@ -100,6 +100,11 @@ def main():
                 syn_colors[sid] = ["#%06X" % (int(sy[k]["value"], 16) & 0xFFFFFF) for k in ("colour", "backgroundColour")]
             except Exception:
                 pass
+    ducats = {}
+    for fn in ("ExportRecipes", "ExportResources"):
+        for path, r in fetch(fn, cache).items():
+            if isinstance(r, dict) and isinstance(r.get("primeSellingPrice"), int):
+                ducats[path] = r["primeSellingPrice"]
     relic_names = {}
     for path, r in fetch("ExportRelics", cache).items():
         if isinstance(r, dict) and r.get("era") and r.get("category"):
@@ -153,7 +158,7 @@ def main():
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     Path(a.names_out).write_text(json.dumps(
         {"generated": out["generated"], "names": names, "recipes": recipe_names, "relics": relic_names,
-         "syndicates": syndicate_names, "rank_min": rank_min, "syn_colors": syn_colors},
+         "syndicates": syndicate_names, "rank_min": rank_min, "syn_colors": syn_colors, "ducats": ducats},
         ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     n_items = sum(len(v) for v in out["vendors"].values())
     print(f"{len(out['vendors'])} vendors, {n_items} entries -> {a.out} (names resolved: {total - len(missing)}/{total})")

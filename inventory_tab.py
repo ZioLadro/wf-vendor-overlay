@@ -1,5 +1,6 @@
 """Inventory tab: your items with market prices, filters like AlecaFrame's, and one-click sell orders."""
 import json
+import hashlib
 import os
 import time
 
@@ -12,6 +13,7 @@ from PyQt6.QtWidgets import (
 
 from config import CFG, save_config
 from i18n import t
+from advice_dialog import AdviceDialog
 from inventory import Inventory, build_rows, parse_file, parse_text
 from market_auth import MarketAccount, MarketError
 from overlay import volume_color
@@ -21,7 +23,7 @@ from uiutil import (
 )
 
 CATEGORIES = ["set", "warframe_part", "weapon_part", "mod", "arcane", "relic", "other"]
-C_NAME, C_CAT, C_OWNED, C_PRICE, C_PMAX, C_VALUE, C_VOL, C_LISTED, C_UPD = range(9)
+C_NAME, C_CAT, C_OWNED, C_PRICE, C_PMAX, C_VALUE, C_DUCAT, C_VOL, C_LISTED, C_UPD = range(10)
 
 
 class ItemDialog(QDialog):
@@ -197,6 +199,9 @@ class InventoryTab(QWidget):
         self.exclude_max = QCheckBox(t("inv.exclude_max"))
         self.exclude_max.setToolTip(t("inv.exclude_max.tip"))
         self.exclude_max.setChecked(bool(CFG["inv_exclude_maxed"]))
+        self.hide_zero = QCheckBox(t("prices.hide_zero"))
+        self.hide_zero.setToolTip(t("prices.hide_zero.tip"))
+        self.hide_zero.setChecked(bool(CFG["inv_hide_zero_volume"]))
 
         row1 = QHBoxLayout()
         row1.addWidget(self.search, 1)
@@ -208,6 +213,7 @@ class InventoryTab(QWidget):
             row2.addWidget(cb)
         row2.addWidget(self.multiple)
         row2.addWidget(self.exclude_max)
+        row2.addWidget(self.hide_zero)
         row2.addStretch(1)
 
         self.btn_import = QPushButton(t("inv.import"))
@@ -222,11 +228,17 @@ class InventoryTab(QWidget):
         self.btn_prices.setToolTip(t("inv.update_prices.tip"))
         self.btn_sell = QPushButton(t("inv.sell"))
         self.btn_sell.setToolTip(t("inv.sell.tip"))
+        self.btn_ducat = QPushButton(t("advice.ducat.btn"))
+        self.btn_ducat.setToolTip(t("advice.ducat.tip"))
+        self.btn_advice_sell = QPushButton(t("advice.sell.btn"))
+        self.btn_advice_sell.setToolTip(t("advice.sell.tip"))
         self.btn_account = QPushButton("")
         actions = QHBoxLayout()
         for b in (self.btn_import, self.btn_reload, self.btn_paste, self.btn_add, self.btn_edit, self.btn_remove):
             actions.addWidget(b)
         actions.addStretch(1)
+        actions.addWidget(self.btn_ducat)
+        actions.addWidget(self.btn_advice_sell)
         actions.addWidget(self.btn_prices)
         actions.addWidget(self.btn_sell)
         actions.addWidget(self.btn_account)
@@ -235,9 +247,9 @@ class InventoryTab(QWidget):
         self.summary.setStyleSheet(MUTED_STYLE)
         self.summary.setWordWrap(True)
 
-        self.table = QTableWidget(0, 9)
+        self.table = QTableWidget(0, 10)
         self.table.setHorizontalHeaderLabels([
-            t("col.item"), t("col.category"), t("col.owned"), t("col.price"), t("col.pmax"), t("col.value"),
+            t("col.item"), t("col.category"), t("col.owned"), t("col.price"), t("col.pmax"), t("col.value"), t("col.ducats"),
             t("col.volume"), t("col.listed"), t("col.updated")])
         self.table.verticalHeader().hide()
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -247,7 +259,7 @@ class InventoryTab(QWidget):
         self.table.setShowGrid(False)
         hdr = self.table.horizontalHeader()
         hdr.setSectionResizeMode(C_NAME, QHeaderView.ResizeMode.Stretch)
-        for c in range(1, 9):
+        for c in range(1, 10):
             hdr.setSectionResizeMode(c, QHeaderView.ResizeMode.ResizeToContents)
         hdr.setSortIndicator(C_VALUE, Qt.SortOrder.DescendingOrder)
         attach_item_menu(self.table, C_NAME)
@@ -268,6 +280,9 @@ class InventoryTab(QWidget):
             w.currentIndexChanged.connect(lambda _: self.refresh(force=True))
         self.search.textChanged.connect(lambda _: self.refresh(force=True))
         self.multiple.toggled.connect(lambda _: self.refresh(force=True))
+        self.hide_zero.toggled.connect(self._hide_zero_changed)
+        self.btn_ducat.clicked.connect(lambda: self.show_advice("ducat"))
+        self.btn_advice_sell.clicked.connect(lambda: self.show_advice("sell"))
         self.exclude_max.toggled.connect(self._exclude_changed)
         self.btn_import.clicked.connect(self.import_file)
         self.btn_paste.clicked.connect(self.paste_list)
@@ -288,6 +303,26 @@ class InventoryTab(QWidget):
             cb.addItem(text, value)
         return label, cb
 
+    def _hide_zero_changed(self, on):
+        save_config({"inv_hide_zero_volume": bool(on)})
+        self.refresh(force=True)
+
+    def show_advice(self, kind):
+        """Ducat / selling advice over everything you own (the table filters do not apply)."""
+        rows, _ = build_rows(self.inv, self.market, exclude_maxed=self.exclude_max.isChecked())
+        dlg = AdviceDialog(kind, rows, self)
+        dlg.select_requested.connect(self.select_slugs)
+        dlg.exec()
+
+    def select_slugs(self, slugs):
+        """Selects these items in the table (those hidden by the filters cannot be selected)."""
+        want, tb = set(slugs), self.table
+        tb.clearSelection()
+        sm = tb.selectionModel()
+        for r in range(tb.rowCount()):
+            if tb.item(r, 0).data(Qt.ItemDataRole.UserRole) in want:
+                sm.select(tb.model().index(r, 0), sm.SelectionFlag.Select | sm.SelectionFlag.Rows)
+
     def _exclude_changed(self, on):
         save_config({"inv_exclude_maxed": bool(on)})
         self.refresh(force=True)
@@ -301,7 +336,8 @@ class InventoryTab(QWidget):
             self.inv, self.market, query=self.search.text(), category=self.category.currentData(),
             min_plat=self.min_plat.currentData(), exclude_maxed=self.exclude_max.isChecked(),
             multiple=self.multiple.isChecked(), part_type=self.part_type[1].currentData(),
-            vaulted=self.vaulted[1].currentData(), listed=self.listed[1].currentData())
+            vaulted=self.vaulted[1].currentData(), listed=self.listed[1].currentData(),
+            hide_zero_volume=self.hide_zero.isChecked())
 
     def refresh(self, force=False):
         rows, total = self._rows()
@@ -335,11 +371,14 @@ class InventoryTab(QWidget):
                  if r["ranked"] else Cell("", (0, 0))),
                 Cell("–" if r["value"] is None else f"{r['value']}p", num_key(r["value"]),
                      PRICE_COLOR if r["value"] is not None else DIM_COLOR),
+                Cell("" if not r.get("ducats") else str(r["ducats"]), r.get("ducats") or 0),
                 Cell("–" if v is None else str(v), num_key(v), volume_color(v) if v is not None else DIM_COLOR),
                 Cell(f"{o['qty']}× @ {o['price']}p" if o else "", o["t"] if o else 0),
                 Cell(age_text(r["updated"]), r["updated"] or 0),
             ]
             cells[C_NAME].setData(Qt.ItemDataRole.UserRole, r["slug"])
+            if r.get("ducats"):
+                cells[C_DUCAT].setToolTip(t("inv.ducats.tip", each=r["ducats"], total=r["ducats"] * r["n"]))
             if o:
                 cells[C_LISTED].setToolTip(t("inv.listed.tip", when=age_text(o["t"])))
             for c, cell in enumerate(cells):
@@ -430,8 +469,15 @@ class InventoryTab(QWidget):
         if not path or not os.path.exists(path):
             return
         try:
-            if os.path.getmtime(path) <= (self.inv.imported or 0):
+            with open(path, "rb") as f:
+                sig = hashlib.md5(f.read()).hexdigest()
+            first = getattr(self, "_file_sig", None) is None
+            old = getattr(self, "_file_sig", None)
+            self._file_sig = sig
+            if sig == old:
                 return
+            if first and os.path.getmtime(path) <= (self.inv.imported or 0):
+                return                              # first look: same file we imported
             res = parse_file(path, self.market)
         except Exception:
             return

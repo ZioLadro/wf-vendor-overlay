@@ -77,7 +77,7 @@ class PlayerBar(QFrame):
         return sorted(tags, key=lambda x: syndicate_name(x).lower())
 
     def refresh(self, force=False):
-        key = (self.store.version, CFG["player_name"], self.store.fetched)
+        key = (self.store.version, CFG["player_name"], self.store.fetched, CFG["hide_negative_ranks"])
         if not force and key == self._shown:
             return
         self._shown = key
@@ -90,7 +90,9 @@ class PlayerBar(QFrame):
             it = self.grid.takeAt(0)
             if it.widget():
                 it.widget().deleteLater()
-        for i, tag in enumerate(self._tags()):
+        shown = [tg for tg in self._tags() if not (CFG["hide_negative_ranks"] and (s.get(tg) or {}).get("rank") is not None
+                                                   and s.get(tg)["rank"] < 0)]
+        for i, tag in enumerate(shown):
             f = s.get(tag)
             w = QWidget()
             h = QHBoxLayout(w)
@@ -98,13 +100,13 @@ class PlayerBar(QFrame):
             h.setSpacing(4)
             ic = QLabel()
             ic.setPixmap(badge(tag))
-            txt = QLabel((f"R{f['rank']}" if f and f.get("rank") is not None else "R–") + "\n"
-                         + (thousands(f["standing"]) if f else "–"))
+            txt = QLabel(syndicate_name(tag) + "\n" + (f"R{f['rank']}" if f and f.get("rank") is not None else "R–")
+                         + " · " + (thousands(f["standing"]) if f else "–"))
             txt.setStyleSheet(MUTED_STYLE + " font-size: 10px;")
-            txt.setMinimumWidth(52)
+            txt.setMinimumWidth(130)
             h.addWidget(ic)
             h.addWidget(txt)
-            w.setFixedSize(SIZE + 4 + 56, SIZE + 2)
+            w.setFixedSize(SIZE + 4 + 134, SIZE + 4)
             left = f.get("daily") if f else None
             w.setToolTip(syndicate_name(tag) + "\n" + (
                 t("bar.syn.tip", rank=f.get("rank", "–"), standing=thousands(f["standing"])) if f else t("bar.syn.none"))

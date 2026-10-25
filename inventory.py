@@ -115,7 +115,7 @@ def game_names() -> dict:
     """{"names": {path: name}, "recipes": {path: result name}, "relics": {path: name}} (bundled file)."""
     global _names_cache
     if _names_cache is None:
-        _names_cache = {"names": {}, "recipes": {}, "relics": {}, "syndicates": {}, "rank_min": {}, "syn_colors": {}}
+        _names_cache = {"names": {}, "recipes": {}, "relics": {}, "syndicates": {}, "rank_min": {}, "syn_colors": {}, "ducats": {}}
         for f in (BUNDLED_NAMES, USER_NAMES):
             try:
                 d = json.loads(f.read_text(encoding="utf-8"))
@@ -328,12 +328,30 @@ def parse_file(path, market) -> ImportResult:
 
 
 # ---------- valuation / filtering helpers ----------
+_ducat_map = None
+
+
+def ducats_by_slug(market) -> dict:
+    """{market slug: ducats you get for one} — from the game data (primeSellingPrice of prime parts)."""
+    global _ducat_map
+    if _ducat_map is None or _ducat_map[0] is not market:
+        out = {}
+        for path, d in game_names().get("ducats", {}).items():
+            for cand in names_for_path(path):
+                slug = market.slug_for_name(cand)
+                if slug:
+                    out[slug] = d
+                    break
+        _ducat_map = (market, out)
+    return _ducat_map[1]
+
+
 def is_prime(name: str) -> bool:
     return bool(re.search(r"\bPrime\b", name))
 
 
 def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, exclude_maxed=False,
-               multiple=False, part_type=None, vaulted=None, listed=None):
+               multiple=False, part_type=None, vaulted=None, listed=None, hide_zero_volume=False):
     """Rows of the Inventory tab after the filters, plus the estimated total value in platinum.
 
     Filters mirror AlecaFrame's: minimum platinum, more than one owned, part type (prime/normal),
@@ -341,6 +359,7 @@ def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, excl
     The value of an item is copies × rank 0 price, plus max-rank copies × max-rank price."""
     q = query.strip().lower()
     rows, total = [], 0
+    ducats = ducats_by_slug(market)
     for slug, e in inv.items.items():
         info = market.info(slug)
         if not info:
@@ -366,6 +385,8 @@ def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, excl
             continue
         c = market.cached(slug) or {}
         price, pmax = c.get("price"), c.get("pmax")
+        if hide_zero_volume and c.get("vol") == 0:
+            continue                                   # no trades in 24 h (items without data stay)
         unit = price if n > 0 else pmax
         if min_plat and (unit is None or unit < min_plat):
             continue
@@ -377,7 +398,7 @@ def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, excl
         updated = max([t for t in (c.get("pt"), c.get("vt")) if t] or [0]) or None
         rows.append({"slug": slug, "name": name, "category": info.get("category", "other"),
                      "n": n, "m": m, "ranked": ranked, "max_rank": info.get("max_rank", 0),
-                     "price": price, "pmax": pmax, "vol": c.get("vol"), "value": value,
+                     "price": price, "pmax": pmax, "vol": c.get("vol"), "value": value, "ducats": ducats.get(slug),
                      "updated": updated, "order": inv.orders.get(slug)})
     rows.sort(key=lambda r: (-(r["value"] or 0), r["name"].lower()))
     return rows, total

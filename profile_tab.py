@@ -1,5 +1,6 @@
 """Profile tab: your standing per syndicate (imported from lastData.dat / companion JSON, or typed by hand)."""
 import os
+import time
 
 from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QLabel, QMessageBox, QPushButton, QSpinBox,
@@ -7,7 +8,8 @@ from PyQt6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QLabel, QMes
 
 from config import CFG
 from i18n import t
-from standing import ProfileError, get_store, is_nightwave, read_file, syndicate_name
+from standing import (ProfileError, get_store, is_nightwave, parse_bytes, read_raw, signature,
+                      syndicate_name)
 from uiutil import HINT_STYLE
 
 
@@ -24,6 +26,8 @@ class ProfileTab(QWidget):
         self.info = QLabel("")
         self.info.setStyleSheet(HINT_STYLE)
         self.info.setWordWrap(True)
+        self.check = QLabel("")
+        self.check.setStyleSheet(HINT_STYLE)
         top = QHBoxLayout()
         top.addWidget(self.btn)
         top.addWidget(self.btn_reload)
@@ -40,6 +44,7 @@ class ProfileTab(QWidget):
         lay = QVBoxLayout(self)
         lay.addLayout(top)
         lay.addWidget(self.info)
+        lay.addWidget(self.check)
         lay.addWidget(self.table, 1)
         lay.addWidget(hint)
         self._shown = -1
@@ -52,20 +57,30 @@ class ProfileTab(QWidget):
             QTimer.singleShot(1500, self.auto_reload)
 
     def auto_reload(self):
+        """Looks at the imported file; re-reads it only if its content changed. The result is shown below."""
         path = self.store.path
-        if not path or not os.path.exists(path):
+        if not path:
             return
+        now = time.strftime("%H:%M:%S")
         try:
-            if os.path.getmtime(path) == self.store.mtime:
+            raw = read_raw(path)
+            sig = signature(raw)
+            if sig == self.store.sig:
+                self.check.setText(t("profile.check.same", time=now))
                 return
-            self.store.apply_profile(path, read_file(path))
-        except (OSError, ProfileError):
+            self.store.apply_profile(path, parse_bytes(raw, path))
+            self.store.sig = sig
+        except ProfileError as e:
+            self.check.setText(t("profile.check.error", time=now, err=e))
             return
+        self.check.setText(t("profile.check.updated", time=now))
         self.refresh(force=True)
 
     # ---------- table ----------
     def _tags(self):
         tags = {k for k in self.store.factions if not is_nightwave(k)}
+        if CFG["hide_negative_ranks"]:
+            tags = {k for k in tags if (self.store.get(k) or {}).get("rank") is None or self.store.get(k)["rank"] >= 0}
         tags.update(e["t"] for r in self.market.snapshot() for e in r["standing"] if e.get("t"))
         return sorted(tags, key=lambda x: syndicate_name(x).lower())
 
@@ -125,9 +140,11 @@ class ProfileTab(QWidget):
 
     def _load(self, path):
         try:
-            prof = read_file(path)
+            raw = read_raw(path)
+            prof = parse_bytes(raw, path)
         except ProfileError as e:
             QMessageBox.warning(self, t("profile.import"), t("profile.error", err=e))
             return
         self.store.apply_profile(path, prof)
+        self.store.sig = signature(raw)
         self.refresh(force=True)

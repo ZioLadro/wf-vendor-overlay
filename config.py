@@ -53,6 +53,11 @@ DEFAULTS = {
     "volume_offset_y": 2,        # pixels between the item name and the volume label
     "hide_zero_volume": False,   # hide items with zero trades in the last 24 h (price list)
     "player_name": "",           # shown in the player strip (the game files do not contain it)
+    "inv_hide_zero_volume": False,   # Inventory: hide items with no trades in 24 h
+    "hide_negative_ranks": False,    # player strip / Profile: hide syndicates with a negative rank
+    "ducat_min_ratio": 10,       # advice: trade for ducats if ducats per platinum (adjusted for liquidity) >= this
+    "advice_liquid_volume": 10,  # advice: volume (24 h) from which an item counts as fully liquid
+    "sell_min_price": 5,         # advice: do not suggest selling items cheaper than this (platinum)
     "rec_overlay": True,         # mark the top recommended items with stars on the overlay
     "rec_overlay_top": 10,       # how many
     "only_warframe": True,       # read only the Warframe window, and only while it is the active window

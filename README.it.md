@@ -91,6 +91,8 @@ I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispi
   della community e non si sono potuti provare sul sito vero durante lo sviluppo: controlla il primo ordine
   su warframe.market. Gli account che accedono con Discord/Google potrebbero non funzionare.
 
+**Ducat e consigli.** La colonna *Ducat* mostra quanto dà ogni parte prime se scambiata (dai dati del gioco). *Consiglio: ducat* elenca le tue parti prime per ducat guadagnati per ogni platino a cui rinunci (`ducat / max(prezzo × liquidità, 0,5)`, con `liquidità = min(1, volume / volume liquido)`); da un rapporto minimo (default 10) in su dice *Ducat*, altrimenti *Vendi*. I totali usano tutte le tue copie. *Consiglio: vendita* ordina il resto per `prezzo × copie che puoi sperare di vendere (≈ ¼ del volume giornaliero) × liquidità`, escludendo gli oggetti sotto il prezzo minimo o con poco volume. Entrambi possono selezionare le righe scelte nella tabella, pronte per *Vendi*. Qui c'è anche *Nascondi volume zero*. Le soglie sono nelle Impostazioni (gruppo Consigli).
+
 ### Consigli
 Cosa conviene comprare con lo standing, per ogni coppia (oggetto, vendor) con un costo in standing:
 

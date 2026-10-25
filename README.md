@@ -88,6 +88,8 @@ Your items with their market prices, and one-click sell orders (inspired by Alec
   could not be tried against the live site while developing: check the first order on warframe.market.
   Accounts that sign in with Discord/Google may not work.
 
+**Ducats and advice.** The *Ducats* column shows what each prime part gives when traded (from the game data). *Advice: ducats* lists your prime parts by ducats gained per platinum given up (`ducats / max(price × liquidity, 0.5)`, with `liquidity = min(1, volume / liquid volume)`); at or above the minimum ratio (default 10) it says *Ducats*, otherwise *Sell*. Totals use all your copies. *Advice: sell* ranks the rest by `price × copies you can expect to sell (≈ ¼ of the daily volume) × liquidity`, leaving out items worth less than the minimum price or with too little volume. Both can select the chosen rows in the table, ready for *Sell*. *Hide zero volume* also exists here. Thresholds are in Settings (Recommendations group).
+
 ### Recommendations
 What is worth buying with standing, for every (item, vendor) pair that has a standing cost:
 

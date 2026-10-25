@@ -17,6 +17,7 @@ GROUPS = [
         ("language", "choice", LANGUAGES, True),
         ("start_active", "bool", None, True),
         ("player_name", "text", None, False),
+        ("hide_negative_ranks", "bool", None, False),
         ("only_warframe", "bool", None, True),
         ("rec_overlay", "bool", None, False),
         ("rec_overlay_top", "int", (1, 50), False),
@@ -69,6 +70,9 @@ GROUPS = [
         ("rec_min_volume", "int", (0, 100000), False),
         ("rec_min_price", "int", (0, 100000), False),
         ("rec_top", "int", (10, 2000), False),
+        ("ducat_min_ratio", "int", (1, 500), False),
+        ("advice_liquid_volume", "int", (1, 1000), False),
+        ("sell_min_price", "int", (0, 100000), False),
     ]),
 ]
 

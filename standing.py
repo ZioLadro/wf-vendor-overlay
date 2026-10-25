@@ -75,13 +75,31 @@ def parse_profile(data) -> dict:
             "trades": int(tr) if isinstance(tr, (int, float)) else None}
 
 
+def read_raw(path: str) -> bytes:
+    """The file's bytes (a few tries: AlecaFrame may be writing it). Raises ProfileError."""
+    err = None
+    for _ in range(3):
+        try:
+            with open(path, "rb") as f:
+                return f.read()
+        except OSError as e:
+            err = e
+            time.sleep(0.3)
+    raise ProfileError(f"{type(err).__name__}: {err}")
+
+
+def signature(raw: bytes) -> str:
+    import hashlib
+    return hashlib.md5(raw).hexdigest()
+
+
 def read_file(path: str) -> dict:
-    """Reads your standing from an inventory file: AlecaFrame's lastData.dat or the companion-app JSON
-    (both carry PlayerLevel and Affiliations). Raises ProfileError."""
-    try:
-        raw = open(path, "rb").read()
-    except OSError as e:
-        raise ProfileError(str(e))
+    """Reads your standing from an inventory file (see parse_bytes). Raises ProfileError."""
+    return parse_bytes(read_raw(path), path)
+
+
+def parse_bytes(raw: bytes, path: str) -> dict:
+    """AlecaFrame's lastData.dat or the companion-app JSON (both carry PlayerLevel and Affiliations)."""
     try:
         if path.lower().endswith(".dat"):
             from inventory import decrypt_last_data
@@ -104,7 +122,8 @@ class StandingStore:
         self.name = ""
         self.path = ""
         self.mtime = 0
-        self.trades = None
+        self.sig = ""          # fingerprint of the last file read (the modification time is unreliable while another
+        self.trades = None     # program keeps the file open)
         self.mr = None
         self.fetched = None
         self.factions = {}     # tag -> {"standing": int, "rank": int|None, "manual": bool}
