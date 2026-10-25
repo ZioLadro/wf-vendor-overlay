@@ -64,6 +64,7 @@ DEFAULTS = {
     "check_updates": True,       # look for a new version at start (nothing is installed without asking)
     "vendor_check": True,        # show prices only when the matched items belong to one vendor (a vendor screen)
     "vendor_header": True,       # also read the vendor name on screen (confirms the vendor)
+    "vendor_header_top": 20,     # the vendor name is looked for only in this top part of the window (% of its height)
     "vendor_header_required": False,   # ... and require it (stricter; vendors with unknown headings then never match)
     "vendor_min_items": 3,       # ... at least this many
     "vendor_min_share": 0.6,     # ... and at least this share of everything matched

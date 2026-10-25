@@ -99,7 +99,7 @@ def serve(conn, pairs, cfg):
             bgr = grab()
             if bgr is None:                       # the game is not the active window: nothing to read
                 last_fp = last_hits = last_patches = None
-                conn.send(("ok", [], 1, [], (0, 0), "nowindow", []))
+                conn.send(("ok", [], 1, [], (0, 0), "nowindow", [], 0))
                 continue
             w = origin[2] or bgr.shape[1]
             for (ex, ey, ew, eh) in exclude or ():      # areas of this program's own windows: not read
@@ -111,7 +111,7 @@ def serve(conn, pairs, cfg):
             fp = bgr[::16, ::16].mean(axis=2)
             if (last_hits is not None and last_fp is not None and fp.shape == last_fp.shape
                     and (np.abs(fp - last_fp) > 20).mean() < 0.001):
-                conn.send(("ok", last_hits, w, last_patches, tuple(origin[:2]), "", last_texts))   # identical screen: reuse the result
+                conn.send(("ok", last_hits, w, last_patches, tuple(origin[:2]), "", last_texts, bgr.shape[0]))   # identical screen: reuse the result
                 continue
             lines = read_lines(bgr, engine)
             hits = [(c.x, c.y, c.w, c.h, m.slug, m.score) for c, m in find_items(matcher, lines, threshold)]
@@ -121,7 +121,7 @@ def serve(conn, pairs, cfg):
             # when the vendor is closed or the list changes
             patches = [gray_patch(bgr, h[:4]) for h in hits]
             last_fp, last_hits, last_patches, last_texts = fp, hits, patches, texts
-            conn.send(("ok", hits, w, patches, tuple(origin[:2]), "", texts))
+            conn.send(("ok", hits, w, patches, tuple(origin[:2]), "", texts, bgr.shape[0]))
         except Exception as e:
             last_fp = last_hits = last_patches = None
             conn.send(("err", f"{type(e).__name__}: {e}"))
@@ -137,6 +137,7 @@ class OcrClient:
         self._proc = self._conn = None
         self._ready = False
         self.skipped = ""
+        self.img_h = 0             # height of the captured image (to tell what is at the top)
         self.texts = []            # all the text read on the last scan: (text, x, y, w, h)
         self.origin = (0, 0)       # offset of the last captured region inside the monitor
         self._start()
@@ -177,6 +178,7 @@ class OcrClient:
             self.origin = tuple(msg[4]) if len(msg) > 4 else (0, 0)
             self.skipped = msg[5] if len(msg) > 5 else ""
             self.texts = msg[6] if len(msg) > 6 else []
+            self.img_h = msg[7] if len(msg) > 7 else 0
             return msg[1], msg[2], msg[3]
 
     def close(self):

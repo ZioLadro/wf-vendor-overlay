@@ -175,18 +175,19 @@ class VendorIndex:
         from matcher import norm
         from rapidfuzz import fuzz, process
         amap = self._aliases()
-        keys, found = list(amap), set()
+        keys, best = list(amap), (0, set())
         for tx in texts:
             n = norm(tx[0])
             if len(n) < 5:
                 continue
             if n in amap:
-                found |= amap[n]
-                continue
-            r = process.extractOne(n, keys, scorer=fuzz.ratio, score_cutoff=cutoff)
-            if r:
-                found |= amap[r[0]]
-        return found
+                found = amap[n]
+            else:
+                r = process.extractOne(n, keys, scorer=fuzz.ratio, score_cutoff=cutoff)
+                found = amap[r[0]] if r else None
+            if found and tx[4] >= best[0]:          # the title is the tallest text: it wins over other names
+                best = (tx[4], found)
+        return set(best[1])
 
     def identify(self, slugs, min_items=3, min_share=0.6, header=()):
         """Which vendor's screen is it? The vendor whose stock covers most of the items the OCR matched.

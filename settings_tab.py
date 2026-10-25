@@ -21,6 +21,7 @@ GROUPS = [
         ("check_updates", "bool", None, False),
         ("vendor_check", "bool", None, False),
         ("vendor_header", "bool", None, False),
+        ("vendor_header_top", "int", (5, 70), False),
         ("vendor_header_required", "bool", None, False),
         ("vendor_min_items", "int", (1, 20), False),
         ("only_warframe", "bool", None, True),

@@ -170,6 +170,15 @@ class Scanner:
         for it in items:
             it["rec"] = it["slug"] in top
 
+    def _top_texts(self):
+        """Text read in the top part of the captured image (where the vendor's name is): other syndicates' names
+        shown further down the screen must not count."""
+        texts, H = getattr(self.ocr, "texts", []), getattr(self.ocr, "img_h", 0)
+        if not H:
+            return texts
+        limit = H * float(CFG["vendor_header_top"]) / 100.0
+        return [tx for tx in texts if tx[2] + tx[4] / 2 <= limit]
+
     def _dump_lines(self, manual, header, vendor):
         """On a manual scan (F8) writes what was read to last_scan.txt, to see why a vendor was or was not recognised."""
         if not manual:
@@ -253,7 +262,7 @@ class Scanner:
             header = set()
             if CFG["vendor_header"]:
                 try:
-                    header = self.market.vendors.header_vendors(getattr(self.ocr, "texts", []))
+                    header = self.market.vendors.header_vendors(self._top_texts())
                 except Exception:
                     header = set()
             vendor, keep = self.market.vendors.identify([h[4] for h in hits], int(CFG["vendor_min_items"]),
