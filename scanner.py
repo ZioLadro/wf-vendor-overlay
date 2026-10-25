@@ -44,6 +44,7 @@ class Scanner:
         self.manual = False
         self.busy = False
         self.suspended = False   # (legacy) True = no scanning at all
+        self.vendor = None             # vendor recognised on the last scan
         self.exclude_provider = None   # returns the price list's rectangle in screen pixels (or None): not read
         self.items = []          # items currently shown
         self.ref = None          # data used to detect a screen change
@@ -233,6 +234,20 @@ class Scanner:
             if manual:
                 self.bridge.status.emit(t("status.nowindow") if getattr(self.ocr, "skipped", "") else t("status.none"))
             return
+
+        # is this really a vendor screen? the matched items must mostly belong to ONE vendor's stock
+        self.vendor = None
+        if CFG["vendor_check"] and self.market.vendors:
+            vendor, keep = self.market.vendors.identify([h[4] for h in hits], int(CFG["vendor_min_items"]),
+                                                        float(CFG["vendor_min_share"]))
+            if vendor is None:
+                self.items = []
+                if manual:
+                    self.bridge.status.emit(t("status.novendor"))
+                return
+            hits, patches = [hits[i] for i in keep], [patches[i] for i in keep]
+            self.vendor = vendor
+            self.bridge.status.emit(t("status.vendor", vendor=vendor))
 
         ratio = self.screen_w / mon_w
         items = [

@@ -61,6 +61,9 @@ DEFAULTS = {
     "rec_overlay": True,         # mark the top recommended items with stars on the overlay
     "rec_overlay_top": 10,       # how many
     "check_updates": True,       # look for a new version at start (nothing is installed without asking)
+    "vendor_check": True,        # show prices only when the matched items belong to one vendor (a vendor screen)
+    "vendor_min_items": 3,       # ... at least this many
+    "vendor_min_share": 0.6,     # ... and at least this share of everything matched
     "only_warframe": True,       # read only the Warframe window, and only while it is the active window
     # profile and world state
     "open_list_on_start": True,  # open the price-list window when the program starts

@@ -30,6 +30,8 @@ On the game screen, the **top 10 recommended items** (same ranking as the Recomm
 
 Every tab shows a **player strip**: name (click to set it, the game files do not contain it), mastery rank, trades left, and a badge per syndicate with your rank and standing (hover for the daily standing left). Badges are drawn with the syndicate colours; to use the real logos put `<SyndicateTag>.png` files (e.g. `CetusSyndicate.png`) in the `icons` folder of the data folder. Nightwave series are not shown.
 
+**Recognising the vendor screen.** After reading the names, the program checks which vendor's stock they belong to (from `vendors.json` and Baro's list). Labels appear only if at least 3 matched items (setting) and 60 % of everything matched belong to the **same vendor**; names that are not in that vendor's stock are dropped. This keeps labels off inventory, chat or codex pages that merely show some item names, and the overlay says which vendor it recognised. Turn it off with *Recognise the vendor screen*, or lower *Items needed* for vendors with very few tradable items.
+
 ## Price list window (F7)
 The window **opens by itself when the program starts** (setting *Open the price list at start*). Six tabs. The overlay keeps working while the window is open: the window's own area is blanked before the OCR, so it never reads its own names.
 

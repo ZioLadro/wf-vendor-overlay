@@ -31,6 +31,8 @@ Sullo schermo di gioco, i **primi 10 oggetti consigliati** (stessa classifica de
 
 Ogni scheda mostra una **barra del giocatore**: nome (clicca per impostarlo, i file del gioco non lo contengono), grado di maestria, scambi rimasti e un badge per fazione con rank e standing (mouse sopra: standing giornaliero rimasto). I badge sono disegnati con i colori delle fazioni; per i logo veri metti file `<TagFazione>.png` (es. `CetusSyndicate.png`) nella cartella `icons` della cartella dei dati. Le serie Nightwave non sono mostrate.
 
+**Riconoscere la schermata del vendor.** Dopo aver letto i nomi, il programma controlla a quale catalogo di vendor appartengono (da `vendors.json` e dalla lista di Baro). Le etichette compaiono solo se almeno 3 oggetti riconosciuti (impostazione) e il 60 % di tutto ciò che è stato riconosciuto appartengono **allo stesso vendor**; i nomi che non sono nel catalogo di quel vendor vengono scartati. Così non appaiono etichette su inventario, chat o codex che mostrano solo alcuni nomi, e l'overlay dice quale vendor ha riconosciuto. Si disattiva con *Riconosci la schermata del vendor*, oppure abbassa *Oggetti per riconoscere un vendor* per vendor con pochissimi oggetti scambiabili.
+
 ## Finestra del listino (F7)
 La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). Sei schede. L'overlay continua a funzionare con la finestra aperta: l'area della finestra viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 

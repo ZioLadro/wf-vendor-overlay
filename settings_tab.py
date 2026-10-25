@@ -19,6 +19,8 @@ GROUPS = [
         ("player_name", "text", None, False),
         ("hide_negative_ranks", "bool", None, False),
         ("check_updates", "bool", None, False),
+        ("vendor_check", "bool", None, False),
+        ("vendor_min_items", "int", (1, 20), False),
         ("only_warframe", "bool", None, True),
         ("rec_overlay", "bool", None, False),
         ("rec_overlay_top", "int", (1, 50), False),

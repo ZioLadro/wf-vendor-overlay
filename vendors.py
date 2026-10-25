@@ -145,5 +145,27 @@ class VendorIndex:
             msg += t("baro.partial", err="; ".join(errors))
         return True, msg
 
+    def identify(self, slugs, min_items=3, min_share=0.6):
+        """Which vendor's screen is it? The vendor whose stock covers most of the items the OCR matched.
+        Returns (vendor, indices of the slugs that belong to it), or (None, []) when no vendor covers enough of
+        them (e.g. an inventory or chat window that just happens to show some item names)."""
+        count = {}
+        for s in slugs:
+            for v in self.by_slug.get(s, ()):
+                count[v] = count.get(v, 0) + 1
+        if not count or not slugs:
+            return None, []
+        if not hasattr(self, "_sizes") or self._sizes[0] is not self.by_slug:
+            sizes = {}
+            for vs in self.by_slug.values():
+                for v in vs:
+                    sizes[v] = sizes.get(v, 0) + 1
+            self._sizes = (self.by_slug, sizes)
+        # most covered; on a tie the vendor with the smaller stock (more specific)
+        best = max(count, key=lambda v: (count[v], -self._sizes[1].get(v, 0)))
+        if count[best] < min_items or count[best] / len(slugs) < min_share:
+            return None, []
+        return best, [i for i, s in enumerate(slugs) if best in self.by_slug.get(s, ())]
+
     def by_slug_for(self, vendor: str) -> list:
         return [s for s, vs in self.by_slug.items() if vendor in vs]
