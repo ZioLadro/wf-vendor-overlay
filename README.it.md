@@ -102,10 +102,10 @@ o tipo. Gli oggetti senza dati di mercato non si possono valutare: **Scarica i d
 Passando il mouse su una riga vedi quanti ne puoi permettere con il tuo standing (scheda Profilo).
 
 ### Profilo
-Scrivi il nome in gioco e premi **Scarica profilo**: grado di maestria e standing/rank per fazione vengono letti
-dal tuo profilo *pubblico* (niente password, niente memoria del gioco). Puoi anche scrivere o correggere ogni valore
-a mano. È un'istantanea: riscaricala dopo aver speso standing. La risposta grezza è salvata in `profile_raw.json`.
-Non ho potuto provarlo sul server reale da dove è stato scritto: se il formato è cambiato, inserisci i valori a mano.
+Standing e rank per fazione, più il grado di maestria, **letti dal `lastData.dat` di AlecaFrame** (o dal JSON
+dell'app companion) con **Importa lo standing da file…**; *Ricarica il file* lo rilegge dopo che AlecaFrame l'ha
+aggiornato. Puoi anche scrivere o correggere ogni valore a mano (restano fino alla prossima importazione). È
+un'istantanea: ricaricala dopo aver speso standing. Lo standing negativo indica la fazione opposta (ne puoi comprare 0).
 
 ### Mondo
 Fenditure, invasioni, sortita, cicli e inventario attuale di Baro Ki'Teer (con i prezzi in platino se noti),

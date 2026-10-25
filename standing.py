@@ -1,22 +1,16 @@
 """Your standing per syndicate, and how much of an item it lets you buy.
 
-Source: the public profile of your in-game name (a public Warframe endpoint, only the name is needed),
-or numbers you type by hand in the Profile tab. The profile is a snapshot: refetch it to update.
-The raw response is saved as profile_raw.json so a format change can be inspected.
+Source: your AlecaFrame lastData.dat (or the companion-app JSON), or numbers typed by hand in the Profile tab.
+The file is a snapshot: import it again to update.
 """
 import json
 import os
 import time
 
-import requests
-
 from config import APP_DIR
 from inventory import game_names
 
 STANDING_FILE = APP_DIR / "standing.json"
-RAW_FILE = APP_DIR / "profile_raw.json"
-PROFILE_URL = "https://content.warframe.com/dynamic/getProfileViewingData.php"
-UA = "WFVendorOverlay/1.6"
 
 
 class ProfileError(Exception):
@@ -48,27 +42,34 @@ def parse_profile(data) -> dict:
     return {"mr": int(mr) if isinstance(mr, (int, float)) else None, "factions": factions}
 
 
-def fetch_profile(name: str, timeout: float = 20.0) -> dict:
-    """Downloads and parses the public profile. Raises ProfileError."""
+def read_file(path: str) -> dict:
+    """Reads your standing from an inventory file: AlecaFrame's lastData.dat or the companion-app JSON
+    (both carry PlayerLevel and Affiliations). Raises ProfileError."""
     try:
-        r = requests.get(PROFILE_URL, params={"n": name}, headers={"User-Agent": UA}, timeout=timeout)
-    except requests.RequestException as e:
-        raise ProfileError(f"network error: {type(e).__name__}")
-    if r.status_code != 200:
-        raise ProfileError(f"HTTP {r.status_code}" + (" (player not found?)" if r.status_code in (400, 404, 409) else ""))
+        raw = open(path, "rb").read()
+    except OSError as e:
+        raise ProfileError(str(e))
     try:
-        data = r.json()
-        RAW_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
-    except ValueError:
-        raise ProfileError("the server did not return JSON")
-    except OSError:
-        pass
-    return parse_profile(data)
+        if path.lower().endswith(".dat"):
+            from inventory import decrypt_last_data
+            text = decrypt_last_data(raw)
+        else:
+            text = raw.decode("utf-8-sig")
+        data = json.loads(text)
+    except ImportError:
+        raise ProfileError("the 'cryptography' package is needed: pip install cryptography")
+    except Exception:
+        raise ProfileError("the file could not be decoded")
+    prof = parse_profile(data)
+    if not prof["factions"]:
+        raise ProfileError("no syndicate standing found in the file")
+    return prof
 
 
 class StandingStore:
     def __init__(self):
         self.name = ""
+        self.path = ""
         self.mr = None
         self.fetched = None
         self.factions = {}     # tag -> {"standing": int, "rank": int|None, "manual": bool}
@@ -81,19 +82,20 @@ class StandingStore:
         except Exception:
             return
         self.name, self.mr, self.fetched = d.get("name", ""), d.get("mr"), d.get("fetched")
+        self.path = d.get("path", "")
         self.factions = {k: v for k, v in (d.get("factions") or {}).items() if isinstance(v, dict)}
 
     def save(self):
         tmp = STANDING_FILE.with_suffix(".tmp")
         try:
-            tmp.write_text(json.dumps({"name": self.name, "mr": self.mr, "fetched": self.fetched,
+            tmp.write_text(json.dumps({"name": self.name, "path": self.path, "mr": self.mr, "fetched": self.fetched,
                                        "factions": self.factions}, ensure_ascii=False), encoding="utf-8")
             os.replace(tmp, STANDING_FILE)
         except OSError:
             pass
 
-    def apply_profile(self, name: str, profile: dict):
-        self.name, self.mr, self.fetched = name, profile["mr"], int(time.time())
+    def apply_profile(self, path: str, profile: dict):
+        self.path, self.mr, self.fetched = path, profile["mr"], int(time.time())
         for tag, f in profile["factions"].items():
             self.factions[tag] = {"standing": f["standing"], "rank": f["rank"], "manual": False}
         self.version += 1
@@ -122,7 +124,7 @@ def affordability(entries, store: StandingStore) -> list:
         rank = f.get("rank") if f else None
         req = e.get("r") or 0
         out.append({"vendor": e["v"], "tag": e.get("t"), "cost": e["s"], "req_rank": req, "have": have,
-                    "rank": rank, "count": (have // e["s"]) if (have is not None and e["s"] > 0) else None,
+                    "rank": rank, "count": (max(0, have) // e["s"]) if (have is not None and e["s"] > 0) else None,
                     "rank_ok": (rank >= req) if rank is not None else None})
     return out
 

@@ -1,18 +1,13 @@
-"""Profile tab: your standing per syndicate (public profile by in-game name, or typed by hand)."""
-import threading
+"""Profile tab: your standing per syndicate (imported from lastData.dat / companion JSON, or typed by hand)."""
+import os
 
-from PyQt6.QtCore import QObject, Qt, pyqtSignal
-from PyQt6.QtWidgets import (QHBoxLayout, QHeaderView, QLabel, QLineEdit, QPushButton, QSpinBox, QTableWidget,
-                             QTableWidgetItem, QVBoxLayout, QWidget)
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QLabel, QMessageBox, QPushButton, QSpinBox,
+                             QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
 
-from config import CFG, save_config
 from i18n import t
-from standing import ProfileError, fetch_profile, get_store, syndicate_name
+from standing import ProfileError, get_store, read_file, syndicate_name
 from uiutil import HINT_STYLE
-
-
-class _Bus(QObject):
-    done = pyqtSignal(object, str)
 
 
 class ProfileTab(QWidget):
@@ -20,21 +15,17 @@ class ProfileTab(QWidget):
         super().__init__()
         self.market = market
         self.store = get_store()
-        self.bus = _Bus()
-        self.bus.done.connect(self._done)
-        self.name = QLineEdit(self.store.name or CFG["player_name"])
-        self.name.setPlaceholderText(t("profile.name_ph"))
-        self.name.setMaximumWidth(240)
-        self.btn = QPushButton(t("profile.fetch"))
-        self.btn.clicked.connect(self.fetch)
-        self.name.returnPressed.connect(self.fetch)
+        self.btn = QPushButton(t("profile.import"))
+        self.btn.clicked.connect(self.import_file)
+        self.btn_reload = QPushButton(t("profile.reload"))
+        self.btn_reload.setToolTip(t("profile.reload.tip"))
+        self.btn_reload.clicked.connect(self.reload_file)
         self.info = QLabel("")
         self.info.setStyleSheet(HINT_STYLE)
         self.info.setWordWrap(True)
         top = QHBoxLayout()
-        top.addWidget(QLabel(t("profile.name")))
-        top.addWidget(self.name)
         top.addWidget(self.btn)
+        top.addWidget(self.btn_reload)
         top.addStretch(1)
         self.table = QTableWidget(0, 4)
         self.table.setHorizontalHeaderLabels([t("profile.col.syn"), t("profile.col.standing"),
@@ -70,17 +61,21 @@ class ProfileTab(QWidget):
             name = QTableWidgetItem(syndicate_name(tag))
             name.setData(Qt.ItemDataRole.UserRole, tag)
             self.table.setItem(r, 0, name)
-            sp = QSpinBox(minimum=0, maximum=100_000_000, value=f["standing"] if f else 0)
+            sp = QSpinBox(minimum=-100_000_000, maximum=100_000_000, value=f["standing"] if f else 0)
             sp.setGroupSeparatorShown(True)
             sp.editingFinished.connect(lambda tg=tag, w=sp: self._edited(tg, w))
             self.table.setCellWidget(r, 1, sp)
-            rk = QSpinBox(minimum=-2, maximum=10, value=(f.get("rank") if f and f.get("rank") is not None else 0))
+            rk = QSpinBox(minimum=-2, maximum=40, value=(f.get("rank") if f and f.get("rank") is not None else 0))
             rk.editingFinished.connect(lambda tg=tag, w=sp, rw=rk: self._edited(tg, w, rw))
             self.table.setCellWidget(r, 2, rk)
-            src = t("profile.src.none") if not f else (t("profile.src.manual") if f.get("manual") else t("profile.src.profile"))
+            src = t("profile.src.none") if not f else (t("profile.src.manual") if f.get("manual") else t("profile.src.file"))
             self.table.setItem(r, 3, QTableWidgetItem(src))
-        mr = f"MR {self.store.mr}" if self.store.mr is not None else ""
-        self.info.setText(t("profile.info", mr=mr) if self.store.fetched else t("profile.empty"))
+        self.btn_reload.setEnabled(bool(self.store.path))
+        if self.store.fetched:
+            mr = f"MR {self.store.mr}" if self.store.mr is not None else ""
+            self.info.setText(t("profile.info", mr=mr, file=os.path.basename(self.store.path)))
+        else:
+            self.info.setText(t("profile.empty"))
 
     def _edited(self, tag, sp, rk=None):
         cur = self.store.get(tag)
@@ -92,34 +87,25 @@ class ProfileTab(QWidget):
             if self.table.item(r, 0).data(Qt.ItemDataRole.UserRole) == tag:
                 self.table.item(r, 3).setText(t("profile.src.manual"))
 
-    # ---------- fetch ----------
-    def fetch(self):
-        name = self.name.text().strip()
-        if not name:
-            self.info.setText(t("profile.need_name"))
-            return
-        self.btn.setEnabled(False)
-        self.info.setText(t("profile.loading"))
+    # ---------- import ----------
+    def import_file(self):
+        start = os.path.dirname(self.store.path) if self.store.path else ""
+        if not start:
+            aleca = os.path.join(os.environ.get("LOCALAPPDATA", ""), "AlecaFrame")
+            start = aleca if os.path.isdir(aleca) else ""
+        path, _ = QFileDialog.getOpenFileName(self, t("profile.import"), start, t("profile.filter"))
+        if path:
+            self._load(path)
 
-        def run():
-            try:
-                self.bus.done.emit((name, fetch_profile(name)), "")
-            except ProfileError as e:
-                self.bus.done.emit(None, str(e))
-            except Exception as e:
-                self.bus.done.emit(None, type(e).__name__)
-        threading.Thread(target=run, daemon=True).start()
+    def reload_file(self):
+        if self.store.path:
+            self._load(self.store.path)
 
-    def _done(self, res, err):
-        self.btn.setEnabled(True)
-        if res is None:
-            self.info.setText(t("profile.error", err=err))
+    def _load(self, path):
+        try:
+            prof = read_file(path)
+        except ProfileError as e:
+            QMessageBox.warning(self, t("profile.import"), t("profile.error", err=e))
             return
-        name, prof = res
-        self.store.apply_profile(name, prof)
-        save_config({"player_name": name})
-        if not prof["factions"]:
-            self.refresh(force=True)
-            self.info.setText(t("profile.no_syndicates"))
-            return
+        self.store.apply_profile(path, prof)
         self.refresh(force=True)

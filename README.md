@@ -97,10 +97,10 @@ market data yet cannot be rated: **Fetch missing data** downloads them (pick one
 Hovering a row shows how many you can afford with your standing (Profile tab).
 
 ### Profile
-Type your in-game name and press **Fetch profile**: mastery rank and standing/rank per syndicate are read
-from your *public* profile (no password, no game memory). You can also type or correct any value by hand. It is a
-snapshot: fetch again after spending standing. The raw answer is saved as `profile_raw.json`.
-I could not test this against the live server from where it was written: if the format changed, type the values by hand.
+Your standing and rank per syndicate, plus your mastery rank, **read from the AlecaFrame `lastData.dat`** (or the
+companion-app JSON) with **Import standing from file…**; *Reload file* re-reads it after AlecaFrame refreshed it.
+You can also type or correct any value by hand (kept until the next import). It is a snapshot: reload after spending
+standing. Negative standing means you are in the opposite faction (you can buy 0).
 
 ### World
 Fissures, invasions, sortie, cycles and Baro Ki'Teer's current stock (with platinum prices when known), from the
