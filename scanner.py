@@ -170,6 +170,18 @@ class Scanner:
         for it in items:
             it["rec"] = it["slug"] in top
 
+    def _dump_lines(self, manual, header, vendor):
+        """On a manual scan (F8) writes what was read to last_scan.txt, to see why a vendor was or was not recognised."""
+        if not manual:
+            return
+        try:
+            from config import APP_DIR
+            rows = [f"vendor recognised: {vendor}", f"names found on screen: {sorted(header)}", "--- text read ---"]
+            rows += [f"{int(x)},{int(y)}  {tx}" for tx, x, y, _w, _h in getattr(self.ocr, "texts", [])]
+            (APP_DIR / "last_scan.txt").write_text("\n".join(rows), encoding="utf-8")
+        except Exception:
+            pass
+
     def _apply_cache(self, it):
         """Shows the last saved data right away (if not too old)."""
         e = self.market.cached(it["slug"])
@@ -238,16 +250,23 @@ class Scanner:
         # is this really a vendor screen? the matched items must mostly belong to ONE vendor's stock
         self.vendor = None
         if CFG["vendor_check"] and self.market.vendors:
+            header = set()
+            if CFG["vendor_header"]:
+                try:
+                    header = self.market.vendors.header_vendors(getattr(self.ocr, "texts", []))
+                except Exception:
+                    header = set()
             vendor, keep = self.market.vendors.identify([h[4] for h in hits], int(CFG["vendor_min_items"]),
-                                                        float(CFG["vendor_min_share"]))
-            if vendor is None:
+                                                        float(CFG["vendor_min_share"]), header)
+            self._dump_lines(manual, header, vendor)
+            if vendor is None or (CFG["vendor_header_required"] and vendor not in header):
                 self.items = []
                 if manual:
                     self.bridge.status.emit(t("status.novendor"))
                 return
             hits, patches = [hits[i] for i in keep], [patches[i] for i in keep]
             self.vendor = vendor
-            self.bridge.status.emit(t("status.vendor", vendor=vendor))
+            self.bridge.status.emit(t("status.vendor_header" if vendor in header else "status.vendor", vendor=vendor))
 
         ratio = self.screen_w / mon_w
         items = [

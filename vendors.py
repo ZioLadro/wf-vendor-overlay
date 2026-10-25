@@ -145,7 +145,50 @@ class VendorIndex:
             msg += t("baro.partial", err="; ".join(errors))
         return True, msg
 
-    def identify(self, slugs, min_items=3, min_share=0.6):
+    # ---------- vendor name on screen ----------
+    _GENERIC = {"pet", "event", "hub", "tau", "duviri", "cetus", "fortuna", "deimos", "zariman", "focus", "tau",
+                "game modes", "1999", "ascension", "conservation rewards"}
+
+    def _aliases(self):
+        """{normalised text that can head that vendor's screen: {vendors}} — the vendor's name, without a leading
+        'The', without the '(…)' note and, for 'Place · Name', the Name part."""
+        if getattr(self, "_alias_map", None) is None:
+            from matcher import norm
+            amap = {}
+            for v in self.vendor_names:
+                cands = {v}
+                if "·" in v:
+                    cands.add(v.split("·", 1)[1])
+                for c in list(cands):
+                    cands.add(re.sub(r"\s*\(.*?\)", "", c))
+                for c in list(cands):
+                    cands.add(re.sub(r"^\s*the\s+", "", c, flags=re.I))
+                for c in cands:
+                    n = norm(c)
+                    if len(n) >= 5 and n not in self._GENERIC:
+                        amap.setdefault(n, set()).add(v)
+            self._alias_map = amap
+        return self._alias_map
+
+    def header_vendors(self, texts, cutoff=88):
+        """Vendors whose name appears as a line of the text read on screen. texts: [(text, x, y, w, h)]."""
+        from matcher import norm
+        from rapidfuzz import fuzz, process
+        amap = self._aliases()
+        keys, found = list(amap), set()
+        for tx in texts:
+            n = norm(tx[0])
+            if len(n) < 5:
+                continue
+            if n in amap:
+                found |= amap[n]
+                continue
+            r = process.extractOne(n, keys, scorer=fuzz.ratio, score_cutoff=cutoff)
+            if r:
+                found |= amap[r[0]]
+        return found
+
+    def identify(self, slugs, min_items=3, min_share=0.6, header=()):
         """Which vendor's screen is it? The vendor whose stock covers most of the items the OCR matched.
         Returns (vendor, indices of the slugs that belong to it), or (None, []) when no vendor covers enough of
         them (e.g. an inventory or chat window that just happens to show some item names)."""
@@ -162,7 +205,12 @@ class VendorIndex:
                     sizes[v] = sizes.get(v, 0) + 1
             self._sizes = (self.by_slug, sizes)
         # most covered; on a tie the vendor with the smaller stock (more specific)
-        best = max(count, key=lambda v: (count[v], -self._sizes[1].get(v, 0)))
+        pick = lambda pool: max(pool, key=lambda v: (count[v], -self._sizes[1].get(v, 0)))
+        named = [v for v in header if v in count]
+        if named:                       # the name is on screen and some of the items are its own: enough
+            best = pick(named)
+            return best, [i for i, s in enumerate(slugs) if best in self.by_slug.get(s, ())]
+        best = pick(count)
         if count[best] < min_items or count[best] / len(slugs) < min_share:
             return None, []
         return best, [i for i, s in enumerate(slugs) if best in self.by_slug.get(s, ())]
