@@ -16,7 +16,10 @@ GROUPS = [
     ("general", [
         ("language", "choice", LANGUAGES, True),
         ("start_active", "bool", None, True),
+        ("player_name", "text", None, False),
         ("only_warframe", "bool", None, True),
+        ("rec_overlay", "bool", None, False),
+        ("rec_overlay_top", "int", (1, 50), False),
         ("auto_detect", "bool", None, False),
         ("show_volume", "bool", None, False),
         ("hide_zero_volume", "bool", None, False),

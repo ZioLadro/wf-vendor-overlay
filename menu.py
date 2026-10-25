@@ -14,6 +14,7 @@ from inventory_tab import InventoryTab
 from i18n import t
 from market_auth import MarketAccount
 from overlay import volume_color
+from player_bar import PlayerBar
 from profile_tab import ProfileTab
 from recommend_tab import RecommendTab
 from refresher import Refresher
@@ -248,6 +249,7 @@ class PriceList(QWidget):
         self.world = WorldTab(market)
         self.settings = SettingsTab()
         self.settings.restart_requested.connect(self.restart_requested)
+        self.player_bar = PlayerBar(market)
         self.tabs = QTabWidget()
         self.tabs.addTab(self.prices, t("tab.prices"))
         self.tabs.addTab(self.inv_tab, t("tab.inventory"))
@@ -269,6 +271,7 @@ class PriceList(QWidget):
         bottom.addWidget(self.btn_stop)
 
         lay = QVBoxLayout(self)
+        lay.addWidget(self.player_bar)
         lay.addWidget(self.tabs, 1)
         lay.addLayout(bottom)
 
@@ -281,6 +284,7 @@ class PriceList(QWidget):
         self.prices.message.connect(self.status.setText)
 
     def _tick(self, force=False):
+        self.player_bar.refresh(force=force)
         w = self.tabs.currentWidget()
         if w is self.prices:
             self.prices.refresh(force=force)

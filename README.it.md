@@ -27,6 +27,10 @@ nel vendor) e prezzo a **rank massimo**. Il volume resta il totale degli scambi 
 
 L'OCR legge **solo la finestra di Warframe**, e solo quando è la finestra attiva (Windows; impostazione *Leggi solo la finestra di Warframe*, disattivala se il gioco non viene rilevato, es. cloud gaming). Le etichette si nascondono quando passi a un'altra finestra.
 
+Sullo schermo di gioco, i **primi 10 oggetti consigliati** (stessa classifica della scheda Consigli, dai prezzi salvati) ricevono una piccola etichetta gialla *★ Consigliato ★* sopra il nome (impostazioni *Stelle sugli oggetti consigliati* / *Oggetti consigliati segnati*).
+
+Ogni scheda mostra una **barra del giocatore**: nome (clicca per impostarlo, i file del gioco non lo contengono), grado di maestria, scambi rimasti e un badge per fazione con rank e standing (mouse sopra: standing giornaliero rimasto). I badge sono disegnati con i colori delle fazioni; per i logo veri metti file `<TagFazione>.png` (es. `CetusSyndicate.png`) nella cartella `icons` della cartella dei dati. Le serie Nightwave non sono mostrate.
+
 ## Finestra del listino (F7)
 La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). Sei schede. Mentre la finestra è aperta le scansioni sono sospese e le etichette nascoste (altrimenti
 l'OCR leggerebbe i nomi del listino); alla chiusura riprende da sola.

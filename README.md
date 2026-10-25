@@ -26,6 +26,10 @@ vendor) and **max-rank** price. The volume is the total of the trades of all ran
 
 The OCR reads **only the Warframe window**, and only while it is the active window (Windows; setting *Read only the Warframe window*, turn it off if the game is not detected, e.g. cloud gaming). Labels are hidden when you switch to another window.
 
+On the game screen, the **top 10 recommended items** (same ranking as the Recommendations tab, from the saved prices) get a small yellow *★ Recommended ★* tag above their name (settings *Stars on recommended items* / *Recommended items marked*).
+
+Every tab shows a **player strip**: name (click to set it, the game files do not contain it), mastery rank, trades left, and a badge per syndicate with your rank and standing (hover for the daily standing left). Badges are drawn with the syndicate colours; to use the real logos put `<SyndicateTag>.png` files (e.g. `CetusSyndicate.png`) in the `icons` folder of the data folder. Nightwave series are not shown.
+
 ## Price list window (F7)
 The window **opens by itself when the program starts** (setting *Open the price list at start*). Six tabs. While the window is open, scans are suspended and the labels hidden (otherwise the OCR would
 read the list's own names); scanning resumes when you close it.

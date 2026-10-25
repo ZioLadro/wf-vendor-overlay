@@ -93,6 +93,13 @@ def main():
     rank_min = {sid: {str(t["level"]): t["minStanding"] for t in sy.get("titles", [])
                       if isinstance(t, dict) and "level" in t and "minStanding" in t}
                 for sid, sy in fetch("ExportSyndicates", cache).items() if isinstance(sy, dict) and sy.get("titles")}
+    syn_colors = {}
+    for sid, sy in fetch("ExportSyndicates", cache).items():
+        if isinstance(sy, dict) and sy.get("colour"):
+            try:
+                syn_colors[sid] = ["#%06X" % (int(sy[k]["value"], 16) & 0xFFFFFF) for k in ("colour", "backgroundColour")]
+            except Exception:
+                pass
     relic_names = {}
     for path, r in fetch("ExportRelics", cache).items():
         if isinstance(r, dict) and r.get("era") and r.get("category"):
@@ -146,7 +153,7 @@ def main():
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     Path(a.names_out).write_text(json.dumps(
         {"generated": out["generated"], "names": names, "recipes": recipe_names, "relics": relic_names,
-         "syndicates": syndicate_names, "rank_min": rank_min},
+         "syndicates": syndicate_names, "rank_min": rank_min, "syn_colors": syn_colors},
         ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     n_items = sum(len(v) for v in out["vendors"].values())
     print(f"{len(out['vendors'])} vendors, {n_items} entries -> {a.out} (names resolved: {total - len(missing)}/{total})")

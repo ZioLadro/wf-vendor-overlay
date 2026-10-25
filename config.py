@@ -52,6 +52,9 @@ DEFAULTS = {
     "volume_high": 50,
     "volume_offset_y": 2,        # pixels between the item name and the volume label
     "hide_zero_volume": False,   # hide items with zero trades in the last 24 h (price list)
+    "player_name": "",           # shown in the player strip (the game files do not contain it)
+    "rec_overlay": True,         # mark the top recommended items with stars on the overlay
+    "rec_overlay_top": 10,       # how many
     "only_warframe": True,       # read only the Warframe window, and only while it is the active window
     # profile and world state
     "open_list_on_start": True,  # open the price-list window when the program starts

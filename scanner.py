@@ -13,6 +13,7 @@ import time
 import numpy as np
 
 from config import CFG
+from recommend import recommend
 from i18n import t
 from ocr import Grabber, screen_changed
 
@@ -148,6 +149,18 @@ class Scanner:
         self.version += 1
         self.bridge.results.emit([dict(i) for i in items])
 
+    def _mark_recommended(self, items):
+        """Flags the items that are among the top recommended ones (from the saved market data)."""
+        if not CFG["rec_overlay"]:
+            return
+        try:
+            picks, _ = recommend(self.market.snapshot(), top=int(CFG["rec_overlay_top"]))
+        except Exception:
+            return
+        top = {p["slug"] for p in picks}
+        for it in items:
+            it["rec"] = it["slug"] in top
+
     def _apply_cache(self, it):
         """Shows the last saved data right away (if not too old)."""
         e = self.market.cached(it["slug"])
@@ -185,6 +198,7 @@ class Scanner:
                     pass                      # keep the old value (or none)
                 if it["vol"] != before:
                     self._publish(items, gen)
+        self._mark_recommended(items)           # prices changed: the ranking may too
         self._publish(items, gen, force=True)   # the final state is always shown
         return True
 
@@ -219,6 +233,7 @@ class Scanner:
         for it in items:
             self._apply_cache(it)
             it["label"] = fmt_price(it)
+        self._mark_recommended(items)
         self.items = items
         # reference to tell when the vendor is closed: crops of the scan's screenshot
         self.ref = {"gen": gen, "boxes": [(h[0], h[1], h[2], h[3]) for h in hits], "patches": patches}

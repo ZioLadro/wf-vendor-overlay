@@ -17,6 +17,11 @@ class ProfileError(Exception):
     pass
 
 
+def is_nightwave(tag: str) -> bool:
+    """Nightwave series and the like: not real syndicates, left out everywhere."""
+    return str(tag).startswith(("RadioLegion", "Nightcap"))
+
+
 def syndicate_name(tag: str) -> str:
     return game_names().get("syndicates", {}).get(tag) or tag
 
@@ -55,7 +60,7 @@ def parse_profile(data) -> dict:
     rank_min = game_names().get("rank_min", {})
     factions = {}
     for a in aff or []:
-        if isinstance(a, dict) and a.get("Tag"):
+        if isinstance(a, dict) and a.get("Tag") and not is_nightwave(a["Tag"]):
             st, rk = a.get("Standing"), a.get("Title")
             st = int(st) if isinstance(st, (int, float)) else 0
             rk = int(rk) if isinstance(rk, (int, float)) else None
@@ -65,7 +70,9 @@ def parse_profile(data) -> dict:
     for tag, left in parse_daily(res).items():
         if tag in factions:
             factions[tag]["daily"] = left
-    return {"mr": int(mr) if isinstance(mr, (int, float)) else None, "factions": factions}
+    tr = res.get("TradesRemaining")
+    return {"mr": int(mr) if isinstance(mr, (int, float)) else None, "factions": factions,
+            "trades": int(tr) if isinstance(tr, (int, float)) else None}
 
 
 def read_file(path: str) -> dict:
@@ -97,6 +104,7 @@ class StandingStore:
         self.name = ""
         self.path = ""
         self.mtime = 0
+        self.trades = None
         self.mr = None
         self.fetched = None
         self.factions = {}     # tag -> {"standing": int, "rank": int|None, "manual": bool}
@@ -110,12 +118,13 @@ class StandingStore:
             return
         self.name, self.mr, self.fetched = d.get("name", ""), d.get("mr"), d.get("fetched")
         self.path = d.get("path", "")
-        self.factions = {k: v for k, v in (d.get("factions") or {}).items() if isinstance(v, dict)}
+        self.factions = {k: v for k, v in (d.get("factions") or {}).items() if isinstance(v, dict) and not is_nightwave(k)}
+        self.trades = d.get("trades")
 
     def save(self):
         tmp = STANDING_FILE.with_suffix(".tmp")
         try:
-            tmp.write_text(json.dumps({"name": self.name, "path": self.path, "mr": self.mr, "fetched": self.fetched,
+            tmp.write_text(json.dumps({"name": self.name, "trades": self.trades, "path": self.path, "mr": self.mr, "fetched": self.fetched,
                                        "factions": self.factions}, ensure_ascii=False), encoding="utf-8")
             os.replace(tmp, STANDING_FILE)
         except OSError:
@@ -127,6 +136,8 @@ class StandingStore:
         except OSError:
             self.mtime = 0
         self.path, self.mr, self.fetched = path, profile["mr"], int(time.time())
+        self.trades = profile.get("trades")
+        self.factions = {k: v for k, v in self.factions.items() if not is_nightwave(k)}
         for tag, f in profile["factions"].items():
             self.factions[tag] = {"standing": f["standing"], "rank": f["rank"], "manual": False,
                                   "daily": f.get("daily")}

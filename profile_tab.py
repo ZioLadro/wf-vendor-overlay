@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QLabel, QMes
 
 from config import CFG
 from i18n import t
-from standing import ProfileError, get_store, read_file, syndicate_name
+from standing import ProfileError, get_store, is_nightwave, read_file, syndicate_name
 from uiutil import HINT_STYLE
 
 
@@ -65,7 +65,7 @@ class ProfileTab(QWidget):
 
     # ---------- table ----------
     def _tags(self):
-        tags = set(self.store.factions)
+        tags = {k for k in self.store.factions if not is_nightwave(k)}
         tags.update(e["t"] for r in self.market.snapshot() for e in r["standing"] if e.get("t"))
         return sorted(tags, key=lambda x: syndicate_name(x).lower())
 
