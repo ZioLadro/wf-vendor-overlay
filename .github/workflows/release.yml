@@ -1,11 +1,19 @@
 # Builds the Windows package and publishes it as a GitHub release when a version tag is pushed:
 #   git tag v0.1.0 && git push origin v0.1.0     (or: GitHub website -> Releases -> Draft a new release -> new tag)
+# If a build failed: fix, push, then Actions -> release -> Run workflow with the same tag.
 # The release gets WFVendorOverlay-windows.zip and WFVendorOverlay-windows.zip.sha256, which the program's
 # built-in updater downloads and verifies.
 name: release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:                # Actions tab -> release -> Run workflow: builds an existing tag again
+    inputs:
+      tag:
+        description: "Existing tag to build (e.g. v0.1.0)"
+        required: true
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 permissions:
   contents: write
 jobs:
@@ -13,6 +21,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -26,7 +36,7 @@ jobs:
         shell: powershell
         run: |
           $v = (.venv\Scripts\python -c "from version import __version__; print(__version__)").Trim()
-          if ("v$v" -ne "${{ github.ref_name }}") { throw "tag ${{ github.ref_name }} does not match version.py ($v)" }
+          if ("v$v" -ne $env:TAG) { throw "tag $env:TAG does not match version.py ($v)" }
       - name: Build
         shell: powershell
         run: powershell -ExecutionPolicy Bypass -File build.ps1
@@ -41,11 +51,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = "${{ github.ref_name }}"
-          gh release view $tag *> $null
+          $ErrorActionPreference = "Continue"      # gh writes to stderr when the release does not exist yet: not an error
+          $tag = $env:TAG
+          gh release view $tag 2>&1 | Out-Null
           if ($LASTEXITCODE -eq 0) {
-            # the release was already created on the website: just attach the files
+            # the release already exists (created on the website): just attach the files
             gh release upload $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --clobber
           } else {
             gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --generate-notes
           }
+          if ($LASTEXITCODE -ne 0) { exit 1 }
