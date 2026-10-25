@@ -60,6 +60,7 @@ DEFAULTS = {
     "sell_min_price": 5,         # advice: do not suggest selling items cheaper than this (platinum)
     "rec_overlay": True,         # mark the top recommended items with stars on the overlay
     "rec_overlay_top": 10,       # how many
+    "skip_update_version": "",   # a version the user chose not to be reminded about
     "check_updates": True,       # look for a new version at start (nothing is installed without asking)
     "vendor_check": True,        # show prices only when the matched items belong to one vendor (a vendor screen)
     "vendor_header": True,       # also read the vendor name on screen (confirms the vendor)

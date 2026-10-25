@@ -72,7 +72,8 @@ def check(timeout: float = 15.0) -> dict:
     assets = {a.get("name"): a.get("browser_download_url") for a in d.get("assets") or [] if isinstance(a, dict)}
     return {"version": tag.lstrip("vV"), "tag": tag, "notes": str(d.get("body") or "")[:1500],
             "page": d.get("html_url") or RELEASES_PAGE, "zip_url": assets.get(ASSET),
-            "sha_url": assets.get(ASSET + ".sha256"), "newer": bool(tag) and is_newer(tag)}
+            "sha_url": assets.get(ASSET + ".sha256"), "newer": bool(tag) and is_newer(tag),
+            "installable": bool(assets.get(ASSET) and assets.get(ASSET + ".sha256"))}
 
 
 def download(info: dict, progress=None, cancelled=lambda: False) -> Path:

@@ -123,7 +123,8 @@ class SettingsTab(QWidget):
                 self.widgets[key] = (w, kind, restart)
             col.addWidget(box)
         from update_box import UpdateBox
-        col.addWidget(UpdateBox())
+        self.update_box = UpdateBox()
+        col.addWidget(self.update_box)
         col.addStretch(1)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)

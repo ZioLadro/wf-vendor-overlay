@@ -1,13 +1,14 @@
 """Settings → Updates: version, check now, install (with the user's consent)."""
 import threading
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtCore import QUrl
 from PyQt6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton,
                              QVBoxLayout)
 
 import updater
+from config import CFG, save_config
 from i18n import t
 from uiutil import HINT_STYLE
 from version import __version__
@@ -65,15 +66,35 @@ class UpdateBox(QGroupBox):
         if not info["newer"]:
             self.status.setText(t("update.latest", v=__version__))
             return
+        self.offer(info, manual=True)
+
+    def offer(self, info, manual=False):
+        """A newer version exists: say what is possible and, if the user agrees, install it."""
         self._info = info
         self.status.setText(t("update.available", v=info["version"]))
+        if not manual and str(CFG["skip_update_version"]) == info["version"]:
+            return
+        if not info.get("installable"):
+            # the release exists but has no package yet (the build may be running, or it failed)
+            QMessageBox.information(self, t("update.title"), t("update.nopackage", v=info["version"]))
+            return
         if not updater.can_install():
             if QMessageBox.question(self, t("update.title"), t("update.manual", v=info["version"], notes=info["notes"])) \
                     == QMessageBox.StandardButton.Yes:
                 QDesktopServices.openUrl(QUrl(info["page"]))
             return
-        ans = QMessageBox.question(self, t("update.title"), t("update.ask", v=info["version"], notes=info["notes"]))
-        if ans != QMessageBox.StandardButton.Yes:
+        box = QMessageBox(self)
+        box.setWindowTitle(t("update.title"))
+        box.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)      # also visible over the game
+        box.setText(t("update.ask", v=info["version"], notes=info["notes"]))
+        yes = box.addButton(t("update.install"), QMessageBox.ButtonRole.AcceptRole)
+        box.addButton(t("update.later"), QMessageBox.ButtonRole.RejectRole)
+        skip = box.addButton(t("update.skip"), QMessageBox.ButtonRole.DestructiveRole)
+        box.exec()
+        if box.clickedButton() is skip:
+            save_config({"skip_update_version": info["version"]})
+            return
+        if box.clickedButton() is not yes:
             return
         self.btn.setEnabled(False)
         self.bar.setVisible(True)
@@ -99,11 +120,13 @@ class UpdateBox(QGroupBox):
         self.btn.setEnabled(True)
         if staging is None:
             self.status.setText(t("update.error", err=err))
+            QMessageBox.warning(self, t("update.title"), t("update.error", err=err))
             return
         self.status.setText(t("update.installing"))
         try:
             updater.launch_installer(staging)
         except OSError as e:
             self.status.setText(t("update.error", err=e))
+            QMessageBox.warning(self, t("update.title"), t("update.error", err=e))
             return
         QApplication.quit()

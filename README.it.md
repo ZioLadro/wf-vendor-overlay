@@ -130,9 +130,9 @@ prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Sal
 il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
 valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
 
-## Aggiornamenti (versione attuale 0.1.1)
+## Aggiornamenti (versione attuale 0.1.2)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
-recente e te lo segnala a schermo. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
+recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i
 file del programma dopo la chiusura e lo riavvia. Impostazioni e dati (`%LOCALAPPDATA%\WFVendorOverlay`) non vengono toccati.
 Si aggiorna da solo solo la versione Windows pacchettizzata; dai sorgenti usa `git pull`. La verifica dimostra solo che il

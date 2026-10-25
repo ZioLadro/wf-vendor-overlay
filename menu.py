@@ -325,6 +325,10 @@ class PriceList(QWidget):
         self._tick(force=True)
 
     # ---------- window ----------
+    def offer_update(self, info):
+        """Startup check found a newer version: ask (the dialog belongs to the Settings tab's update box)."""
+        self.settings.update_box.offer(info)
+
     def screen_rect_px(self):
         """This window's rectangle in physical screen pixels (None if hidden): the OCR must not read it."""
         if not self.isVisible():

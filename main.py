@@ -44,6 +44,7 @@ def main():
         clear = pyqtSignal()
         quit = pyqtSignal()
         results = pyqtSignal(list)
+        update_found = pyqtSignal(object)
         status = pyqtSignal(str)
 
     app = QApplication(sys.argv)
@@ -80,6 +81,7 @@ def main():
     scanner.exclude_provider = pricelist.screen_rect_px
     pricelist.visibility.connect(lambda _v: scanner.list_changed())
     bridge.menu.connect(pricelist.toggle)
+    bridge.update_found.connect(pricelist.offer_update)
     if CFG["open_list_on_start"]:
         QTimer.singleShot(800, pricelist.toggle)      # open the price list when the program starts
 
@@ -114,6 +116,7 @@ def main():
             info = updater.check()
             if info["newer"]:
                 bridge.status.emit(t("update.notice", v=info["version"]))
+                bridge.update_found.emit(info)
         except Exception:
             pass
     threading.Thread(target=_update_startup, daemon=True).start()
