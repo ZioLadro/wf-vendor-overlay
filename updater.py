@@ -126,27 +126,42 @@ def download(info: dict, progress=None, cancelled=lambda: False) -> Path:
     return exe.parent
 
 
-def installer_script(staging: Path, dest: Path, pid: int) -> str:
+LOG_FILE = APP_DIR / "update.log"
+
+
+def installer_script(staging: Path, dest: Path, pid: int, log: Path = LOG_FILE) -> str:
+    """Batch file: waits for this program to exit, copies the new files over the installation, starts the new
+    version. Every step is written to update.log, to see what happened if it does not work."""
     return f"""@echo off
+chcp 65001 >nul
+set "LOG={log}"
+echo [%date% %time%] update started, waiting for process {pid} >> "%LOG%"
 set n=0
 :wait
 tasklist /FI "PID eq {pid}" 2>nul | find "{pid}" >nul
-if errorlevel 1 goto copy0
+if errorlevel 1 goto gone
 ping -n 2 127.0.0.1 >nul
 set /a n+=1
 if %n% LSS 60 goto wait
-:copy0
+echo [%time%] the program did not exit in time, trying anyway >> "%LOG%"
+:gone
+ping -n 3 127.0.0.1 >nul
+echo [%time%] copying {staging} to {dest} >> "%LOG%"
 set n=0
 :copy
-xcopy "{staging}\\*" "{dest}\\" /E /Y /Q /R >nul
+xcopy "{staging}\\*" "{dest}\\" /E /Y /Q /R >> "%LOG%" 2>&1
 if not errorlevel 1 goto done
-ping -n 2 127.0.0.1 >nul
+echo [%time%] copy failed, errorlevel %errorlevel%, attempt %n% >> "%LOG%"
+ping -n 3 127.0.0.1 >nul
 set /a n+=1
 if %n% LSS 20 goto copy
+echo [%time%] giving up: the old version is started again >> "%LOG%"
+start "" "{dest}\\WFVendorOverlay.exe"
+exit /b 1
 :done
+echo [%time%] copied, starting the new version >> "%LOG%"
 start "" "{dest}\\WFVendorOverlay.exe"
 rmdir /S /Q "{staging.parent}"
-del "%~f0"
 """
 
 
@@ -154,5 +169,19 @@ def launch_installer(staging: Path):
     """Starts the batch file that replaces the files once this program has exited. The caller must quit."""
     bat = staging.parent / "install_update.bat"
     bat.write_text(installer_script(staging, install_dir(), os.getpid()), encoding="utf-8")
-    flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "DETACHED_PROCESS", 0)
-    subprocess.Popen(["cmd", "/c", str(bat)], creationflags=flags, close_fds=True)
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"launching {bat} (install dir {install_dir()}, staging {staging})\n")
+    except OSError:
+        pass
+    # PyInstaller: the new program must not think it is a child of this one (same reason as the Settings restart)
+    env = dict(os.environ, PYINSTALLER_RESET_ENVIRONMENT="1")
+    no_window = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    breakaway = 0x01000000                      # not killed with this program's job, if it has one
+    for flags in (no_window | breakaway, no_window):
+        try:
+            subprocess.Popen(["cmd", "/c", str(bat)], creationflags=flags, env=env, close_fds=True)
+            return
+        except OSError:
+            continue
+    raise OSError("could not start the installer")

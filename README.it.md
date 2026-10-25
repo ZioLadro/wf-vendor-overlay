@@ -130,12 +130,12 @@ prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Sal
 il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
 valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
 
-## Aggiornamenti (versione attuale 0.1.3)
+## Aggiornamenti (versione attuale 0.1.4)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i
 file del programma dopo la chiusura e lo riavvia. Impostazioni e dati (`%LOCALAPPDATA%\WFVendorOverlay`) non vengono toccati.
-Si aggiorna da solo solo la versione Windows pacchettizzata; dai sorgenti usa `git pull`. La verifica dimostra solo che il
+Il passaggio di installazione scrive `update.log` nella cartella dei dati (ogni passo e gli eventuali errori di copia). Se un aggiornamento non fa nulla, quel file dice perché; come alternativa manuale chiudi il programma e decomprimi la release sopra la sua cartella. Si aggiorna da solo solo la versione Windows pacchettizzata; dai sorgenti usa `git pull`. La verifica dimostra solo che il
 download non è corrotto: ci si fida delle release del repository (l'exe non è firmato, quindi SmartScreen può avvisare).
 
 **Pubblicare una versione** (manutentore): cambia `version.py`, fai commit, poi `git tag v0.1.1 && git push origin v0.1.1`.

@@ -125,12 +125,12 @@ recommendations). **Save** applies and stores them in `config.json`; **Save and 
 the program. Settings marked ⟳ (language, hotkeys, OCR, start active, name threshold) need a restart;
 the rest apply immediately. **Restore defaults** loads the default values (press Save to apply).
 
-## Updates (current version 0.1.3)
+## Updates (current version 0.1.4)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**
 and asks if you want to install it (*Install now* / *Later* / *Skip this version*). If the release exists but its package is not ready yet (the automatic build still running or failed) it says so. In **Settings → Updates** you can check by hand and, if you agree, it downloads
 `WFVendorOverlay-windows.zip`, verifies its SHA-256 against the `.sha256` file of the same release, and replaces
 the program files after it exits, then restarts. Your settings and data (`%LOCALAPPDATA%\WFVendorOverlay`) are never touched.
-Only the packaged Windows build updates itself; from source use `git pull`. The check only proves the download was not
+The installer step writes `update.log` in the data folder (each step, and any copy error). If an update ever does nothing, that file says why; as a manual fallback close the program and unzip the release over its folder. Only the packaged Windows build updates itself; from source use `git pull`. The check only proves the download was not
 corrupted: it trusts the repository's releases (the exe is not code-signed, so Windows SmartScreen may warn).
 
 **Publishing a version** (maintainer): change `version.py`, commit, then `git tag v0.1.1 && git push origin v0.1.1`.
