@@ -15,6 +15,7 @@ from i18n import t
 from market_auth import MarketAccount
 from overlay import volume_color
 from player_bar import PlayerBar
+from version import __version__
 from profile_tab import ProfileTab
 from recommend_tab import RecommendTab
 from refresher import Refresher
@@ -234,7 +235,7 @@ class PriceList(QWidget):
     def __init__(self, market):
         super().__init__()
         self.market = market
-        self.setWindowTitle(t("window.title"))
+        self.setWindowTitle(t("window.title") + " " + __version__)
         self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint)
         self.resize(1080, 680)
         self.setStyleSheet(STYLE)

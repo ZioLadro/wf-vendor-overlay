@@ -128,6 +128,17 @@ prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Sal
 il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
 valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
 
+## Aggiornamenti (versione 0.1.0)
+All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
+recente e te lo segnala a schermo. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
+scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i
+file del programma dopo la chiusura e lo riavvia. Impostazioni e dati (`%LOCALAPPDATA%\WFVendorOverlay`) non vengono toccati.
+Si aggiorna da solo solo la versione Windows pacchettizzata; dai sorgenti usa `git pull`. La verifica dimostra solo che il
+download non è corrotto: ci si fida delle release del repository (l'exe non è firmato, quindi SmartScreen può avvisare).
+
+**Pubblicare una versione** (manutentore): cambia `version.py`, fai commit, poi `git tag v0.1.1 && git push origin v0.1.1`.
+Il workflow in `.github/workflows/release.yml` costruisce il pacchetto Windows e crea la release con zip e checksum.
+
 ## Lingua
 Inglese di default. Si cambia in Impostazioni → Generali → Lingua (English / Italiano) e si riavvia.
 Codice, commenti e README esistono in inglese; l'interfaccia è tradotta per intero.
@@ -186,7 +197,7 @@ La scansione (OCR) è la parte pesante. Per non disturbare il gioco:
 
 ## File del codice
 `main.py` avvio · `scanner.py` scansioni, rilevamento automatico, aggiornamenti · `ocr_worker.py` processo OCR ·
-`ocr.py` cattura e OCR · `winrect.py` posizione della finestra del gioco · `matcher.py` riconoscimento nomi · `market.py` catalogo, prezzi, volumi, archivio JSON ·
+`version.py` · `updater.py` · `update_box.py` auto-aggiornamento · `ocr.py` cattura e OCR · `winrect.py` posizione della finestra del gioco · `matcher.py` riconoscimento nomi · `market.py` catalogo, prezzi, volumi, archivio JSON ·
 `vendors.py` / `build_vendors.py` / `vendors.json` catalogo dei vendor e costi in standing ·
 `menu.py` finestra del listino · `recommend.py` + `recommend_tab.py` consigli ·
 `inventory.py` + `inventory_tab.py` inventario e importazioni · `market_auth.py` accesso e ordini di vendita ·

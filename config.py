@@ -60,6 +60,7 @@ DEFAULTS = {
     "sell_min_price": 5,         # advice: do not suggest selling items cheaper than this (platinum)
     "rec_overlay": True,         # mark the top recommended items with stars on the overlay
     "rec_overlay_top": 10,       # how many
+    "check_updates": True,       # look for a new version at start (nothing is installed without asking)
     "only_warframe": True,       # read only the Warframe window, and only while it is the active window
     # profile and world state
     "open_list_on_start": True,  # open the price-list window when the program starts

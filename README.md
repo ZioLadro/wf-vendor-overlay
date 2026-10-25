@@ -123,6 +123,17 @@ recommendations). **Save** applies and stores them in `config.json`; **Save and 
 the program. Settings marked ⟳ (language, hotkeys, OCR, start active, name threshold) need a restart;
 the rest apply immediately. **Restore defaults** loads the default values (press Save to apply).
 
+## Updates (version 0.1.0)
+At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**
+and tells you on screen. In **Settings → Updates** you can check by hand and, if you agree, it downloads
+`WFVendorOverlay-windows.zip`, verifies its SHA-256 against the `.sha256` file of the same release, and replaces
+the program files after it exits, then restarts. Your settings and data (`%LOCALAPPDATA%\WFVendorOverlay`) are never touched.
+Only the packaged Windows build updates itself; from source use `git pull`. The check only proves the download was not
+corrupted: it trusts the repository's releases (the exe is not code-signed, so Windows SmartScreen may warn).
+
+**Publishing a version** (maintainer): change `version.py`, commit, then `git tag v0.1.1 && git push origin v0.1.1`.
+The workflow in `.github/workflows/release.yml` builds the Windows package and creates the release with the zip and checksum.
+
 ## Language
 English by default. Change it in Settings → General → Language (English / Italiano) and restart.
 The code, comments and both READMEs exist in English; the interface is fully translated.
@@ -180,7 +191,7 @@ The scan (OCR) is the heavy part. To avoid disturbing the game:
 
 ## Source files
 `main.py` startup · `scanner.py` scans, automatic detection, refreshes · `ocr_worker.py` OCR process ·
-`ocr.py` capture and OCR · `winrect.py` game window position · `matcher.py` name matching · `market.py` catalog, prices, volumes, JSON store ·
+`version.py` · `updater.py` · `update_box.py` self-update · `ocr.py` capture and OCR · `winrect.py` game window position · `matcher.py` name matching · `market.py` catalog, prices, volumes, JSON store ·
 `vendors.py` / `build_vendors.py` / `vendors.json` vendor catalog and standing costs ·
 `menu.py` price-list window · `recommend.py` + `recommend_tab.py` recommendations ·
 `inventory.py` + `inventory_tab.py` inventory and imports · `market_auth.py` sign-in and sell orders ·

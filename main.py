@@ -13,6 +13,7 @@ if __name__ == "__main__":
 
 from config import APP_DIR, CFG
 from i18n import t
+from version import __version__
 
 # with --noconsole (exe) stdout/stderr do not exist: redirect them to a log file
 if sys.stdout is None or sys.stderr is None:
@@ -104,11 +105,24 @@ def main():
     import threading
     threading.Thread(target=_baro_startup, daemon=True).start()
 
+    # update check at start (in the background; it only tells you, installing is up to you in Settings)
+    def _update_startup():
+        if not CFG["check_updates"]:
+            return
+        try:
+            import updater
+            info = updater.check()
+            if info["newer"]:
+                bridge.status.emit(t("update.notice", v=info["version"]))
+        except Exception:
+            pass
+    threading.Thread(target=_update_startup, daemon=True).start()
+
     # tray icon, with the same actions as the keys
     tray = None
     if QSystemTrayIcon.isSystemTrayAvailable():
         tray = QSystemTrayIcon(icon, app)
-        tray.setToolTip("WF Vendor Overlay")
+        tray.setToolTip("WF Vendor Overlay " + __version__)
         tray_menu = QMenu()
         for text, fn in (
             (t("tray.pricelist", key=_k(CFG["key_menu"])), pricelist.toggle),

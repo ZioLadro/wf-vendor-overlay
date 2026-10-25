@@ -18,6 +18,7 @@ GROUPS = [
         ("start_active", "bool", None, True),
         ("player_name", "text", None, False),
         ("hide_negative_ranks", "bool", None, False),
+        ("check_updates", "bool", None, False),
         ("only_warframe", "bool", None, True),
         ("rec_overlay", "bool", None, False),
         ("rec_overlay_top", "int", (1, 50), False),
@@ -117,6 +118,8 @@ class SettingsTab(QWidget):
                 form.addRow(label, w)
                 self.widgets[key] = (w, kind, restart)
             col.addWidget(box)
+        from update_box import UpdateBox
+        col.addWidget(UpdateBox())
         col.addStretch(1)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)

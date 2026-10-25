@@ -1,0 +1,43 @@
+# Builds the Windows package and publishes it as a GitHub release when a version tag is pushed:
+#   git tag v0.1.0 && git push origin v0.1.0
+# The release gets WFVendorOverlay-windows.zip and WFVendorOverlay-windows.zip.sha256, which the program's
+# built-in updater downloads and verifies.
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Environment
+        shell: powershell
+        run: |
+          py -3.12 -m venv .venv
+          .venv\Scripts\python -m pip install --upgrade pip
+          .venv\Scripts\python -m pip install -r requirements.txt
+      - name: Check the tag matches version.py
+        shell: powershell
+        run: |
+          $v = (.venv\Scripts\python -c "from version import __version__; print(__version__)").Trim()
+          if ("v$v" -ne "${{ github.ref_name }}") { throw "tag ${{ github.ref_name }} does not match version.py ($v)" }
+      - name: Build
+        shell: powershell
+        run: powershell -ExecutionPolicy Bypass -File build.ps1
+      - name: Package
+        shell: powershell
+        run: |
+          Compress-Archive -Path dist\WFVendorOverlay\* -DestinationPath WFVendorOverlay-windows.zip
+          $h = (Get-FileHash WFVendorOverlay-windows.zip -Algorithm SHA256).Hash.ToLower()
+          "$h  WFVendorOverlay-windows.zip" | Out-File -Encoding ascii WFVendorOverlay-windows.zip.sha256
+      - name: Publish
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title "${{ github.ref_name }}" --generate-notes
