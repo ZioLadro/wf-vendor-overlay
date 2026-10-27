@@ -24,7 +24,8 @@ import requests
 import rivens as R
 from config import APP_DIR, CFG
 
-V1 = "https://api.warframe.market/v1"
+V1 = "https://api.warframe.market/v1"        # auctions: there is no v2 auction API
+V2 = "https://api.warframe.market/v2"        # weapon and stat lists
 HEADERS = {"Language": "en", "Platform": "pc", "Crossplay": "true", "Accept": "application/json",
            "User-Agent": "WFVendorOverlay/1.2 (riven listings; rate limited)"}
 WEAPONS_FILE = APP_DIR / "riven_weapons.json"
@@ -34,6 +35,7 @@ WEIGHTS_FILE = APP_DIR / "riven_weights.json"
 LIST_TTL = 7 * 24 * 3600
 WINDOW = 7 * 24 * 3600                    # sales estimate: listings gone in the last 7 days
 MAX_GAP = 3 * 24 * 3600                   # two scans further apart than this say nothing about what disappeared
+SEARCH_MAX = 100                          # a search returns at most this many listings
 KEEP_LISTINGS = 80                        # listings stored per weapon (the cheapest ones)
 TYPE_OF = {"rifle": "LotusRifle", "pistol": "LotusPistol", "shotgun": "LotusShotgun", "melee": "PlayerMeleeWeapon",
            "archgun": "LotusArchgun", "kitgun": "LotusModularPistol", "zaw": "LotusModularMelee"}
@@ -161,19 +163,27 @@ def _cached(path, fetch):
 
 
 def weapon_list(limiter, cancel=None):
-    """[{url_name, name, type}] of the weapons that can have a riven."""
+    """[{url_name, name, type, dispo}] of the weapons that can have a riven (v2 list)."""
     def fetch():
-        d = get_json(V1 + "/riven/items", limiter, cancel=cancel)
-        items = (d.get("payload") or {}).get("items") or []
-        return [{"url_name": i["url_name"], "name": i.get("item_name") or i["url_name"],
-                 "type": str(i.get("riven_type") or "").lower()} for i in items if i.get("url_name")]
+        d = get_json(V2 + "/riven/weapons", limiter, cancel=cancel)
+        out = []
+        for i in d.get("data") or []:
+            if not i.get("slug"):
+                continue
+            name = ((i.get("i18n") or {}).get("en") or {}).get("name") or i["slug"]
+            typ = "archgun" if i.get("group") == "archgun" else str(i.get("rivenType") or "").lower()
+            out.append({"url_name": i["slug"], "name": name, "type": typ, "dispo": i.get("disposition") or 0})
+        return out
     return _cached(WEAPONS_FILE, fetch)
 
 
 def attribute_list(limiter, cancel=None):
+    """[{url_name, prefix, suffix, effect}] of the riven stats (v2 list)."""
     def fetch():
-        d = get_json(V1 + "/riven/attributes", limiter, cancel=cancel)
-        return [a for a in (d.get("payload") or {}).get("attributes") or [] if a.get("url_name")]
+        d = get_json(V2 + "/riven/attributes", limiter, cancel=cancel)
+        return [{"url_name": a["slug"], "prefix": a.get("prefix") or "", "suffix": a.get("suffix") or "",
+                 "effect": ((a.get("i18n") or {}).get("en") or {}).get("name") or ""}
+                for a in d.get("data") or [] if a.get("slug")]
     return _cached(ATTRS_FILE, fetch)
 
 
@@ -303,20 +313,23 @@ class Store:
 
     def update(self, url_name, name, all_ids, listings, now=None):
         """Records a scan. all_ids = every listing seen (any seller status); listings = the usable ones (parsed).
-        Listings that were known and are not there any more are counted as gone (once the gap since the last scan
-        is short enough to mean something)."""
+        all_ids: {listing id: price}. A search returns at most 100 listings (the cheapest), so a known listing that is
+        missing is counted as gone only if it was cheaper than the dearest listing now shown (otherwise it may just
+        have been pushed out by cheaper ones). The gap since the last scan must also be short enough to mean something."""
         now = int(now or time.time())
         with self.lock:
-            w = self.d["weapons"].setdefault(url_name, {"name": name, "t": 0, "ids": [], "gone": [], "first": now})
-            prev, gap = set(w.get("ids") or []), now - int(w.get("t") or 0)
+            w = self.d["weapons"].setdefault(url_name, {"name": name, "t": 0, "ids": {}, "gone": [], "first": now})
+            prev, gap = w.get("ids") if isinstance(w.get("ids"), dict) else {}, now - int(w.get("t") or 0)
             if prev and gap <= MAX_GAP:
-                gone = len(prev - set(all_ids))
+                full = len(all_ids) >= SEARCH_MAX
+                top = max(all_ids.values(), default=0)
+                gone = sum(1 for i, p in prev.items() if i not in all_ids and (not full or p < top))
                 if gone:
                     w["gone"] = (w.get("gone") or []) + [[now, gone]]
             elif prev:
                 w["first"] = now                           # too long since the last scan: restart the observation
             w["gone"] = [g for g in w.get("gone", []) if now - g[0] <= WINDOW]
-            w.update(name=name, t=now, ids=list(all_ids), n=len(all_ids))
+            w.update(name=name, t=now, ids=dict(all_ids), n=len(all_ids))
             w["listings"] = sorted(listings, key=lambda x: x["price"])[:KEEP_LISTINGS]
             self.version += 1
             return w
@@ -341,7 +354,8 @@ def scan_weapon(weapon, limiter, store, cancel=None):
                  params={"type": "riven", "weapon_url_name": weapon["url_name"], "sort_by": "price_asc",
                          "buyout_policy": "direct"})
     auctions = (d.get("payload") or {}).get("auctions") or []
-    ids = [a["id"] for a in auctions if a.get("id") and not a.get("closed") and a.get("visible", True)]
+    ids = {a["id"]: int(a.get("buyout_price") or 0) for a in auctions
+           if a.get("id") and not a.get("closed") and a.get("visible", True)}
     listings = [p for p in (parse_auction(a) for a in auctions) if p]
     store.update(weapon["url_name"], weapon["name"], ids, listings)
     return len(listings)
@@ -403,7 +417,7 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
     rows = []
     for url, wd in store.d["weapons"].items():
         info = weapons_by_url.get(url) or {"name": wd.get("name", url), "type": ""}
-        dispo = (R.data()["weapons"] and _dispo(info["name"])) or 0
+        dispo = info.get("dispo") or _dispo(info["name"])
         scored = []
         for l in wd.get("listings") or []:
             if online_only and l["status"] not in ("ingame", "online"):

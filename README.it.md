@@ -102,7 +102,7 @@ Il programma può passare oggetti a [Quantframe](https://github.com/Kenya-DK/qua
 
 **Riven flip > Scansiona il mercato** legge le inserzioni riven delle prossime armi su warframe.market (prima quelle scansionate meno di recente; *Armi per scansione* e *Solo queste armi* in Impostazioni > Riven flip) ed elenca i riven in vendita **a meno di quanto valgono quelli confrontabili**, dal profitto maggiore. Tre criteri:
 
-- **Prezzo**: il prezzo di acquisto diretto contro un *prezzo equo* = mediana dei prezzi delle inserzioni confrontabili della stessa arma (punteggio statistiche entro ±15) × *Rivendita attesa* (predefinito 85 %, perché i prezzi richiesti sono più alti di quelli pagati). Servono almeno 3 inserzioni confrontabili.
+- **Prezzo**: il prezzo di acquisto diretto contro un *prezzo equo* = mediana dei prezzi delle inserzioni confrontabili della stessa arma (punteggio statistiche entro ±15) × *Rivendita attesa* (predefinito 85 %, perché i prezzi richiesti sono più alti di quelli pagati). Servono almeno 3 inserzioni confrontabili. warframe.market restituisce al massimo le **100 inserzioni più economiche** per arma (gli elenchi di armi e statistiche vengono dalla sua API v2, le inserzioni dall'unica API aste rimasta, la v1), quindi per le armi molto diffuse il confronto avviene tra le più economiche, il che tiene prudente il prezzo equo.
 - **Vendite**: warframe.market non pubblica le vendite dei riven, quindi è una **stima**: a ogni scansione il programma ricorda le inserzioni viste, e quelle che c'erano e alla scansione dopo non ci sono più (vendute, ritirate o scadute) vengono contate negli ultimi 7 giorni. Servono scansioni ripetute (un intervallo oltre 3 giorni azzera il conteggio); la colonna mostra "–" finché un'arma non è osservata da un giorno. *Vendite stimate minime* nasconde le armi lente.
 - **Statistiche**: un punteggio 0–100 da quanto è utile ogni statistica (pesi: critico, danno e multishot al massimo; zoom e rinculo valgono zero; un malus su una statistica inutile è un bonus) e da quanto è ben uscita (calcolata con la stessa formula della funzione Riven → Quantframe). Per cambiare i pesi crea `riven_weights.json` nella cartella dati del programma, es. `{"WeaponFireRateMod": 0.9, "WeaponStunChanceMod": 0.2}` (da 0 a 1; i nomi sono le chiavi di `rivens.json`).
 
@@ -148,7 +148,7 @@ prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Sal
 il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
 valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
 
-## Aggiornamenti (versione attuale 0.1.10)
+## Aggiornamenti (versione attuale 0.1.11)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i

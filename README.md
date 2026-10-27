@@ -99,7 +99,7 @@ The program can hand items to [Quantframe](https://github.com/Kenya-DK/quantfram
 
 **Riven flip > Scan the market** reads the riven listings of the next weapons on warframe.market (the least recently scanned first; *Weapons per scan* and *Only these weapons* in Settings > Riven flip) and lists the rivens priced **below what comparable ones are worth**, best profit first. Three criteria:
 
-- **Price**: the listed direct-buy price against a *fair price* = median price of the comparable listings of the same weapon (stats score within ±15) × *Expected resale* (default 85 %, because asking prices are higher than what gets paid). At least 3 comparable listings are needed.
+- **Price**: the listed direct-buy price against a *fair price* = median price of the comparable listings of the same weapon (stats score within ±15) × *Expected resale* (default 85 %, because asking prices are higher than what gets paid). At least 3 comparable listings are needed. warframe.market returns at most the **100 cheapest** listings per weapon (lists of weapons and stats come from its v2 API, listings from the only auction API left, v1), so for very popular weapons the comparison is made among the cheaper ones, which keeps the fair price on the cautious side.
 - **Sales**: warframe.market does not publish riven sales, so this is an **estimate**: each scan remembers the listings seen, and listings that were there and are gone at the next scan (sold, withdrawn or expired) are counted over the last 7 days. It needs repeated scans (a gap longer than 3 days restarts the count); the column shows "–" until a weapon has been watched for a day. *Smallest estimated sales* hides slow weapons.
 - **Stats**: a 0–100 score from how useful each stat is (weights: crit chance/damage, damage and multishot highest; zoom and recoil worth nothing; a negative on a worthless stat is a bonus) and how well it rolled (computed with the same formula as the Rivens → Quantframe feature). To change the weights create `riven_weights.json` in the program's data folder, e.g. `{"WeaponFireRateMod": 0.9, "WeaponStunChanceMod": 0.2}` (0 to 1; stat names are the keys of `rivens.json`).
 
@@ -143,7 +143,7 @@ recommendations). **Save** applies and stores them in `config.json`; **Save and 
 the program. Settings marked ⟳ (language, hotkeys, OCR, start active, name threshold) need a restart;
 the rest apply immediately. **Restore defaults** loads the default values (press Save to apply).
 
-## Updates (current version 0.1.10)
+## Updates (current version 0.1.11)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**
 and asks if you want to install it (*Install now* / *Later* / *Skip this version*). If the release exists but its package is not ready yet (the automatic build still running or failed) it says so. In **Settings → Updates** you can check by hand and, if you agree, it downloads
 `WFVendorOverlay-windows.zip`, verifies its SHA-256 against the `.sha256` file of the same release, and replaces
