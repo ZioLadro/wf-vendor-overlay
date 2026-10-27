@@ -7,8 +7,8 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 S = 1024                      # drawing size (then shrunk: smooth edges)
-BG1, BG2 = (14, 20, 36), (30, 42, 70)
-CYAN, GOLD, WHITE = (96, 214, 255), (240, 190, 90), (240, 246, 255)
+BG1, BG2 = (8, 26, 22), (16, 54, 44)            # deep green
+CYAN, GOLD, WHITE = (190, 240, 60), (215, 235, 110), (236, 250, 215)   # lime accents
 
 
 def draw() -> Image.Image:
