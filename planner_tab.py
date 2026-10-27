@@ -10,7 +10,7 @@ from PyQt6.QtWidgets import (
 
 import buildcalc as BC
 import loadouts as LO
-from buildcards import cards_widget, stats_panel
+from buildcards import Scaler, cards_widget, stats_panel
 from config import APP_DIR
 from i18n import t
 from uiutil import role
@@ -121,6 +121,7 @@ class PlannerView(QWidget):
         self.roles = []
         self.reactor, self.level = True, 30
         self.plans = self._read_plans()
+        self.scaler = Scaler(self, self._draw)
 
         self.kind_box = QComboBox()
         for k in KINDS:
@@ -164,6 +165,7 @@ class PlannerView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(host)
+        self.scaler.area = scroll
         lay = QVBoxLayout(self)
         lay.addLayout(top)
         lay.addLayout(bar)
@@ -181,6 +183,10 @@ class PlannerView(QWidget):
         self.saved.activated.connect(lambda _i: self._load())
         self._fill_saved()
         self._kind_changed()
+
+    def showEvent(self, e):
+        super().showEvent(e)
+        self.scaler.attach()
 
     # ---------- plans on disk ----------
     def _read_plans(self) -> dict:
@@ -352,7 +358,7 @@ class PlannerView(QWidget):
         slots, calc = self.slots()
         row = QHBoxLayout()
         row.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        row.addWidget(cards_widget(slots, on_click=self._edit))
+        row.addWidget(cards_widget(slots, on_click=self._edit, cw=self.scaler.cw))
         col = QVBoxLayout()
         col.setAlignment(Qt.AlignmentFlag.AlignTop)
         col.addWidget(stats_panel({k: calc[k] for k in ("total", "used", "free")}, calc["stats"], self.level, self.reactor, calc.get("bonus")))

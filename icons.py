@@ -91,6 +91,8 @@ def pixmap(rel: str, size: int = 0):
     if not root:
         return None
     key = (str(root), rel, size)
+    if len(_cache) > 500:                  # sizes change while the Builds cards are resized: keep the cache small
+        _cache.clear()
     if key in _cache:
         return _cache[key]
     pm = None

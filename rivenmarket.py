@@ -349,9 +349,21 @@ class Store:
         n = sum(g[1] for g in w.get("gone", []) if now - g[0] <= WINDOW)
         return n, min(WINDOW, max(0, now - int(w.get("first") or now))) / 86400.0
 
-    def stale_order(self, urls):
-        """Weapon URLs, the ones never scanned first, then the least recently scanned."""
-        return sorted(urls, key=lambda u: int((self.d["weapons"].get(u) or {}).get("t") or 0))
+    def stale_order(self, urls, now=None):
+        """Weapon URLs, the ones never scanned first, then by how overdue they are. A weapon whose listings keep selling is
+        overdue sooner (its prices move), one watched for 3+ days with no sale and few listings later (rarely worth a request)."""
+        now = int(now or time.time())
+
+        def overdue(u):
+            w = self.d["weapons"].get(u) or {}
+            if not w.get("t"):
+                return float("inf")
+            sold, days = self.sales(u, now)
+            weight = 1.0 + min(3.0, sold / 5.0)
+            if days >= 3.0 and sold == 0 and int(w.get("n") or 0) <= 3:
+                weight = 0.25
+            return (now - int(w["t"])) * weight
+        return sorted(urls, key=lambda u: -overdue(u))
 
 
 # ---------- the scan ----------

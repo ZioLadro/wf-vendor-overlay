@@ -498,6 +498,11 @@ class InventoryTab(QWidget):
         if not path or not os.path.exists(path):
             return
         try:
+            st = os.stat(path)
+            key = (st.st_mtime_ns, st.st_size)
+            if key == getattr(self, "_file_stat", None):
+                return                              # not touched since the last look: no need to read it again
+            self._file_stat = key
             with open(path, "rb") as f:
                 sig = hashlib.md5(f.read()).hexdigest()
             first = getattr(self, "_file_sig", None) is None

@@ -3,6 +3,17 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.2.4
+- **Builds scale with the window**: the cards grow and shrink with the window (width and height), keeping the same
+  proportions for mod and Arcane cards, the polarity and drain symbols and the text. The build planner does the same.
+- **Hover a mod card** to see its picture (bigger) with its name and rank.
+- **Lighter on resources**: the Recommendations tab no longer rebuilds its table every 2 seconds when nothing changed;
+  the AlecaFrame file is no longer read and hashed every 10 seconds (only when its date or size changed); the screen
+  check slows down to every 1.2 s after about 12 s with nothing happening (back to normal at the first change, and never
+  while labels are shown); card pictures are cached when resizing.
+- **Riven scan order**: weapons whose listings keep selling are rescanned sooner, weapons watched for 3+ days with no
+  sale and few listings later, so the request budget goes where prices move.
+
 ## 0.2.3
 - **Builds, in-game card style**: Aura and Exilus on top, the eight mods in two rows of four, the Arcanes on the right,
   each card with its slot polarity, the mod's polarity and drain (green = matching polarity, red = mismatch) and the rank

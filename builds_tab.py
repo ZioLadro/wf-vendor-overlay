@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
 import aleca
 import icons
 import previews
-from buildcards import cards_widget, stats_panel
+from buildcards import Scaler, cards_widget, stats_panel
 from planner_tab import PlannerView
 import loadouts as LO
 from config import APP_DIR
@@ -40,6 +40,8 @@ class LoadoutView(QWidget):
         role(self.sub, "muted")
         self.body = QVBoxLayout()
         self.lookup = {}                                 # (item id, config index) -> loadout, set by the owner (config buttons)
+        self._lo = None
+        self.scaler = Scaler(self, lambda: self.show_loadout(self._lo))
         self.lay.addWidget(self.title)
         self.lay.addWidget(self.sub)
         self.lay.addLayout(self.body)
@@ -85,7 +87,12 @@ class LoadoutView(QWidget):
         if target:
             self.show_loadout(target)
 
+    def showEvent(self, e):
+        super().showEvent(e)
+        self.scaler.attach()
+
     def show_loadout(self, lo):
+        self._lo = lo
         self._clear(self.body)
         if not lo:
             self.title.setText("")
@@ -98,7 +105,7 @@ class LoadoutView(QWidget):
         slots = lo["slots"]
         row = QHBoxLayout()
         row.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        row.addWidget(cards_widget(slots))
+        row.addWidget(cards_widget(slots, cw=self.scaler.cw))
         if lo.get("capacity"):
             col = QVBoxLayout()
             col.setAlignment(Qt.AlignmentFlag.AlignTop)

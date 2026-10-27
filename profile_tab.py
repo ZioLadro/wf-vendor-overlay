@@ -72,13 +72,20 @@ class ProfileTab(QWidget):
             pass
         now = time.strftime("%H:%M:%S")
         try:
+            st = os.stat(path)
+            key = (path, st.st_mtime_ns, st.st_size)
+            if key == getattr(self, "_file_stat", None) and self.store.sig:
+                self.check.setText(t("profile.check.same", time=now))     # untouched since the last look: skip the read
+                return
             raw = read_raw(path)
             sig = signature(raw)
             if sig == self.store.sig:
+                self._file_stat = key
                 self.check.setText(t("profile.check.same", time=now))
                 return
             self.store.apply_profile(path, parse_bytes(raw, path))
             self.store.sig = sig
+            self._file_stat = key
         except ProfileError as e:
             self.check.setText(t("profile.check.error", time=now, err=e))
             return

@@ -155,6 +155,8 @@ Everything comes from your AlecaFrame `lastData.dat` (found by itself, same file
 
 Cards follow the in-game build screen (slot polarity top left, mod polarity and drain top right, rank diamonds below), with **capacity** (free / total) and an approximate **stat recap** beside them: only mods are counted, not Arcanes, Archon Shards, Helminth, set bonuses or conditional effects. The names you gave your configurations in the game are shown as buttons.
 
+Cards **scale with the window** (width and height, same proportions for mod and Arcane cards) and show the mod's picture when you hover them.
+
 Installed **Rivens** show their name, stats, polarity and drain (10 + rank) and count in the recap; weapons get a *Mod bonuses* recap (sum of the percentage bonuses of mods and Riven).
 
 **Build planner** (third entry of the view selector): choose a Warframe or weapon, click a card to pick the mod, rank and slot polarity (Forma); capacity, drain and stats update. *Save* keeps the plan in `build_plans.json`; *Copy from my loadout…* starts from one of yours. The mod list is filtered by item (weapon-specific mods are matched by name).
@@ -185,7 +187,7 @@ the rest apply immediately. **Restore defaults** loads the default values (press
 
 Settings has one sub-tab per category. **Theme and font** offers colour themes inspired by Warframe's factions, allies (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) and enemies (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), plus the original *Classic*, and a font family and size. The choice is previewed at once in every window and kept only when you press Save (leaving the tab restores the saved look). The in-game overlay keeps its own colours. All themes are dark.
 
-## Updates (current version 0.2.3)
+## Updates (current version 0.2.4)
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version (from 0.2.1 on; the release page shows the same notes).
 

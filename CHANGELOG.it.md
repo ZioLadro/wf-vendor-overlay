@@ -3,6 +3,18 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.2.4
+- **La scheda Build si adatta alla finestra**: le card crescono e si riducono con la finestra (larghezza e altezza),
+  mantenendo le stesse proporzioni tra card delle mod e degli Arcani, simboli di polarità e drain e testo. Lo stesso
+  vale per il build planner.
+- **Passando sopra una card** si vede l'immagine della mod (più grande), con nome e rank.
+- **Più leggero sulle risorse**: la scheda Consigli non ricostruisce più la tabella ogni 2 secondi se non è cambiato
+  nulla; il file di AlecaFrame non viene più letto e controllato ogni 10 secondi (solo se data o dimensione sono
+  cambiate); il controllo dello schermo rallenta a ogni 1,2 s dopo circa 12 s senza novità (torna normale al primo
+  cambiamento, e mai mentre le etichette sono mostrate); le immagini delle card sono in cache durante il ridimensionamento.
+- **Ordine di scansione delle Riven**: le armi le cui inserzioni continuano a vendersi vengono riscansionate prima, quelle
+  osservate da 3+ giorni senza vendite e con poche inserzioni più tardi, così le richieste vanno dove i prezzi si muovono.
+
 ## 0.2.3
 - **Build, stile delle card del gioco**: Aura ed Exilus in alto, le otto mod in due righe da quattro, gli Arcani a destra;
   ogni card mostra la polarità dello slot, la polarità e il drain della mod (verde = polarità uguale, rosso = diversa) e il

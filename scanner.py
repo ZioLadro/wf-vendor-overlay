@@ -18,6 +18,8 @@ from i18n import t
 from ocr import Grabber, screen_changed
 
 PRIO = {"refresh": 1, "scroll": 2, "open": 3}
+IDLE_POLLS = 20                       # polls in a row with nothing happening before the screen is checked less often
+IDLE_INTERVAL = 1.2                   # seconds between checks then (back to watch_interval at the first change)
 
 
 def fmt_price(it: dict) -> str:
@@ -330,11 +332,13 @@ class Scanner:
         nones = 0
         grab = Grabber(CFG["only_warframe"])
         prev, dirty, stable, last_auto, epoch, streak = None, True, 0, 0.0, self.scan_epoch, 0   # dirty: scan right away at startup
+        calm = 0                         # polls in a row with nothing going on: after a while the screen is checked less often
         while True:
             # while playing (constantly moving screen) check less often: only the moment it stops matters
-            time.sleep(CFG["watch_interval_moving"] if streak >= 3 else CFG["watch_interval"])
+            time.sleep(CFG["watch_interval_moving"] if streak >= 3
+                       else max(CFG["watch_interval"], IDLE_INTERVAL) if calm >= IDLE_POLLS else CFG["watch_interval"])
             if not self.active or self.suspended:
-                prev, dirty, stable, streak = None, False, 0, 0
+                prev, dirty, stable, streak, calm = None, False, 0, 0, 0
                 continue
             now = time.time()
             if self.items and not self.busy and now - self.last_refresh >= CFG["refresh_interval"]:
@@ -360,7 +364,7 @@ class Scanner:
             nones = 0
 
             if showing:
-                prev, streak = None, 0
+                prev, streak, calm = None, 0, 0
                 if screen_changed(img, ref["boxes"], ref["patches"]):
                     self._invalidate()       # vendor closed or list changed: drop the labels
                     dirty, stable = True, 0
@@ -379,6 +383,7 @@ class Scanner:
                 dirty, stable = True, 0
             else:
                 stable += 1
+            calm = calm + 1 if not (moving or dirty) else 0
             if dirty and stable >= CFG["auto_settle_polls"] and now - last_auto >= CFG["auto_min_gap"]:
                 dirty, last_auto = False, now
                 self._request("open")
