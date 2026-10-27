@@ -105,7 +105,8 @@ def parse_bytes(raw: bytes, path: str) -> dict:
             from inventory import decrypt_last_data
             text = decrypt_last_data(raw)
         else:
-            text = raw.decode("utf-8-sig")
+            from inventory import unwrap_inventory
+            text = unwrap_inventory(raw.decode("utf-8-sig"))
         data = json.loads(text)
     except ImportError:
         raise ProfileError("the 'cryptography' package is needed: pip install cryptography")

@@ -285,6 +285,23 @@ DAT_KEY = bytes([76, 69, 79, 45, 65, 76, 69, 67, 9, 69, 79, 45, 65, 76, 69, 67])
 DAT_IV = bytes([49, 50, 70, 71, 66, 51, 54, 45, 76, 69, 51, 45, 113, 61, 57, 0])
 
 
+def unwrap_inventory(text: str) -> str:
+    """Newer AlecaFrame files wrap the inventory: {"InventoryJson": "<the inventory as a string>", ...}.
+    Returns the inventory JSON text (the same text if it is not wrapped). Raises ValueError if it is not JSON."""
+    data = json.loads(text)
+    for _ in range(2):
+        inner = data.get("InventoryJson") if isinstance(data, dict) else None
+        if isinstance(inner, str):
+            data = json.loads(inner)
+            text = inner
+        elif isinstance(inner, dict):
+            data = inner
+            text = json.dumps(inner)
+        else:
+            break
+    return text
+
+
 def decrypt_last_data(raw: bytes) -> str:
     """Decrypts the contents of a lastData.dat file into the inventory JSON text. Raises ValueError."""
     try:
@@ -299,8 +316,7 @@ def decrypt_last_data(raw: bytes) -> str:
         padded = dec.update(raw) + dec.finalize()
         unpad = padding.PKCS7(128).unpadder()
         text = (unpad.update(padded) + unpad.finalize()).decode("utf-8")
-        json.loads(text)                                  # must be JSON, otherwise the key does not fit
-        return text
+        return unwrap_inventory(text)                     # must be JSON, otherwise the key does not fit
     except Exception:
         raise ValueError(t("inv.dat.failed"))
 
@@ -311,6 +327,10 @@ def parse_file(path, market) -> ImportResult:
     head = raw.lstrip(b"\xef\xbb\xbf \t\r\n")[:1]
     if head in (b"{", b"["):
         text = raw.decode("utf-8-sig", errors="replace")
+        try:
+            text = unwrap_inventory(text)
+        except ValueError:
+            pass
     elif p.suffix.lower() == ".dat" or b"\x00" in raw[:2048]:
         text = decrypt_last_data(raw)
     else:
