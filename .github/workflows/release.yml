@@ -53,11 +53,24 @@ jobs:
         run: |
           $ErrorActionPreference = "Continue"      # gh writes to stderr when the release does not exist yet: not an error
           $tag = $env:TAG
+          # release notes: the section of CHANGELOG.md for this version (falls back to generated notes)
+          $ver = $tag.TrimStart("v")
+          $notes = ""
+          $on = $false
+          foreach ($line in Get-Content CHANGELOG.md -Encoding UTF8) {
+            if ($line -match '^## ') { $on = ($line -match [regex]::Escape($ver)) ; continue }
+            if ($on) { $notes += $line + "`n" }
+          }
+          if ($notes.Trim()) { $notes | Out-File -Encoding utf8 notes.md }
           gh release view $tag 2>&1 | Out-Null
           if ($LASTEXITCODE -eq 0) {
             # the release already exists (created on the website): just attach the files
             gh release upload $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --clobber
           } else {
-            gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --generate-notes
+            if (Test-Path notes.md) {
+              gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --notes-file notes.md
+            } else {
+              gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --generate-notes
+            }
           }
           if ($LASTEXITCODE -ne 0) { exit 1 }

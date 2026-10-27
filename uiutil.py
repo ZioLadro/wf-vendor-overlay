@@ -30,7 +30,15 @@ def role(widget, name: str):
 
 
 def make_icon() -> QIcon:
-    """Icon (a coin with a platinum 'p') drawn on the fly: no file to bundle in the exe."""
+    """The program's icon (icon.png: a W and an O that is a scope reticle; made by build_icon.py). If the file is missing,
+    a plain coin is drawn instead."""
+    import sys
+    from pathlib import Path
+    f = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "icon.png"
+    if f.is_file():
+        ic = QIcon(str(f))
+        if not ic.isNull():
+            return ic
     pm = QPixmap(64, 64)
     pm.fill(Qt.GlobalColor.transparent)
     p = QPainter(pm)

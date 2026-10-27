@@ -181,7 +181,10 @@ valgono subito. **Ripristina predefiniti** carica i valori di default (premi Sal
 
 Le Impostazioni hanno una sotto-scheda per categoria. **Tema e carattere** offre temi di colori ispirati alle fazioni di Warframe, alleate (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) e nemiche (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), più il *Classic* originale, oltre a famiglia e dimensione del carattere. La scelta si vede subito in anteprima in tutte le finestre e resta solo se premi Salva (uscendo dalla scheda torna l'aspetto salvato). L'overlay in gioco mantiene i suoi colori. Tutti i temi sono scuri.
 
-## Aggiornamenti (versione attuale 0.2.0)
+## Aggiornamenti (versione attuale 0.2.1)
+
+Vedi [CHANGELOG.it.md](CHANGELOG.it.md) per cosa cambia in ogni versione (dalla 0.2.1; la pagina della release mostra le stesse note).
+
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i

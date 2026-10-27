@@ -58,6 +58,12 @@ def main():
         update_found = pyqtSignal(object)
         status = pyqtSignal(str)
 
+    if sys.platform == "win32":                  # own taskbar identity: the taskbar shows our icon, not python's
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ZioLadro.WFVendorOverlay")
+        except Exception:
+            pass
     app = QApplication(sys.argv)
     import theme
     theme.apply(app)
