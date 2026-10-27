@@ -31,13 +31,19 @@ def _card(name, rank, mx, kind_role):
     f.setMinimumSize(120, 58)
     outer = QHBoxLayout(f)
     outer.setContentsMargins(8, 5, 8, 5)
-    pic = previews.by_name(name) if name else None
-    if pic:                                               # the mod/Arcane card picture (warframe.market, else the wiki)
+    pm = None
+    if name and kind_role == "arcane":                    # Arcanes: the generic picture of their rarity (icons folder only)
+        pm = icons.arcane(name)
+    elif name:                                            # mods: the card picture (warframe.market, else the wiki)
+        pic = previews.by_name(name)
+        if pic:
+            pm = QPixmap(str(pic))
+            if not pm.isNull():
+                pm = pm.scaledToHeight(52, Qt.TransformationMode.SmoothTransformation)
+    if pm is not None and not pm.isNull():
         img = QLabel()
-        pm = QPixmap(str(pic))
-        if not pm.isNull():
-            img.setPixmap(pm.scaledToHeight(52, Qt.TransformationMode.SmoothTransformation))
-            outer.addWidget(img)
+        img.setPixmap(pm)
+        outer.addWidget(img)
     lay = QVBoxLayout()
     outer.addLayout(lay, 1)
     lay.setSpacing(1)
@@ -124,16 +130,20 @@ class LoadoutView(QWidget):
             row = QHBoxLayout()
             if lo["shards"]:
                 for s in lo["shards"]:
-                    chip = QLabel(f"{t('builds.tau') + ' ' if s['tauforged'] else ''}{s['color_name']}\n{s['effect']}")
-                    chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
                     pm = icons.shard(s["color"], s["tauforged"])
-                    if pm:
+                    if pm:                                   # the picture already says colour and tauforged: effect only
                         icon = QLabel()
                         icon.setPixmap(pm)
                         row.addWidget(icon)
-                    rgb = SHARD_RGB.get(s["color"], "#888888")
-                    chip.setStyleSheet(f"background: {rgb}; color: #101010; border-radius: 6px; padding: 5px 8px;"
-                                       + (" border: 2px solid #ffd966;" if s["tauforged"] else ""))
+                        chip = QLabel(s["effect"])
+                        rgb = None
+                    else:
+                        chip = QLabel(f"{t('builds.tau') + ' ' if s['tauforged'] else ''}{s['color_name']}\n{s['effect']}")
+                        rgb = SHARD_RGB.get(s["color"], "#888888")
+                    chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    if rgb:
+                        chip.setStyleSheet(f"background: {rgb}; color: #101010; border-radius: 6px; padding: 5px 8px;"
+                                           + (" border: 2px solid #ffd966;" if s["tauforged"] else ""))
                     row.addWidget(chip)
                 row.addStretch(1)
             else:

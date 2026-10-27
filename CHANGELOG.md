@@ -8,6 +8,11 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
   primary, secondary, melee and Exalted weapon, the companion, the Archwing and the Necramech (with their ranks, the names
   you gave them and the mod configuration each loadout uses). Click a row to see its mods, Arcanes, Archon Shards and
   Helminth. The previous list is still there as *By item*. Read from the AlecaFrame file; focus school and K-Drive are not shown.
+- **Top strip**: Endo, platinum, ducats and Aya you hold (compact: 3k, 30k, 1.2M; exact value in the tooltip), with the icons
+  of the icons folder when it is set.
+- Arcanes on the Builds cards use the generic rarity picture (bronze, silver, gold, primed) of the icons folder: no download
+  from the market or the wiki. With the icons folder set, Archon Shards show only the picture and the effect (not the colour name).
+- New program icon: the silhouette of a man with dreadlocks, half cybernetic, holding a sniper rifle, with a small W and O.
 
 ## 0.2.1
 - New program icon (a W and an O drawn as a scope reticle), used by the executable, the window, the taskbar and the tray.

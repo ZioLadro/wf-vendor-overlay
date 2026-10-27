@@ -628,6 +628,11 @@ EN = {
     "builds.role.necramech_weapon": "Necramech weapon",
     "builds.nomods": "{item} has no mods in this loadout configuration.",
     "builds.summary.game": "{n} game loadouts · from {src} · {when}",
+    "bar.endo": "Endo",
+    "bar.plat": "Platinum",
+    "bar.ducats": "Ducats",
+    "bar.aya": "Aya",
+    "bar.regal": "Regal Aya",
 }
 
 IT = {
@@ -1243,6 +1248,11 @@ IT = {
     "builds.role.necramech_weapon": "Arma del Necramech",
     "builds.nomods": "{item} non ha mod in questa configurazione del loadout.",
     "builds.summary.game": "{n} loadout di gioco · da {src} · {when}",
+    "bar.endo": "Endo",
+    "bar.plat": "Platino",
+    "bar.ducats": "Ducat",
+    "bar.aya": "Aya",
+    "bar.regal": "Regal Aya",
 }
 
 STRINGS = {"en": EN, "it": IT}

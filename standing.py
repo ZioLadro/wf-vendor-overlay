@@ -72,7 +72,31 @@ def parse_profile(data) -> dict:
             factions[tag]["daily"] = left
     tr = res.get("TradesRemaining")
     return {"mr": int(mr) if isinstance(mr, (int, float)) else None, "factions": factions,
-            "trades": int(tr) if isinstance(tr, (int, float)) else None, "synced": sync_time(res)}
+            "trades": int(tr) if isinstance(tr, (int, float)) else None, "synced": sync_time(res),
+            "wallet": wallet(res)}
+
+
+def wallet(res) -> dict:
+    """What you hold: Endo (FusionPoints), platinum (paid + free), ducats (the PrimeBucks item), Aya (PrimeTokens), Regal Aya,
+    credits. Missing values are left out."""
+    out = {}
+    if not isinstance(res, dict):
+        return out
+    num = lambda v: int(v) if isinstance(v, (int, float)) and not isinstance(v, bool) else None
+    if num(res.get("FusionPoints")) is not None:
+        out["endo"] = num(res["FusionPoints"])
+    if num(res.get("PremiumCredits")) is not None:
+        out["plat"] = num(res["PremiumCredits"]) + (num(res.get("PremiumCreditsFree")) or 0)
+    if num(res.get("RegularCredits")) is not None:
+        out["credits"] = num(res["RegularCredits"])
+    duc = sum(int(it.get("ItemCount") or 0) for it in res.get("MiscItems") or []
+              if isinstance(it, dict) and str(it.get("ItemType", "")).endswith("/MiscItems/PrimeBucks"))
+    out["ducats"] = duc
+    if num(res.get("PrimeTokens")) is not None:
+        out["aya"] = num(res["PrimeTokens"])
+    if num(res.get("RegalCredits")):
+        out["regal"] = num(res["RegalCredits"])
+    return out
 
 
 def sync_time(res):
@@ -144,6 +168,7 @@ class StandingStore:
         self.mtime = 0
         self.sig = ""          # fingerprint of the last file read (the modification time is unreliable while another
         self.trades = None     # program keeps the file open)
+        self.wallet = {}       # Endo, platinum, ducats, Aya... (see wallet)
         self.synced = None     # when the game last synced the inventory (see sync_time)
         self.mr = None
         self.fetched = None
@@ -160,11 +185,12 @@ class StandingStore:
         self.path = d.get("path", "")
         self.factions = {k: v for k, v in (d.get("factions") or {}).items() if isinstance(v, dict) and not is_nightwave(k)}
         self.trades, self.synced = d.get("trades"), d.get("synced")
+        self.wallet = d.get("wallet") or {}
 
     def save(self):
         tmp = STANDING_FILE.with_suffix(".tmp")
         try:
-            tmp.write_text(json.dumps({"name": self.name, "trades": self.trades, "synced": self.synced, "path": self.path, "mr": self.mr, "fetched": self.fetched,
+            tmp.write_text(json.dumps({"name": self.name, "trades": self.trades, "synced": self.synced, "wallet": self.wallet, "path": self.path, "mr": self.mr, "fetched": self.fetched,
                                        "factions": self.factions}, ensure_ascii=False), encoding="utf-8")
             os.replace(tmp, STANDING_FILE)
         except OSError:
@@ -177,6 +203,7 @@ class StandingStore:
             self.mtime = 0
         self.path, self.mr, self.fetched = path, profile["mr"], int(time.time())
         self.trades, self.synced = profile.get("trades"), profile.get("synced")
+        self.wallet = profile.get("wallet") or {}
         self.factions = {k: v for k, v in self.factions.items() if not is_nightwave(k)}
         for tag, f in profile["factions"].items():
             self.factions[tag] = {"standing": f["standing"], "rank": f["rank"], "manual": False,

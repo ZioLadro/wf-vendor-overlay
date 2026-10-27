@@ -107,6 +107,7 @@ I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispi
   rispetto alla media a 30 giorni; il suggerimento ha le medie a 7/30/90 giorni) e un prezzo sopra la media a 30 giorni
   viene avvicinato ad essa dal *Peso del trend* (predefinito 50%, 0 = ignora il trend), così un picco breve non porta un
   oggetto in cima. Le medie di un oggetto si aggiornano al prossimo *Aggiorna prezzi*.
+- **Portafoglio nella barra in alto.** Accanto al tuo nome la barra mostra Endo, platino, ducat e Aya che possiedi (letti dal `lastData.dat`, quindi aggiornati all'ultima sincronizzazione di AlecaFrame), in forma compatta (3k, 30k, 1.2M) con il valore esatto nel suggerimento. Con la cartella icone impostata usa le sue immagini; la stessa cartella dà alle schede degli Arcani l'immagine generica della rarità (nessun download) e alle Archon Shard le loro immagini (senza il nome del colore).
 - **Cartella icone (facoltativa).** Impostazioni > Inventario > *Cartella icone*: indica una cartella di icone tue (per
   esempio gli `assets` decompressi di AlecaFrame) e la scheda Build mostra le immagini delle Archon Shard. I file sono
   solo letti da dove stanno; non vengono copiati né distribuiti con il programma.

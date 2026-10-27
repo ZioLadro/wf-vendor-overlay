@@ -103,6 +103,7 @@ Your items with their market prices, and one-click sell orders (inspired by Alec
   has the 7/30/90-day averages), and a price above its 30-day average is pulled towards it by *Advice: trend weight*
   (default 50%, 0 = ignore the trend), so a short spike does not push an item to the top. Items refresh their averages
   at the next *Update prices*.
+- **Top strip wallet.** Next to your name the strip shows the Endo, platinum, ducats and Aya you hold (read from the `lastData.dat`, so as fresh as AlecaFrame's last sync), compact (3k, 30k, 1.2M) with the exact value in the tooltip. With the icons folder set it uses its pictures; the same folder gives the Arcane cards their generic rarity picture (no download) and the Archon Shards their pictures (without the colour name).
 - **Icons folder (optional).** Settings > Inventory > *Icons folder*: point it at a folder of your own icons (for example
   the unpacked `assets` of AlecaFrame) and the Builds tab shows the Archon Shard pictures. The files are only read from
   where they are; they are not copied or shipped with the program.

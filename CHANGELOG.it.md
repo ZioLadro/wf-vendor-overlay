@@ -8,6 +8,11 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
   Warframe, primaria, secondaria, mischia e arma esaltata, il compagno, l'Archwing e il Necramech (con rank, i nomi che
   hai dato e la configurazione di mod usata da ogni loadout). Clicca una riga per vedere mod, Arcani, Archon Shard e
   Helminth. La lista precedente resta come *Per oggetto*. Letto dal file di AlecaFrame; scuola di Focus e K-Drive non sono mostrati.
+- **Barra in alto**: Endo, platino, ducat e Aya che possiedi (in forma compatta: 3k, 30k, 1.2M; valore esatto nel suggerimento),
+  con le icone della cartella icone se impostata.
+- Gli Arcani nelle schede Build usano l'immagine generica della rarità (bronzo, argento, oro, primed) della cartella icone:
+  nessun download da market o wiki. Con la cartella icone impostata, le Archon Shard mostrano solo l'immagine e l'effetto (non il nome del colore).
+- Nuova icona del programma: la silhouette di un uomo con i dreadlock, mezzo cibernetico, con un fucile da cecchino, con una piccola W e O.
 
 ## 0.2.1
 - Nuova icona del programma (una W e una O disegnata come mirino), usata da eseguibile, finestra, barra delle applicazioni

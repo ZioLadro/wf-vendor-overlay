@@ -37,5 +37,22 @@ def pixmap(rel: str, size: int = 0):
     return pm
 
 
-def shard(color: str, tauforged: bool, size: int = 28):
+def shard(color: str, tauforged: bool, size: int = 36):
     return pixmap(f"archonShards/{color.lower()}{'_mythic' if tauforged else ''}.webp", size)
+
+
+ARCANE_PICTURE = {"C": "bronze", "U": "silver", "R": "gold", "L": "primed"}
+WALLET_FILES = {"endo": "endo.png", "plat": "platinum.png", "ducats": "ducats.png", "aya": "aya.webp",
+                "regal": "regalAya.webp", "credits": "credits.png"}
+
+
+def arcane(name: str, height: int = 52):
+    """The generic picture for an Arcane's rarity (bronze, silver, gold, primed) from the icons folder; None without it."""
+    import loadouts
+    rar = loadouts.data().get("arcrar", {}).get(name)
+    return pixmap(f"arcanes/{ARCANE_PICTURE[rar]}.webp", height) if rar else None
+
+
+def wallet(kind: str, height: int = 20):
+    f = WALLET_FILES.get(kind)
+    return pixmap(f, height) if f else None
