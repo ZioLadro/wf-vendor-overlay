@@ -85,7 +85,7 @@ GROUPS = [
         ("quantframe_url", "text", None, False),
     ]),
     ("riven", [
-        ("riven_rps", "float", (0.2, 2.5, 2), False),
+        ("riven_rpm", "int", (1, 20), False),
         ("riven_scan_weapons", "int", (1, 500), False),
         ("riven_weapon_filter", "text", None, False),
         ("riven_sell_factor", "int", (30, 100), False),

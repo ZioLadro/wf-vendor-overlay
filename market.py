@@ -18,6 +18,8 @@ from config import APP_DIR, CFG
 from matcher import Match, Matcher, norm  # noqa: F401  (norm/Match riesportati)
 from vendors import BARO, VendorIndex
 
+from version import __version__
+
 BASE = "https://api.warframe.market/v2"
 V1 = "https://api.warframe.market/v1"
 HEADERS = {
@@ -25,7 +27,7 @@ HEADERS = {
     "Platform": "pc",
     "Crossplay": "true",
     "Accept": "application/json",
-    "User-Agent": "WFVendorOverlay/1.2",
+    "User-Agent": f"WFVendorOverlay/{__version__} (+https://github.com/ZioLadro/wf-vendor-overlay)",
 }
 CACHE_FILE = APP_DIR / "items_cache.json"
 STORE_FILE = APP_DIR / "prices.json"   # collected prices/volumes (persistent)

@@ -64,8 +64,8 @@ DEFAULTS = {
     "rec_overlay": True,         # mark the top recommended items with stars on the overlay
     "rec_overlay_top": 10,       # how many of the vendor's best items get the stars (the first one: "Best here")
     "quantframe_url": "http://127.0.0.1:4808",  # Quantframe's local HTTP server (Quantframe > Settings > Advanced > HTTP Server); this computer only
-    "riven_rps": 1.0,             # Riven flip: warframe.market requests per second for the riven endpoints (the site allows about 3)
-    "riven_scan_weapons": 30,     # weapons scanned per click (the least recently scanned first)
+    "riven_rpm": 12,              # Riven flip: warframe.market requests per MINUTE (it asks for 10-20 for auction searches; max 20)
+    "riven_scan_weapons": 20,     # weapons scanned per click (the least recently scanned first)
     "riven_weapon_filter": "",    # only these weapons (names separated by commas); empty = all, in rotation
     "riven_sell_factor": 85,      # % of the median comparable asking price expected when you resell
     "riven_online_only": True,    # only sellers who are in game or online

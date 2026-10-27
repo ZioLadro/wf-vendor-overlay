@@ -126,7 +126,9 @@ class RivenFlipTab(QWidget):
         self.bar.setRange(0, max(1, total))
         self.bar.setValue(done)
         if name:
-            self.summary.setText(t("rflip.scanning", done=done, total=total, name=name))
+            left = max(0, total - done) * M.Limiter().interval
+            eta = t("rflip.eta.min", n=max(1, round(left / 60))) if left >= 90 else t("rflip.eta.sec", n=int(left))
+            self.summary.setText(t("rflip.scanning", done=done, total=total, name=name, eta=eta))
 
     def _on_finished(self, done, err):
         self.running = False

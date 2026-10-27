@@ -9,7 +9,8 @@ Three criteria, as asked:
   Stats      0-100 score: how useful the stats are (weights below, editable in riven_weights.json) and how well
              they rolled (0 = worst roll, 1 = best roll, computed with the formula in rivens.py).
 
-Requests: ONE dedicated limiter for the riven endpoints (default 1 per second, the site allows about 3); a 429 answer
+Requests: ONE dedicated limiter for the riven endpoints. warframe.market asks that contract (auction) searches stay
+around 10-20 per minute, so the default is 12 per minute and the limit can never be set above 20; a 429 answer
 makes it wait (Retry-After or growing pauses) and the scan stops after repeated 429s.
 Only listings are read; nothing is sent to the site.
 """
@@ -26,8 +27,13 @@ from config import APP_DIR, CFG
 
 V1 = "https://api.warframe.market/v1"        # auctions: there is no v2 auction API
 V2 = "https://api.warframe.market/v2"        # weapon and stat lists
+from version import __version__
+
+# warframe.market's rules: an own, descriptive User-Agent (never a browser's); contract (auction) searches are
+# expected to stay around 10-20 requests per minute, the general limit is 3 per second.
 HEADERS = {"Language": "en", "Platform": "pc", "Crossplay": "true", "Accept": "application/json",
-           "User-Agent": "WFVendorOverlay/1.2 (riven listings; rate limited)"}
+           "User-Agent": f"WFVendorOverlay/{__version__} (+https://github.com/ZioLadro/wf-vendor-overlay)"}
+MAX_RPM = 20
 WEAPONS_FILE = APP_DIR / "riven_weapons.json"
 ATTRS_FILE = APP_DIR / "riven_attributes_v1.json"
 STORE_FILE = APP_DIR / "riven_market.json"
@@ -83,10 +89,10 @@ class RivenError(Exception):
 
 
 class Limiter:
-    """Spaces the riven requests (requests per second, from the settings) and backs off on 429."""
+    """Spaces the riven requests (requests per MINUTE, from the settings, never above MAX_RPM) and backs off on 429."""
 
-    def __init__(self, rps=None, market=None, sleep=time.sleep, clock=time.monotonic):
-        self.rps = float(rps if rps is not None else CFG["riven_rps"])
+    def __init__(self, rpm=None, market=None, sleep=time.sleep, clock=time.monotonic):
+        self.rpm = float(rpm if rpm is not None else CFG["riven_rpm"])
         self.market, self._sleep, self._clock = market, sleep, clock
         self._lock = threading.Lock()
         self._next = 0.0
@@ -94,7 +100,7 @@ class Limiter:
 
     @property
     def interval(self):
-        return 1.0 / max(0.1, min(2.5, self.rps))     # never faster than 2.5 / s, whatever the setting
+        return 60.0 / max(1.0, min(float(MAX_RPM), self.rpm))
 
     def wait(self):
         with self._lock:
@@ -110,7 +116,7 @@ class Limiter:
         self.hits += 1
         if self.hits >= 3:
             raise RivenRateLimited("warframe.market keeps answering 'too many requests'")
-        pause = min(60.0, float(retry_after)) if retry_after else 5.0 * 2 ** (self.hits - 1)
+        pause = min(120.0, float(retry_after)) if retry_after else 20.0 * 2 ** (self.hits - 1)
         with self._lock:
             self._next = max(self._next, self._clock()) + pause
         self._sleep(pause)
