@@ -263,7 +263,8 @@ class PlannerView(QWidget):
         lo = los[labels.index(label)]
         self._set_item(lo["kind"], lo["item"])
         for i, s in enumerate(lo["slots"][:len(self.mods)]):
-            self.mods[i] = (s["name"], s["rank"]) if s["name"] else None
+            self.mods[i] = ((s["name"], s["rank"], s["riven"]) if s.get("riven") and s["riven"].get("attributes")
+                            else (s["name"], s["rank"])) if s["name"] else None
             if s.get("pol") is not None:
                 self.forma[i] = s["pol"]
         self.reactor, self.level = bool(lo.get("reactor", True)), int(lo.get("level", 30))
@@ -325,10 +326,11 @@ class PlannerView(QWidget):
             m = self.mods[i]
             name = m[0] if m else ""
             info = BC.mod_info(name) if name and r != "arcane" else None
-            mx = info[2] if info else (arcane_max(name) if name else None)
+            rv = m[2] if m and len(m) > 2 else None
+            mx = 8 if rv else (info[2] if info else (arcane_max(name) if name else None))
             c = calc["slots"][i]
             out.append({"role": r, "name": name, "rank": m[1] if m else None, "max": mx, "pol": pols[i], "mpol": c["mpol"],
-                        "drain": c["drain"], "state": c["state"]})
+                        "drain": c["drain"], "state": c["state"], "riven": rv})
         return out, calc
 
     def _draw(self):
@@ -353,7 +355,7 @@ class PlannerView(QWidget):
         row.addWidget(cards_widget(slots, on_click=self._edit))
         col = QVBoxLayout()
         col.setAlignment(Qt.AlignmentFlag.AlignTop)
-        col.addWidget(stats_panel({k: calc[k] for k in ("total", "used", "free")}, calc["stats"], self.level, self.reactor))
+        col.addWidget(stats_panel({k: calc[k] for k in ("total", "used", "free")}, calc["stats"], self.level, self.reactor, calc.get("bonus")))
         note = QLabel(t("plan.compat"))
         note.setWordWrap(True)
         role(note, "hint")

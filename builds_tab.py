@@ -102,7 +102,7 @@ class LoadoutView(QWidget):
         if lo.get("capacity"):
             col = QVBoxLayout()
             col.setAlignment(Qt.AlignmentFlag.AlignTop)
-            col.addWidget(stats_panel(lo["capacity"], lo.get("stats") or {}, lo.get("level", 30), lo.get("reactor", True)))
+            col.addWidget(stats_panel(lo["capacity"], lo.get("stats") or {}, lo.get("level", 30), lo.get("reactor", True), lo.get("bonus")))
             row.addSpacing(12)
             row.addLayout(col)
         self.body.addLayout(row)

@@ -14,6 +14,12 @@ BASE_CAPACITY = 30                       # at rank 0; +1 per rank, doubled by an
 STAT_ORDER = ("health", "shield", "armor", "energy", "sprint", "duration", "efficiency", "range", "strength")
 
 
+def _plain(label: str) -> str:
+    """A stat label without its parenthesis: 'Fire Rate (x2 for Bows)' -> 'Fire Rate'."""
+    import re
+    return re.sub(r"\s*\(.*?\)", "", label).strip()
+
+
 def mod_info(name: str):
     """(polarity, base drain, max rank, compatibility, kind, stats) of a mod by name, or None."""
     row = LO.data().get("mst", {}).get(name)
@@ -82,9 +88,19 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
     "stats": {...} (Warframes only)}."""
     out, used, aura_bonus = [], 0, 0
     sums = {k: 0.0 for k in STAT_ORDER}
+    bonus = {}                                   # weapons: label -> total percentage bonus of the mods and the Riven
     for i, role in enumerate(roles):
         m = mods[i] if i < len(mods) else None
-        info = mod_info(m[0]) if m and m[0] and role != "arcane" else None
+        riven = m[2] if m and len(m) > 2 else None
+        if riven and role != "arcane":           # a Riven: drain 10 + rank, its own polarity, its stats as they are
+            info = (riven.get("polarity", ""), 10, 8, "", "R", {})
+            m = (m[0], riven.get("rank", m[1]))
+            for a in riven.get("attributes", []):
+                if a.get("pct"):
+                    lab = _plain(a["label"])
+                    bonus[lab] = bonus.get(lab, 0) + a["value"] / 100
+        else:
+            info = mod_info(m[0]) if m and m[0] and role != "arcane" else None
         sp = pols[i] if i < len(pols) else ""
         if not info:
             out.append({"drain": None, "state": "", "pol": sp, "mpol": ""})
@@ -98,10 +114,13 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
         mx = info[2] or 1
         rank = mx if m[1] is None else max(0, min(int(m[1]), mx))
         for k, v in info[5].items():
-            if k in sums:
+            if k in sums and kind == "warframe":
                 sums[k] += v * (rank / mx)
+            elif kind != "warframe" and not riven:
+                bonus[k] = bonus.get(k, 0) + v * (rank / mx)
     total = (BASE_CAPACITY + level) * (2 if reactor else 1) + aura_bonus
-    res = {"slots": out, "total": total, "used": used, "free": total - used, "stats": {}}
+    res = {"slots": out, "total": total, "used": used, "free": total - used, "stats": {},
+           "bonus": {k: round(v * 100, 1) for k, v in sorted(bonus.items(), key=lambda kv: -abs(kv[1])) if abs(v) > 1e-9}}
     fr = LO.data().get("frames", {}).get(item) if kind == "warframe" else None
     if fr:
         s = res["stats"]

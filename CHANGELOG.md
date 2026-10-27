@@ -18,6 +18,9 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Icons folder found by itself**: the program looks for AlecaFrame's icons in Overwolf's folders and follows the new
   version folder Overwolf creates at every update (setting *Find the icons folder by itself*; a folder typed in Settings
   is used first when it exists). Polarity pictures come from that folder, with a drawn fallback.
+- **Rivens in builds**: an installed Riven shows its name (e.g. "Toxi-argidra"), its stats and its polarity and drain
+  (10 + rank) on the card; its bonuses count in the recap. Weapons get a *Mod bonuses* recap (sum of the percentage
+  bonuses of mods and Riven; base weapon stats are not shown).
 - **Aya**: the game file does not carry the Aya you hold (it reports 0), so the new setting *Aya (typed by hand)* supplies
   it; Aya is hidden while it is 0.
 

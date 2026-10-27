@@ -162,6 +162,8 @@ Tutto viene dal tuo `lastData.dat` di AlecaFrame (trovato da solo, lo stesso fil
 
 Le card seguono la schermata build del gioco (polarità dello slot in alto a sinistra, polarità e drain della mod in alto a destra, rank a rombi sotto), con accanto la **capacità** (libera / totale) e un **riepilogo statistiche** approssimato: contano solo le mod, non Arcani, Archon Shard, Helminth, bonus di set o effetti condizionali. I nomi che hai dato alle configurazioni in gioco compaiono come pulsanti.
 
+Le **Riven** installate mostrano nome, statistiche, polarità e drain (10 + rank) e contano nel riepilogo; le armi hanno un riepilogo *Bonus delle mod* (somma dei bonus percentuali di mod e Riven).
+
 Il **Build planner** (terza voce del selettore di vista): scegli una Warframe o un'arma, clicca una card per scegliere mod, rank e polarità dello slot (Forma); capacità, drain e statistiche si aggiornano. *Salva* tiene il piano in `build_plans.json`; *Copia da un mio loadout…* parte da uno dei tuoi. L'elenco delle mod è filtrato per oggetto (le mod specifiche di un'arma sono riconosciute per nome).
 
 **Cartella icone trovata da sola.** Overwolf salva AlecaFrame in `Extensions\<id>\<versione>\` e cambia la cartella di versione a ogni aggiornamento: il programma cerca in quelle cartelle (la più recente per prima) e segue il cambiamento; una cartella scritta nelle impostazioni, se esiste, ha la precedenza. **Aya**: il file di AlecaFrame indica 0 Aya, quindi scrivi il numero in Impostazioni > Inventario (*Aya, scritti a mano*); resta nascosto finché è 0.

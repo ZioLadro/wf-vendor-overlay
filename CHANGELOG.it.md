@@ -19,6 +19,9 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
   la nuova cartella di versione che Overwolf crea a ogni aggiornamento (impostazione *Trova da solo la cartella delle
   icone*; una cartella scritta nelle impostazioni, se esiste, ha la precedenza). Le immagini delle polarità vengono da
   quella cartella, con un disegno di riserva.
+- **Riven nelle build**: una Riven installata mostra nome (es. "Toxi-argidra"), statistiche, polarità e drain
+  (10 + rank) sulla card; i suoi bonus contano nel riepilogo. Le armi hanno un riepilogo *Bonus delle mod* (somma dei
+  bonus percentuali di mod e Riven; le statistiche base dell'arma non sono mostrate).
 - **Aya**: il file di gioco non contiene gli Aya che possiedi (indica 0), quindi la nuova impostazione *Aya (scritti a
   mano)* li fornisce; gli Aya sono nascosti finché sono 0.
 

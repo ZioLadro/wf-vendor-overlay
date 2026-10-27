@@ -109,9 +109,15 @@ def helminth(cfg: dict, suit_path: str):
 def read(inv: dict, market=None) -> list:
     """[{"item","kind","config","forma","slots","shards","helminth"}] for every loadout with at least MIN_MODS mods.
     slots: [{"role": general|aura|exilus|stance|arcane, "name": str|"", "rank": int|None, "max": int|None}]"""
-    owned = {}
+    import rivens as RV
+    owned, rivens = {}, {}
     for u in inv.get("Upgrades") or []:
         oid = (u.get("ItemId") or {}).get("$oid")
+        if oid and "/Randomized/" in str(u.get("ItemType", "")):
+            try:
+                rivens[oid] = RV.compute(u)
+            except ValueError:
+                rivens[oid] = {"unrevealed": True}
         if oid:
             try:
                 lvl = json.loads(u.get("UpgradeFingerprint") or "{}").get("lvl")
@@ -147,6 +153,15 @@ def read(inv: dict, market=None) -> list:
                     if not mod_path:
                         slots.append({"role": role, "name": "", "rank": None, "max": None})
                         continue
+                    rv = rivens.get(ref)
+                    if rv and rv.get("unrevealed"):
+                        slots.append({"role": role, "name": "Riven", "rank": lvl, "max": 8, "riven": {"unrevealed": True}})
+                        filled += role != "arcane"
+                        continue
+                    if rv:
+                        slots.append({"role": role, "name": rv["mod_name"] + " (Riven)", "rank": rv["rank"], "max": 8, "riven": rv})
+                        filled += role != "arcane"
+                        continue
                     name, mx = mod_name(mod_path)
                     slots.append({"role": role, "name": name, "rank": lvl, "max": mx})
                     if role != "arcane":
@@ -155,13 +170,14 @@ def read(inv: dict, market=None) -> list:
                     continue
                 pols = BC.slot_polarities(kind, item_name, [s["role"] for s in slots], item.get("Polarity"))
                 calc = BC.evaluate(kind, item_name, [s["role"] for s in slots],
-                                   [(s["name"], s["rank"]) if s["name"] else None for s in slots], pols, reactor, level)
+                                   [((s["name"], s["rank"], s["riven"]) if s.get("riven") and not s["riven"].get("unrevealed") else (s["name"], s["rank"]))
+                                    if s["name"] else None for s in slots], pols, reactor, level)
                 for s, c in zip(slots, calc["slots"]):
                     s.update(pol=c["pol"], mpol=c["mpol"], drain=c["drain"], state=c["state"])
                 cname = str(cfg.get("Name") or "").strip()
                 out.append({"item": item_name, "kind": kind, "path": path, "config": LETTERS[n] if n < 8 else str(n + 1),
                             "cfg_name": cname, "reactor": reactor, "level": level,
-                            "capacity": {k: calc[k] for k in ("total", "used", "free")}, "stats": calc["stats"],
+                            "capacity": {k: calc[k] for k in ("total", "used", "free")}, "stats": calc["stats"], "bonus": calc["bonus"],
                             "oid": (item.get("ItemId") or {}).get("$oid", ""), "idx": n,
                             "forma": int(item.get("Polarized") or 0), "slots": slots,
                             "shards": shards if kind == "warframe" else [],

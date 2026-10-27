@@ -688,6 +688,9 @@ EN = {
     "set.assets_auto.tip": "Looks for AlecaFrame's icons in Overwolf's folders and follows the new version folder Overwolf creates at every update. A folder typed below is used first if it exists",
     "set.aya_manual": "Aya (typed by hand)",
     "set.aya_manual.tip": "The game file does not always carry the Aya you hold. If it reports none, this number is shown in the top strip (0 = hide Aya)",
+    "builds.bonus": "Mod bonuses (approximate)",
+    "builds.bonus.note": "Sum of the percentage bonuses of the mods and the Riven at their ranks (the weapon's base stats are not shown).",
+    "builds.riven.tip": "Riven for {weapon} · {rerolls} re-rolls",
 }
 
 IT = {
@@ -1363,6 +1366,9 @@ IT = {
     "set.assets_auto.tip": "Cerca le icone di AlecaFrame nelle cartelle di Overwolf e segue la nuova cartella di versione che Overwolf crea a ogni aggiornamento. Una cartella scritta qui sotto, se esiste, ha la precedenza",
     "set.aya_manual": "Aya (scritti a mano)",
     "set.aya_manual.tip": "Il file di gioco non sempre contiene gli Aya che possiedi. Se non ne segnala, questo numero appare nella barra in alto (0 = nascondi Aya)",
+    "builds.bonus": "Bonus delle mod (approssimati)",
+    "builds.bonus.note": "Somma dei bonus percentuali di mod e Riven al loro rank (le statistiche base dell'arma non sono mostrate).",
+    "builds.riven.tip": "Riven per {weapon} · {rerolls} ri-tiri",
 }
 
 STRINGS = {"en": EN, "it": IT}

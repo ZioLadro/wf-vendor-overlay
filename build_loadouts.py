@@ -11,7 +11,7 @@ Usage:  python build_loadouts.py [--out loadout_data.json] [--cache download_fol
   suits:     Warframe path -> [its 4 ability paths, in order]
   helminth:  generic Helminth ability path -> English name
 With --wfcd <folder of WFCD/warframe-items data/json> it also writes (used for polarity, drain, capacity and stats):
-  mst:       mod name -> [polarity, base drain, max rank, compatibility, type, {stat: value at max rank}]
+  mst:       mod name -> [polarity, base drain, max rank, compatibility, type, {stat: value at max rank}] (Warframe mods: stat keys; weapon mods: labels)
   frames:    Warframe name -> [health, shield, armor, energy, sprint speed (rank 30), aura polarity, [innate polarities]]
   weapons:   weapon name -> [kind, type, [innate polarities], exilus polarity, stance polarity]
   arc:       Arcane name -> type
@@ -54,6 +54,12 @@ def wfcd(folder: Path) -> dict:
                 if hit and hit.group(3).strip() in STAT_KEYS:
                     key = STAT_KEYS[hit.group(3).strip()]
                     stats[key] = round(stats.get(key, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
+        if kind in "PGSM" and levels:                    # weapon mods: percentage stats by (plain) label, for the bonus recap
+            for line in levels[-1].get("stats", []):
+                hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)%\s*(.+)", re.sub(r"<[^>]+>", "", line).strip())
+                if hit:
+                    label = re.sub(r"\s*\(.*?\)", "", hit.group(3)).strip()
+                    stats[label] = round(stats.get(label, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
         mst[name] = [m.get("polarity") or "", int(m["baseDrain"]), lim, m.get("compatName") or "", kind, stats]
     frames = {}
     for w in load("Warframes"):

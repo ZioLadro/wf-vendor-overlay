@@ -79,7 +79,21 @@ class ModCard(QFrame):
                 pm = QPixmap(str(f))
         if pm is not None and not pm.isNull():
             pic.setPixmap(pm.scaledToHeight(64, Qt.TransformationMode.SmoothTransformation))
-        lay.addWidget(pic, 1)
+        rv = slot.get("riven")
+        if rv and rv.get("attributes"):                  # a Riven: its stats instead of a picture
+            lines = []
+            for a in rv["attributes"]:
+                v = a["value"]
+                txt = f"{v:+g}%" if a["pct"] else (f"x{v:g}" if a["tag"].endswith(("Grineer", "Corpus", "Infested")) else f"{v:+g}")
+                lines.append(f"<span style='color:{'#e0584a' if not a['positive'] else '#9fd8a6'}'>{txt} {a['label'].split(' (')[0]}</span>")
+            st = QLabel("<br>".join(lines))
+            st.setStyleSheet("font-size: 9px;")
+            st.setWordWrap(True)
+            st.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            lay.addWidget(st, 1)
+            self.setToolTip(t("builds.riven.tip", weapon=rv.get("weapon", ""), rerolls=rv.get("rerolls", 0)))
+        else:
+            lay.addWidget(pic, 1)
         lab = QLabel(name or "—")
         lab.setWordWrap(True)
         lab.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -101,7 +115,7 @@ class ModCard(QFrame):
         super().mouseReleaseEvent(e)
 
 
-def stats_panel(capacity: dict, stats: dict, level: int = 30, reactor: bool = True) -> QFrame:
+def stats_panel(capacity: dict, stats: dict, level: int = 30, reactor: bool = True, bonus: dict | None = None) -> QFrame:
     """Capacity (free / total) and the Warframe stat recap."""
     box = QFrame()
     box.setObjectName("statbox")
@@ -135,6 +149,25 @@ def stats_panel(capacity: dict, stats: dict, level: int = 30, reactor: bool = Tr
             g.addWidget(val, n, 1)
         lay.addLayout(g)
         note = QLabel(t("builds.stats.note"))
+        note.setWordWrap(True)
+        role(note, "hint")
+        lay.addWidget(note)
+    if bonus:
+        head = QLabel(t("builds.bonus"))
+        role(head, "muted")
+        head.setStyleSheet("font-weight: bold; margin-top: 6px;")
+        lay.addWidget(head)
+        g = QGridLayout()
+        g.setHorizontalSpacing(14)
+        g.setVerticalSpacing(1)
+        for n, (label, v) in enumerate(bonus.items()):
+            g.addWidget(QLabel(label), n, 0)
+            val = QLabel(f"{v:+g}%")
+            val.setAlignment(Qt.AlignmentFlag.AlignRight)
+            val.setStyleSheet("font-weight: bold;")
+            g.addWidget(val, n, 1)
+        lay.addLayout(g)
+        note = QLabel(t("builds.bonus.note"))
         note.setWordWrap(True)
         role(note, "hint")
         lay.addWidget(note)
