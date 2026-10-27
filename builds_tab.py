@@ -13,54 +13,18 @@ from PyQt6.QtWidgets import (
 import aleca
 import icons
 import previews
+from buildcards import cards_widget, stats_panel
+from planner_tab import PlannerView
 import loadouts as LO
 from config import APP_DIR
 from i18n import t
 from uiutil import age_text, role
 
 CACHE_FILE = APP_DIR / "loadouts.json"
+CACHE_VER = 3                        # bump when the loadout data gains fields (an older cache is read again from the game file)
 KINDS = ["warframe", "primary", "secondary", "melee", "archwing", "archgun", "necramech", "companion"]
 SHARD_RGB = {"RED": "#c8453c", "BLUE": "#3b8fd9", "GREEN": "#3fbf6a", "YELLOW": "#e0b83a", "ORANGE": "#e08a3a",
              "PURPLE": "#a46be0"}
-
-
-def _card(name, rank, mx, kind_role):
-    """One slot: its name and rank. kind_role: general | aura | exilus | stance | arcane."""
-    f = QFrame()
-    f.setProperty("card", "empty" if not name else ("special" if kind_role != "general" else "slot"))
-    f.setMinimumSize(120, 58)
-    outer = QHBoxLayout(f)
-    outer.setContentsMargins(8, 5, 8, 5)
-    pm = None
-    if name and kind_role == "arcane":                    # Arcanes: the generic picture of their rarity (icons folder only)
-        pm = icons.arcane(name)
-    elif name:                                            # mods: the card picture (warframe.market, else the wiki)
-        pic = previews.by_name(name)
-        if pic:
-            pm = QPixmap(str(pic))
-            if not pm.isNull():
-                pm = pm.scaledToHeight(52, Qt.TransformationMode.SmoothTransformation)
-    if pm is not None and not pm.isNull():
-        img = QLabel()
-        img.setPixmap(pm)
-        outer.addWidget(img)
-    lay = QVBoxLayout()
-    outer.addLayout(lay, 1)
-    lay.setSpacing(1)
-    top = QLabel(t("builds.slot." + kind_role) if kind_role != "general" else "")
-    role(top, "small")
-    top.setVisible(kind_role != "general")
-    main = QLabel(name or "—")
-    main.setWordWrap(True)
-    if not name:
-        role(main, "hint")
-    lay.addWidget(top)
-    lay.addWidget(main, 1)
-    if name and rank is not None and mx:
-        sub = QLabel(t("builds.rank", rank=rank, max=mx))
-        role(sub, "muted" if rank >= mx else "hint")
-        lay.addWidget(sub)
-    return f
 
 
 class LoadoutView(QWidget):
@@ -75,6 +39,7 @@ class LoadoutView(QWidget):
         self.sub = QLabel("")
         role(self.sub, "muted")
         self.body = QVBoxLayout()
+        self.lookup = {}                                 # (item id, config index) -> loadout, set by the owner (config buttons)
         self.lay.addWidget(self.title)
         self.lay.addWidget(self.sub)
         self.lay.addLayout(self.body)
@@ -96,14 +61,29 @@ class LoadoutView(QWidget):
         lab.setStyleSheet("font-weight: bold; margin-top: 8px;")
         self.body.addWidget(lab)
 
-    def _grid(self, slots, cols=4):
-        g = QGridLayout()
-        g.setSpacing(6)
-        for n, s in enumerate(slots):
-            g.addWidget(_card(s["name"], s["rank"], s["max"], s["role"]), n // cols, n % cols)
-        for c in range(cols):
-            g.setColumnStretch(c, 1)
-        self.body.addLayout(g)
+    def _config_buttons(self, lo):
+        """The other loadouts (A, B, C…) of the same item, named like in the game; click to switch."""
+        row = QHBoxLayout()
+        row.setSpacing(4)
+        row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        group = QButtonGroup(self)
+        group.setExclusive(True)
+        for c in lo.get("configs") or []:
+            btn = QPushButton(c.get("name") or t("builds.cfg.default", c=c["config"]))
+            btn.setCheckable(True)
+            btn.setChecked(c["idx"] == lo["idx"])
+            btn.setToolTip(t("builds.config", c=c["config"]))
+            btn.clicked.connect(lambda _c=False, idx=c["idx"]: self._switch(lo, idx))
+            group.addButton(btn)
+            row.addWidget(btn)
+        self._group = group
+        if len(lo.get("configs") or []) > 1:
+            self.body.addLayout(row)
+
+    def _switch(self, lo, idx):
+        target = self.lookup.get((lo.get("oid"), idx))
+        if target:
+            self.show_loadout(target)
 
     def show_loadout(self, lo):
         self._clear(self.body)
@@ -111,20 +91,21 @@ class LoadoutView(QWidget):
             self.title.setText("")
             self.sub.setText(t("builds.pick"))
             return
-        self.title.setText(f"{lo['item']}  ·  {t('builds.config', c=lo['config'])}")
+        label = lo.get("cfg_name") or t("builds.config", c=lo["config"])
+        self.title.setText(f"{lo['item']}  ·  {label}")
         self.sub.setText(t("builds.kind." + lo["kind"]) + "  ·  " + t("builds.forma", n=lo["forma"]))
+        self._config_buttons(lo)
         slots = lo["slots"]
-        special = [s for s in slots if s["role"] in ("aura", "exilus", "stance")]
-        general = [s for s in slots if s["role"] == "general"]
-        arcanes = [s for s in slots if s["role"] == "arcane"]
-        if special:
-            self._section(t("builds.sec.special"))
-            self._grid(special, cols=3)
-        self._section(t("builds.sec.mods"))
-        self._grid(general)
-        if arcanes:
-            self._section(t("builds.sec.arcanes"))
-            self._grid(arcanes, cols=2)
+        row = QHBoxLayout()
+        row.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        row.addWidget(cards_widget(slots))
+        if lo.get("capacity"):
+            col = QVBoxLayout()
+            col.setAlignment(Qt.AlignmentFlag.AlignTop)
+            col.addWidget(stats_panel(lo["capacity"], lo.get("stats") or {}, lo.get("level", 30), lo.get("reactor", True)))
+            row.addSpacing(12)
+            row.addLayout(col)
+        self.body.addLayout(row)
         if lo["kind"] == "warframe":
             self._section(t("builds.sec.shards"))
             row = QHBoxLayout()
@@ -281,6 +262,7 @@ class BuildsTab(QWidget):
         self.mode = QComboBox()
         self.mode.addItem(t("builds.mode.game"), "game")
         self.mode.addItem(t("builds.mode.items"), "items")
+        self.mode.addItem(t("builds.mode.plan"), "plan")
         bar = QHBoxLayout()
         bar.addWidget(self.mode)
         bar.addWidget(self.filter, 1)
@@ -314,6 +296,8 @@ class BuildsTab(QWidget):
         self.stack = QStackedWidget()
         self.stack.addWidget(psplit)
         self.stack.addWidget(split)
+        self.planner = PlannerView(lambda: self.loadouts)
+        self.stack.addWidget(self.planner)
         lay = QVBoxLayout(self)
         lay.addLayout(bar)
         lay.addWidget(self.summary)
@@ -324,8 +308,8 @@ class BuildsTab(QWidget):
         self.btn_reload.clicked.connect(self.reload_file)
         self.filter.textChanged.connect(lambda _t: self._fill())
         self.kind.currentIndexChanged.connect(lambda _i: self._fill())
-        self.list.currentItemChanged.connect(lambda cur, _p: self.view.show_loadout(
-            self.loadouts[cur.data(Qt.ItemDataRole.UserRole)] if cur else None))
+        self.list.currentItemChanged.connect(lambda cur, _p: (self._lookup(), self.view.show_loadout(
+            self.loadouts[cur.data(Qt.ItemDataRole.UserRole)] if cur else None)))
         self._mode_changed()
         self._fill()
         # pictures arrive a little later: redraw the shown loadout while some are still on their way
@@ -333,14 +317,18 @@ class BuildsTab(QWidget):
         self._pic_timer.start()
 
     def _mode_changed(self):
-        game = self.mode.currentData() == "game"
-        self.stack.setCurrentIndex(0 if game else 1)
-        self.filter.setVisible(not game)
-        self.kind.setVisible(not game)
+        mode = self.mode.currentData()
+        self.stack.setCurrentIndex({"game": 0, "items": 1, "plan": 2}[mode])
+        self.filter.setVisible(mode == "items")
+        self.kind.setVisible(mode == "items")
+        self.btn_reload.setVisible(mode != "plan")
         self._summary()
 
     def _lookup(self):
-        return {(lo.get("oid"), lo.get("idx")): lo for lo in self.loadouts if lo.get("oid")}
+        d = {(lo.get("oid"), lo.get("idx")): lo for lo in self.loadouts if lo.get("oid")}
+        self.view.lookup = d
+        self.pview.detail.lookup = d
+        return d
 
     def _fill_presets(self):
         cur = self.plist.currentRow()
@@ -363,7 +351,9 @@ class BuildsTab(QWidget):
                                self.presets.get("tenno") or {}, self._lookup())
 
     def _summary(self):
-        if not self.loadouts:
+        if self.mode.currentData() == "plan":
+            self.summary.setText("")
+        elif not self.loadouts:
             self.summary.setText(t("builds.empty"))
         elif self.mode.currentData() == "game":
             self.summary.setText(t("builds.summary.game", n=len(self.presets.get("presets") or []),
@@ -393,7 +383,7 @@ class BuildsTab(QWidget):
     def _load_cache(self):
         try:
             d = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-            if isinstance(d.get("loadouts"), list) and isinstance(d.get("presets"), dict):     # an older cache has no presets
+            if d.get("ver") == CACHE_VER and isinstance(d.get("loadouts"), list) and isinstance(d.get("presets"), dict):
                 self.loadouts, self.presets = d["loadouts"], d["presets"]
                 self.source, self.when = d.get("source", ""), d.get("time", 0)
         except Exception:
@@ -401,7 +391,7 @@ class BuildsTab(QWidget):
 
     def _save_cache(self):
         try:
-            CACHE_FILE.write_text(json.dumps({"time": self.when, "source": self.source, "loadouts": self.loadouts,
+            CACHE_FILE.write_text(json.dumps({"ver": CACHE_VER, "time": self.when, "source": self.source, "loadouts": self.loadouts,
                                                          "presets": self.presets},
                                              ensure_ascii=False), encoding="utf-8")
         except OSError:
@@ -447,7 +437,7 @@ class BuildsTab(QWidget):
                 continue
             if text and text not in lo["item"].lower():
                 continue
-            it = QListWidgetItem(f"{lo['item']}  ·  {lo['config']}")
+            it = QListWidgetItem(f"{lo['item']}  ·  {lo.get('cfg_name') or lo['config']}")
             it.setData(Qt.ItemDataRole.UserRole, i)
             self.list.addItem(it)
             if cur == (lo["item"], lo["config"]):

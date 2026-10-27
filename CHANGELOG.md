@@ -3,6 +3,24 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.2.3
+- **Builds, in-game card style**: Aura and Exilus on top, the eight mods in two rows of four, the Arcanes on the right,
+  each card with its slot polarity, the mod's polarity and drain (green = matching polarity, red = mismatch) and the rank
+  as diamonds. Polarities set by Forma are read from the game file, the innate ones from the public game data.
+- **Capacity and stat recap** next to the build: free / total capacity (rank and Reactor/Catalyst from the file, Aura
+  capacity included) and Health, Shield, Armor, Energy, Sprint speed, Ability Duration, Efficiency, Range and Strength.
+  Approximate: only mods are counted (no Arcanes, Archon Shards, Helminth, set bonuses or conditional effects).
+- **Build names**: the names you gave your configurations in the game (e.g. "Zombie") are imported and shown as buttons
+  to switch between the configurations of an item.
+- **Build planner** (Builds > Build planner): pick a Warframe or weapon, click a card to choose the mod, its rank and the
+  slot polarity (Forma), see capacity, drain and stats; save, load and delete plans, or start from a copy of one of your
+  loadouts.
+- **Icons folder found by itself**: the program looks for AlecaFrame's icons in Overwolf's folders and follows the new
+  version folder Overwolf creates at every update (setting *Find the icons folder by itself*; a folder typed in Settings
+  is used first when it exists). Polarity pictures come from that folder, with a drawn fallback.
+- **Aya**: the game file does not carry the Aya you hold (it reports 0), so the new setting *Aya (typed by hand)* supplies
+  it; Aya is hidden while it is 0.
+
 ## 0.2.2
 - **Builds**: new *Game loadouts* view that follows the in-game loadout screen: your named loadouts with the Warframe,
   primary, secondary, melee and Exalted weapon, the companion, the Archwing and the Necramech (with their ranks, the names

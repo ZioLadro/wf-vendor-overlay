@@ -151,7 +151,13 @@ Your own in-game loadouts, shown like the game's loadout screen: Aura, Exilus an
 
 Mod and Arcane **pictures** are shown on the cards: they are taken as they are needed from warframe.market (item images) and, when it has none, from the Warframe wiki (wiki.warframe.com, standard MediaWiki API, one request at a time with this program's User-Agent), kept in the data folder and never downloaded twice; they appear a few seconds after the loadout opens. Switch off with *Item pictures in tooltips* in Settings.
 
-Everything comes from your AlecaFrame `lastData.dat` (found by itself, same file as Inventory); *Reload from file* re-reads it after AlecaFrame refreshed it. Nothing is downloaded from any website. Mod, Arcane, ability and shard names come from the bundled `loadout_data.json` (rebuilt from the public game data with `build_loadouts.py`). Per-slot polarities and mod drain are not shown.
+Everything comes from your AlecaFrame `lastData.dat` (found by itself, same file as Inventory); *Reload from file* re-reads it after AlecaFrame refreshed it. Nothing is downloaded from any website. Mod, Arcane, ability and shard names come from the bundled `loadout_data.json` (rebuilt from the public game data with `build_loadouts.py`). Polarities set by Forma come from the file; the innate polarities, mod drain, level stats and weapon data come from the public WFCD/warframe-items data, also in `loadout_data.json` (`build_loadouts.py --wfcd <folder>`); innate polarities are assigned to the slots in the order that data lists them.
+
+Cards follow the in-game build screen (slot polarity top left, mod polarity and drain top right, rank diamonds below), with **capacity** (free / total) and an approximate **stat recap** beside them: only mods are counted, not Arcanes, Archon Shards, Helminth, set bonuses or conditional effects. The names you gave your configurations in the game are shown as buttons.
+
+**Build planner** (third entry of the view selector): choose a Warframe or weapon, click a card to pick the mod, rank and slot polarity (Forma); capacity, drain and stats update. *Save* keeps the plan in `build_plans.json`; *Copy from my loadout…* starts from one of yours. The mod list is filtered by item (weapon-specific mods are matched by name).
+
+**Icons folder, found by itself.** Overwolf stores AlecaFrame in `Extensions\<id>\<version>\` and changes the version folder at every update, so the program searches those folders (newest first) and follows the change; a folder typed in Settings wins when it exists. **Aya**: AlecaFrame's file reports 0 Aya, so type the number in Settings > Inventory (*Aya, typed by hand*); it is hidden while 0.
 
 ### Profile
 Your standing and rank per syndicate, plus your mastery rank, **read from the AlecaFrame `lastData.dat`** (or the
@@ -177,7 +183,7 @@ the rest apply immediately. **Restore defaults** loads the default values (press
 
 Settings has one sub-tab per category. **Theme and font** offers colour themes inspired by Warframe's factions, allies (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) and enemies (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), plus the original *Classic*, and a font family and size. The choice is previewed at once in every window and kept only when you press Save (leaving the tab restores the saved look). The in-game overlay keeps its own colours. All themes are dark.
 
-## Updates (current version 0.2.2)
+## Updates (current version 0.2.3)
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version (from 0.2.1 on; the release page shows the same notes).
 

@@ -57,6 +57,8 @@ DEFAULTS = {
     "player_name_auto": "",      # last name taken from AlecaFrame's lastUsername.txt (a name typed by hand is never overwritten)
     "player_name": "",           # shown in the player strip (the game files do not contain it)
     "assets_dir": "",             # optional folder of icons of your own (e.g. AlecaFrame's unpacked assets): shard pictures in Builds
+    "assets_auto": True,          # look for the icons folder by itself (Overwolf's AlecaFrame folder; follows its version changes)
+    "aya_manual": 0,              # Aya you hold, typed by hand: the game file does not always carry it
     "item_previews": True,        # picture of the item (from warframe.market) in the tooltip of the item tables
     "inv_exclude_installed": False,   # Inventory: leave out the mods/Arcanes that sit in a loadout
     "rankup_min_gain": 10,        # rank-up advice: minimum platinum gained per copy (max-rank price - current price)

@@ -158,7 +158,13 @@ I **Loadout di gioco** (vista predefinita) seguono la schermata dei loadout del 
 
 Le **immagini** di mod e Arcani compaiono sulle schede: vengono prese al bisogno da warframe.market (immagini degli oggetti) e, se lì mancano, dalla wiki di Warframe (wiki.warframe.com, API MediaWiki standard, una richiesta alla volta con lo User-Agent del programma), tenute nella cartella dei dati e mai scaricate due volte; appaiono qualche secondo dopo l'apertura del loadout. Si disattivano con *Immagini degli oggetti nei suggerimenti* nelle Impostazioni.
 
-Tutto viene dal tuo `lastData.dat` di AlecaFrame (trovato da solo, lo stesso file dell'Inventario); *Ricarica dal file* lo rilegge dopo che AlecaFrame l'ha aggiornato. Non viene scaricato nulla da nessun sito. I nomi di mod, Arcani, abilità e shard vengono dal `loadout_data.json` incluso (rigenerato dai dati pubblici del gioco con `build_loadouts.py`). Polarità dei singoli slot e drain non vengono mostrati.
+Tutto viene dal tuo `lastData.dat` di AlecaFrame (trovato da solo, lo stesso file dell'Inventario); *Ricarica dal file* lo rilegge dopo che AlecaFrame l'ha aggiornato. Non viene scaricato nulla da nessun sito. I nomi di mod, Arcani, abilità e shard vengono dal `loadout_data.json` incluso (rigenerato dai dati pubblici del gioco con `build_loadouts.py`). Le polarità messe con le Forma vengono dal file; polarità innate, drain, statistiche per rank e dati delle armi vengono dai dati pubblici WFCD/warframe-items, anch'essi dentro `loadout_data.json` (`build_loadouts.py --wfcd <cartella>`); le polarità innate sono assegnate agli slot nell'ordine in cui quei dati le elencano.
+
+Le card seguono la schermata build del gioco (polarità dello slot in alto a sinistra, polarità e drain della mod in alto a destra, rank a rombi sotto), con accanto la **capacità** (libera / totale) e un **riepilogo statistiche** approssimato: contano solo le mod, non Arcani, Archon Shard, Helminth, bonus di set o effetti condizionali. I nomi che hai dato alle configurazioni in gioco compaiono come pulsanti.
+
+Il **Build planner** (terza voce del selettore di vista): scegli una Warframe o un'arma, clicca una card per scegliere mod, rank e polarità dello slot (Forma); capacità, drain e statistiche si aggiornano. *Salva* tiene il piano in `build_plans.json`; *Copia da un mio loadout…* parte da uno dei tuoi. L'elenco delle mod è filtrato per oggetto (le mod specifiche di un'arma sono riconosciute per nome).
+
+**Cartella icone trovata da sola.** Overwolf salva AlecaFrame in `Extensions\<id>\<versione>\` e cambia la cartella di versione a ogni aggiornamento: il programma cerca in quelle cartelle (la più recente per prima) e segue il cambiamento; una cartella scritta nelle impostazioni, se esiste, ha la precedenza. **Aya**: il file di AlecaFrame indica 0 Aya, quindi scrivi il numero in Impostazioni > Inventario (*Aya, scritti a mano*); resta nascosto finché è 0.
 
 ### Profilo
 Standing e rank per fazione, più il grado di maestria, **letti dal `lastData.dat` di AlecaFrame** (o dal JSON
@@ -184,7 +190,7 @@ valgono subito. **Ripristina predefiniti** carica i valori di default (premi Sal
 
 Le Impostazioni hanno una sotto-scheda per categoria. **Tema e carattere** offre temi di colori ispirati alle fazioni di Warframe, alleate (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) e nemiche (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), più il *Classic* originale, oltre a famiglia e dimensione del carattere. La scelta si vede subito in anteprima in tutte le finestre e resta solo se premi Salva (uscendo dalla scheda torna l'aspetto salvato). L'overlay in gioco mantiene i suoi colori. Tutti i temi sono scuri.
 
-## Aggiornamenti (versione attuale 0.2.2)
+## Aggiornamenti (versione attuale 0.2.3)
 
 Vedi [CHANGELOG.it.md](CHANGELOG.it.md) per cosa cambia in ogni versione (dalla 0.2.1; la pagina della release mostra le stesse note).
 

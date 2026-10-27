@@ -3,6 +3,25 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.2.3
+- **Build, stile delle card del gioco**: Aura ed Exilus in alto, le otto mod in due righe da quattro, gli Arcani a destra;
+  ogni card mostra la polarità dello slot, la polarità e il drain della mod (verde = polarità uguale, rosso = diversa) e il
+  rank a rombi. Le polarità messe con le Forma sono lette dal file di gioco, quelle innate dai dati pubblici del gioco.
+- **Capacità e riepilogo statistiche** accanto alla build: capacità libera / totale (rank e Reactor/Catalyst dal file,
+  capacità dell'Aura inclusa) e Salute, Scudo, Armatura, Energia, Velocità di corsa, Durata, Efficienza, Raggio e Potenza
+  delle abilità. Approssimato: contano solo le mod (niente Arcani, Archon Shard, Helminth, bonus di set o effetti condizionali).
+- **Nomi delle build**: i nomi che hai dato alle configurazioni in gioco (es. "Zombie") vengono importati e mostrati come
+  pulsanti per passare da una configurazione all'altra di un oggetto.
+- **Build planner** (Build > Build planner): scegli una Warframe o un'arma, clicca una card per scegliere mod, rank e
+  polarità dello slot (Forma), vedi capacità, drain e statistiche; salva, carica ed elimina i piani, oppure parti dalla
+  copia di un tuo loadout.
+- **Cartella delle icone trovata da sola**: il programma cerca le icone di AlecaFrame nelle cartelle di Overwolf e segue
+  la nuova cartella di versione che Overwolf crea a ogni aggiornamento (impostazione *Trova da solo la cartella delle
+  icone*; una cartella scritta nelle impostazioni, se esiste, ha la precedenza). Le immagini delle polarità vengono da
+  quella cartella, con un disegno di riserva.
+- **Aya**: il file di gioco non contiene gli Aya che possiedi (indica 0), quindi la nuova impostazione *Aya (scritti a
+  mano)* li fornisce; gli Aya sono nascosti finché sono 0.
+
 ## 0.2.2
 - **Build**: nuova vista *Loadout di gioco* che segue la schermata dei loadout del gioco: i tuoi loadout con nome, con
   Warframe, primaria, secondaria, mischia e arma esaltata, il compagno, l'Archwing e il Necramech (con rank, i nomi che

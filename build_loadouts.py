@@ -10,6 +10,11 @@ Usage:  python build_loadouts.py [--out loadout_data.json] [--cache download_fol
   abilities: ability path -> English name (every Warframe's abilities)
   suits:     Warframe path -> [its 4 ability paths, in order]
   helminth:  generic Helminth ability path -> English name
+With --wfcd <folder of WFCD/warframe-items data/json> it also writes (used for polarity, drain, capacity and stats):
+  mst:       mod name -> [polarity, base drain, max rank, compatibility, type, {stat: value at max rank}]
+  frames:    Warframe name -> [health, shield, armor, energy, sprint speed (rank 30), aura polarity, [innate polarities]]
+  weapons:   weapon name -> [kind, type, [innate polarities], exilus polarity, stance polarity]
+  arc:       Arcane name -> type
 """
 import argparse
 import json
@@ -21,9 +26,54 @@ from pathlib import Path
 from build_vendors import fetch
 
 
+STAT_KEYS = {"Health": "health", "Shield Capacity": "shield", "Armor": "armor", "Energy Max": "energy",
+             "Sprint Speed": "sprint", "Ability Duration": "duration", "Ability Efficiency": "efficiency",
+             "Ability Range": "range", "Ability Strength": "strength"}
+MOD_TYPES = {"Warframe Mod": "W", "Primary Mod": "P", "Shotgun Mod": "G", "Secondary Mod": "S", "Melee Mod": "M",
+             "Stance Mod": "T"}
+
+
+def wfcd(folder: Path) -> dict:
+    """Polarity, drain and stats from the community-maintained WFCD/warframe-items data."""
+    def load(name):
+        return json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
+    mst = {}
+    for m in load("Mods"):
+        kind = MOD_TYPES.get(m.get("type"))
+        name = m.get("name")
+        if not kind or not name or "baseDrain" not in m:
+            continue
+        lim = int(m.get("fusionLimit") or 0)
+        if name in mst and mst[name][2] >= lim:
+            continue
+        stats = {}
+        levels = m.get("levelStats") or []
+        if kind == "W" and levels:
+            for line in levels[-1].get("stats", []):
+                hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)%\s*([A-Za-z ]+)", line.strip())
+                if hit and hit.group(3).strip() in STAT_KEYS:
+                    key = STAT_KEYS[hit.group(3).strip()]
+                    stats[key] = round(stats.get(key, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
+        mst[name] = [m.get("polarity") or "", int(m["baseDrain"]), lim, m.get("compatName") or "", kind, stats]
+    frames = {}
+    for w in load("Warframes"):
+        if w.get("type") == "Warframe" and w.get("name"):
+            frames[w["name"]] = [w.get("health", 0), w.get("shield", 0), w.get("armor", 0), w.get("power", 0),
+                                 w.get("sprintSpeed", 1), w.get("aura") or "", w.get("polarities") or []]
+    weapons = {}
+    for fn, kind in (("Primary", "primary"), ("Secondary", "secondary"), ("Melee", "melee")):
+        for w in load(fn):
+            if w.get("name") and w.get("type") not in ("Zaw Component",):
+                weapons[w["name"]] = [kind, w.get("type") or "", w.get("polarities") or [], w.get("exilusPolarity") or "",
+                                      w.get("stancePolarity") or ""]
+    arc = {a["name"]: a.get("type", "") for a in load("Arcanes") if a.get("name")}
+    return {"mst": mst, "frames": frames, "weapons": weapons, "arc": arc}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(Path(__file__).with_name("loadout_data.json")))
+    ap.add_argument("--wfcd", default="", help="folder with the WFCD/warframe-items data/json files")
     ap.add_argument("--cache", default=str(Path(tempfile.gettempdir()) / "wf_export_cache"))
     a = ap.parse_args()
     cache = Path(a.cache)
@@ -60,6 +110,9 @@ def main():
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
            "source": "calamity-inc/warframe-public-export-plus", "mods": mods, "rarity": rarity, "arcrar": arcrar, "arcanes": arcanes,
            "abilities": abilities, "suits": suits, "helminth": helminth}
+    if a.wfcd:
+        out.update(wfcd(Path(a.wfcd)))
+        out["source"] += " + WFCD/warframe-items"
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{len(mods)} mods, {len(arcanes)} arcanes, {len(abilities)} abilities, {len(suits)} warframes -> {a.out}")
 

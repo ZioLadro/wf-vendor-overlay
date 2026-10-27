@@ -108,7 +108,11 @@ class PlayerBar(QFrame):
             if w:
                 w.setParent(None)
                 w.deleteLater()
-        w = self.store.wallet or {}
+        w = dict(self.store.wallet or {})
+        if not w.get("aya") and CFG.get("aya_manual"):         # the game file does not always carry Aya: the number typed in Settings
+            w["aya"] = int(CFG["aya_manual"])
+        elif not w.get("aya"):
+            w.pop("aya", None)
         shown = [(k, lab) for k, lab in self.WALLET if w.get(k) is not None and (k != "regal" or w[k])]
         for n, (k, lab) in enumerate(shown):
             cell = QWidget()
@@ -128,7 +132,7 @@ class PlayerBar(QFrame):
         self.wallet_w.setVisible(bool(shown))
 
     def refresh(self, force=False):
-        key = (CFG.get("assets_dir"), repr(self.store.wallet), self.store.version, int(time.time() // 600), CFG["player_name"], self.store.fetched, CFG["hide_negative_ranks"])
+        key = (CFG.get("assets_dir"), CFG.get("assets_auto"), CFG.get("aya_manual"), repr(self.store.wallet), self.store.version, int(time.time() // 600), CFG["player_name"], self.store.fetched, CFG["hide_negative_ranks"])
         if not force and key == self._shown:
             return
         self._shown = key

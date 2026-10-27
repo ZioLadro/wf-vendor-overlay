@@ -118,6 +118,7 @@ def read(inv: dict, market=None) -> list:
             except ValueError:
                 lvl = None
             owned[oid] = (u.get("ItemType", ""), lvl)
+    import buildcalc as BC
     out = []
     for key, kind in CATEGORIES:
         for item in inv.get(key) or []:
@@ -125,8 +126,12 @@ def read(inv: dict, market=None) -> list:
             names = I.names_for_path(path)
             item_name = re.sub(r"<[^>]*>\s*", "", names[0] if names else path.rsplit("/", 1)[-1]).strip() or path
             roles = LAYOUT.get(kind)
+            cfgs = item.get("Configs") if isinstance(item.get("Configs"), list) else []
+            reactor = bool((item.get("Features") or 0) & 1)
+            level = _rank(item.get("XP"), 1000 if key in _FRAME_KINDS else 500)
             shards = [shard(a) for a in item.get("ArchonCrystalUpgrades") or [] if isinstance(a, dict)]
-            for n, cfg in enumerate(item.get("Configs") if isinstance(item.get("Configs"), list) else []):
+            first = len(out)
+            for n, cfg in enumerate(cfgs):
                 if not isinstance(cfg, dict):
                     continue
                 refs = list(cfg.get("Upgrades") or [])
@@ -148,11 +153,22 @@ def read(inv: dict, market=None) -> list:
                         filled += 1
                 if filled < MIN_MODS:
                     continue
+                pols = BC.slot_polarities(kind, item_name, [s["role"] for s in slots], item.get("Polarity"))
+                calc = BC.evaluate(kind, item_name, [s["role"] for s in slots],
+                                   [(s["name"], s["rank"]) if s["name"] else None for s in slots], pols, reactor, level)
+                for s, c in zip(slots, calc["slots"]):
+                    s.update(pol=c["pol"], mpol=c["mpol"], drain=c["drain"], state=c["state"])
+                cname = str(cfg.get("Name") or "").strip()
                 out.append({"item": item_name, "kind": kind, "path": path, "config": LETTERS[n] if n < 8 else str(n + 1),
+                            "cfg_name": cname, "reactor": reactor, "level": level,
+                            "capacity": {k: calc[k] for k in ("total", "used", "free")}, "stats": calc["stats"],
                             "oid": (item.get("ItemId") or {}).get("$oid", ""), "idx": n,
                             "forma": int(item.get("Polarized") or 0), "slots": slots,
                             "shards": shards if kind == "warframe" else [],
                             "helminth": helminth(cfg, path) if kind == "warframe" else None})
+            sib = [{"idx": b["idx"], "config": b["config"], "name": b["cfg_name"]} for b in out[first:]]
+            for b in out[first:]:
+                b["configs"] = sib
     out.sort(key=lambda b: (b["item"].lower(), b["config"]))
     return out
 
