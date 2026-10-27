@@ -77,6 +77,17 @@ GROUPS = [
     ("quantframe", [
         ("quantframe_url", "text", None, False),
     ]),
+    ("riven", [
+        ("riven_rps", "float", (0.2, 2.5, 2), False),
+        ("riven_scan_weapons", "int", (1, 500), False),
+        ("riven_weapon_filter", "text", None, False),
+        ("riven_sell_factor", "int", (30, 100), False),
+        ("riven_online_only", "bool", None, False),
+        ("riven_min_margin", "int", (0, 100000), False),
+        ("riven_min_score", "int", (0, 100), False),
+        ("riven_max_price", "int", (0, 1000000), False),
+        ("riven_min_sales", "int", (0, 1000), False),
+    ]),
     ("builds", [
         ("creator_channels", "text", None, False),
         ("creator_videos", "int", (1, 15), False),

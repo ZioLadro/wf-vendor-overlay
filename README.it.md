@@ -98,6 +98,16 @@ I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispi
 ### Quantframe
 Il programma può passare oggetti a [Quantframe](https://github.com/Kenya-DK/quantframe-react), così non devi aggiungerli lì a mano. Attiva il server HTTP locale di Quantframe (Settings > Advanced > HTTP Server; predefinito `127.0.0.1:4808`, impostazione *Indirizzo di Quantframe* qui). **Inventario > Invia a Quantframe…** manda le righe selezionate (tutte quelle mostrate se non ne selezioni nessuna) allo **stock** di Quantframe; le mod con rank vanno per rank (copie a rank 0 e a rank massimo). **Build > Mancanti → Quantframe** manda alla **wish list** le mod che ti mancano per la build selezionata. Prima compare una finestra di controllo (cosa e quante); gli oggetti già inviati restano senza spunta perché le quantità si sommano. Non viene inviato alcun prezzo d'acquisto, quindi non si registra nessuna transazione. Attenzione: il Live Scraper di Quantframe può poi mettere in vendita gli oggetti dello stock e piazzare ordini di acquisto per quelli della wish list, secondo le sue impostazioni. Sono accettati solo indirizzi di questo computer. **Inventario > Riven → Quantframe…** invia solo i riven **svelati** (già assegnati a un'arma; quelli non svelati vengono ignorati) allo stock riven di Quantframe. Arma, nome, rank, re-roll, polarità e statistiche si leggono dal file di AlecaFrame e i valori sono ricalcolati dai dati pubblici del gioco (`rivens.json`, rigenerabile con `build_rivens.py`); possono differire di un decimale dal gioco, e due vecchi tipi di statistica non coperti dai dati vengono saltati e segnalati. I nomi degli attributi di warframe.market si scaricano una volta e restano in cache. Controlla il risultato in Quantframe.
 
+### Riven flip
+
+**Riven flip > Scansiona il mercato** legge le inserzioni riven delle prossime armi su warframe.market (prima quelle scansionate meno di recente; *Armi per scansione* e *Solo queste armi* in Impostazioni > Riven flip) ed elenca i riven in vendita **a meno di quanto valgono quelli confrontabili**, dal profitto maggiore. Tre criteri:
+
+- **Prezzo**: il prezzo di acquisto diretto contro un *prezzo equo* = mediana dei prezzi delle inserzioni confrontabili della stessa arma (punteggio statistiche entro ±15) × *Rivendita attesa* (predefinito 85 %, perché i prezzi richiesti sono più alti di quelli pagati). Servono almeno 3 inserzioni confrontabili.
+- **Vendite**: warframe.market non pubblica le vendite dei riven, quindi è una **stima**: a ogni scansione il programma ricorda le inserzioni viste, e quelle che c'erano e alla scansione dopo non ci sono più (vendute, ritirate o scadute) vengono contate negli ultimi 7 giorni. Servono scansioni ripetute (un intervallo oltre 3 giorni azzera il conteggio); la colonna mostra "–" finché un'arma non è osservata da un giorno. *Vendite stimate minime* nasconde le armi lente.
+- **Statistiche**: un punteggio 0–100 da quanto è utile ogni statistica (pesi: critico, danno e multishot al massimo; zoom e rinculo valgono zero; un malus su una statistica inutile è un bonus) e da quanto è ben uscita (calcolata con la stessa formula della funzione Riven → Quantframe). Per cambiare i pesi crea `riven_weights.json` nella cartella dati del programma, es. `{"WeaponFireRateMod": 0.9, "WeaponStunChanceMod": 0.2}` (da 0 a 1; i nomi sono le chiavi di `rivens.json`).
+
+**Frequenza delle richieste**: solo le richieste dei riven hanno un limitatore proprio (*Richieste riven al secondo*, predefinito 1; il sito ne permette circa 3 e il programma non supera mai 2,5). Se arriva "too many requests" aspetta (il `Retry-After` del server, oppure 5 s, 10 s) e ferma la scansione dopo tre di fila; quanto già letto resta salvato. La scheda legge soltanto: non pubblica nulla su warframe.market. riven.market non viene usato (non ho trovato una API pubblica). *Apri l'asta* apre l'inserzione; *Copia whisper* copia il messaggio da incollare in gioco per il venditore. Profitto e prezzo equo sono stime, non garanzie.
+
 ### Consigli
 Cosa conviene comprare con lo standing, per ogni coppia (oggetto, vendor) con un costo in standing:
 
@@ -138,7 +148,7 @@ prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Sal
 il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
 valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
 
-## Aggiornamenti (versione attuale 0.1.9)
+## Aggiornamenti (versione attuale 0.1.10)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i

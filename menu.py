@@ -19,6 +19,7 @@ from version import __version__
 from profile_tab import ProfileTab
 from recommend_tab import RecommendTab
 from builds_tab import BuildsTab
+from riven_flip_tab import RivenFlipTab
 from refresher import Refresher
 from settings_tab import SettingsTab
 from standing import afford_text, get_store
@@ -248,6 +249,7 @@ class PriceList(QWidget):
         self.inv_tab = InventoryTab(market, self.refresher, self.inventory, self.account)
         self.recommend = RecommendTab(market, self.refresher)
         self.builds = BuildsTab(market, self.refresher, self.inventory)
+        self.riven_flip = RivenFlipTab(market)
         self.profile = ProfileTab(market)
         self.world = WorldTab(market)
         self.settings = SettingsTab()
@@ -258,6 +260,7 @@ class PriceList(QWidget):
         self.tabs.addTab(self.inv_tab, t("tab.inventory"))
         self.tabs.addTab(self.recommend, t("tab.recommend"))
         self.tabs.addTab(self.builds, t("tab.builds"))
+        self.tabs.addTab(self.riven_flip, t("tab.rflip"))
         self.tabs.addTab(self.profile, t("tab.profile"))
         self.tabs.addTab(self.world, t("tab.world"))
         self.tabs.addTab(self.settings, t("tab.settings"))
@@ -301,6 +304,8 @@ class PriceList(QWidget):
             self.recommend.refresh(force=force)
         elif w is self.builds:
             self.builds.refresh(force=force)
+        elif w is self.riven_flip:
+            self.riven_flip.refresh(force=force)
         elif w is self.profile:
             self.profile.refresh(force=force)
         elif w is self.world:

@@ -95,6 +95,16 @@ Your items with their market prices, and one-click sell orders (inspired by Alec
 ### Quantframe
 The program can hand items to [Quantframe](https://github.com/Kenya-DK/quantframe-react) so you do not add them there by hand. Turn on Quantframe's local HTTP server (Settings > Advanced > HTTP Server; default `127.0.0.1:4808`, setting *Quantframe address* here). **Inventory > Send to Quantframe…** sends the selected rows (all shown rows if none is selected) to Quantframe's **stock**; ranked mods go per rank (copies at rank 0 and at max rank). **Builds > Missing → Quantframe** sends the mods you lack for the selected build to its **wish list**. A check window comes first (what, how many); items already sent are left unchecked because quantities add up. No purchase price is sent, so no transaction is recorded. Mind that Quantframe's Live Scraper may then list stock items for sale, and may place buy orders for wish-list items, depending on its own settings. Only addresses on this computer are accepted. **Inventory > Rivens → Quantframe…** sends your **revealed** rivens only (already assigned to a weapon; unrevealed ones are ignored) to Quantframe's riven stock. Weapon, name, rank, re-rolls, polarity and stats are read from your AlecaFrame file and the stat values are recomputed from the game's public data (`rivens.json`, regenerated with `build_rivens.py`); they can differ by a decimal from the game, and two old stat types the data does not cover are skipped and reported. The warframe.market attribute names are fetched once and cached. Check the result in Quantframe.
 
+### Riven flip
+
+**Riven flip > Scan the market** reads the riven listings of the next weapons on warframe.market (the least recently scanned first; *Weapons per scan* and *Only these weapons* in Settings > Riven flip) and lists the rivens priced **below what comparable ones are worth**, best profit first. Three criteria:
+
+- **Price**: the listed direct-buy price against a *fair price* = median price of the comparable listings of the same weapon (stats score within ±15) × *Expected resale* (default 85 %, because asking prices are higher than what gets paid). At least 3 comparable listings are needed.
+- **Sales**: warframe.market does not publish riven sales, so this is an **estimate**: each scan remembers the listings seen, and listings that were there and are gone at the next scan (sold, withdrawn or expired) are counted over the last 7 days. It needs repeated scans (a gap longer than 3 days restarts the count); the column shows "–" until a weapon has been watched for a day. *Smallest estimated sales* hides slow weapons.
+- **Stats**: a 0–100 score from how useful each stat is (weights: crit chance/damage, damage and multishot highest; zoom and recoil worth nothing; a negative on a worthless stat is a bonus) and how well it rolled (computed with the same formula as the Rivens → Quantframe feature). To change the weights create `riven_weights.json` in the program's data folder, e.g. `{"WeaponFireRateMod": 0.9, "WeaponStunChanceMod": 0.2}` (0 to 1; stat names are the keys of `rivens.json`).
+
+**Request rate**: only the riven requests are limited by their own limiter (*Riven requests per second*, default 1; the site allows about 3, and the program never goes above 2.5). On a "too many requests" answer it waits (the server's `Retry-After`, or 5 s, 10 s) and stops the scan after three in a row; what was read is kept. The tab only reads: nothing is posted to warframe.market. riven.market is not used (it has no public API that I could find). *Open the auction* opens the listing; *Copy whisper* copies the in-game message to the seller. Profit and fair price are estimates, not guarantees.
+
 ### Recommendations
 What is worth buying with standing, for every (item, vendor) pair that has a standing cost:
 
@@ -133,7 +143,7 @@ recommendations). **Save** applies and stores them in `config.json`; **Save and 
 the program. Settings marked ⟳ (language, hotkeys, OCR, start active, name threshold) need a restart;
 the rest apply immediately. **Restore defaults** loads the default values (press Save to apply).
 
-## Updates (current version 0.1.9)
+## Updates (current version 0.1.10)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**
 and asks if you want to install it (*Install now* / *Later* / *Skip this version*). If the release exists but its package is not ready yet (the automatic build still running or failed) it says so. In **Settings → Updates** you can check by hand and, if you agree, it downloads
 `WFVendorOverlay-windows.zip`, verifies its SHA-256 against the `.sha256` file of the same release, and replaces
