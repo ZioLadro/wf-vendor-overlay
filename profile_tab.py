@@ -12,6 +12,7 @@ from config import CFG
 from i18n import t
 from standing import (ProfileError, get_store, is_nightwave, parse_bytes, read_raw, signature,
                       syndicate_name)
+from uiutil import role
 from uiutil import HINT_STYLE
 
 
@@ -26,10 +27,10 @@ class ProfileTab(QWidget):
         self.btn_reload.setToolTip(t("profile.reload.tip"))
         self.btn_reload.clicked.connect(self.reload_file)
         self.info = QLabel("")
-        self.info.setStyleSheet(HINT_STYLE)
+        role(self.info, "hint")
         self.info.setWordWrap(True)
         self.check = QLabel("")
-        self.check.setStyleSheet(HINT_STYLE)
+        role(self.check, "hint")
         top = QHBoxLayout()
         top.addWidget(self.btn)
         top.addWidget(self.btn_reload)
@@ -41,7 +42,7 @@ class ProfileTab(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         hint = QLabel(t("profile.hint"))
-        hint.setStyleSheet(HINT_STYLE)
+        role(hint, "hint")
         hint.setWordWrap(True)
         lay = QVBoxLayout(self)
         lay.addLayout(top)

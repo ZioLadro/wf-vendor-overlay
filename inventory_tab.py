@@ -19,6 +19,7 @@ from advice_dialog import AdviceDialog
 from inventory import Inventory, build_rows, parse_file, parse_text
 from market_auth import MarketAccount, MarketError
 from overlay import volume_color
+from uiutil import role
 from uiutil import (
     DIM_COLOR, HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, Cell, age_text, attach_item_menu,
     num_key,
@@ -84,7 +85,7 @@ class LoginDialog(QDialog):
         form.addRow(t("inv.login.password"), self.password)
         note = QLabel(t("inv.login.note"))
         note.setWordWrap(True)
-        note.setStyleSheet(HINT_STYLE)
+        role(note, "hint")
         box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         box.accepted.connect(self.accept)
         box.rejected.connect(self.reject)
@@ -125,7 +126,7 @@ class SellDialog(QDialog):
         form.addRow(t("inv.sell.price"), self.price)
         form.addRow(self.visible)
         self.info = QLabel("")
-        self.info.setStyleSheet(MUTED_STYLE)
+        role(self.info, "muted")
         self.preview = QPlainTextEdit(readOnly=True)
         self.preview.setMaximumHeight(110)
         self.preview.setStyleSheet("font-family: Consolas, monospace; font-size: 11px;")
@@ -252,7 +253,7 @@ class InventoryTab(QWidget):
         actions.addWidget(self.btn_account)
 
         self.summary = QLabel("")
-        self.summary.setStyleSheet(MUTED_STYLE)
+        role(self.summary, "muted")
         self.summary.setWordWrap(True)
 
         self.table = QTableWidget(0, 10)
@@ -273,7 +274,7 @@ class InventoryTab(QWidget):
         attach_item_menu(self.table, C_NAME)
 
         hint = QLabel(t("inv.hint"))
-        hint.setStyleSheet(HINT_STYLE)
+        role(hint, "hint")
         hint.setWordWrap(True)
 
         lay = QVBoxLayout(self)

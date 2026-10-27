@@ -100,19 +100,78 @@ def fetch_feed(channel_id: str, timeout: float = 15.0) -> dict:
     return parse_feed(raw.decode("utf-8", errors="replace"))
 
 
+BUILD_WORDS = re.compile(r"\b(builds?|loadouts?|set-?ups?|guide|best (?:mods?|build)|mod ?(?:config|setup|list)|"
+                         r"how to (?:build|mod)|steel path|incarnon|endurance|eximus|riven)\b", re.I)
+OFF_TOPIC = re.compile(r"\b(news|devstream|dev ?stream|prime access|trailer|patch ?notes?|hotfix|update \d|"
+                       r"podcast|reaction|react(?:s|ing)? to|q&a|tennogen|fashion ?frame|lore|story|"
+                       r"highlights?|funny|fails?|memes?|montage|livestream|giveaway|unboxing|review|"
+                       r"tier ?list|tennocon|prime resurgence|baro|void trader|relics? (?:opening|run)|"
+                       r"#shorts?)\b", re.I)
+LIST_BULLET = re.compile(r"^[\s\-\u2013\u2022*\u00b7>\d.):\[\]]*(?:\d{1,2}:\d{2}(?::\d{2})?\s*[-\u2013]?\s*)?")
+
+
+def listed_mods(desc: str, market) -> list:
+    """Mod names that sit on lines looking like a mod list ("- Serration", "Blind Rage (r10)", "Flow, Rush, Vigor"),
+    not names that merely occur in a sentence ("Flow of the game"). In order of appearance, without repeats."""
+    out, seen = [], set()
+    for line in OVERFRAME.sub(" ", desc or "").splitlines():
+        line = LIST_BULLET.sub("", line).strip()
+        if not line or len(line) > 90:
+            continue
+        found = B.extract_mods(line, market)
+        if not found:
+            continue
+        rest = line
+        for _s, name in found:
+            rest = rest.replace(name, " ")
+        rest = re.sub(r"\(.*?\)|\b(?:rank|r|x)\s*\d+\b|[-\u2013:,;/+&|]", " ", rest, flags=re.I)
+        if len(rest.split()) <= 3:                  # little besides the names: it is a list line
+            for slug, name in found:
+                if slug not in seen:
+                    seen.add(slug)
+                    out.append((slug, name))
+    return out
+
+
+def relevance(title: str, links: list, listed: int, desc: str) -> int:
+    """How likely a video is a Warframe build video (0 = not at all). Overframe link +3, build words in the title +2,
+    a mod list in the description +1 (4+ mods) / +2 (8+ mods), off-topic words in the title -4, no mention of Warframe (and a short mod list) -2."""
+    score = 0
+    if links:
+        score += 3
+    if BUILD_WORDS.search(title or ""):
+        score += 2
+    if listed >= 8:
+        score += 2
+    elif listed >= 4:
+        score += 1
+    if OFF_TOPIC.search(title or ""):
+        score -= 4
+    if "warframe" not in f"{title} {desc}".lower() and not links and listed < 8:
+        score -= 2
+    return score
+
+
 def analyse(video: dict, market) -> dict:
-    """Adds what the description holds: Overframe links and known mod names (in order of appearance)."""
+    """Adds what the description holds: Overframe links, the mods listed in it and a relevance score."""
     desc = video.get("desc", "")
     links = list(dict.fromkeys(m.group(0).rstrip(".,;") for m in OVERFRAME.finditer(desc)))
-    text = OVERFRAME.sub(" ", desc)
-    mods = B.extract_mods(text, market) if market is not None else []
-    return dict(video, links=links, mods=mods)
+    mods = listed_mods(desc, market) if market is not None else []
+    return dict(video, links=links, mods=mods, score=relevance(video.get("title", ""), links, len(mods), desc))
+
+
+def min_score() -> int:
+    try:
+        return max(1, int(CFG["creator_min_relevance"]))
+    except (KeyError, TypeError, ValueError):
+        return 3
 
 
 def collect(market, channels, per_channel=10, fetch=fetch_feed):
-    """Reads the feeds. Returns (videos, errors): videos sorted newest first, only those with a link or at least
-    3 mod names; errors = [(label, message)]."""
+    """Reads the feeds. Returns (videos, errors): only videos that look like build videos (relevance >= the setting,
+    and an Overframe link or a list of at least 4 mods), best first within each day; errors = [(label, message)]."""
     videos, errors = [], []
+    need = min_score()
     for label, cid in channels:
         try:
             feed = fetch(cid)
@@ -121,11 +180,11 @@ def collect(market, channels, per_channel=10, fetch=fetch_feed):
             continue
         for v in feed["videos"][:per_channel]:
             a = analyse(v, market)
-            if a["links"] or len(a["mods"]) >= 3:
+            if a["score"] >= need and (a["links"] or len(a["mods"]) >= 4):
                 videos.append({"channel": feed["channel"] or label or cid, "cid": cid, "id": a["id"],
                                "title": a["title"], "url": a["url"], "published": a["published"],
-                               "links": a["links"], "mods": [[s, n] for s, n in a["mods"]]})
-    videos.sort(key=lambda v: v["published"], reverse=True)
+                               "links": a["links"], "mods": [[s, n] for s, n in a["mods"]], "score": a["score"]})
+    videos.sort(key=lambda v: (v["published"], v["score"]), reverse=True)
     return videos, errors
 
 

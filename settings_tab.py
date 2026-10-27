@@ -2,13 +2,15 @@
 import re
 
 from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
-    QCheckBox, QComboBox, QDoubleSpinBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QScrollArea, QSpinBox, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDoubleSpinBox, QFontComboBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
+    QPushButton, QScrollArea, QSpinBox, QTabWidget, QVBoxLayout, QWidget,
 )
 
 from config import CFG, DEFAULTS, save_config
 from i18n import LANGUAGES, t
+from uiutil import role
 from uiutil import HINT_STYLE, MUTED_STYLE
 
 # (key, widget, options, restart)   widget: bool | int:(min,max) | float:(min,max,decimals) | choice | text
@@ -57,6 +59,11 @@ GROUPS = [
         ("refresh_confirm_over", "int", (1, 5000), False),
         ("baro_refresh_days", "int", (1, 90), False),
     ]),
+    ("theme", [
+        ("theme", "choice", "themes", False),
+        ("ui_font", "font", None, False),
+        ("ui_font_size", "int", (9, 24), False),
+    ]),
     ("appearance", [
         ("volume_low", "int", (1, 10000), False),
         ("volume_high", "int", (2, 100000), False),
@@ -91,6 +98,7 @@ GROUPS = [
     ("builds", [
         ("creator_channels", "text", None, False),
         ("creator_videos", "int", (1, 15), False),
+        ("creator_min_relevance", "int", (1, 7), False),
     ]),
     ("recommendations", [
         ("rec_min_volume", "int", (0, 100000), False),
@@ -130,9 +138,10 @@ class SettingsTab(QWidget):
         super().__init__()
         self.widgets = {}                   # key -> (widget, kind, restart)
 
-        body = QWidget()
-        col = QVBoxLayout(body)
+        self.subtabs = QTabWidget()
         for gname, fields in GROUPS:
+            page = QWidget()
+            col = QVBoxLayout(page)
             box = QGroupBox(t("group." + gname))
             form = QFormLayout(box)
             for key, kind, opt, restart in fields:
@@ -143,22 +152,33 @@ class SettingsTab(QWidget):
                 form.addRow(label, w)
                 self.widgets[key] = (w, kind, restart)
             col.addWidget(box)
-        from update_box import UpdateBox
-        self.update_box = UpdateBox()
-        col.addWidget(self.update_box)
-        col.addStretch(1)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setWidget(body)
+            if gname == "general":
+                from update_box import UpdateBox
+                self.update_box = UpdateBox()
+                col.addWidget(self.update_box)
+            if gname == "theme":
+                self.theme_note = QLabel(t("settings.theme.note"))
+                self.theme_note.setWordWrap(True)
+                role(self.theme_note, "hint")
+                col.addWidget(self.theme_note)
+            col.addStretch(1)
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setWidget(page)
+            self.subtabs.addTab(scroll, t("group." + gname))
+        for key in ("theme", "ui_font", "ui_font_size"):
+            w = self.widgets[key][0]
+            (w.currentIndexChanged if key == "theme" else w.currentFontChanged if key == "ui_font"
+             else w.valueChanged).connect(self._preview)
 
         self.btn_save = QPushButton(t("settings.save"))
         self.btn_restart = QPushButton(t("settings.save_restart"))
         self.btn_defaults = QPushButton(t("settings.defaults"))
         self.msg = QLabel("")
         self.msg.setWordWrap(True)
-        self.msg.setStyleSheet(MUTED_STYLE)
+        role(self.msg, "muted")
         hint = QLabel(t("settings.hint", file=str(_config_path())))
-        hint.setStyleSheet(HINT_STYLE)
+        role(hint, "hint")
         hint.setWordWrap(True)
 
         buttons = QHBoxLayout()
@@ -168,7 +188,7 @@ class SettingsTab(QWidget):
         buttons.addWidget(self.btn_restart)
 
         lay = QVBoxLayout(self)
-        lay.addWidget(scroll, 1)
+        lay.addWidget(self.subtabs, 1)
         lay.addWidget(self.msg)
         lay.addLayout(buttons)
         lay.addWidget(hint)
@@ -188,8 +208,18 @@ class SettingsTab(QWidget):
             w = QDoubleSpinBox(minimum=opt[0], maximum=opt[1], decimals=opt[2], singleStep=0.1 if opt[1] > 1 else 0.01)
         elif kind == "choice":
             w = QComboBox()
+            if opt == "themes":
+                import theme
+                for tid in theme.ORDER:
+                    kind_txt = theme.PRESETS[tid]["kind"]
+                    w.addItem(t("theme." + tid) + (f"  ({t('theme.' + kind_txt)})" if kind_txt else ""), tid)
+                return w
             for value, label in opt:
                 w.addItem(label, value)
+            return w
+        elif kind == "font":
+            w = QFontComboBox()
+            w.setMaximumWidth(260)
             return w
         else:
             w = QLineEdit()
@@ -207,6 +237,8 @@ class SettingsTab(QWidget):
             w.setValue(value)
         elif kind == "choice":
             w.setCurrentIndex(max(0, w.findData(value)))
+        elif kind == "font":
+            w.setCurrentFont(QFont(str(value)))
         else:
             w.setText(str(value))
 
@@ -220,12 +252,24 @@ class SettingsTab(QWidget):
             return float(w.value())
         if kind == "choice":
             return w.currentData()
+        if kind == "font":
+            return w.currentFont().family()
         return w.text().strip()
 
     def load(self, source=None):
         source = CFG if source is None else source
         for key in self.widgets:
             self._set(key, source[key])
+
+    def _preview(self, *_):
+        """Shows the chosen theme / font at once; it is kept only if saved (leaving the tab restores the saved one)."""
+        import theme
+        theme.apply(None, self._get("theme"), self._get("ui_font"), self._get("ui_font_size"))
+
+    def hideEvent(self, e):
+        super().hideEvent(e)
+        import theme
+        theme.apply()
 
     def showEvent(self, e):
         super().showEvent(e)
@@ -254,6 +298,8 @@ class SettingsTab(QWidget):
         if changed_restart:
             text += " " + t("settings.needs_restart", items=", ".join(changed_restart))
         self.msg.setText(text)
+        import theme
+        theme.apply()
         if restart:
             self.restart_requested.emit()
 

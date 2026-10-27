@@ -24,6 +24,8 @@ from refresher import Refresher
 from settings_tab import SettingsTab
 from standing import afford_text, get_store
 from world_tab import WorldTab
+import theme
+from uiutil import role
 from uiutil import (
     DIM_COLOR, HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, STYLE, Cell, age_text, kind_label,
     attach_item_menu, make_icon, num_key, standing_cell,  # noqa: F401  (make_icon re-exported for main.py)
@@ -54,7 +56,7 @@ class PricesTab(QWidget):
         self.hide_zero.setToolTip(t("prices.hide_zero.tip"))
         self.hide_zero.setChecked(bool(CFG["hide_zero_volume"]))
         self.count = QLabel("")
-        self.count.setStyleSheet(MUTED_STYLE)
+        role(self.count, "muted")
         self.fill_vendors()
 
         top = QHBoxLayout()
@@ -95,7 +97,7 @@ class PricesTab(QWidget):
         hdr.setSortIndicator(C_NAME, Qt.SortOrder.AscendingOrder)
 
         hint = QLabel(t("prices.hint"))
-        hint.setStyleSheet(HINT_STYLE)
+        role(hint, "hint")
         hint.setWordWrap(True)
 
         lay = QVBoxLayout(self)
@@ -240,7 +242,7 @@ class PriceList(QWidget):
         self.setWindowTitle(t("window.title") + " " + __version__)
         self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint)
         self.resize(1080, 680)
-        self.setStyleSheet(STYLE)
+        theme.ensure_applied()
 
         self.refresher = Refresher(market, self)
         self.prices = PricesTab(market, self.refresher)
@@ -269,7 +271,7 @@ class PriceList(QWidget):
         self.bar = QProgressBar()
         self.bar.setVisible(False)
         self.status = QLabel("")
-        self.status.setStyleSheet(MUTED_STYLE)
+        role(self.status, "muted")
         self.btn_stop = QPushButton(t("job.stop"))
         self.btn_stop.setEnabled(False)
         bottom = QHBoxLayout()

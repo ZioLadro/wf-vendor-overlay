@@ -55,6 +55,8 @@ def main():
         status = pyqtSignal(str)
 
     app = QApplication(sys.argv)
+    import theme
+    theme.apply(app)
     app.setQuitOnLastWindowClosed(False)     # closing the price list must not quit the program
     icon = make_icon()
     app.setWindowIcon(icon)

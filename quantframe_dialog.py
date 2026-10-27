@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
 
 import quantframe as Q
 from i18n import t
+from uiutil import role
 from uiutil import HINT_STYLE, MUTED_STYLE
 
 COL_CHECK, COL_NAME, COL_RANK, COL_QTY, COL_SENT = range(5)
@@ -29,7 +30,7 @@ class SendDialog(QDialog):
         self.resize(560, 520)
         note = QLabel(t("qf.note." + kind))
         note.setWordWrap(True)
-        note.setStyleSheet(HINT_STYLE)
+        role(note, "hint")
         self.table = QTableWidget(len(entries), 5)
         self.table.setHorizontalHeaderLabels(["", t("qf.col.item"), t("qf.col.rank"), t("qf.col.qty"),
                                               t("qf.col.sent")])
@@ -57,7 +58,7 @@ class SendDialog(QDialog):
             self.spins.append(spin)
         self.status = QLabel("")
         self.status.setWordWrap(True)
-        self.status.setStyleSheet(MUTED_STYLE)
+        role(self.status, "muted")
         self.btn_send = QPushButton(t("qf.send"))
         self.btn_send.setDefault(True)
         box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)

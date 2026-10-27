@@ -10,10 +10,12 @@ from PyQt6.QtWidgets import (
 )
 
 import builds as B
+import loadouts as LO
 from creators_dialog import CreatorsDialog
 from config import CFG
 from i18n import t
 from overlay import volume_color
+from uiutil import role
 from uiutil import DIM_COLOR, HINT_STYLE, MUTED_STYLE, PRICE_COLOR, Cell, attach_item_menu
 
 GREEN, AMBER, RED = QColor(110, 220, 140), QColor(255, 205, 110), QColor(255, 120, 120)
@@ -42,7 +44,7 @@ class ReviewDialog(QDialog):
         btn_add.clicked.connect(self._add_typed)
         hint = QLabel(note or t("builds.review.hint", n=len(found)))
         hint.setWordWrap(True)
-        hint.setStyleSheet(HINT_STYLE)
+        role(hint, "hint")
         box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         box.accepted.connect(self.accept)
         box.rejected.connect(self.reject)
@@ -88,6 +90,46 @@ class ReviewDialog(QDialog):
         return out
 
 
+class LoadoutsDialog(QDialog):
+    """Your in-game loadouts (read from the AlecaFrame file): tick the ones to add as builds."""
+
+    def __init__(self, loadouts, parent=None):
+        super().__init__(parent)
+        self.loadouts = loadouts
+        self.setWindowTitle(t("builds.loadouts.title"))
+        self.resize(480, 560)
+        hint = QLabel(t("builds.loadouts.hint", n=len(loadouts)))
+        hint.setWordWrap(True)
+        role(hint, "hint")
+        self.filter = QLineEdit()
+        self.filter.setPlaceholderText(t("builds.loadouts.filter"))
+        self.list = QListWidget()
+        for i, lo in enumerate(loadouts):
+            it = QListWidgetItem(f"{lo['item']}  ·  {lo['config']}  ·  {t('builds.loadouts.mods', n=len(lo['mods']))}")
+            it.setFlags(it.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            it.setCheckState(Qt.CheckState.Unchecked)
+            it.setData(Qt.ItemDataRole.UserRole, i)
+            self.list.addItem(it)
+        self.filter.textChanged.connect(self._apply_filter)
+        box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        box.accepted.connect(self.accept)
+        box.rejected.connect(self.reject)
+        lay = QVBoxLayout(self)
+        lay.addWidget(hint)
+        lay.addWidget(self.filter)
+        lay.addWidget(self.list, 1)
+        lay.addWidget(box)
+
+    def _apply_filter(self, text):
+        text = text.strip().lower()
+        for i in range(self.list.count()):
+            self.list.item(i).setHidden(bool(text) and text not in self.list.item(i).text().lower())
+
+    def chosen(self):
+        return [self.loadouts[self.list.item(i).data(Qt.ItemDataRole.UserRole)] for i in range(self.list.count())
+                if self.list.item(i).checkState() == Qt.CheckState.Checked]
+
+
 class BuildsTab(QWidget):
     fetched = pyqtSignal(object, object, str)       # (page html | None, error | None, url)
 
@@ -108,12 +150,14 @@ class BuildsTab(QWidget):
         self.btn_open = QPushButton(t("builds.open"))
         self.btn_creators = QPushButton(t("builds.creators"))
         self.btn_creators.setToolTip(t("builds.creators.tip"))
+        self.btn_loadouts = QPushButton(t("builds.loadouts"))
+        self.btn_loadouts.setToolTip(t("builds.loadouts.tip"))
         self.btn_wish = QPushButton(t("qf.btn.wish"))
         self.btn_wish.setToolTip(t("qf.btn.wish.tip"))
         self.btn_fetch = QPushButton(t("builds.fetch"))
         self.btn_fetch.setToolTip(t("builds.fetch.tip"))
         bar = QHBoxLayout()
-        for b in (self.btn_link, self.btn_text, self.btn_creators, self.btn_rename, self.btn_remove, self.btn_open):
+        for b in (self.btn_loadouts, self.btn_link, self.btn_text, self.btn_creators, self.btn_rename, self.btn_remove, self.btn_open):
             bar.addWidget(b)
         bar.addStretch(1)
         bar.addWidget(self.btn_wish)
@@ -125,7 +169,7 @@ class BuildsTab(QWidget):
         self.title.setStyleSheet("font-size: 15px; font-weight: bold;")
         self.summary = QLabel("")
         self.summary.setWordWrap(True)
-        self.summary.setStyleSheet(MUTED_STYLE)
+        role(self.summary, "muted")
         self.headers = [t("builds.col.mod"), t("builds.col.status"), t("col.price"), t("col.volume"), t("builds.col.cost")]
         self.table = QTableWidget(0, len(self.headers))
         self.table.setHorizontalHeaderLabels(self.headers)
@@ -141,7 +185,7 @@ class BuildsTab(QWidget):
         attach_item_menu(self.table, 0)
         hint = QLabel(t("builds.hint"))
         hint.setWordWrap(True)
-        hint.setStyleSheet(HINT_STYLE)
+        role(hint, "hint")
 
         right = QWidget()
         rl = QVBoxLayout(right)
@@ -161,6 +205,7 @@ class BuildsTab(QWidget):
         self.btn_link.clicked.connect(self.add_link)
         self.btn_text.clicked.connect(self.add_text)
         self.btn_wish.clicked.connect(self.send_wish)
+        self.btn_loadouts.clicked.connect(self.import_loadouts)
         self.btn_creators.clicked.connect(self.open_creators)
         self.btn_rename.clicked.connect(self.rename)
         self.btn_remove.clicked.connect(self.remove)
@@ -198,13 +243,12 @@ class BuildsTab(QWidget):
         self.summary.setText("")
         if err or page is None:
             self._pending_name, self._fallback = None, []
-            QMessageBox.warning(self, t("builds.add_link"), t("builds.fetch.error", err=err))
+            B.log(f"import failed: {err}")
+            QMessageBox.warning(self, t("builds.add_link"), t("builds.fetch.error", err=err) + "\n\n" + t("builds.fetch.help"))
             return
-        found = B.extract_mods(B.page_text(page), self.market)
-        note = ""
-        if not found:                           # mods only inside the page's data: look there too (noisier)
-            found = B.extract_mods(B.page_text(page, with_scripts=True), self.market)
-            note = t("builds.review.noisy", n=len(found)) if found else t("builds.review.none")
+        found, how = B.extract_from_page(page, self.market, url)
+        note = {"json": "", "text": t("builds.review.text"), "scripts": t("builds.review.noisy", n=len(found)),
+                "": t("builds.review.none")}[how]
         if not found and self._fallback:                  # nothing in the page: the video description's mods
             found, note = self._fallback, ""
         self._review(self._pending_name or B.page_title(page) or t("builds.untitled"), found, url, note)
@@ -221,6 +265,33 @@ class BuildsTab(QWidget):
             QMessageBox.information(self, t("qf.btn.wish"), t("qf.empty.wish"))
             return
         SendDialog("wish", entries, self).exec()
+
+    def import_loadouts(self):
+        """The mods equipped in your own loadouts (from the AlecaFrame file) -> builds."""
+        import os
+        import aleca
+        path = self.inventory.path
+        if not path or not os.path.exists(path):
+            path = aleca.find_data_file()
+        if not path or not os.path.exists(path):
+            QMessageBox.information(self, t("builds.loadouts"), t("builds.loadouts.nofile"))
+            return
+        try:
+            los = LO.read_file(path, self.market)
+        except (ValueError, OSError) as e:
+            QMessageBox.warning(self, t("builds.loadouts"), t("builds.loadouts.fail", err=e))
+            return
+        if not los:
+            QMessageBox.information(self, t("builds.loadouts"), t("builds.loadouts.none"))
+            return
+        dlg = LoadoutsDialog(los, self)
+        if dlg.exec() != QDialog.DialogCode.Accepted:
+            return
+        last = None
+        for lo in dlg.chosen():
+            last = self.store.add(f"{lo['item']} ({lo['config']})", lo["mods"])
+        if last:
+            self.refresh(force=True, select=last["id"])
 
     def open_creators(self):
         dlg = CreatorsDialog(self.market, self)
@@ -253,6 +324,8 @@ class BuildsTab(QWidget):
         if dlg.exec() != QDialog.DialogCode.Accepted:
             return
         found = B.parse_list(edit.toPlainText(), self.market)
+        if len(found) < 3:                          # a whole copied page, not a list: pick the mod names out of the text
+            found = B.extract_mods(edit.toPlainText(), self.market) or found
         self._review(t("builds.untitled"), found, "")
 
     def _review(self, name, found, url, note=""):

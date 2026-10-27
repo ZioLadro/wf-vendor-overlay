@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QLabel, QMess
 import updater
 from config import CFG, save_config
 from i18n import t
+from uiutil import role
 from uiutil import HINT_STYLE
 from version import __version__
 
@@ -29,7 +30,7 @@ class UpdateBox(QGroupBox):
         self.bus.staged.connect(self._staged)
         self.info = QLabel(t("update.version", v=__version__))
         self.status = QLabel("")
-        self.status.setStyleSheet(HINT_STYLE)
+        role(self.status, "hint")
         self.status.setWordWrap(True)
         self.btn = QPushButton(t("update.check"))
         self.btn.clicked.connect(self.check)

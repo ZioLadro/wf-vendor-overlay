@@ -15,32 +15,18 @@ MAXRANK_COLOR = QColor(255, 205, 110)
 DIM_COLOR = QColor(130, 130, 130)
 STANDING_COLOR = QColor(190, 160, 255)
 
-STYLE = """
-QWidget { background: #161a22; color: #e6e6e6; font-size: 13px; }
-QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox { background: #1f2430; border: 1px solid #343b4d;
-                                                 border-radius: 4px; padding: 4px 8px; }
-QComboBox QAbstractItemView { background: #1f2430; selection-background-color: #2d3650; }
-QTableWidget { background: #161a22; alternate-background-color: #1a1f29; border: 1px solid #343b4d;
-               selection-background-color: #2d3650; selection-color: #ffffff; }
-QHeaderView::section { background: #232938; color: #c9d1e3; border: none; border-right: 1px solid #343b4d;
-                       padding: 5px 8px; font-weight: bold; }
-QPushButton { background: #232938; border: 1px solid #343b4d; border-radius: 4px; padding: 5px 12px; }
-QPushButton:hover { background: #2d3650; }
-QPushButton:disabled { color: #6b738a; background: #1a1f29; }
-QProgressBar { background: #1f2430; border: 1px solid #343b4d; border-radius: 4px; text-align: center; height: 14px; }
-QProgressBar::chunk { background: #3b6ea8; }
-QTabWidget::pane { border: 1px solid #343b4d; top: -1px; }
-QTabBar::tab { background: #1a1f29; border: 1px solid #343b4d; padding: 7px 18px; margin-right: 2px; }
-QTabBar::tab:selected { background: #232938; color: #ffffff; font-weight: bold; }
-QGroupBox { border: 1px solid #343b4d; border-radius: 6px; margin-top: 14px; padding-top: 8px; }
-QGroupBox::title { subcontrol-origin: margin; left: 10px; padding: 0 6px; color: #9aa4bd; }
-QCheckBox { spacing: 8px; }
-QScrollBar:vertical { background: #161a22; width: 12px; }
-QScrollBar::handle:vertical { background: #343b4d; border-radius: 5px; min-height: 24px; }
-QScrollBar::add-line, QScrollBar::sub-line { height: 0; }
-"""
-HINT_STYLE = "color: #7d869e; font-size: 11px;"
+import theme
+
+STYLE = theme.build_style("classic")        # kept for code that still imports it; the program applies the chosen theme
+HINT_STYLE = "color: #7d869e; font-size: 11px;"      # fixed-colour versions (prefer role(widget, "hint"))
 MUTED_STYLE = "color: #9aa4bd;"
+
+
+def role(widget, name: str):
+    """Marks a label as "muted" / "hint" / "small": the colour then comes from the current theme (and follows it
+    when the theme changes), instead of being written into the label."""
+    widget.setProperty("role", name)
+
 
 
 def make_icon() -> QIcon:

@@ -12,6 +12,7 @@ import rivenmarket as M
 import rivens as R
 from config import CFG
 from i18n import t
+from uiutil import role
 from uiutil import DIM_COLOR, HINT_STYLE, MUTED_STYLE, PRICE_COLOR, Cell, num_key
 
 GREEN, AMBER, RED = QColor(110, 220, 140), QColor(255, 205, 110), QColor(255, 120, 120)
@@ -61,10 +62,10 @@ class RivenFlipTab(QWidget):
 
         self.note = QLabel(t("rflip.note"))
         self.note.setWordWrap(True)
-        self.note.setStyleSheet(HINT_STYLE)
+        role(self.note, "hint")
         self.summary = QLabel("")
         self.summary.setWordWrap(True)
-        self.summary.setStyleSheet(MUTED_STYLE)
+        role(self.summary, "muted")
         self.bar = QProgressBar()
         self.bar.setVisible(False)
 

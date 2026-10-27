@@ -128,6 +128,8 @@ Elenchi di mod per un Warframe, un'arma o un compagno, confrontati con il tuo in
 
 **Dai creator…** elenca le build dagli ultimi video di dieci canali YouTube di Warframe (MHBlacky, Tactical Potato, iFlynn, KnightmareFrame, Grind Hard Squad, Brozime, LeyzarGamingViews, Sabuuchi, TheKengineer, kyaii; scelti da elenchi pubblici di canali Warframe). Legge solo il **feed RSS pubblico** di ogni canale (titolo, link, descrizione; nessuna chiave API, niente dal video stesso) e tiene i video la cui descrizione ha un link Overframe o almeno 3 nomi di mod noti. Doppio clic per aggiungerne uno come build (viene letta la pagina Overframe, oppure si usano le mod della descrizione), sempre con la finestra di controllo prima. I canali si cambiano in Impostazioni > Build (`creator_channels`: ID UC… o link `youtube.com/channel/UC…`; i link `@handle` non contengono l'ID). Il feed contiene solo gli ultimi ~15 video per canale, e un creator che non scrive le mod nella descrizione non dà nulla.
 
+**I miei loadout…** (Build) è la fonte più affidabile: legge dal file di AlecaFrame le mod equipaggiate nei tuoi loadout in gioco e propone ogni loadout come build. **Dai creator…** ora mostra solo i video che sembrano video di build: link Overframe, parole da build nel titolo e un vero elenco di mod nella descrizione (righe che elencano nomi di mod, non nomi dentro frasi); notizie, dirette, trailer e simili vengono scartati. *Video creator: severità* in Impostazioni > Build regola quanto è severo. **Link Overframe**: la pagina viene letta dal testo, dai nomi delle immagini e dai dati incorporati; se Overframe rifiuta i download automatici o non mostra le mod nel sorgente, usa *Aggiungi da testo* (copia il testo della pagina con Ctrl+A, Ctrl+C) oppure *I miei loadout…*. Cosa ha visto ogni importazione è scritto in `builds.log`.
+
 ### Profilo
 Standing e rank per fazione, più il grado di maestria, **letti dal `lastData.dat` di AlecaFrame** (o dal JSON
 dell'app companion) con **Importa lo standing da file…**; *Ricarica il file* lo rilegge dopo che AlecaFrame l'ha
@@ -148,7 +150,11 @@ prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Sal
 il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
 valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
 
-## Aggiornamenti (versione attuale 0.1.11)
+### Impostazioni, temi e caratteri
+
+Le Impostazioni hanno una sotto-scheda per categoria. **Tema e carattere** offre temi di colori ispirati alle fazioni di Warframe, alleate (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) e nemiche (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), più il *Classic* originale, oltre a famiglia e dimensione del carattere. La scelta si vede subito in anteprima in tutte le finestre e resta solo se premi Salva (uscendo dalla scheda torna l'aspetto salvato). L'overlay in gioco mantiene i suoi colori. Tutti i temi sono scuri.
+
+## Aggiornamenti (versione attuale 0.1.12)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i
@@ -183,7 +189,7 @@ Tutto sta in `%LOCALAPPDATA%\WFVendorOverlay`:
 - `config.json` impostazioni · `prices.json` prezzi e volumi raccolti · `items_cache.json` catalogo del market ·
   `baro.json` elenco di Baro · `inventory.json` il tuo inventario e gli ordini piazzati dal programma ·
   `market_session.json` token di sessione di warframe.market · `vendors.json` / `gamenames.json` (facoltativi,
-  hanno la precedenza su quelli inclusi) · `overlay.log` errori (utile con l'exe) · `riven.log` richieste ed errori di Riven flip.
+  hanno la precedenza su quelli inclusi) · `overlay.log` errori (utile con l'exe) · `riven.log` richieste ed errori di Riven flip · `builds.log` cosa hanno visto le importazioni Build.
 
 | chiave | significato (default) |
 |---|---|

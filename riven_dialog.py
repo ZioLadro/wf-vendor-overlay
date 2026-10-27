@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
 import quantframe as Q
 import rivens as R
 from i18n import t
+from uiutil import role
 from uiutil import HINT_STYLE, MUTED_STYLE
 
 COL_CHECK, COL_WEAPON, COL_NAME, COL_STATS, COL_RANK, COL_SENT = range(6)
@@ -28,7 +29,7 @@ class RivenDialog(QDialog):
         self.resize(900, 520)
         note = QLabel(t("riv.note"))
         note.setWordWrap(True)
-        note.setStyleSheet(HINT_STYLE)
+        role(note, "hint")
         self.table = QTableWidget(len(items), 6)
         self.table.setHorizontalHeaderLabels(["", t("riv.col.weapon"), t("riv.col.name"), t("riv.col.stats"),
                                               t("riv.col.rank"), t("qf.col.sent")])
@@ -54,7 +55,7 @@ class RivenDialog(QDialog):
             self.checks.append(chk)
         self.status = QLabel(t("riv.skipped", n=len(skipped), why=", ".join(sorted(set(skipped))[:3])) if skipped else "")
         self.status.setWordWrap(True)
-        self.status.setStyleSheet(MUTED_STYLE)
+        role(self.status, "muted")
         self.btn_send = QPushButton(t("qf.send"))
         self.btn_send.setDefault(True)
         box = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)

@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import QDialog, QHBoxLayout, QHeaderView, QLabel, QPushButt
 from advice import ducat_advice, sell_advice
 from i18n import t
 from overlay import volume_color
+from uiutil import role
 from uiutil import (DIM_COLOR, HINT_STYLE, MUTED_STYLE, PRICE_COLOR, STYLE, Cell, attach_item_menu, num_key)
 
 
@@ -14,7 +15,6 @@ class AdviceDialog(QDialog):
     def __init__(self, kind: str, rows, parent=None):
         super().__init__(parent)
         self.kind = kind
-        self.setStyleSheet(STYLE)
         self.setWindowTitle(t("advice." + kind + ".title"))
         self.resize(900, 560)
         if kind == "ducat":
@@ -28,7 +28,7 @@ class AdviceDialog(QDialog):
         self.data = data
         intro = QLabel(t("advice." + kind + ".intro"))
         intro.setWordWrap(True)
-        intro.setStyleSheet(MUTED_STYLE)
+        role(intro, "muted")
         self.table = QTableWidget(len(data), len(heads))
         self.table.setHorizontalHeaderLabels([t(h) for h in heads])
         self.table.verticalHeader().hide()
@@ -61,7 +61,7 @@ class AdviceDialog(QDialog):
         self.table.sortByColumn(len(heads) - 1 if kind == "sell" else 7, Qt.SortOrder.DescendingOrder)
         attach_item_menu(self.table, 0)
         note = QLabel(t("advice.missing", n=len(self.missing)) if self.missing else "")
-        note.setStyleSheet(HINT_STYLE)
+        role(note, "hint")
         note.setWordWrap(True)
         empty = QLabel(t("advice.empty") if not data else "")
         btn_sel = QPushButton(t("advice.select"))

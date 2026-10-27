@@ -15,6 +15,7 @@ import urllib.request
 from config import APP_DIR
 
 BUILDS_FILE = APP_DIR / "builds.json"
+LOG_FILE = APP_DIR / "builds.log"
 ALLOWED_HOSTS = ("overframe.gg", "www.overframe.gg")
 MAX_PAGE = 3_000_000
 UA = "WFVendorOverlay (build import; user-initiated)"
@@ -27,6 +28,17 @@ MAX_PRECHECKED = 10
 
 class BuildError(Exception):
     pass
+
+
+def log(msg: str):
+    """One line in builds.log (kept under ~200 KB): what a page import saw, to diagnose a failing import."""
+    try:
+        if LOG_FILE.exists() and LOG_FILE.stat().st_size > 200_000:
+            LOG_FILE.write_text("", encoding="utf-8")
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {msg}\n")
+    except OSError:
+        pass
 
 
 # ---------- reading a page ----------
@@ -48,15 +60,23 @@ def check_url(url: str) -> str:
 
 
 def fetch_page(url: str, timeout: float = 15.0) -> str:
-    """HTML of an Overframe page. Raises BuildError."""
+    """HTML of an Overframe page. Raises BuildError (with the HTTP status when there is one)."""
     url = check_url(url)
-    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html"})
+    req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "text/html,application/xhtml+xml",
+                                               "Accept-Language": "en"})
     try:
         with urllib.request.build_opener(_SameHost).open(req, timeout=timeout) as r:
             raw = r.read(MAX_PAGE + 1)
+            log(f"GET {url} -> {r.status}, {len(raw)} bytes, {r.headers.get('Content-Type', '')}")
     except BuildError:
         raise
+    except urllib.error.HTTPError as e:
+        log(f"GET {url} -> HTTP {e.code} {e.reason}")
+        if e.code in (401, 403, 429, 503):
+            raise BuildError(f"HTTP {e.code}: overframe.gg refuses automatic downloads (see 'Add from text')")
+        raise BuildError(f"HTTP {e.code}")
     except (urllib.error.URLError, OSError, ValueError) as e:
+        log(f"GET {url} failed: {type(e).__name__}: {e}")
         raise BuildError(f"{type(e).__name__}: {e}")
     if len(raw) > MAX_PAGE:
         raise BuildError("page too large")
@@ -72,11 +92,74 @@ def page_title(page: str) -> str:
     return re.sub(r"\s*[|\-–]\s*Overframe.*$", "", title, flags=re.I)[:80]
 
 
+_ATTR = re.compile(r"""\b(?:alt|title|aria-label|data-name|data-tip|data-tooltip)\s*=\s*(?:"([^"]*)"|'([^']*)')""", re.I)
+
+
+def _tag_to_text(m):
+    """A tag becomes a space plus the texts of its alt/title/aria-label attributes (mod cards are often images)."""
+    vals = [a or b for a, b in _ATTR.findall(m.group(0))]
+    return " \n ".join([""] + [html.unescape(v) for v in vals if v.strip()] + [""]) if vals else " "
+
+
 def page_text(page: str, with_scripts=False) -> str:
     if not with_scripts:
         page = re.sub(r"(?is)<(script|style)\b.*?</\1>", " ", page)
-    text = re.sub(r"<[^>]+>", " ", page)
+    text = re.sub(r"<[^>]+>", _tag_to_text, page)
     return html.unescape(text)
+
+
+_JSON_SCRIPT = re.compile(r"""(?is)<script\b[^>]*(?:id=["']__NEXT_DATA__["']|type=["']application/(?:ld\+)?json["'])[^>]*>(.*?)</script>""")
+_BUILD_KEYS = ("mod", "slot", "build", "loadout", "equip", "arcane")
+_REFERENCE_KEYS = ("suggest", "option", "alternat", "reference", "catalog", "allmods", "all_mods", "available")
+
+
+def json_mods(page: str, market) -> list:
+    """Mod names found in the page's JSON data (Next.js pages keep their data there), only inside parts whose key
+    path looks like a build (mods / slots / loadout...) and not like a list of options. [(slug, name)]."""
+    rx, by_name = _regex(market)
+    if rx is None:
+        return []
+    out, seen = [], set()
+
+    def walk(node, path):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                walk(v, path + [str(k).lower()])
+        elif isinstance(node, list):
+            for v in node:
+                walk(v, path)
+        elif isinstance(node, str) and 2 < len(node) < 60:
+            joined = "/".join(path)
+            if any(k in joined for k in _BUILD_KEYS) and not any(k in joined for k in _REFERENCE_KEYS):
+                name = expand(node.strip())
+                slug = by_name.get(name)
+                if slug and slug not in seen:
+                    seen.add(slug)
+                    out.append((slug, name))
+
+    for m in _JSON_SCRIPT.finditer(page):
+        try:
+            walk(json.loads(m.group(1)), [])
+        except ValueError:
+            continue
+    return out
+
+
+def extract_from_page(page: str, market, url: str = ""):
+    """Best effort on an Overframe page. Returns (mods, how): how = "json" (build data), "text" (page text, which
+    may include suggestion lists), "scripts" (anything in the page source, noisy) or "" (nothing). Logs what it saw."""
+    j = json_mods(page, market)
+    text = extract_mods(page_text(page), market)
+    scripts = extract_mods(page_text(page, with_scripts=True), market)
+    log(f"page {url}: {len(page)} chars, json_script={'yes' if _JSON_SCRIPT.search(page) else 'no'}, "
+        f"mods: json={len(j)} text={len(text)} scripts={len(scripts)}")
+    if len(j) >= 3:
+        return j, "json"
+    if text:
+        return text, "text"
+    if scripts:
+        return scripts, "scripts"
+    return [], ""
 
 
 def expand(text: str) -> str:

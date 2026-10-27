@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
 import creators as C
 from config import CFG
 from i18n import t
+from uiutil import role
 from uiutil import HINT_STYLE, MUTED_STYLE, Cell
 
 
@@ -28,7 +29,7 @@ class CreatorsDialog(QDialog):
         self.setWindowTitle(t("creators.title"))
         self.resize(900, 520)
         self.status = QLabel("")
-        self.status.setStyleSheet(MUTED_STYLE)
+        role(self.status, "muted")
         self.status.setWordWrap(True)
         self.btn_refresh = QPushButton(t("creators.refresh"))
         self.btn_add = QPushButton(t("creators.add"))
@@ -52,7 +53,7 @@ class CreatorsDialog(QDialog):
             hdr.setSectionResizeMode(c, QHeaderView.ResizeMode.ResizeToContents)
         hint = QLabel(t("creators.hint"))
         hint.setWordWrap(True)
-        hint.setStyleSheet(HINT_STYLE)
+        role(hint, "hint")
         bottom = QHBoxLayout()
         bottom.addWidget(self.btn_video)
         bottom.addStretch(1)

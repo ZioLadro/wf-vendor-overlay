@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QTableWidget, QTab
 
 from config import CFG
 from i18n import t
+from uiutil import role
 from uiutil import HINT_STYLE
 from world import fetch_world, parse_baro, parse_world
 
@@ -40,7 +41,7 @@ class WorldTab(QWidget):
         self.bus = _Bus()
         self.bus.done.connect(self._done)
         self.status = QLabel(t("world.never"))
-        self.status.setStyleSheet(HINT_STYLE)
+        role(self.status, "hint")
         self.btn = QPushButton(t("world.refresh"))
         self.btn.clicked.connect(lambda: self.refresh(force=True))
         top = QHBoxLayout()

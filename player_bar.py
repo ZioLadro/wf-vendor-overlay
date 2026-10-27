@@ -11,6 +11,7 @@ from config import APP_DIR, CFG, save_config
 from i18n import t
 from inventory import game_names
 from standing import get_store, is_nightwave, syndicate_name
+from uiutil import role
 from uiutil import MUTED_STYLE, thousands
 
 ICON_DIR = APP_DIR / "icons"
@@ -102,7 +103,7 @@ class PlayerBar(QFrame):
             ic.setPixmap(badge(tag))
             txt = QLabel(syndicate_name(tag) + "\n" + (f"R{f['rank']}" if f and f.get("rank") is not None else "R–")
                          + " · " + (thousands(f["standing"]) if f else "–"))
-            txt.setStyleSheet(MUTED_STYLE + " font-size: 10px;")
+            role(txt, "small")
             txt.setMinimumWidth(130)
             h.addWidget(ic)
             h.addWidget(txt)

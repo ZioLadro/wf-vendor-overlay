@@ -123,6 +123,8 @@ Mod lists for a Warframe, weapon or companion, checked against your inventory. *
 
 **From creators…** lists builds from the latest videos of ten Warframe YouTube channels (MHBlacky, Tactical Potato, iFlynn, KnightmareFrame, Grind Hard Squad, Brozime, LeyzarGamingViews, Sabuuchi, TheKengineer, kyaii; picked from public lists of Warframe channels). It reads only each channel's **public RSS feed** (title, link, description; no API key, nothing from the video itself) and keeps the videos whose description holds an Overframe link or at least 3 known mod names. Double-click one to add it as a build (the Overframe page is read, or the mods of the description are used), always with the check window first. Change the channels in Settings > Builds (`creator_channels`: UC… IDs or `youtube.com/channel/UC…` links; `@handle` links do not contain the ID). The feed only holds the latest ~15 videos per channel, and a creator who does not write the mods in the description gives nothing.
 
+**My loadouts…** (Builds) is the most reliable source: it reads the mods you have equipped in your own in-game loadouts from the AlecaFrame file and offers each loadout as a build. **From creators…** now shows only videos that look like build videos: an Overframe link, build words in the title and a real mod list in the description (lines that list mod names, not names inside sentences); news, streams, trailers and the like are dropped. *Creator videos: strictness* in Settings > Builds changes how strict it is. **Overframe links**: the page is read from its text, image names and the data embedded in it; if Overframe refuses automatic downloads or shows no mods in the page source, use *Add from text* (copy the page text with Ctrl+A, Ctrl+C) or *My loadouts…*. What each import saw is written in `builds.log`.
+
 ### Profile
 Your standing and rank per syndicate, plus your mastery rank, **read from the AlecaFrame `lastData.dat`** (or the
 companion-app JSON) with **Import standing from file…**; *Reload file* re-reads it after AlecaFrame refreshed it.
@@ -143,7 +145,11 @@ recommendations). **Save** applies and stores them in `config.json`; **Save and 
 the program. Settings marked ⟳ (language, hotkeys, OCR, start active, name threshold) need a restart;
 the rest apply immediately. **Restore defaults** loads the default values (press Save to apply).
 
-## Updates (current version 0.1.11)
+### Settings, themes and fonts
+
+Settings has one sub-tab per category. **Theme and font** offers colour themes inspired by Warframe's factions, allies (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) and enemies (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), plus the original *Classic*, and a font family and size. The choice is previewed at once in every window and kept only when you press Save (leaving the tab restores the saved look). The in-game overlay keeps its own colours. All themes are dark.
+
+## Updates (current version 0.1.12)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**
 and asks if you want to install it (*Install now* / *Later* / *Skip this version*). If the release exists but its package is not ready yet (the automatic build still running or failed) it says so. In **Settings → Updates** you can check by hand and, if you agree, it downloads
 `WFVendorOverlay-windows.zip`, verifies its SHA-256 against the `.sha256` file of the same release, and replaces
@@ -178,7 +184,7 @@ Everything lives in `%LOCALAPPDATA%\WFVendorOverlay`:
 - `config.json` settings · `prices.json` collected prices and volumes · `items_cache.json` market catalog ·
   `baro.json` Baro's list · `inventory.json` your inventory and the orders placed from the app ·
   `market_session.json` warframe.market session token · `vendors.json` / `gamenames.json` (optional, override
-  the bundled ones) · `overlay.log` errors (useful with the exe) · `riven.log` Riven flip requests and errors.
+  the bundled ones) · `overlay.log` errors (useful with the exe) · `riven.log` Riven flip requests and errors · `builds.log` what the Builds imports saw.
 
 | key | meaning (default) |
 |---|---|

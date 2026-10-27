@@ -10,6 +10,7 @@ from i18n import t
 from standing import afford_text
 from overlay import volume_color
 from recommend import recommend
+from uiutil import role
 from uiutil import (
     HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, STANDING_COLOR, Cell, attach_item_menu, kind_label,
     thousands,
@@ -45,7 +46,7 @@ class RecommendTab(QWidget):
         top.addWidget(self.min_price)
 
         self.summary = QLabel("")
-        self.summary.setStyleSheet(MUTED_STYLE)
+        role(self.summary, "muted")
         self.summary.setWordWrap(True)
         self.btn_fetch = QPushButton(t("rec.fetch"))
         self.btn_fetch.setToolTip(t("rec.fetch.tip"))
@@ -69,7 +70,7 @@ class RecommendTab(QWidget):
         hdr.setSortIndicator(0, Qt.SortOrder.AscendingOrder)
 
         hint = QLabel(t("rec.hint"))
-        hint.setStyleSheet(HINT_STYLE)
+        role(hint, "hint")
         hint.setWordWrap(True)
 
         lay = QVBoxLayout(self)
