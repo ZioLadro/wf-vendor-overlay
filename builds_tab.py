@@ -242,8 +242,20 @@ class BuildsTab(QWidget):
         self.btn_link.setEnabled(True)
         self.summary.setText("")
         if err or page is None:
+            name, fallback = self._pending_name, self._fallback
             self._pending_name, self._fallback = None, []
             B.log(f"import failed: {err}")
+            if "HTTP 403" in str(err):
+                # overframe.gg blocks automatic downloads (we do not try to get around that): the page is opened in the
+                # user's own browser and its text is pasted here instead
+                if fallback:
+                    self._review(name or t("builds.untitled"), fallback, url, t("builds.blocked.fallback"))
+                    return
+                ask = QMessageBox.question(self, t("builds.add_link"), t("builds.blocked.ask"))
+                if ask == QMessageBox.StandardButton.Yes:
+                    QDesktopServices.openUrl(QUrl(url))
+                    self.add_text(name=name, url=url)
+                return
             QMessageBox.warning(self, t("builds.add_link"), t("builds.fetch.error", err=err) + "\n\n" + t("builds.fetch.help"))
             return
         found, how = B.extract_from_page(page, self.market, url)
@@ -308,7 +320,7 @@ class BuildsTab(QWidget):
         else:
             self._review(name, [(s, n) for s, n in v["mods"]], v["url"])
 
-    def add_text(self):
+    def add_text(self, name=None, url=""):
         dlg = QDialog(self)
         dlg.setWindowTitle(t("builds.add_text"))
         dlg.resize(420, 420)
@@ -326,7 +338,7 @@ class BuildsTab(QWidget):
         found = B.parse_list(edit.toPlainText(), self.market)
         if len(found) < 3:                          # a whole copied page, not a list: pick the mod names out of the text
             found = B.extract_mods(edit.toPlainText(), self.market) or found
-        self._review(t("builds.untitled"), found, "")
+        self._review(name or t("builds.untitled"), found, url)
 
     def _review(self, name, found, url, note=""):
         dlg = ReviewDialog(self.market, name, found, self, note)
