@@ -146,6 +146,8 @@ Hovering a row shows how many you can afford with your standing (Profile tab).
 ### Builds
 Your own in-game loadouts, shown like the game's loadout screen: Aura, Exilus and Stance slots, the eight mod slots with each mod's rank (n/max), equipped Arcanes, forma count, the **Archon Shards** installed on a Warframe (colour, tauforged or not, and the effect) and the **Helminth** ability that replaced one of its own ("Ability 4: Miasma → Roar"). Warframes, weapons, Archwing, Necramechs and companions are listed on the left, with a filter by name and by kind.
 
+**Game loadouts** (the default view) follows the in-game loadout screen: your named loadouts with the Warframe, primary, secondary, melee and Exalted weapon, the companion, the Archwing and the Necramech, each with its rank (*Max Rank* from rank 30) and the mod configuration the loadout uses. Click a row to see that item's mods, Arcanes, Archon Shards and Helminth. *By item* is the plain list of every item's configurations. Focus school and K-Drive are not shown.
+
 Mod and Arcane **pictures** are shown on the cards: they are taken as they are needed from warframe.market (item images) and, when it has none, from the Warframe wiki (wiki.warframe.com, standard MediaWiki API, one request at a time with this program's User-Agent), kept in the data folder and never downloaded twice; they appear a few seconds after the loadout opens. Switch off with *Item pictures in tooltips* in Settings.
 
 Everything comes from your AlecaFrame `lastData.dat` (found by itself, same file as Inventory); *Reload from file* re-reads it after AlecaFrame refreshed it. Nothing is downloaded from any website. Mod, Arcane, ability and shard names come from the bundled `loadout_data.json` (rebuilt from the public game data with `build_loadouts.py`). Per-slot polarities and mod drain are not shown.
@@ -174,7 +176,7 @@ the rest apply immediately. **Restore defaults** loads the default values (press
 
 Settings has one sub-tab per category. **Theme and font** offers colour themes inspired by Warframe's factions, allies (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) and enemies (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), plus the original *Classic*, and a font family and size. The choice is previewed at once in every window and kept only when you press Save (leaving the tab restores the saved look). The in-game overlay keeps its own colours. All themes are dark.
 
-## Updates (current version 0.2.1)
+## Updates (current version 0.2.2)
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version (from 0.2.1 on; the release page shows the same notes).
 

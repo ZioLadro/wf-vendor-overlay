@@ -3,6 +3,12 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.2.2
+- **Builds**: new *Game loadouts* view that follows the in-game loadout screen: your named loadouts with the Warframe,
+  primary, secondary, melee and Exalted weapon, the companion, the Archwing and the Necramech (with their ranks, the names
+  you gave them and the mod configuration each loadout uses). Click a row to see its mods, Arcanes, Archon Shards and
+  Helminth. The previous list is still there as *By item*. Read from the AlecaFrame file; focus school and K-Drive are not shown.
+
 ## 0.2.1
 - New program icon (a W and an O drawn as a scope reticle), used by the executable, the window, the taskbar and the tray.
   It is drawn by `build_icon.py`, so it can be regenerated.

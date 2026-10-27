@@ -153,6 +153,8 @@ Passando il mouse su una riga vedi quanti ne puoi permettere con il tuo standing
 ### Build
 I tuoi loadout in gioco, mostrati come la schermata dei loadout del gioco: slot Aura, Exilus e Postura, gli otto slot mod con il rank di ogni mod (n/max), gli Arcani equipaggiati, il numero di forma, le **Archon Shard** installate su un Warframe (colore, tauforgiata o no, ed effetto) e l'abilità **Helminth** che ha sostituito una delle sue ("Abilità 4: Miasma → Roar"). Warframe, armi, Archwing, Necramech e compagni sono elencati a sinistra, con filtro per nome e per tipo.
 
+I **Loadout di gioco** (vista predefinita) seguono la schermata dei loadout del gioco: i tuoi loadout con nome, con Warframe, primaria, secondaria, mischia e arma esaltata, il compagno, l'Archwing e il Necramech, ognuno con il suo rank (*Rank massimo* dal 30) e la configurazione di mod che il loadout usa. Clicca una riga per vedere mod, Arcani, Archon Shard e Helminth di quell'oggetto. *Per oggetto* è l'elenco semplice delle configurazioni di ogni oggetto. Scuola di Focus e K-Drive non sono mostrati.
+
 Le **immagini** di mod e Arcani compaiono sulle schede: vengono prese al bisogno da warframe.market (immagini degli oggetti) e, se lì mancano, dalla wiki di Warframe (wiki.warframe.com, API MediaWiki standard, una richiesta alla volta con lo User-Agent del programma), tenute nella cartella dei dati e mai scaricate due volte; appaiono qualche secondo dopo l'apertura del loadout. Si disattivano con *Immagini degli oggetti nei suggerimenti* nelle Impostazioni.
 
 Tutto viene dal tuo `lastData.dat` di AlecaFrame (trovato da solo, lo stesso file dell'Inventario); *Ricarica dal file* lo rilegge dopo che AlecaFrame l'ha aggiornato. Non viene scaricato nulla da nessun sito. I nomi di mod, Arcani, abilità e shard vengono dal `loadout_data.json` incluso (rigenerato dai dati pubblici del gioco con `build_loadouts.py`). Polarità dei singoli slot e drain non vengono mostrati.
@@ -181,7 +183,7 @@ valgono subito. **Ripristina predefiniti** carica i valori di default (premi Sal
 
 Le Impostazioni hanno una sotto-scheda per categoria. **Tema e carattere** offre temi di colori ispirati alle fazioni di Warframe, alleate (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) e nemiche (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), più il *Classic* originale, oltre a famiglia e dimensione del carattere. La scelta si vede subito in anteprima in tutte le finestre e resta solo se premi Salva (uscendo dalla scheda torna l'aspetto salvato). L'overlay in gioco mantiene i suoi colori. Tutti i temi sono scuri.
 
-## Aggiornamenti (versione attuale 0.2.1)
+## Aggiornamenti (versione attuale 0.2.2)
 
 Vedi [CHANGELOG.it.md](CHANGELOG.it.md) per cosa cambia in ogni versione (dalla 0.2.1; la pagina della release mostra le stesse note).
 

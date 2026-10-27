@@ -3,6 +3,12 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.2.2
+- **Build**: nuova vista *Loadout di gioco* che segue la schermata dei loadout del gioco: i tuoi loadout con nome, con
+  Warframe, primaria, secondaria, mischia e arma esaltata, il compagno, l'Archwing e il Necramech (con rank, i nomi che
+  hai dato e la configurazione di mod usata da ogni loadout). Clicca una riga per vedere mod, Arcani, Archon Shard e
+  Helminth. La lista precedente resta come *Per oggetto*. Letto dal file di AlecaFrame; scuola di Focus e K-Drive non sono mostrati.
+
 ## 0.2.1
 - Nuova icona del programma (una W e una O disegnata come mirino), usata da eseguibile, finestra, barra delle applicazioni
   e tray. È disegnata da `build_icon.py`, quindi si può rigenerare.

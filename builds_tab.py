@@ -6,7 +6,7 @@ import time
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import (
-    QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox,
+    QButtonGroup, QComboBox, QFrame, QStackedWidget, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox,
     QPushButton, QScrollArea, QSplitter, QVBoxLayout, QWidget,
 )
 
@@ -77,8 +77,10 @@ class LoadoutView(QWidget):
     def _clear(self, layout):
         while layout.count():
             it = layout.takeAt(0)
-            if it.widget():
-                it.widget().deleteLater()
+            w = it.widget()
+            if w:
+                w.setParent(None)
+                w.deleteLater()
             elif it.layout():
                 self._clear(it.layout())
 
@@ -148,11 +150,111 @@ class LoadoutView(QWidget):
             self.body.addWidget(lab)
 
 
+class PresetView(QWidget):
+    """A game loadout as the in-game screen: Warframe and weapons, companion, Archwing and Necramech as big rows; click a row
+    to see the mods, Arcanes, Archon Shards and Helminth of that item below."""
+
+    def __init__(self):
+        super().__init__()
+        self.lay = QVBoxLayout(self)
+        self.lay.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.title = QLabel("")
+        self.title.setStyleSheet("font-size: 17px; font-weight: bold;")
+        self.rows = QHBoxLayout()                       # three columns: Warframe + weapons | companion + Archwing | Necramech
+        self.rows.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.detail = LoadoutView()
+        self.lay.addWidget(self.title)
+        self.lay.addLayout(self.rows)
+        self.lay.addWidget(self.detail, 1)
+        self._lookup, self._buttons = {}, []
+
+    def _clear(self):
+        def wipe(layout):
+            while layout.count():
+                it = layout.takeAt(0)
+                w = it.widget()
+                if w:
+                    w.setParent(None)
+                    w.deleteLater()
+                elif it.layout():
+                    wipe(it.layout())
+        wipe(self.rows)
+        self._buttons = []
+        self.cols = []
+        for _ in range(3):
+            c = QVBoxLayout()
+            c.setAlignment(Qt.AlignmentFlag.AlignTop)
+            self.rows.addLayout(c, 1)
+            self.cols.append(c)
+        self.col = self.cols[0]
+
+    def _head(self, text, col=None):
+        if col is not None:
+            self.col = self.cols[col]
+        lab = QLabel(text)
+        role(lab, "muted")
+        lab.setStyleSheet("font-weight: bold; margin-top: 4px;")
+        self.col.addWidget(lab)
+
+    def _button(self, r, group):
+        title = ((r.get("custom") + " ") if r.get("custom") and r["role"] not in ("companion",) else "") + r["item"]
+        if r["role"] == "companion" and r.get("custom"):
+            title = r["custom"]
+        sub = t("builds.maxrank") if r["maxed"] else t("builds.rank1", n=r["rank"])
+        if r["role"] == "companion" and r.get("custom"):
+            sub = r["item"] + " · " + sub
+        if (r["oid"], r["idx"]) in self._lookup:
+            sub += "  ·  " + t("builds.config", c=LO.LETTERS[r["idx"]] if r["idx"] < 8 else r["idx"] + 1)
+        btn = QPushButton(f"{title.upper()}\n{sub}")
+        btn.setCheckable(True)
+        btn.setStyleSheet("QPushButton { text-align: left; padding: 8px 12px; }")
+        btn.setToolTip(t("builds.role." + r["role"]))
+        btn.clicked.connect(lambda _c=False, rr=r: self._pick(rr))
+        group.addButton(btn)
+        self.col.addWidget(btn)
+        self._buttons.append((btn, r))
+        return btn
+
+    def _pick(self, r):
+        lo = self._lookup.get((r["oid"], r["idx"]))
+        if lo:
+            self.detail.show_loadout(lo)
+        else:
+            self.detail.show_loadout(None)
+            self.detail.sub.setText(t("builds.nomods", item=r["item"]))
+
+    def show_preset(self, preset, tenno, lookup):
+        self._lookup = lookup
+        self._clear()
+        self.group = QButtonGroup(self)
+        self.group.setExclusive(True)
+        if not preset:
+            self.title.setText("")
+            self.detail.show_loadout(None)
+            return
+        self.title.setText(("★ " if preset["favorite"] else "") + preset["name"])
+        self._head(t("builds.tab.warframe"), 0)
+        for r in preset["warframe"]:
+            self._button(r, self.group)
+        if preset["companion"]:
+            self._head(t("builds.tab.companion"), 1)
+            for r in preset["companion"]:
+                self._button(r, self.group)
+        for key, colno in (("archwing", 1), ("necramech", 2)):
+            if tenno.get(key):
+                self._head(t("builds.tab." + key), colno)
+                for r in tenno[key]:
+                    self._button(r, self.group)
+        if self._buttons:
+            self._buttons[0][0].setChecked(True)
+            self._pick(self._buttons[0][1])
+
+
 class BuildsTab(QWidget):
     def __init__(self, market, refresher, inventory):
         super().__init__()
         self.market, self.refresher, self.inventory = market, refresher, inventory
-        self.loadouts, self.source, self.when = [], "", 0
+        self.loadouts, self.presets, self.source, self.when = [], {"presets": [], "tenno": {}}, "", 0
         self._mtime = 0
         self._shown = None
         self._tried_auto = False
@@ -166,7 +268,11 @@ class BuildsTab(QWidget):
         self.kind.addItem(t("builds.kind.all"), "")
         for k in KINDS:
             self.kind.addItem(t("builds.kind." + k), k)
+        self.mode = QComboBox()
+        self.mode.addItem(t("builds.mode.game"), "game")
+        self.mode.addItem(t("builds.mode.items"), "items")
         bar = QHBoxLayout()
+        bar.addWidget(self.mode)
         bar.addWidget(self.filter, 1)
         bar.addWidget(self.kind)
         bar.addWidget(self.btn_reload)
@@ -184,20 +290,77 @@ class BuildsTab(QWidget):
         split.addWidget(self.list)
         split.addWidget(scroll)
         split.setStretchFactor(1, 1)
+        # the game's own loadouts (named, with Warframe, weapons, companion, Archwing, Necramech)
+        self.plist = QListWidget()
+        self.plist.setMinimumWidth(230)
+        self.pview = PresetView()
+        pscroll = QScrollArea()
+        pscroll.setWidgetResizable(True)
+        pscroll.setWidget(self.pview)
+        psplit = QSplitter()
+        psplit.addWidget(self.plist)
+        psplit.addWidget(pscroll)
+        psplit.setStretchFactor(1, 1)
+        self.stack = QStackedWidget()
+        self.stack.addWidget(psplit)
+        self.stack.addWidget(split)
         lay = QVBoxLayout(self)
         lay.addLayout(bar)
         lay.addWidget(self.summary)
-        lay.addWidget(split, 1)
+        lay.addWidget(self.stack, 1)
+        self.mode.currentIndexChanged.connect(self._mode_changed)
+        self.plist.currentItemChanged.connect(lambda cur, _p: self._show_preset(cur))
 
         self.btn_reload.clicked.connect(self.reload_file)
         self.filter.textChanged.connect(lambda _t: self._fill())
         self.kind.currentIndexChanged.connect(lambda _i: self._fill())
         self.list.currentItemChanged.connect(lambda cur, _p: self.view.show_loadout(
             self.loadouts[cur.data(Qt.ItemDataRole.UserRole)] if cur else None))
+        self._mode_changed()
         self._fill()
         # pictures arrive a little later: redraw the shown loadout while some are still on their way
         self._pic_timer = QTimer(self, interval=2500, timeout=self._pictures)
         self._pic_timer.start()
+
+    def _mode_changed(self):
+        game = self.mode.currentData() == "game"
+        self.stack.setCurrentIndex(0 if game else 1)
+        self.filter.setVisible(not game)
+        self.kind.setVisible(not game)
+        self._summary()
+
+    def _lookup(self):
+        return {(lo.get("oid"), lo.get("idx")): lo for lo in self.loadouts if lo.get("oid")}
+
+    def _fill_presets(self):
+        cur = self.plist.currentRow()
+        self.plist.blockSignals(True)
+        self.plist.clear()
+        for i, p in enumerate(self.presets.get("presets") or []):
+            it = QListWidgetItem(("★ " if p["favorite"] else "") + p["name"])
+            it.setData(Qt.ItemDataRole.UserRole, i)
+            self.plist.addItem(it)
+        self.plist.blockSignals(False)
+        if self.plist.count():
+            self.plist.setCurrentRow(max(0, min(cur, self.plist.count() - 1)))
+        else:
+            self.pview.show_preset(None, {}, {})
+
+    def _show_preset(self, cur):
+        if not cur:
+            return
+        self.pview.show_preset(self.presets["presets"][cur.data(Qt.ItemDataRole.UserRole)],
+                               self.presets.get("tenno") or {}, self._lookup())
+
+    def _summary(self):
+        if not self.loadouts:
+            self.summary.setText(t("builds.empty"))
+        elif self.mode.currentData() == "game":
+            self.summary.setText(t("builds.summary.game", n=len(self.presets.get("presets") or []),
+                                   src=os.path.basename(self.source) or "–", when=age_text(self.when)))
+        else:
+            self.summary.setText(t("builds.summary", n=len(self.loadouts), shown=self.list.count(),
+                                   src=os.path.basename(self.source) or "–", when=age_text(self.when)))
 
     def _pictures(self):
         n = previews.pending()
@@ -205,20 +368,31 @@ class BuildsTab(QWidget):
             cur = self.list.currentItem()
             if cur:
                 self.view.show_loadout(self.loadouts[cur.data(Qt.ItemDataRole.UserRole)])
+            if self.plist.currentItem():
+                cur = self.plist.currentItem()
+                b = self.pview.group.checkedButton() if hasattr(self.pview, "group") else None
+                self._show_preset(cur)
+                if b is not None:                       # keep the same row selected
+                    for btn, r in self.pview._buttons:
+                        if btn.text() == b.text():
+                            btn.setChecked(True)
+                            self.pview._pick(r)
         self._pending_seen = n
 
     # ---------- data ----------
     def _load_cache(self):
         try:
             d = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-            if isinstance(d.get("loadouts"), list):
-                self.loadouts, self.source, self.when = d["loadouts"], d.get("source", ""), d.get("time", 0)
+            if isinstance(d.get("loadouts"), list) and isinstance(d.get("presets"), dict):     # an older cache has no presets
+                self.loadouts, self.presets = d["loadouts"], d["presets"]
+                self.source, self.when = d.get("source", ""), d.get("time", 0)
         except Exception:
             pass
 
     def _save_cache(self):
         try:
-            CACHE_FILE.write_text(json.dumps({"time": self.when, "source": self.source, "loadouts": self.loadouts},
+            CACHE_FILE.write_text(json.dumps({"time": self.when, "source": self.source, "loadouts": self.loadouts,
+                                                         "presets": self.presets},
                                              ensure_ascii=False), encoding="utf-8")
         except OSError:
             pass
@@ -236,12 +410,13 @@ class BuildsTab(QWidget):
                 QMessageBox.information(self, t("tab.builds"), t("builds.nofile"))
             return False
         try:
-            los = LO.read_file(path)
+            data = LO.read_all_file(path)
         except (ValueError, OSError) as e:
             if not silent:
                 QMessageBox.warning(self, t("tab.builds"), t("builds.fail", err=e))
             return False
-        self.loadouts, self.source, self.when = los, path, int(time.time())
+        self.loadouts, self.presets = data["loadouts"], data["presets"]
+        self.source, self.when = path, int(time.time())
         self._mtime = os.path.getmtime(path)
         self._save_cache()
         self._fill(keep=True)
@@ -272,16 +447,15 @@ class BuildsTab(QWidget):
             self.list.setCurrentRow(sel_row if sel_row >= 0 else 0)
         else:
             self.view.show_loadout(None)
-        self.summary.setText(
-            t("builds.summary", n=len(self.loadouts), shown=self.list.count(), src=os.path.basename(self.source) or "–",
-              when=age_text(self.when)) if self.loadouts else t("builds.empty"))
+        self._fill_presets()
+        self._summary()
 
     def set_busy(self, busy: bool):
         pass
 
     def refresh(self, force=False, select=None):
         """Called by the window's timer: first time, loads the game file by itself; later, only when it changed."""
-        if not self._tried_auto and not self.loadouts:
+        if not self._tried_auto and not (self.loadouts and self.presets.get("presets")):
             self._tried_auto = True
             self.reload_file(silent=True)
             return

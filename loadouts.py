@@ -149,6 +149,7 @@ def read(inv: dict, market=None) -> list:
                 if filled < MIN_MODS:
                     continue
                 out.append({"item": item_name, "kind": kind, "path": path, "config": LETTERS[n] if n < 8 else str(n + 1),
+                            "oid": (item.get("ItemId") or {}).get("$oid", ""), "idx": n,
                             "forma": int(item.get("Polarized") or 0), "slots": slots,
                             "shards": shards if kind == "warframe" else [],
                             "helminth": helminth(cfg, path) if kind == "warframe" else None})
@@ -156,7 +157,86 @@ def read(inv: dict, market=None) -> list:
     return out
 
 
-def read_file(path, market=None) -> list:
+def _load(path):
     raw = Path(path).read_bytes()
     text = I.decrypt_last_data(raw) if str(path).lower().endswith(".dat") else I.unwrap_inventory(raw.decode("utf-8-sig"))
-    return read(json.loads(text))
+    return json.loads(text)
+
+
+def read_file(path, market=None) -> list:
+    return read(_load(path))
+
+
+# ---------- the in-game loadout screen: named loadouts with Warframe, weapons, companion, Archwing, Necramech ----------
+# rank 30 needs this much XP per rank squared: 1000 for Warframes, companions, Archwings, Necramechs; 500 for weapons
+_FRAME_KINDS = ("Suits", "SpaceSuits", "MechSuits", "Sentinels", "KubrowPets", "MoaPets", "HoundPets", "Pets", "CrewShipHarness")
+
+
+def _rank(xp, per) -> int:
+    try:
+        return min(30, int((max(0, float(xp)) / per) ** 0.5))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _row(role, ref, owned):
+    """One slot of a preset: the owned item the preset points to ({"role","item","rank","maxed","oid","idx"} or None)."""
+    if not isinstance(ref, dict):
+        return None
+    oid = (ref.get("ItemId") or {}).get("$oid")
+    hit = owned.get(oid)
+    if not hit:
+        return None
+    sect, it = hit
+    path = it.get("ItemType", "")
+    names = I.names_for_path(path)
+    name = re.sub(r"<[^>]*>\s*", "", names[0] if names else path.rsplit("/", 1)[-1]).strip() or path
+    rk = _rank(it.get("XP"), 1000 if sect in _FRAME_KINDS else 500)
+    custom = ""
+    if isinstance(it.get("ItemName"), str) and "|" in it["ItemName"]:      # a name you gave it, or a Kuva/Tenet weapon's own
+        custom = it["ItemName"].split("|", 1)[1].strip()
+    if isinstance(it.get("Details"), dict) and it["Details"].get("Name"):    # a companion's name
+        custom = str(it["Details"]["Name"])
+    return {"role": role, "item": name, "custom": custom, "path": path, "rank": rk, "maxed": rk >= 30, "oid": oid,
+            "idx": int(ref.get("mod") or 0)}
+
+
+def presets(inv: dict) -> dict:
+    """The loadouts as the game shows them: {"presets": [{"name","favorite","warframe":[rows],"companion":[rows]}],
+    "tenno": {"archwing": [rows], "necramech": [rows]}}. Rows come from LoadOutPresets (see _row): the items are looked up
+    among the owned ones by id; "idx" is the mod configuration (A=0, B=1...) the preset uses for that item."""
+    owned = {}
+    for sect, lst in inv.items():
+        if isinstance(lst, list):
+            for it in lst:
+                if isinstance(it, dict) and isinstance((it.get("ItemId") or {}).get("$oid"), str):
+                    owned[it["ItemId"]["$oid"]] = (sect, it)
+    lp = inv.get("LoadOutPresets") if isinstance(inv.get("LoadOutPresets"), dict) else {}
+
+    def rows(entry, spec):
+        out = []
+        for key, role in spec:
+            r = _row(role, (entry or {}).get(key), owned)
+            if r:
+                out.append(r)
+        return out
+    normal, sentinel = lp.get("NORMAL") or [], lp.get("SENTINEL") or []
+    out = []
+    for i, e in enumerate(normal):
+        wf = rows(e, (("s", "warframe"), ("l", "primary"), ("p", "secondary"), ("m", "melee"), ("a", "exalted")))
+        if not wf or wf[0]["role"] != "warframe":
+            continue
+        name = e.get("n") or ""
+        if not name or name.startswith("/"):                  # unnamed, or a bundle's language key
+            name = wf[0]["item"] + " Loadout"
+        comp = rows(sentinel[i] if i < len(sentinel) else None, (("s", "companion"), ("l", "companion_weapon")))
+        out.append({"name": name, "favorite": bool(e.get("Favorite")), "warframe": wf, "companion": comp})
+    tenno = {"archwing": rows((lp.get("ARCHWING") or [None])[0], (("s", "archwing"), ("l", "archgun"), ("m", "archmelee"))),
+             "necramech": rows((lp.get("MECH") or [None])[0], (("s", "necramech"), ("h", "archgun"), ("a", "necramech_weapon")))}
+    return {"presets": out, "tenno": tenno}
+
+
+def read_all_file(path) -> dict:
+    """Everything the Builds tab shows: {"loadouts": read(), "presets": presets()}."""
+    inv = _load(path)
+    return {"loadouts": read(inv), "presets": presets(inv)}
