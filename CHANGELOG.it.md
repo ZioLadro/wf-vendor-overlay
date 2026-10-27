@@ -3,6 +3,23 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.2.5
+Uso delle risorse, stessi risultati:
+- **`prices.json` circa 18 volte più piccolo**: conteneva uno storico dei prezzi per oggetto che nessuna parte del
+  programma leggeva (48 voci per oggetto). Viene eliminato al primo salvataggio; caricamento e salvataggio sono più
+  veloci e usano meno memoria.
+- **Controllo dello schermo più leggero mentre le etichette sono mostrate**: per capire se il venditore è ancora
+  aperto viene catturato solo il rettangolo attorno ai nomi degli oggetti (non tutta la finestra del gioco); il
+  confronto è lo stesso.
+- **Meno controlli con il gioco in secondo piano**: quando Warframe non è la finestra attiva il programma lo cerca ogni
+  1,2 s invece che ogni 0,6 s (torna normale appena è attivo).
+- **Tabelle**: la lista prezzi e l'inventario non vengono più ricostruiti ogni 30 secondi solo per aggiornare la colonna
+  "x min fa": si aggiorna solo quella colonna. Il controllo delle immagini della scheda Build si ferma quando la scheda
+  è nascosta.
+- **OCR**: con *Salta il pannello sinistro del vendor* attivo, lo screenshot viene rimpicciolito prima di applicare la
+  maschera, quindi l'immagine a piena risoluzione non viene più copiata (stesso testo letto, verificato su uno screenshot
+  di prova).
+
 ## 0.2.4
 - **La scheda Build si adatta alla finestra**: le card crescono e si riducono con la finestra (larghezza e altezza),
   mantenendo le stesse proporzioni tra card delle mod e degli Arcani, simboli di polarità e drain e testo. Lo stesso

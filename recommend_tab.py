@@ -5,8 +5,6 @@ from PyQt6.QtWidgets import (
     QTableWidget, QVBoxLayout, QWidget,
 )
 
-import time
-
 from config import CFG, save_config
 from i18n import t
 from standing import afford_text, get_store
@@ -116,14 +114,13 @@ class RecommendTab(QWidget):
         rows = self.market.snapshot()
         if self.vendor.count() <= 1:
             self.fill_vendors()
-        # rebuild only when the data or a filter changed (or every 30 s so "x min ago" moves on): this runs every 2 s
+        # rebuild only when the data or a filter changed: this runs every 2 s
         sig = hash((get_store().version, self.vendor.currentData(), self.kind.currentData(), self.min_vol.value(),
                     self.min_price.value(), self.best_only.isChecked(), self.refresher.busy)
                    + tuple((r["slug"], len(r["standing"]), r["price"], r["pmax"], r["vol"], r["updated"]) for r in rows))
-        now = time.monotonic()
-        if not force and sig == getattr(self, "_sig", None) and now - getattr(self, "_built", 0) < 30:
+        if not force and sig == getattr(self, "_sig", None):
             return
-        self._sig, self._built = sig, now
+        self._sig = sig
         picks, self._missing = recommend(
             rows, vendor=self.vendor.currentData(), kind=self.kind.currentData(),
             min_volume=self.min_vol.value(), min_price=self.min_price.value(),

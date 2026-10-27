@@ -305,7 +305,14 @@ class Scanner:
         self._mark_recommended(items)
         self.items = items
         # reference to tell when the vendor is closed: crops of the scan's screenshot
-        self.ref = {"gen": gen, "boxes": [(h[0], h[1], h[2], h[3]) for h in hits], "patches": patches}
+        boxes = [(h[0], h[1], h[2], h[3]) for h in hits]
+        self.ref = {"gen": gen, "boxes": boxes, "patches": patches}
+        if boxes:                            # the rectangle around all the names: the only part the watch loop captures
+            x0 = max(0, int(min(b[0] for b in boxes)) - 2)
+            y0 = max(0, int(min(b[1] for b in boxes)) - 2)
+            x1 = int(max(b[0] + b[2] for b in boxes)) + 3
+            y1 = int(max(b[1] + b[3] for b in boxes)) + 3
+            self.ref.update(area=(x0, y0, x1, y1), local=[(b[0] - x0, b[1] - y0, b[2], b[3]) for b in boxes])
         self._publish(items, gen, force=True)   # saved data first, then the update
         # on open, refresh data older than open_max_age; while scrolling, recent cache is enough
         max_age = CFG["open_max_age"] if kind == "open" else CFG["refresh_interval"]
@@ -350,7 +357,8 @@ class Scanner:
             if not showing and (not CFG["auto_detect"] or self.busy):
                 continue
             try:
-                img = grab.grab()
+                # labels shown: only the area under the names is needed to tell whether the vendor is still there
+                img = grab.grab(sub=ref["area"] if showing and ref.get("area") else None)
             except Exception:
                 grab = Grabber(CFG["only_warframe"])
                 continue
@@ -360,12 +368,14 @@ class Scanner:
                     if showing:
                         self._invalidate()
                     prev, dirty, stable, streak = None, True, 0, 0
+                    calm = IDLE_POLLS        # game in the background: look again less often until it is back
                 continue
             nones = 0
 
             if showing:
                 prev, streak, calm = None, 0, 0
-                if screen_changed(img, ref["boxes"], ref["patches"]):
+                boxes = ref["local"] if grab.cropped else ref["boxes"]
+                if screen_changed(img, boxes, ref["patches"]):
                     self._invalidate()       # vendor closed or list changed: drop the labels
                     dirty, stable = True, 0
                 continue

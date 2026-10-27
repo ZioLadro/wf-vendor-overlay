@@ -27,7 +27,7 @@ from world_tab import WorldTab
 import theme
 from uiutil import role
 from uiutil import (
-    DIM_COLOR, HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, STYLE, Cell, age_text, kind_label,
+    DIM_COLOR, HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, STYLE, Cell, age_text, refresh_ages, kind_label,
     attach_item_menu, make_icon, num_key, standing_cell,  # noqa: F401  (make_icon re-exported for main.py)
 )
 
@@ -149,7 +149,10 @@ class PricesTab(QWidget):
         sig = hash((get_store().version,) + tuple((r["slug"], len(r["standing"]), r["price"], r["pmax"], r["vol"], r["updated"])
                          for r in rows))
         now = time.monotonic()
-        if not force and sig == self._sig and now - self._built < 30:
+        if not force and sig == getattr(self, "_sig", None):
+            if now - getattr(self, "_built", 0) >= 30:     # nothing changed: only the "x min ago" texts move on
+                self._built = now
+                refresh_ages(self.table, C_UPD)
             return
         self._sig, self._built = sig, now
 

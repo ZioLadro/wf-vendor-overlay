@@ -34,16 +34,26 @@ class Grabber:
         self._sct = None
         self.only_warframe = only_warframe
         self._pids = (os.getpid(),)
+        self.cropped = False
 
-    def grab(self):
-        """BGRA image of the game window (or of the monitor), None if the game is not the active window."""
+    def grab(self, sub=None):
+        """BGRA image of the game window (or of the monitor), None if the game is not the active window.
+        sub: (x0, y0, x1, y1) inside that area: only that part is captured (far fewer pixels to copy), in its own
+        coordinates (origin at x0, y0)."""
         try:
             if self._sct is None:
                 self._sct = mss.mss()
             reg = capture_region(self._sct.monitors[1], self.only_warframe, self._pids)
             if reg is None:
                 return None
-            shot = self._sct.grab(reg[0])
+            area = reg[0]
+            if sub:
+                x0, y0 = max(0, int(sub[0])), max(0, int(sub[1]))
+                x1, y1 = min(int(area["width"]), int(sub[2])), min(int(area["height"]), int(sub[3]))
+                if x1 - x0 >= 8 and y1 - y0 >= 8:
+                    area = {"left": area["left"] + x0, "top": area["top"] + y0, "width": x1 - x0, "height": y1 - y0}
+            self.cropped = area is not reg[0]           # True: the image starts at sub's corner
+            shot = self._sct.grab(area)
         except Exception:
             self._sct = None
             raise

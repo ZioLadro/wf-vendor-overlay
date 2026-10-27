@@ -3,6 +3,19 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.2.5
+Resource use, same results:
+- **`prices.json` about 18 times smaller**: it kept a per-item price history that nothing read (48 entries per item).
+  It is dropped the first time the program saves; loading and saving are faster and use less memory.
+- **Lighter screen check while the labels are shown**: only the rectangle around the item names is captured (instead
+  of the whole game window) to tell whether the vendor is still open; the comparison is the same.
+- **Less polling with the game in the background**: when Warframe is not the active window the program looks for it
+  every 1.2 s instead of every 0.6 s (back to normal as soon as it is active).
+- **Tables**: the price list and the inventory no longer rebuild every 30 seconds just to move the "x min ago" column
+  on: only that column is updated. The Builds tab's picture check stops while the tab is hidden.
+- **OCR**: with *Mask the vendor panel* on, the screenshot is shrunk before masking, so the full-size image is no longer
+  copied (same text read, checked on a test screenshot).
+
 ## 0.2.4
 - **Builds scale with the window**: the cards grow and shrink with the window (width and height), keeping the same
   proportions for mod and Arcane cards, the polarity and drain symbols and the text. The build planner does the same.

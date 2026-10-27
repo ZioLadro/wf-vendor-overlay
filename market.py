@@ -31,8 +31,6 @@ HEADERS = {
 }
 CACHE_FILE = APP_DIR / "items_cache.json"
 STORE_FILE = APP_DIR / "prices.json"   # collected prices/volumes (persistent)
-HIST_MIN_GAP = 900                         # at most one history entry every 15 minutes
-HIST_MAX = 48                              # history entries per item
 PRUNE_AGE = 30 * 24 * 3600                 # forget items not updated for 30 days
 CATALOG_TTL = 24 * 3600
 MIN_INTERVAL = 0.35  # ~2.9 requests/s
@@ -76,7 +74,7 @@ class Market:
         self._lock = threading.Lock()
         self._last = 0.0
         self._store_lock = threading.Lock()
-        self._data = {}      # slug -> {"price","pmax","pt","vol","vt","hist"}
+        self._data = {}      # slug -> {"price","pmax","pt","vol","vt","avg","avgm"}
         self._info = {}      # slug -> {"name","max_rank","kind"}
         self._dirty = False
         self._matcher = Matcher([])
@@ -205,6 +203,10 @@ class Market:
             slug: e for slug, e in data.items()
             if isinstance(e, dict) and now - max(e.get("pt") or 0, e.get("vt") or 0) < PRUNE_AGE
         }
+        # older versions kept a per-item history nobody read (most of the file): dropped, saved without it next time
+        for e in self._data.values():
+            if e.pop("hist", None) is not None:
+                self._dirty = True
 
     def _store(self, slug: str, **kw):
         now = time.time()
@@ -214,10 +216,6 @@ class Market:
                 e["price"], e["pmax"], e["pt"] = kw["price"], kw.get("pmax"), now
             if "vol" in kw:
                 e["vol"], e["vt"] = kw["vol"], now
-            hist = e.setdefault("hist", [])
-            if not hist or now - hist[-1][0] >= HIST_MIN_GAP:
-                hist.append([int(now), e.get("price"), e.get("vol"), e.get("pmax")])
-                del hist[:-HIST_MAX]
             self._dirty = True
 
     def flush(self):

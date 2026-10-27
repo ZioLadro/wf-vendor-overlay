@@ -88,6 +88,18 @@ class Cell(QTableWidgetItem):
         return super().__lt__(other)
 
 
+def refresh_ages(table, col):
+    """Moves the "x min ago" texts of a column on without rebuilding the table (the sort key, a timestamp, stays)."""
+    table.setUpdatesEnabled(False)
+    for i in range(table.rowCount()):
+        it = table.item(i, col)
+        if isinstance(it, Cell):
+            txt = age_text(it.key or None)
+            if it.text() != txt:
+                it.setText(txt)
+    table.setUpdatesEnabled(True)
+
+
 def num_key(v):
     """Numeric key: missing values come before everything (last when sorting descending)."""
     return (0, 0) if v is None else (1, v)

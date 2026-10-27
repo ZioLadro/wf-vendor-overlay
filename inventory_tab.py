@@ -21,7 +21,7 @@ from market_auth import MarketAccount, MarketError
 from overlay import volume_color
 from uiutil import role
 from uiutil import (
-    DIM_COLOR, HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, Cell, age_text, attach_item_menu,
+    DIM_COLOR, HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, Cell, age_text, refresh_ages, attach_item_menu,
     num_key,
 )
 
@@ -371,7 +371,10 @@ class InventoryTab(QWidget):
         sig = hash((len(self.inv.items), tuple((r["slug"], r["n"], r["m"], r["price"], r["pmax"], r["vol"],
                                                 r["updated"], (r["order"] or {}).get("t")) for r in rows)))
         now = time.monotonic()
-        if not force and sig == getattr(self, "_sig", None) and now - getattr(self, "_built", 0) < 30:
+        if not force and sig == getattr(self, "_sig", None):
+            if now - getattr(self, "_built", 0) >= 30:     # nothing changed: only the "x min ago" texts move on
+                self._built = now
+                refresh_ages(self.table, C_UPD)
             return
         self._sig, self._built = sig, now
         tb = self.table

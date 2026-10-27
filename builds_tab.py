@@ -323,6 +323,14 @@ class BuildsTab(QWidget):
         self._pic_timer = QTimer(self, interval=2500, timeout=self._pictures)
         self._pic_timer.start()
 
+    def showEvent(self, e):
+        super().showEvent(e)
+        self._pic_timer.start()
+
+    def hideEvent(self, e):
+        super().hideEvent(e)
+        self._pic_timer.stop()                         # nothing to redraw while the tab is not on screen
+
     def _mode_changed(self):
         mode = self.mode.currentData()
         self.stack.setCurrentIndex({"game": 0, "items": 1, "plan": 2}[mode])
