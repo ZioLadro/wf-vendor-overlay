@@ -13,7 +13,7 @@ Resource use, same results:
   every 1.2 s instead of every 0.6 s (back to normal as soon as it is active).
 - **Tables**: the price list and the inventory no longer rebuild every 30 seconds just to move the "x min ago" column
   on: only that column is updated. The Builds tab's picture check stops while the tab is hidden.
-- **OCR**: with *Mask the vendor panel* on, the screenshot is shrunk before masking, so the full-size image is no longer
+- **OCR**: with *Skip the vendor's left panel* on, the screenshot is shrunk before masking, so the full-size image is no longer
   copied (same text read, checked on a test screenshot).
 
 ## 0.2.4
