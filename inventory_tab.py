@@ -208,6 +208,11 @@ class InventoryTab(QWidget):
         self.hide_zero = QCheckBox(t("prices.hide_zero"))
         self.hide_zero.setToolTip(t("prices.hide_zero.tip"))
         self.hide_zero.setChecked(bool(CFG["inv_hide_zero_volume"]))
+        self.min_vol = QSpinBox()
+        self.min_vol.setRange(0, 9999)
+        self.min_vol.setPrefix(t("inv.minvol") + " ")
+        self.min_vol.setToolTip(t("inv.minvol.tip"))
+        self.min_vol.setValue(int(CFG["inv_min_volume"]))
 
         row1 = QHBoxLayout()
         row1.addWidget(self.search, 1)
@@ -221,6 +226,7 @@ class InventoryTab(QWidget):
         row2.addWidget(self.exclude_max)
         row2.addWidget(self.exclude_inst)
         row2.addWidget(self.hide_zero)
+        row2.addWidget(self.min_vol)
         row2.addStretch(1)
 
         self.btn_import = QPushButton(t("inv.import"))
@@ -299,6 +305,7 @@ class InventoryTab(QWidget):
         self.search.textChanged.connect(lambda _: self.refresh(force=True))
         self.multiple.toggled.connect(lambda _: self.refresh(force=True))
         self.hide_zero.toggled.connect(self._hide_zero_changed)
+        self.min_vol.valueChanged.connect(self._min_vol_changed)
         self.btn_ducat.clicked.connect(lambda: self.show_advice("ducat"))
         self.btn_advice_sell.clicked.connect(lambda: self.show_advice("sell"))
         self.btn_rankup.clicked.connect(lambda: self.show_advice("rankup"))
@@ -324,6 +331,10 @@ class InventoryTab(QWidget):
         for value, text in options:
             cb.addItem(text, value)
         return label, cb
+
+    def _min_vol_changed(self, v):
+        save_config({"inv_min_volume": int(v)})
+        self.refresh(force=True)
 
     def _hide_zero_changed(self, on):
         save_config({"inv_hide_zero_volume": bool(on)})
@@ -364,7 +375,7 @@ class InventoryTab(QWidget):
             min_plat=self.min_plat.currentData(), exclude_maxed=self.exclude_max.isChecked(), exclude_installed=self.exclude_inst.isChecked(),
             multiple=self.multiple.isChecked(), part_type=self.part_type[1].currentData(),
             vaulted=self.vaulted[1].currentData(), listed=self.listed[1].currentData(),
-            hide_zero_volume=self.hide_zero.isChecked())
+            hide_zero_volume=self.hide_zero.isChecked(), min_volume=self.min_vol.value())
 
     def refresh(self, force=False):
         rows, total = self._rows()

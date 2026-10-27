@@ -63,6 +63,9 @@ DEFAULTS = {
     "inv_exclude_installed": False,   # Inventory: leave out the mods/Arcanes that sit in a loadout
     "rankup_min_gain": 10,        # rank-up advice: minimum platinum gained per copy (max-rank price - current price)
     "inv_hide_zero_volume": False,   # Inventory: hide items with no trades in 24 h
+    "market_split": [3, 2],          # Prices tab: height of the price list and of the recommendations
+    "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)
+    "inv_min_volume": 0,             # Inventory: hide items traded fewer times than this in 24 h (0 = off)
     "hide_negative_ranks": False,    # player strip / Profile: hide syndicates with a negative rank
     "ducat_min_ratio": 10,       # advice: trade for ducats if ducats per platinum (adjusted for liquidity) >= this
     "advice_trend_weight": 50,   # advice: how much a price above its 30-day average is pulled towards it (0 = ignore the trend, 100 = use the average)

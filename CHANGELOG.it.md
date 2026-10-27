@@ -3,6 +3,19 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.2.6
+- **Prezzi e consigli in un'unica scheda**: il listino sopra, i consigli sotto, con un divisore trascinabile (la
+  posizione viene ricordata).
+- **La finestra non è più sempre in primo piano**: viene davanti quando la apri (tasto rapido o icona) e poi si comporta
+  come una finestra normale, quindi il gioco o altri programmi possono coprirla. L'impostazione *Finestra sempre in primo
+  piano* riporta il comportamento di prima (serve il riavvio). Le etichette sul gioco restano in primo piano come prima.
+- **Inventario: volume minimo** (*Vol. min*): nasconde gli oggetti scambiati meno di così nelle ultime 24 ore (gli
+  oggetti ancora senza dati di volume restano). Viene ricordato.
+- **Loghi delle fazioni dalla wiki di Warframe** nella barra in alto: l'immagine di ogni sindacato viene chiesta una
+  volta tramite l'API MediaWiki della wiki (l'immagine principale della pagina, altrimenti un file chiamato Sigil / Icon
+  / Logo), salvata nella cartella dati (`icons`) e riusata; fino ad allora resta il badge disegnato. Un logo non trovato
+  viene richiesto di nuovo dopo un giorno. Si disattiva insieme a *Immagini degli oggetti nei tooltip*.
+
 ## 0.2.5
 Uso delle risorse, stessi risultati:
 - **`prices.json` circa 18 volte più piccolo**: conteneva uno storico dei prezzi per oggetto che nessuna parte del

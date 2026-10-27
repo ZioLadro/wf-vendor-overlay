@@ -1,8 +1,8 @@
 """Player strip shown above every tab: name, mastery rank, trades left and a badge per syndicate with your rank.
 
-Badges are drawn from the syndicate colours in the game data (the real logos cannot be downloaded here).
-To use real logos, put PNG files named <SyndicateTag>.png (e.g. CetusSyndicate.png) in the 'icons' folder
-inside the program's data folder (%LOCALAPPDATA%\\WFVendorOverlay\\icons)."""
+Badges are the syndicate logos taken from the Warframe wiki (see logos.py), saved as <SyndicateTag>.png in the 'icons'
+folder of the program's data folder (%LOCALAPPDATA%\\WFVendorOverlay\\icons; your own PNG files there are used as they
+are). Until a logo is there, a badge is drawn from the syndicate colours in the game data."""
 import time
 
 from PyQt6.QtCore import QRectF, Qt
@@ -27,6 +27,8 @@ def badge(tag: str) -> QPixmap:
         return _cache[tag]
     pm = QPixmap(str(ICON_DIR / f"{tag}.png"))
     if pm.isNull():
+        import logos
+        logos.want(tag, syndicate_name(tag))         # asks the wiki in the background; drawn badge meanwhile
         fg, bg = (game_names().get("syn_colors", {}).get(tag) or ["#DDDDDD", "#445066"])
         pm = QPixmap(SIZE * 2, SIZE * 2)
         pm.fill(Qt.GlobalColor.transparent)
@@ -132,6 +134,11 @@ class PlayerBar(QFrame):
         self.wallet_w.setVisible(bool(shown))
 
     def refresh(self, force=False):
+        import logos
+        if logos.done_count != getattr(self, "_logos_seen", 0):     # new logos arrived from the wiki: redraw the badges
+            self._logos_seen = logos.done_count
+            _cache.clear()
+            force = True
         key = (CFG.get("assets_dir"), CFG.get("assets_auto"), CFG.get("aya_manual"), repr(self.store.wallet), self.store.version, int(time.time() // 600), CFG["player_name"], self.store.fetched, CFG["hide_negative_ranks"])
         if not force and key == self._shown:
             return

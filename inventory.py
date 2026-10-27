@@ -411,7 +411,7 @@ def is_prime(name: str) -> bool:
 
 def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, exclude_maxed=False,
                multiple=False, part_type=None, vaulted=None, listed=None, hide_zero_volume=False,
-               exclude_installed=False):
+               exclude_installed=False, min_volume=0):
     """Rows of the Inventory tab after the filters, plus the estimated total value in platinum.
 
     Filters mirror AlecaFrame's: minimum platinum, more than one owned, part type (prime/normal),
@@ -452,6 +452,8 @@ def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, excl
         price, pmax = c.get("price"), c.get("pmax")
         if hide_zero_volume and c.get("vol") == 0:
             continue                                   # no trades in 24 h (items without data stay)
+        if min_volume and c.get("vol") is not None and c["vol"] < min_volume:
+            continue                                   # too few trades in 24 h (items without data stay)
         unit = price if n > 0 else pmax
         if min_plat and (unit is None or unit < min_plat):
             continue

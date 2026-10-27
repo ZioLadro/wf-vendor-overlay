@@ -691,6 +691,11 @@ EN = {
     "builds.bonus": "Mod bonuses (approximate)",
     "builds.bonus.note": "Sum of the percentage bonuses of the mods and the Riven at their ranks (the weapon's base stats are not shown).",
     "builds.riven.tip": "Riven for {weapon} · {rerolls} re-rolls",
+    "tab.market": "Prices and recommendations",
+    "inv.minvol": "Min vol.",
+    "inv.minvol.tip": "Hide items traded fewer times than this in the last 24 h (0 = off). Items without volume data yet stay.",
+    "set.window_on_top": "Window always on top",
+    "set.window_on_top.tip": "Keep this window above every other window, the game included. Off: it comes in front when you open it (hotkey or tray) and then behaves like a normal window. The labels on the game are always on top. Restart to apply",
 }
 
 IT = {
@@ -1369,6 +1374,11 @@ IT = {
     "builds.bonus": "Bonus delle mod (approssimati)",
     "builds.bonus.note": "Somma dei bonus percentuali di mod e Riven al loro rank (le statistiche base dell'arma non sono mostrate).",
     "builds.riven.tip": "Riven per {weapon} · {rerolls} ri-tiri",
+    "tab.market": "Prezzi e consigli",
+    "inv.minvol": "Vol. min",
+    "inv.minvol.tip": "Nasconde gli oggetti scambiati meno di così nelle ultime 24 h (0 = disattivato). Gli oggetti senza dati di volume restano.",
+    "set.window_on_top": "Finestra sempre in primo piano",
+    "set.window_on_top.tip": "Tiene questa finestra sopra tutte le altre, gioco compreso. Disattivato: viene davanti quando la apri (tasto rapido o icona) e poi si comporta come una finestra normale. Le etichette sul gioco restano sempre in primo piano. Riavvia per applicare",
 }
 
 STRINGS = {"en": EN, "it": IT}

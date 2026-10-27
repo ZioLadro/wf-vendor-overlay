@@ -3,6 +3,19 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.2.6
+- **Prices and recommendations in one tab**: the price list on top, the recommendations below, with a divider you can
+  drag (its position is remembered).
+- **Window no longer always on top**: it comes in front when you open it (hotkey or tray) and then behaves like a normal
+  window, so the game or other programs can go over it. Setting *Window always on top* brings back the old behaviour
+  (restart to apply). The labels on the game stay on top as before.
+- **Inventory: minimum volume** (*Min vol.*): hides the items traded fewer times than that in the last 24 hours (items
+  without volume data yet stay). Remembered.
+- **Syndicate logos from the Warframe wiki** in the top strip: each syndicate's picture is asked for once through the
+  wiki's MediaWiki API (the article's main picture, else a file called Sigil / Icon / Logo), saved in the data folder
+  (`icons`) and reused; until then the drawn badge stays. A logo that is not found is asked again after a day. Turned off
+  together with *Item pictures in tooltips*.
+
 ## 0.2.5
 Resource use, same results:
 - **`prices.json` about 18 times smaller**: it kept a per-item price history that nothing read (48 entries per item).

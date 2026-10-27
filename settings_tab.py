@@ -33,6 +33,7 @@ GROUPS = [
         ("show_volume", "bool", None, False),
         ("hide_zero_volume", "bool", None, False),
         ("open_list_on_start", "bool", None, False),
+        ("window_on_top", "bool", None, True),
         ("profile_reload_s", "int", (0, 3600), True),
         ("world_refresh_s", "int", (15, 3600), False),
     ]),

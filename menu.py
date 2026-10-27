@@ -1,11 +1,11 @@
 """Price-list window: tabs "Price list", "Recommendations" and "Settings"."""
+import sys
 import threading
 import time
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
-    QAbstractItemView, QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QProgressBar,
-    QPushButton, QTabWidget, QTableWidget, QVBoxLayout, QWidget,
+    QAbstractItemView, QCheckBox, QComboBox, QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QProgressBar, QPushButton, QSplitter, QTabWidget, QTableWidget, QVBoxLayout, QWidget,
 )
 
 from config import CFG, save_config
@@ -245,7 +245,10 @@ class PriceList(QWidget):
         import previews
         previews.set_market(market)
         self.setWindowTitle(t("window.title") + " " + __version__)
-        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint)
+        flags = Qt.WindowType.Window
+        if CFG.get("window_on_top"):
+            flags |= Qt.WindowType.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
         self.resize(1080, 680)
         theme.ensure_applied()
 
@@ -263,9 +266,18 @@ class PriceList(QWidget):
         self.settings.restart_requested.connect(self.restart_requested)
         self.player_bar = PlayerBar(market)
         self.tabs = QTabWidget()
-        self.tabs.addTab(self.prices, t("tab.prices"))
+        # price list and recommendations share one tab: the list on top, the recommendations below (splitter remembered)
+        self.market_tab = QSplitter(Qt.Orientation.Vertical)
+        for title, w in ((t("tab.prices"), self.prices), (t("tab.recommend"), self.recommend)):
+            box = QGroupBox(title)
+            QVBoxLayout(box).addWidget(w)
+            self.market_tab.addWidget(box)
+        self.market_tab.setChildrenCollapsible(False)
+        sizes = CFG.get("market_split") or [3, 2]
+        self.market_tab.setSizes([int(x) * 1000 if sum(sizes) < 20 else int(x) for x in sizes])
+        self.market_tab.splitterMoved.connect(lambda *_: save_config({"market_split": self.market_tab.sizes()}))
+        self.tabs.addTab(self.market_tab, t("tab.market"))
         self.tabs.addTab(self.inv_tab, t("tab.inventory"))
-        self.tabs.addTab(self.recommend, t("tab.recommend"))
         self.tabs.addTab(self.builds, t("tab.builds"))
         self.tabs.addTab(self.riven_flip, t("tab.rflip"))
         self.tabs.addTab(self.profile, t("tab.profile"))
@@ -303,12 +315,11 @@ class PriceList(QWidget):
     def _tick(self, force=False):
         self.player_bar.refresh(force=force)
         w = self.tabs.currentWidget()
-        if w is self.prices:
+        if w is self.market_tab:
             self.prices.refresh(force=force)
+            self.recommend.refresh(force=force)
         elif w is self.inv_tab:
             self.inv_tab.refresh(force=force)
-        elif w is self.recommend:
-            self.recommend.refresh(force=force)
         elif w is self.builds:
             self.builds.refresh(force=force)
         elif w is self.riven_flip:
@@ -351,6 +362,8 @@ class PriceList(QWidget):
         """This window's rectangle in physical screen pixels (None if hidden): the OCR must not read it."""
         if not self.isVisible():
             return None
+        if not CFG.get("window_on_top") and not self.isActiveWindow():
+            return None                  # a normal window behind the game is covered by it: nothing to leave out
         g, r = self.frameGeometry(), self.devicePixelRatioF()
         return (g.x() * r, g.y() * r, g.width() * r, g.height() * r)
 
@@ -361,6 +374,23 @@ class PriceList(QWidget):
             self.show()
             self.raise_()
             self.activateWindow()
+            self._bring_to_front()
+
+    def _bring_to_front(self):
+        """Not always on top: when it is opened (hotkey, tray) over the game it must still come in front once. Windows may
+        refuse to give the focus to a background program, so the window is lifted to the top and released at once."""
+        if CFG.get("window_on_top") or sys.platform != "win32":
+            return
+        try:
+            import ctypes
+            u = ctypes.windll.user32
+            hwnd = int(self.winId())
+            flags = 0x0001 | 0x0002 | 0x0040            # SWP_NOSIZE | SWP_NOMOVE | SWP_SHOWWINDOW
+            u.SetWindowPos(hwnd, -1, 0, 0, 0, 0, flags)    # HWND_TOPMOST
+            u.SetWindowPos(hwnd, -2, 0, 0, 0, 0, flags)    # HWND_NOTOPMOST: back to a normal window, still in front
+            u.SetForegroundWindow(hwnd)
+        except Exception:
+            pass
 
     def showEvent(self, e):
         super().showEvent(e)
