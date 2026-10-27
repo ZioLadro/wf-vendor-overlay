@@ -6,7 +6,13 @@ F9  = pause (hides the prices)  |  F10 = quit
 The same actions are in the tray icon menu.
 """
 import multiprocessing
+import os
 import sys
+
+# Restart and update launch this program with PYINSTALLER_RESET_ENVIRONMENT=1 (so the new exe does not reuse the old
+# temp folder). The bootloader has already read it: remove it, or the OCR process we start would inherit it, behave
+# like a brand-new program and fail with "OSError: [WinError 87]" in multiprocessing's spawn_main.
+os.environ.pop("PYINSTALLER_RESET_ENVIRONMENT", None)
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()     # needed by the exe: the OCR process restarts this same file
