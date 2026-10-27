@@ -144,7 +144,6 @@ class OcrClient:
     """Main-process side: starts the worker and requests scans."""
 
     def __init__(self, pairs, cfg):
-        self._ctx = mp.get_context("spawn")
         self._pairs, self._cfg = list(pairs), dict(cfg)
         self._lock = threading.Lock()
         self._proc = self._conn = None
@@ -156,11 +155,31 @@ class OcrClient:
         self._start()
 
     def _start(self):
-        parent, child = self._ctx.Pipe()
-        proc = self._ctx.Process(target=serve, args=(child, self._pairs, self._cfg), daemon=True)
-        proc.start()
-        child.close()
-        self._proc, self._conn, self._ready = proc, parent, False
+        """Starts the worker as a plain program (no multiprocessing handle duplication, which Windows can refuse with
+        "WinError 5") and talks to it over a private localhost connection protected by a random key."""
+        import subprocess
+        from multiprocessing.connection import Listener
+        key = os.urandom(16)
+        lis = Listener(("127.0.0.1", 0), authkey=key)
+        try:
+            frozen = getattr(sys, "frozen", False)
+            main = os.path.join(os.path.dirname(os.path.abspath(__file__)), "main.py")
+            args = [sys.executable] + ([] if frozen else [main]) + ["--ocr-worker", str(lis.address[1]), key.hex()]
+            env = {k: v for k, v in os.environ.items() if k != "PYINSTALLER_RESET_ENVIRONMENT"}
+            flags = 0x08000000 if sys.platform == "win32" else 0          # CREATE_NO_WINDOW
+            proc = subprocess.Popen(args, env=env, close_fds=True, creationflags=flags)
+            lis._listener._socket.settimeout(60)
+            conn = lis.accept()
+        except Exception:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+            raise
+        finally:
+            lis.close()
+        conn.send(("init", self._pairs, self._cfg))
+        self._proc, self._conn, self._ready = proc, conn, False
 
     def _restart(self):
         self.close()
@@ -169,7 +188,7 @@ class OcrClient:
     def scan(self, timeout: float = 120.0, exclude=None):
         """Returns ([(x, y, w, h, slug, score)], screen_width_in_pixels, reference_crops)."""
         with self._lock:
-            if not self._proc.is_alive():
+            if self._proc.poll() is not None:
                 self._start()
             try:
                 if not self._ready:
@@ -200,8 +219,19 @@ class OcrClient:
         except Exception:
             pass
         try:
-            self._proc.join(1.0)
-            if self._proc.is_alive():
-                self._proc.terminate()
+            self._proc.wait(1.0)
         except Exception:
-            pass
+            try:
+                self._proc.terminate()
+            except Exception:
+                pass
+
+
+def worker_main(port: int, key_hex: str):
+    """Entry point of the worker program (started by OcrClient with --ocr-worker PORT KEY)."""
+    from multiprocessing.connection import Client
+    conn = Client(("127.0.0.1", port), authkey=bytes.fromhex(key_hex))
+    msg = conn.recv()
+    if msg[0] != "init":
+        return
+    serve(conn, msg[1], msg[2])

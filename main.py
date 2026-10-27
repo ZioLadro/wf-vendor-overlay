@@ -15,7 +15,11 @@ import sys
 os.environ.pop("PYINSTALLER_RESET_ENVIRONMENT", None)
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()     # needed by the exe: the OCR process restarts this same file
+    multiprocessing.freeze_support()
+    if len(sys.argv) >= 4 and sys.argv[1] == "--ocr-worker":     # the OCR process: this same program, started by OcrClient
+        from ocr_worker import worker_main
+        worker_main(int(sys.argv[2]), sys.argv[3])
+        sys.exit(0)
 
 from config import APP_DIR, CFG
 from i18n import t
