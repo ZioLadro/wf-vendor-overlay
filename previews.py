@@ -39,9 +39,24 @@ def _file(key):
 
 
 def _save(r):
-    if r.status_code == 200 and r.content[:4] == b"\x89PNG":
+    """PNG bytes of a downloaded picture (other formats are converted), or None."""
+    if r.status_code != 200 or not r.content:
+        return None
+    if r.content[:4] == b"\x89PNG":
         return r.content
-    return None
+    try:
+        from PyQt6.QtCore import QBuffer, QByteArray, QIODevice
+        from PyQt6.QtGui import QImage
+        img = QImage()
+        if not img.loadFromData(r.content) or img.isNull():
+            return None
+        ba = QByteArray()
+        buf = QBuffer(ba)
+        buf.open(QIODevice.OpenModeFlag.WriteOnly)
+        img.save(buf, "PNG")
+        return bytes(ba)
+    except Exception:
+        return None
 
 
 def _from_market(slug):
@@ -53,9 +68,22 @@ def _from_market(slug):
 
 
 def _from_wiki(name):
-    """The wiki's picture for the item (File:<name>.png), found through the MediaWiki API."""
+    """The wiki's picture for the item, through the MediaWiki API: the main picture of the item's article (pageimages:
+    the mod card, the Warframe, the weapon), else the file File:<name>.png."""
     from market import HEADERS
     h = {"User-Agent": HEADERS["User-Agent"]}
+    r = requests.get(WIKI_API, params={"action": "query", "format": "json", "titles": name, "redirects": 1,
+                                       "prop": "pageimages", "piprop": "thumbnail|original", "pithumbsize": 320},
+                     headers=h, timeout=10)
+    if r.status_code == 200:
+        for page in (r.json().get("query", {}).get("pages") or {}).values():
+            src = (page.get("thumbnail") or {}).get("source") or (page.get("original") or {}).get("source")
+            if src:
+                time.sleep(GAP)
+                data = _save(requests.get(src, headers=h, timeout=10))
+                if data:
+                    return data
+    time.sleep(GAP)
     title = "File:" + name.replace(" ", "_") + ".png"
     r = requests.get(WIKI_API, params={"action": "query", "format": "json", "titles": title, "prop": "imageinfo",
                                        "iiprop": "url"}, headers=h, timeout=10)
@@ -95,17 +123,30 @@ def _run():
             time.sleep(GAP)
 
 
+def prefetch(names):
+    """Asks in the background for the wiki pictures of these names that are not on disk yet (Builds: at start)."""
+    n = 0
+    for name in dict.fromkeys(x for x in names if x):
+        if by_name(name, wiki_only=True) is None:
+            n += 1
+    return n
+
+
 def pending() -> int:
     """Pictures still waiting to be downloaded."""
     return len(_pending)
 
 
-def by_name(name, slug=None):
-    """File of the picture of an item known by name (a mod or Arcane of a loadout, say); asks for it if missing."""
+def by_name(name, slug=None, wiki_only=False):
+    """File of the picture of an item known by name (a mod or Arcane of a loadout, say); asks for it if missing.
+    wiki_only: the picture comes from the Warframe wiki only (the Builds tab), kept apart from the market's."""
     global _worker
     if not CFG.get("item_previews", True) or not name:
         return None
-    slug = slug or (_market.slug_for_name(name) if _market else None)
+    if wiki_only:
+        slug = None
+    else:
+        slug = slug or (_market.slug_for_name(name) if _market else None)
     key = slug or "wiki_" + name
     f = _file(key)
     if f.exists():

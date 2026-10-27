@@ -696,6 +696,11 @@ EN = {
     "inv.minvol.tip": "Hide items traded fewer times than this in the last 24 h (0 = off). Items without volume data yet stay.",
     "set.window_on_top": "Window always on top",
     "set.window_on_top.tip": "Keep this window above every other window, the game included. Off: it comes in front when you open it (hotkey or tray) and then behaves like a normal window. The labels on the game are always on top. Restart to apply",
+    "pol.universal": "Universal (any polarity)",
+    "set.backdrop": "Themed background",
+    "set.backdrop.tip": "A faint pattern in the theme's colours behind the tabs. Tables, lists, inputs and buttons keep solid colours, so the text stays easy to read",
+    "set.backdrop_strength": "Background visibility",
+    "set.backdrop_strength.tip": "How visible the background pattern is (0 = invisible, 100 = strongest)",
 }
 
 IT = {
@@ -1379,6 +1384,11 @@ IT = {
     "inv.minvol.tip": "Nasconde gli oggetti scambiati meno di così nelle ultime 24 h (0 = disattivato). Gli oggetti senza dati di volume restano.",
     "set.window_on_top": "Finestra sempre in primo piano",
     "set.window_on_top.tip": "Tiene questa finestra sopra tutte le altre, gioco compreso. Disattivato: viene davanti quando la apri (tasto rapido o icona) e poi si comporta come una finestra normale. Le etichette sul gioco restano sempre in primo piano. Riavvia per applicare",
+    "pol.universal": "Universale (qualsiasi polarità)",
+    "set.backdrop": "Sfondo a tema",
+    "set.backdrop.tip": "Un motivo leggero nei colori del tema dietro le schede. Tabelle, elenchi, campi e pulsanti restano a tinta unita, quindi il testo resta ben leggibile",
+    "set.backdrop_strength": "Visibilità dello sfondo",
+    "set.backdrop_strength.tip": "Quanto si vede il motivo dello sfondo (0 = invisibile, 100 = massimo)",
 }
 
 STRINGS = {"en": EN, "it": IT}

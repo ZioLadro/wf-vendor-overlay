@@ -3,6 +3,32 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.2.7
+- **Builds pictures from the Warframe wiki only** (mod cards and items), through the wiki's MediaWiki API (the
+  article's main picture, else `File:<name>.png`). At start the program asks in the background for the pictures still
+  missing for the mods of your loadouts and for the items, one at a time; they are kept in the data folder.
+- **Item pictures** (Warframes, weapons, companions) next to the loadout's title, on the rows of *Game loadouts* and in
+  the *By item* list.
+- **By item list grouped by kind**: Warframes, primaries, secondaries, melee, Archwing, arch-guns, Necramechs, companions,
+  each under its own header.
+- **Themed background**: an original pattern in the theme's colours (thin gilded lattice, diamonds and arcs) behind the
+  tabs; tables, lists, inputs and buttons keep solid colours so the text stays easy to read. Settings *Themed background*
+  and *Background visibility*.
+- **Builds and planner review**, fixes:
+  - mod capacity is the item's rank (30, or 40 for Kuva, Tenet and Coda weapons and Necramechs), doubled by a Reactor /
+    Catalyst; it was 30 too high;
+  - a mod used as an unranked copy counted as max rank;
+  - the "universal" slot polarity of the game file (Aura Forma) matches every mod: checked on a real build, the total
+    capacity now equals the game's (60 + Aura 7 × 2 = 74);
+  - innate polarities are placed on the slots where they save the most drain (the game file does not say where they are);
+  - older items whose file entry does not say whether they have a Reactor / Catalyst are counted with one when the build
+    only fits that way;
+  - a Riven copied into the planner was lost when its slot was opened and confirmed;
+  - typing an item name in the planner (any case, part of the name) works; half-typed names are ignored;
+  - the game file is read again when it changed since the saved copy (and when it changes while the tab is open);
+  - the configuration buttons no longer pile up an invisible object at every redraw; the loadout count no longer counts
+    the group headers.
+
 ## 0.2.6
 - **Prices and recommendations in one tab**: the price list on top, the recommendations below, with a divider you can
   drag (its position is remembered).

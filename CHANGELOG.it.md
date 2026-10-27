@@ -3,6 +3,33 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.2.7
+- **Immagini delle Build solo dalla wiki di Warframe** (card delle mod e oggetti), tramite l'API MediaWiki della wiki
+  (l'immagine principale della pagina, altrimenti `File:<nome>.png`). All'avvio il programma chiede in background le
+  immagini che mancano per le mod dei tuoi loadout e per gli oggetti, una alla volta; restano nella cartella dati.
+- **Immagini degli oggetti** (Warframe, armi, compagni) accanto al titolo del loadout, sulle righe di *Loadout di gioco* e
+  nell'elenco *Per oggetto*.
+- **Elenco Per oggetto diviso per tipo**: Warframe, primarie, secondarie, mischia, Archwing, arch-gun, Necramech,
+  compagni, ognuno sotto la sua intestazione.
+- **Sfondo a tema**: un motivo originale nei colori del tema (sottile reticolo dorato, rombi e archi) dietro le schede;
+  tabelle, elenchi, campi e pulsanti restano a tinta unita, così il testo resta ben leggibile. Impostazioni *Sfondo a
+  tema* e *Visibilità dello sfondo*.
+- **Revisione di Build e planner**, correzioni:
+  - la capacità delle mod è il rank dell'oggetto (30, o 40 per armi Kuva, Tenet e Coda e Necramech), raddoppiata da un
+    Reactor / Catalyst; prima era 30 punti troppo alta;
+  - una mod usata come copia senza rank veniva contata al rank massimo;
+  - la polarità "universale" del file di gioco (Aura Forma) va bene per ogni mod: verificato su una build reale, la
+    capacità totale ora coincide con quella del gioco (60 + Aura 7 × 2 = 74);
+  - le polarità innate vengono messe sugli slot dove fanno risparmiare più drain (il file di gioco non dice dove sono);
+  - gli oggetti più vecchi, il cui file non dice se hanno un Reactor / Catalyst, vengono contati con uno quando la build
+    ci sta solo così;
+  - una Riven copiata nel planner si perdeva aprendo e confermando il suo slot;
+  - scrivere il nome di un oggetto nel planner (maiuscole qualsiasi, anche solo una parte) funziona; i nomi a metà sono
+    ignorati;
+  - il file di gioco viene riletto se è cambiato dopo la copia salvata (e se cambia mentre la scheda è aperta);
+  - i pulsanti delle configurazioni non accumulano più un oggetto invisibile a ogni ridisegno; il conteggio dei loadout
+    non conta più le intestazioni dei gruppi.
+
 ## 0.2.6
 - **Prezzi e consigli in un'unica scheda**: il listino sopra, i consigli sotto, con un divisore trascinabile (la
   posizione viene ricordata).

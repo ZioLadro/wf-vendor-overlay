@@ -96,6 +96,72 @@ QLabel[role="small"] {{ color: {p['muted']}; font-size: {max(8, size - 3)}px; }}
 """
 
 
+BACKDROP_TILE = 560
+
+
+def make_backdrop(p: dict, strength: int) -> str:
+    """Draws the window's background tile (an original pattern in the spirit of Warframe's Orokin / Tenno art: thin gilded
+    lattice lines, diamonds and arcs) in the theme's colours, kept faint so text stays easy to read. Returns the PNG path."""
+    from PyQt6.QtCore import QPointF, QRectF, Qt
+    from PyQt6.QtGui import QColor, QImage, QPainter, QPen
+    from config import APP_DIR
+    strength = max(0, min(100, int(strength)))
+    out = APP_DIR / "backdrop" / f"{p['bg'][1:]}_{p['accent'][1:]}_{p['border'][1:]}_{strength}.png"
+    if out.exists():
+        return out.as_posix()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    n = BACKDROP_TILE
+    img = QImage(n, n, QImage.Format.Format_RGB32)
+    img.fill(QColor(p["bg"]))
+    k = strength / 100.0
+
+    def col(c, a):
+        q = QColor(c)
+        q.setAlpha(int(a * k))
+        return q
+    g = QPainter(img)
+    g.setRenderHint(QPainter.RenderHint.Antialiasing)
+    # diagonal lattice
+    g.setPen(QPen(col(p["border"], 120), 1))
+    step = n // 4
+    for i in range(-4, 9):
+        g.drawLine(QPointF(i * step, 0), QPointF(i * step + n, n))
+        g.drawLine(QPointF(i * step, n), QPointF(i * step + n, 0))
+    # small diamonds where the lines cross
+    g.setPen(Qt.PenStyle.NoPen)
+    g.setBrush(col(p["accent"], 70))
+    for x in range(0, n + 1, step):
+        for y in range(0, n + 1, step):
+            cx, cy = x + (step / 2 if (y // step) % 2 else 0), y
+            d = 3.5
+            g.drawPolygon([QPointF(cx, cy - d), QPointF(cx + d, cy), QPointF(cx, cy + d), QPointF(cx - d, cy)])
+    # gilded arcs and rings (centred on the tile corners, so they join across tiles)
+    g.setBrush(Qt.BrushStyle.NoBrush)
+    for r, a, w in ((n * 0.42, 80, 1.6), (n * 0.36, 55, 1.0), (n * 0.18, 60, 1.2)):
+        g.setPen(QPen(col(p["accent"], a), w))
+        for cx, cy in ((0, 0), (n, 0), (0, n), (n, n)):
+            g.drawEllipse(QPointF(cx, cy), r, r)
+    g.setPen(QPen(col(p["accent"], 70), 1.2))
+    c = QPointF(n / 2, n / 2)
+    g.drawEllipse(c, n * 0.11, n * 0.11)
+    g.drawArc(QRectF(n / 2 - n * 0.16, n / 2 - n * 0.16, n * 0.32, n * 0.32), 30 * 16, 120 * 16)
+    g.drawArc(QRectF(n / 2 - n * 0.16, n / 2 - n * 0.16, n * 0.32, n * 0.32), 210 * 16, 120 * 16)
+    g.end()
+    img.save(str(out), "PNG")
+    return out.as_posix()
+
+
+def backdrop_style(p: dict, path: str) -> str:
+    """The main window shows the background tile; containers and labels inside it become see-through, while tables, lists,
+    inputs, buttons and dialogs keep their solid colours (so text never sits on the pattern where it would be hard to read)."""
+    return f"""
+#mainwin {{ background-color: {p['bg']}; background-image: url("{path}"); background-repeat: repeat-xy; }}
+#mainwin QLabel, #mainwin QCheckBox, #mainwin QRadioButton, #mainwin QGroupBox, #mainwin QStackedWidget,
+#mainwin QSplitter, #mainwin QTabWidget, #mainwin QScrollArea, #mainwin QWidget#qt_scrollarea_viewport,
+#mainwin .QWidget {{ background: transparent; }}
+"""
+
+
 def apply(app=None, theme_id=None, font=None, size=None):
     """Sets the style sheet of the application. Arguments default to the saved settings."""
     if app is None:
@@ -107,8 +173,13 @@ def apply(app=None, theme_id=None, font=None, size=None):
     font = CFG["ui_font"] if font is None else font
     size = CFG["ui_font_size"] if size is None else size
     style = build_style(theme_id, font, size)
-    app.setStyleSheet(style)
     p = palette(theme_id)
+    if CFG.get("backdrop", True):
+        try:
+            style += backdrop_style(p, make_backdrop(p, CFG.get("backdrop_strength", 45)))
+        except Exception:
+            pass                                    # no picture: plain background
+    app.setStyleSheet(style)
     import uiutil
     uiutil.PRICE_COLOR.setNamedColor(p["accent"])
     uiutil.MAXRANK_COLOR.setNamedColor(p["maxrank"])

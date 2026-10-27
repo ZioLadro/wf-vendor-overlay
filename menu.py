@@ -245,6 +245,8 @@ class PriceList(QWidget):
         import previews
         previews.set_market(market)
         self.setWindowTitle(t("window.title") + " " + __version__)
+        self.setObjectName("mainwin")                 # the themed background (theme.backdrop_style) is drawn on this window
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         flags = Qt.WindowType.Window
         if CFG.get("window_on_top"):
             flags |= Qt.WindowType.WindowStaysOnTopHint

@@ -139,8 +139,8 @@ class ModCard(QFrame):
         pm = None
         if name and kind_role == "arcane":
             pm = icons.arcane(name, int(cw * 0.5))
-        elif name:
-            f = previews.by_name(name)
+        elif name and not slot.get("riven"):              # pictures from the Warframe wiki only (Rivens have none)
+            f = previews.by_name(name, wiki_only=True)
             if f:
                 pm = _scaled(f, int(cw * 0.5))
         if pm is not None and not pm.isNull():
@@ -148,7 +148,7 @@ class ModCard(QFrame):
         mx0 = slot.get("max")
         rank_txt = (t("builds.rank", rank=mx0 if slot.get("rank") is None else slot["rank"], max=mx0)) if name and mx0 else ""
         if name and kind_role != "arcane" and not slot.get("riven"):
-            f = previews.by_name(name)
+            f = previews.by_name(name, wiki_only=True)
             if f:                                           # hover: the mod's picture, bigger
                 self.setToolTip(f"<b>{name}</b><br><img src='{f.as_posix()}' width='220'><br>{rank_txt}")
             else:

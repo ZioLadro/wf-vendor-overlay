@@ -134,7 +134,7 @@ def read(inv: dict, market=None) -> list:
             roles = LAYOUT.get(kind)
             cfgs = item.get("Configs") if isinstance(item.get("Configs"), list) else []
             reactor = bool((item.get("Features") or 0) & 1)
-            level = _rank(item.get("XP"), 1000 if key in _FRAME_KINDS else 500)
+            level = _rank(item.get("XP"), 1000 if key in _FRAME_KINDS else 500, max_rank(item_name, kind))
             shards = [shard(a) for a in item.get("ArchonCrystalUpgrades") or [] if isinstance(a, dict)]
             first = len(out)
             for n, cfg in enumerate(cfgs):
@@ -149,7 +149,7 @@ def read(inv: dict, market=None) -> list:
                     if not ref:
                         slots.append({"role": role, "name": "", "rank": None, "max": None})
                         continue
-                    mod_path, lvl = (ref, None) if str(ref).startswith("/") else owned.get(ref, ("", None))
+                    mod_path, lvl = (ref, 0) if str(ref).startswith("/") else owned.get(ref, ("", None))   # a path = an unranked copy
                     if not mod_path:
                         slots.append({"role": role, "name": "", "rank": None, "max": None})
                         continue
@@ -168,10 +168,15 @@ def read(inv: dict, market=None) -> list:
                         filled += 1
                 if filled < MIN_MODS:
                     continue
-                pols = BC.slot_polarities(kind, item_name, [s["role"] for s in slots], item.get("Polarity"))
-                calc = BC.evaluate(kind, item_name, [s["role"] for s in slots],
-                                   [((s["name"], s["rank"], s["riven"]) if s.get("riven") and not s["riven"].get("unrevealed") else (s["name"], s["rank"]))
-                                    if s["name"] else None for s in slots], pols, reactor, level)
+                roles = [s["role"] for s in slots]
+                mods = [((s["name"], s["rank"], s["riven"]) if s.get("riven") and not s["riven"].get("unrevealed") else (s["name"], s["rank"]))
+                        if s["name"] else None for s in slots]
+                pols = BC.fitted_polarities(kind, item_name, roles, item.get("Polarity"), mods)
+                calc = BC.evaluate(kind, item_name, roles, mods, pols, reactor, level)
+                if not reactor and "Features" not in item and calc["free"] < 0:
+                    # older items do not say whether a Reactor / Catalyst is installed; a build that only fits with one has it
+                    reactor = True
+                    calc = BC.evaluate(kind, item_name, roles, mods, pols, reactor, level)
                 for s, c in zip(slots, calc["slots"]):
                     s.update(pol=c["pol"], mpol=c["mpol"], drain=c["drain"], state=c["state"])
                 cname = str(cfg.get("Name") or "").strip()
@@ -204,9 +209,14 @@ def read_file(path, market=None) -> list:
 _FRAME_KINDS = ("Suits", "SpaceSuits", "MechSuits", "Sentinels", "KubrowPets", "MoaPets", "HoundPets", "Pets", "CrewShipHarness")
 
 
-def _rank(xp, per) -> int:
+def max_rank(name: str, kind: str = "") -> int:
+    """Kuva, Tenet and Coda weapons and Necramechs go up to rank 40, everything else to 30."""
+    return 40 if kind == "necramech" or name.startswith(("Kuva ", "Tenet ", "Coda ", "Dual Coda ")) else 30
+
+
+def _rank(xp, per, cap=30) -> int:
     try:
-        return min(30, int((max(0, float(xp)) / per) ** 0.5))
+        return min(cap, int((max(0, float(xp)) / per) ** 0.5))
     except (TypeError, ValueError):
         return 0
 

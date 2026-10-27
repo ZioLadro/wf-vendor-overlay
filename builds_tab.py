@@ -4,7 +4,7 @@ import os
 import time
 
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import (
     QButtonGroup, QComboBox, QFrame, QStackedWidget, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox,
     QPushButton, QScrollArea, QSplitter, QVBoxLayout, QWidget,
@@ -21,10 +21,38 @@ from i18n import t
 from uiutil import age_text, role
 
 CACHE_FILE = APP_DIR / "loadouts.json"
-CACHE_VER = 3                        # bump when the loadout data gains fields (an older cache is read again from the game file)
+CACHE_VER = 4                        # bump when the loadout data gains fields (an older cache is read again from the game file)
 KINDS = ["warframe", "primary", "secondary", "melee", "archwing", "archgun", "necramech", "companion"]
 SHARD_RGB = {"RED": "#c8453c", "BLUE": "#3b8fd9", "GREEN": "#3fbf6a", "YELLOW": "#e0b83a", "ORANGE": "#e08a3a",
              "PURPLE": "#a46be0"}
+
+
+THUMB = 40
+
+
+def thumb(name, size=THUMB):
+    """Picture of a Warframe / weapon / companion from the Warframe wiki (None until it is downloaded)."""
+    f = previews.by_name(name, wiki_only=True) if name else None
+    if not f:
+        return None
+    pm = QPixmap(str(f))
+    if pm.isNull():
+        return None
+    return pm.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+
+
+def prefetch_names(loadouts, presets) -> list:
+    """Every name the Builds tab shows a picture for: the mods of your loadouts and the items themselves (Arcanes use the
+    generic pictures of the icons folder, Rivens have none)."""
+    names = []
+    for lo in loadouts:
+        names.append(lo["item"])
+        names += [s["name"] for s in lo["slots"] if s["name"] and s["role"] != "arcane" and not s.get("riven")]
+    for p in (presets or {}).get("presets") or []:
+        names += [r["item"] for r in p.get("warframe", []) + p.get("companion", [])]
+    for rows in ((presets or {}).get("tenno") or {}).values():
+        names += [r["item"] for r in rows]
+    return names
 
 
 class LoadoutView(QWidget):
@@ -36,14 +64,22 @@ class LoadoutView(QWidget):
         self.lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.title = QLabel("")
         self.title.setStyleSheet("font-size: 17px; font-weight: bold;")
+        self.pic = QLabel()
+        self.pic.setFixedSize(56, 56)
         self.sub = QLabel("")
         role(self.sub, "muted")
         self.body = QVBoxLayout()
+        self._group = None
         self.lookup = {}                                 # (item id, config index) -> loadout, set by the owner (config buttons)
         self._lo = None
         self.scaler = Scaler(self, lambda: self.show_loadout(self._lo))
-        self.lay.addWidget(self.title)
-        self.lay.addWidget(self.sub)
+        head = QHBoxLayout()
+        head.addWidget(self.pic)
+        names = QVBoxLayout()
+        names.addWidget(self.title)
+        names.addWidget(self.sub)
+        head.addLayout(names, 1)
+        self.lay.addLayout(head)
         self.lay.addLayout(self.body)
         self.lay.addStretch(1)
 
@@ -68,6 +104,9 @@ class LoadoutView(QWidget):
         row = QHBoxLayout()
         row.setSpacing(4)
         row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        if self._group is not None:                     # one button group per drawing, not one more at every redraw
+            self._group.setParent(None)
+            self._group.deleteLater()
         group = QButtonGroup(self)
         group.setExclusive(True)
         for c in lo.get("configs") or []:
@@ -96,8 +135,14 @@ class LoadoutView(QWidget):
         self._clear(self.body)
         if not lo:
             self.title.setText("")
+            self.pic.clear()
             self.sub.setText(t("builds.pick"))
             return
+        pm = thumb(lo["item"], 56)
+        if pm is not None:
+            self.pic.setPixmap(pm)
+        else:
+            self.pic.clear()
         label = lo.get("cfg_name") or t("builds.config", c=lo["config"])
         self.title.setText(f"{lo['item']}  ·  {label}")
         self.sub.setText(t("builds.kind." + lo["kind"]) + "  ·  " + t("builds.forma", n=lo["forma"]))
@@ -201,9 +246,14 @@ class PresetView(QWidget):
         sub = t("builds.maxrank") if r["maxed"] else t("builds.rank1", n=r["rank"])
         if r["role"] == "companion" and r.get("custom"):
             sub = r["item"] + " · " + sub
-        if (r["oid"], r["idx"]) in self._lookup:
-            sub += "  ·  " + t("builds.config", c=LO.LETTERS[r["idx"]] if r["idx"] < 8 else r["idx"] + 1)
+        lo = self._lookup.get((r["oid"], r["idx"]))
+        if lo:
+            sub += "  ·  " + (lo.get("cfg_name") or t("builds.config", c=lo["config"]))
         btn = QPushButton(f"{title.upper()}\n{sub}")
+        pm = thumb(r["item"])
+        if pm is not None:                                   # the item's picture (Warframe wiki)
+            btn.setIcon(QIcon(pm))
+            btn.setIconSize(pm.size())
         btn.setCheckable(True)
         btn.setStyleSheet("QPushButton { text-align: left; padding: 8px 12px; }")
         btn.setToolTip(t("builds.role." + r["role"]))
@@ -224,6 +274,9 @@ class PresetView(QWidget):
     def show_preset(self, preset, tenno, lookup):
         self._lookup = lookup
         self._clear()
+        if getattr(self, "group", None) is not None:
+            self.group.setParent(None)
+            self.group.deleteLater()
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
         if not preset:
@@ -257,6 +310,7 @@ class BuildsTab(QWidget):
         self._shown = None
         self._tried_auto = False
         self._load_cache()
+        QTimer.singleShot(4000, self._startup_pictures)
 
         self.btn_reload = QPushButton(t("builds.reload"))
         self.btn_reload.setToolTip(t("builds.reload.tip"))
@@ -315,8 +369,7 @@ class BuildsTab(QWidget):
         self.btn_reload.clicked.connect(self.reload_file)
         self.filter.textChanged.connect(lambda _t: self._fill())
         self.kind.currentIndexChanged.connect(lambda _i: self._fill())
-        self.list.currentItemChanged.connect(lambda cur, _p: (self._lookup(), self.view.show_loadout(
-            self.loadouts[cur.data(Qt.ItemDataRole.UserRole)] if cur else None)))
+        self.list.currentItemChanged.connect(self._list_pick)
         self._mode_changed()
         self._fill()
         # pictures arrive a little later: redraw the shown loadout while some are still on their way
@@ -338,6 +391,19 @@ class BuildsTab(QWidget):
         self.kind.setVisible(mode == "items")
         self.btn_reload.setVisible(mode != "plan")
         self._summary()
+
+    def _startup_pictures(self):
+        """At start: reads the game file if nothing is saved yet, then asks the wiki for the pictures still missing (the mods
+        of your loadouts and the items), in the background, one at a time."""
+        if not self.loadouts:
+            self._tried_auto = True
+            self.reload_file(silent=True)
+        previews.prefetch(prefetch_names(self.loadouts, self.presets))
+
+    def _list_pick(self, cur, _prev=None):
+        idx = cur.data(Qt.ItemDataRole.UserRole) if cur is not None else None
+        self._lookup()
+        self.view.show_loadout(self.loadouts[idx] if idx is not None and 0 <= idx < len(self.loadouts) else None)
 
     def _lookup(self):
         d = {(lo.get("oid"), lo.get("idx")): lo for lo in self.loadouts if lo.get("oid")}
@@ -374,24 +440,27 @@ class BuildsTab(QWidget):
             self.summary.setText(t("builds.summary.game", n=len(self.presets.get("presets") or []),
                                    src=os.path.basename(self.source) or "–", when=age_text(self.when)))
         else:
-            self.summary.setText(t("builds.summary", n=len(self.loadouts), shown=self.list.count(),
+            self.summary.setText(t("builds.summary", n=len(self.loadouts), shown=sum(1 for i in range(self.list.count()) if self.list.item(i).data(Qt.ItemDataRole.UserRole) is not None),
                                    src=os.path.basename(self.source) or "–", when=age_text(self.when)))
 
     def _pictures(self):
+        """Pictures arrive from the wiki in the background: redraw what is on screen when some came in."""
         n = previews.pending()
         if n != getattr(self, "_pending_seen", 0) and self.isVisible():
-            cur = self.list.currentItem()
-            if cur:
-                self.view.show_loadout(self.loadouts[cur.data(Qt.ItemDataRole.UserRole)])
-            if self.plist.currentItem():
-                cur = self.plist.currentItem()
-                b = self.pview.group.checkedButton() if hasattr(self.pview, "group") else None
-                self._show_preset(cur)
-                if b is not None:                       # keep the same row selected
-                    for btn, r in self.pview._buttons:
-                        if btn.text() == b.text():
-                            btn.setChecked(True)
-                            self.pview._pick(r)
+            mode = self.mode.currentData()
+            if mode == "items":
+                self._fill(keep=True)
+            elif mode == "game" and self.plist.currentItem() is not None:
+                b = self.pview.group.checkedButton() if getattr(self.pview, "group", None) is not None else None
+                checked = b.text() if b is not None else None
+                self._show_preset(self.plist.currentItem())
+                for btn, r in self.pview._buttons:     # keep the same row selected
+                    if checked is not None and btn.text() == checked:
+                        btn.setChecked(True)
+                        self.pview._pick(r)
+                        break
+            else:
+                self.planner._draw()
         self._pending_seen = n
 
     # ---------- data ----------
@@ -435,31 +504,51 @@ class BuildsTab(QWidget):
         self._mtime = os.path.getmtime(path)
         self._save_cache()
         self._fill(keep=True)
+        previews.prefetch(prefetch_names(self.loadouts, self.presets))
         return True
 
     # ---------- showing ----------
     def _fill(self, keep=False):
+        """The list on the left, grouped by kind (Warframes, primaries, secondaries, melee, companions…) with a header per
+        group and the item's picture when it is there."""
         cur = None
-        if keep and self.list.currentItem():
-            lo = self.loadouts[self.list.currentItem().data(Qt.ItemDataRole.UserRole)] if self.list.currentItem() else None
-            cur = (lo["item"], lo["config"]) if lo else None
+        if keep and self.list.currentItem() is not None and self.list.currentItem().data(Qt.ItemDataRole.UserRole) is not None:
+            lo = self.loadouts[self.list.currentItem().data(Qt.ItemDataRole.UserRole)]
+            cur = (lo.get("oid"), lo.get("idx"), lo["item"], lo["config"])
         text, kind = self.filter.text().strip().lower(), self.kind.currentData()
         self.list.blockSignals(True)
         self.list.clear()
-        sel_row = -1
-        for i, lo in enumerate(self.loadouts):
-            if kind and lo["kind"] != kind:
-                continue
-            if text and text not in lo["item"].lower():
-                continue
+        sel_row = first = -1
+        order = {k: n for n, k in enumerate(KINDS)}
+        shown = sorted((i for i, lo in enumerate(self.loadouts)
+                        if (not kind or lo["kind"] == kind) and (not text or text in lo["item"].lower())),
+                       key=lambda i: (order.get(self.loadouts[i]["kind"], 99), self.loadouts[i]["item"].lower(),
+                                      self.loadouts[i]["config"]))
+        last_kind = None
+        for i in shown:
+            lo = self.loadouts[i]
+            if lo["kind"] != last_kind:                 # group header (not selectable)
+                last_kind = lo["kind"]
+                head = QListWidgetItem(t("builds.kind." + lo["kind"]).upper())
+                head.setFlags(Qt.ItemFlag.NoItemFlags)
+                f = head.font()
+                f.setBold(True)
+                head.setFont(f)
+                self.list.addItem(head)
             it = QListWidgetItem(f"{lo['item']}  ·  {lo.get('cfg_name') or lo['config']}")
             it.setData(Qt.ItemDataRole.UserRole, i)
+            pm = thumb(lo["item"], 28)
+            if pm is not None:
+                it.setIcon(QIcon(pm))
             self.list.addItem(it)
-            if cur == (lo["item"], lo["config"]):
-                sel_row = self.list.count() - 1
+            row = self.list.count() - 1
+            if first < 0:
+                first = row
+            if cur and (cur[:2] == (lo.get("oid"), lo.get("idx")) if cur[0] else cur[2:] == (lo["item"], lo["config"])):
+                sel_row = row
         self.list.blockSignals(False)
-        if self.list.count():
-            self.list.setCurrentRow(sel_row if sel_row >= 0 else 0)
+        if first >= 0:
+            self.list.setCurrentRow(sel_row if sel_row >= 0 else first)
         else:
             self.view.show_loadout(None)
         self._fill_presets()
@@ -480,7 +569,7 @@ class BuildsTab(QWidget):
                 m = os.path.getmtime(path)
             except OSError:
                 return
-            if self._mtime and m > self._mtime + 1 and force:
-                self.reload_file(silent=True)
+            if (self._mtime and m > self._mtime + 1) or (not self._mtime and m > self.when + 1):
+                self.reload_file(silent=True)           # the game file changed (now, or since the saved copy was made)
             elif not self._mtime:
                 self._mtime = m

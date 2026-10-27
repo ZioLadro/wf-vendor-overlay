@@ -64,6 +64,8 @@ DEFAULTS = {
     "rankup_min_gain": 10,        # rank-up advice: minimum platinum gained per copy (max-rank price - current price)
     "inv_hide_zero_volume": False,   # Inventory: hide items with no trades in 24 h
     "market_split": [3, 2],          # Prices tab: height of the price list and of the recommendations
+    "backdrop": True,                # themed background pattern behind the tabs (tables and inputs keep solid colours)
+    "backdrop_strength": 45,         # how visible the pattern is (0-100)
     "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)
     "inv_min_volume": 0,             # Inventory: hide items traded fewer times than this in 24 h (0 = off)
     "hide_negative_ranks": False,    # player strip / Profile: hide syndicates with a negative rank

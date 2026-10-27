@@ -39,7 +39,9 @@ class SlotDialog(QDialog):
         self.filter = QLineEdit()
         self.filter.setPlaceholderText(t("plan.filter"))
         self.list = QListWidget()
-        self.names = names
+        # a Riven copied from your loadout stays selectable (its stats belong to it: its rank cannot be changed here)
+        self.riven = cur[2] if cur and len(cur) > 2 and cur[2] else None
+        self.names = ([cur[0]] if self.riven and cur[0] not in names else []) + list(names)
         lay.addWidget(self.filter)
         lay.addWidget(self.list, 1)
         form = QFormLayout()
@@ -93,6 +95,8 @@ class SlotDialog(QDialog):
     def _max(self, name):
         if not name:
             return 0
+        if self.riven and name == self.riven_name():
+            return 0
         if self.arcane:
             return arcane_max(name)
         info = BC.mod_info(name)
@@ -104,8 +108,13 @@ class SlotDialog(QDialog):
         self.rank.setEnabled(mx > 0)
         self.rank.setValue(mx if rank is None else min(mx, rank))
 
+    def riven_name(self):
+        return self.names[0] if self.riven else None
+
     def result_value(self):
         name = self._current()
+        if self.riven and name == self.riven_name():
+            return (name, self.riven.get("rank", 0), self.riven)
         return (name, self.rank.value()) if name else None
 
     def polarity(self):
@@ -130,6 +139,8 @@ class PlannerView(QWidget):
         self.item_box.setEditable(True)
         self.item_box.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         self.item_box.setMinimumWidth(220)
+        self.item_box.completer().setFilterMode(Qt.MatchFlag.MatchContains)          # type part of the name
+        self.item_box.completer().setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.chk_reactor = QCheckBox(t("plan.reactor"))
         self.chk_reactor.setChecked(True)
         self.spin_level = QSpinBox()
@@ -174,6 +185,7 @@ class PlannerView(QWidget):
 
         self.kind_box.currentIndexChanged.connect(lambda _i: self._kind_changed())
         self.item_box.currentIndexChanged.connect(lambda _i: self._item_changed())
+        self.item_box.lineEdit().editingFinished.connect(self._item_typed)
         self.chk_reactor.toggled.connect(self._opts_changed)
         self.spin_level.valueChanged.connect(self._opts_changed)
         self.btn_copy.clicked.connect(self._copy)
@@ -226,11 +238,36 @@ class PlannerView(QWidget):
         self._draw()
 
     def _item_changed(self):
-        self.item = self.item_box.currentText().strip()
+        name = self.item_box.currentText().strip()
+        if name == self.item:
+            return                                     # same item (e.g. Enter pressed again): keep the mods
+        if name not in BC.items(self.kind):
+            return                                     # half-typed or unknown name: nothing to plan for
+        self.item = name
         self._reset_slots()
         self._draw()
 
+    def _item_typed(self):
+        """A name typed by hand: accepted when it matches an item (case does not matter), otherwise the box goes back."""
+        text = self.item_box.currentText().strip().lower()
+        match = next((n for n in BC.items(self.kind) if n.lower() == text), None)
+        if match:
+            i = self.item_box.findText(match)
+            if i >= 0 and i != self.item_box.currentIndex():
+                self.item_box.setCurrentIndex(i)
+            else:
+                self._item_changed()
+        else:
+            self.item_box.setEditText(self.item)
+
     def _reset_slots(self):
+        cap = LO.max_rank(self.item or "", self.kind)          # Kuva / Tenet / Coda weapons: rank 40
+        if self.spin_level.maximum() != cap:
+            self.spin_level.blockSignals(True)
+            self.spin_level.setRange(0, cap)
+            self.spin_level.setValue(cap)
+            self.spin_level.blockSignals(False)
+            self.level = cap
         self.roles = LO.LAYOUT.get(self.kind) or ["general"] * 8
         self.mods = [None] * len(self.roles)
         self.forma = {}
@@ -253,6 +290,7 @@ class PlannerView(QWidget):
         for n in BC.items(kind):
             self.item_box.addItem(n)
         self.item_box.setCurrentIndex(max(-1, self.item_box.findText(item)))
+        self.item_box.setEditText(item)                 # also an item the planner's data does not list
         self.item_box.blockSignals(False)
         self.item = item
         self._reset_slots()

@@ -8,9 +8,11 @@ import math
 import loadouts as LO
 
 AP = {"AP_ATTACK": "madurai", "AP_DEFENSE": "vazarin", "AP_TACTIC": "naramon", "AP_POWER": "zenurik", "AP_WARD": "unairu",
-      "AP_UMBRA": "umbra", "AP_PRECEPT": "penjaga", "AP_ANY": "", "AP_UNIVERSAL": ""}
-POLARITIES = ["madurai", "vazarin", "naramon", "zenurik", "unairu", "penjaga", "umbra"]
-BASE_CAPACITY = 30                       # at rank 0; +1 per rank, doubled by an Orokin Reactor / Catalyst
+      "AP_UMBRA": "umbra", "AP_PRECEPT": "penjaga", "AP_ANY": "universal", "AP_UNIVERSAL": "universal"}
+POLARITIES = ["madurai", "vazarin", "naramon", "zenurik", "unairu", "penjaga", "umbra", "universal"]
+# capacity = the item's rank (30 at rank 30), doubled by an Orokin Reactor / Catalyst; an Aura adds its own.
+# A "universal" slot (AP_ANY / AP_UNIVERSAL in the game file, e.g. after an Aura Forma) matches every mod polarity: checked on a
+# real build, the game's total (60 + Aura 7 doubled = 74) only comes out that way.
 STAT_ORDER = ("health", "shield", "armor", "energy", "sprint", "duration", "efficiency", "range", "strength")
 
 
@@ -71,6 +73,46 @@ def slot_polarities(kind: str, item: str, roles: list, forma: list | None) -> li
     return pols
 
 
+def fitted_polarities(kind: str, item: str, roles: list, forma, mods: list) -> list:
+    """Slot polarities of a build read from the game file. The Forma'd slots are known; the item's innate polarities are
+    not stored per slot anywhere public, so they are placed on the remaining slots where they save the most drain (players
+    put matching mods on them, and the game never lets a build go over capacity: this placement is the one that fits)."""
+    from itertools import permutations
+    base = innate(kind, item, roles)
+    general = [i for i, r in enumerate(roles) if r == "general"]
+    wanted = [base[i] for i in general if base[i]]
+    pols = [("" if roles[i] == "general" else base[i]) for i in range(len(roles))]
+    fixed = set()
+    for f in forma or []:
+        try:
+            slot = int(f.get("Slot"))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        if 0 <= slot < len(pols):
+            pols[slot] = AP.get(f.get("Value"), "")
+            fixed.add(slot)
+    free = [i for i in general if i not in fixed]
+    k = min(len(wanted), len(free))
+    if not k:
+        return pols
+
+    def cost(slot, pol):
+        m = mods[slot] if slot < len(mods) else None
+        info = mod_info(m[0]) if m and m[0] and not (len(m) > 2 and m[2]) else None
+        if m and len(m) > 2 and m[2]:
+            info = (m[2].get("polarity", ""), 10, 8, "", "R", {})
+            m = (m[0], m[2].get("rank", 0))
+        return drain(info, m[1], pol)[0] if info else 0
+    best, best_cost = None, None
+    for slots in permutations(free, k):
+        c = sum(cost(s, p) - cost(s, "") for s, p in zip(slots, wanted[:k]))
+        if best_cost is None or c < best_cost:
+            best, best_cost = slots, c
+    for s, p in zip(best, wanted[:k]):
+        pols[s] = p
+    return pols
+
+
 def drain(info, rank, slot_pol: str):
     """(drain, state) of a mod at a rank in a slot; state: match, mismatch or '' (negative drain = Aura capacity)."""
     pol, base, mx = info[0], info[1], info[2]
@@ -78,7 +120,7 @@ def drain(info, rank, slot_pol: str):
     d = base + rank if base >= 0 else base - rank
     if not slot_pol:
         return d, ""
-    if slot_pol == pol:
+    if slot_pol == pol or slot_pol == "universal":
         return (math.ceil(d / 2), "match") if d >= 0 else (d * 2, "match")
     return (d + math.ceil(d / 4), "mismatch") if d >= 0 else (-(abs(d) - round(abs(d) * 0.25)), "mismatch")
 
@@ -118,7 +160,7 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
                 sums[k] += v * (rank / mx)
             elif kind != "warframe" and not riven:
                 bonus[k] = bonus.get(k, 0) + v * (rank / mx)
-    total = (BASE_CAPACITY + level) * (2 if reactor else 1) + aura_bonus
+    total = max(0, min(40, int(level))) * (2 if reactor else 1) + aura_bonus
     res = {"slots": out, "total": total, "used": used, "free": total - used, "stats": {},
            "bonus": {k: round(v * 100, 1) for k, v in sorted(bonus.items(), key=lambda kv: -abs(kv[1])) if abs(v) > 1e-9}}
     fr = LO.data().get("frames", {}).get(item) if kind == "warframe" else None
