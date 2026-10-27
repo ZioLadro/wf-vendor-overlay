@@ -35,7 +35,7 @@ Every tab shows a **player strip**: name (click to set it, the game files do not
 ## Price list window (F7)
 The window **opens by itself when the program starts** (setting *Open the price list at start*). It is a normal window: it comes in front when you open it (hotkey or tray) and does not stay above the game (setting *Window always on top* to keep it there). The overlay keeps working while the window is open; when it is on top of the game its area is blanked before the OCR, so it never reads its own names.
 
-Under the player strip, the **world strip** shows the Steel Path Omnia fissures, the Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer and the Prime Resurgence with live countdowns. The **Console** tab lists what runs in the background and every error.
+Under the player strip, the **world strip** shows the Steel Path Omnia fissures, the Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer and the Prime Resurgence with live countdowns. The current **Arbitration** is shown with its tier from [arbi.guide](https://arbi.guide) (Arbitration Goons; read from the guide's `tierlist.json` API, cached 15 minutes). The **Console** tab lists what runs in the background and every error.
 
 The **price list** and the **recommendations** share the first tab (*Prices and recommendations*): the list on top, the recommendations below; drag the divider to change their heights (remembered).
 
@@ -159,7 +159,7 @@ Everything comes from your AlecaFrame `lastData.dat` (found by itself, same file
 
 Cards follow the in-game build screen (slot polarity top left, mod polarity and drain top right, rank diamonds below), with **capacity** (free / total) and an approximate **stat recap** beside them: only mods are counted, not Arcanes, Archon Shards, Helminth, set bonuses or conditional effects. The names you gave your configurations in the game are shown as buttons.
 
-Under the title: the item's rank, forma and whether it has an **Orokin Reactor / Catalyst** (from the file; *deduced* for older items whose loadouts only fit with one). Rivens with an old stat the game data no longer has show it as "?".
+Under the title: the item's rank, forma and whether it has an **Orokin Reactor / Catalyst** (from the file; *deduced* for older items whose loadouts only fit with one). **Spliced Rivens** are shown frozen (❄), their spliced stat as "?" (no figures in the game data yet). Exalted weapons have their own group.
 
 Pictures in this tab (mod cards, Warframes, weapons, companions) come **only from the Warframe wiki**; the ones still missing are asked for in the background at start. The *By item* list is grouped by kind. Mod capacity is the item's rank (40 for Kuva/Tenet/Coda weapons and Necramechs), doubled by a Reactor/Catalyst; innate polarities are placed where they save the most drain, since the game file does not say where they are.
 
@@ -195,7 +195,7 @@ the rest apply immediately. **Restore defaults** loads the default values (press
 
 Settings has one sub-tab per category. **Theme and font** offers colour themes inspired by Warframe's factions, allies (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) and enemies (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), plus the original *Classic*, and a font family and size. The choice is previewed at once in every window and kept only when you press Save (leaving the tab restores the saved look). The in-game overlay keeps its own colours. All themes are dark.
 
-## Updates (current version 0.2.8)
+## Updates (current version 0.2.9)
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version (from 0.2.1 on; the release page shows the same notes).
 

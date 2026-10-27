@@ -42,7 +42,11 @@ def left(seconds) -> str:
 def summary(ws: dict) -> dict:
     """What the strip shows, from a world state: {"cycles": [(name, state, expiry)], "omnia": [(mission, node, enemy, expiry)],
     "baro": (active, location, activation, expiry), "resurgence": (active, activation, expiry, [items])}."""
-    out = {"cycles": [], "omnia": [], "baro": None, "resurgence": None}
+    out = {"cycles": [], "omnia": [], "baro": None, "resurgence": None, "arbi": None}
+    a = ws.get("arbitration")
+    if isinstance(a, dict) and ts(a.get("expiry")) and not a.get("expired"):
+        out["arbi"] = (str(a.get("node") or ""), str(a.get("nodeKey") or a.get("id") or ""), str(a.get("type") or ""),
+                       str(a.get("enemy") or ""), ts(a.get("expiry")))
     for key, name in (("earthCycle", "earth"), ("cetusCycle", "cetus"), ("vallisCycle", "vallis")):
         c = ws.get(key)
         if isinstance(c, dict) and ts(c.get("expiry")):
@@ -61,6 +65,10 @@ def summary(ws: dict) -> dict:
     return out
 
 
+TIER_COLOR = {"S": "#e8c547", "A": "#4fbf6a", "B": "#5aa9e6", "C": "#b48ce0", "D": "#9aa4b2", "F": "#e0584a",
+              "Special": "#e08a3a"}
+
+
 class _Bus(QObject):
     done = pyqtSignal(object, str)
 
@@ -75,12 +83,15 @@ class WorldStrip(QFrame):
         self.lay.setHorizontalSpacing(22)
         self.lay.setVerticalSpacing(2)
         self.labels = {}
-        for key in ("omnia", "earth", "cetus", "vallis", "baro", "resurgence"):
+        for key in ("omnia", "arbi", "earth", "cetus", "vallis", "baro", "resurgence"):
             lab = QLabel("")
             lab.setTextFormat(Qt.TextFormat.RichText)
             self.labels[key] = lab
         # first row: the Steel Path Omnia fissures; second row: cycles, Baro, Prime Resurgence
-        self.lay.addWidget(self.labels["omnia"], 0, 0, 1, 5)
+        self.lay.addWidget(self.labels["omnia"], 0, 0, 1, 3)
+        self.labels["arbi"].setOpenExternalLinks(True)
+        self.lay.addWidget(self.labels["arbi"], 0, 3, 1, 2)
+        self.tiers = None
         for col, key in enumerate(("earth", "cetus", "vallis", "baro", "resurgence")):
             self.lay.addWidget(self.labels[key], 1, col)
         self.status = QLabel("")
@@ -109,6 +120,11 @@ class WorldStrip(QFrame):
 
         def run():
             from world import fetch_world
+            try:
+                import arbi
+                self.tiers = arbi.tierlist()            # arbi.guide (cached 15 min; last good copy if it is down)
+            except Exception:
+                pass
             try:
                 self.bus.done.emit(fetch_world(CFG["language"]), "")
             except Exception as e:
@@ -154,6 +170,7 @@ class WorldStrip(QFrame):
             lab["baro"].setText(f"<b>{t('strip.baro')}</b> " + t("strip.baro.in", left=left(act - now), loc=loc))
         else:
             lab["baro"].setText(f"<b>{t('strip.baro')}</b> –")
+        self._arbitration(now)
         act, exp, items = d["resurgence"] or (None, None, [])
         if act and exp and act <= now < exp:
             lab["resurgence"].setText(f"<b>{t('strip.resurgence')}</b> " + t("strip.res.now", left=left(exp - now)))
@@ -162,3 +179,27 @@ class WorldStrip(QFrame):
         else:
             lab["resurgence"].setText(f"<b>{t('strip.resurgence')}</b> –")
         lab["resurgence"].setToolTip("\n".join(items[:40]))
+
+
+    def _arbitration(self, now):
+        """The current Arbitration with its arbi.guide tier (the tier links back to the guide, as it asks)."""
+        import arbi
+        lab = self.labels["arbi"]
+        a = (self.data or {}).get("arbi")
+        if not a or not a[4] or a[4] <= now:
+            lab.setText(f"<b>{t('strip.arbi')}</b> –")
+            return
+        node, key, mtype, enemy, exp = a
+        tier, saryn, _n = arbi.tier_of(self.tiers, key, node)
+        col = TIER_COLOR.get(tier, "#9aa4b2")
+        tier_txt = (f"<a href='{arbi.SITE}' style='color:{col}; text-decoration:none'><b>{t('strip.arbi.tier', tier=tier)}"
+                    f"{' *' if saryn else ''}</b></a>") if tier and self.tiers else ""
+        lab.setText(f"<b>{t('strip.arbi')}</b> {mtype} – {node} {tier_txt} · {left(exp - now)}")
+        tip = [f"{mtype} · {node} · {enemy}"]
+        if self.tiers:
+            ve = arbi.TIER_INFO.get(tier)
+            tip.append(t("strip.arbi.tip.ve", tier=tier, ve=ve) if ve else t("strip.arbi.tip." + ("special" if tier == "Special" else "f")))
+            if saryn:
+                tip.append(t("strip.arbi.tip.saryn"))
+            tip.append(t("strip.arbi.tip.src"))
+        lab.setToolTip("\n".join(tip))

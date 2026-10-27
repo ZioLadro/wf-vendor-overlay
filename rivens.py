@@ -5,7 +5,7 @@ A revealed riven is an upgrade of type .../Lotus*RandomModRare whose fingerprint
 (Unrevealed rivens have no weapon yet: they are ignored.)
 
 Stat value as shown in game, at rank r:
-    base(tag) x 90 x weapon disposition x M x (0.9 + roll / 53687091 / 100, kept in 0.9..1.1)  x (r + 1) / 9
+    base(tag) x 90 x disposition (1.2 for every weapon since Hotfix 44.1.3) x M x (0.9 + roll / 53687091 / 100, kept in 0.9..1.1)  x (r + 1) / 9
   x 100 for percentages; the faction-damage stats add 1 (they are multipliers, "x1.4").
   M depends on how many positive / negative stats the riven has (the published riven table):
   2+0: 0.99 | 2+1: 1.2375 (+) and 0.495 (-) | 3+0: 0.75 | 3+1: 0.9375 (+) and 0.75 (-).
@@ -83,13 +83,26 @@ def stat_value(raw: float, base: float, pct: bool, tag: str, dispo: float, mult:
     return fmt(v)
 
 
-OLD_STATS = {"WeaponGasDamageMod": "Gas", "WeaponAmmoEfficiency": "Ammo Efficiency"}   # rolled years ago, gone from the data
+# Spliced stats: a Riven Splicer fuses two of a riven's stats into one combo stat (Gas, Corrosive, Ammo Efficiency,
+# Weakpoint Damage…), kept through later cycling. The public game data has no figures for them yet, so their value is
+# unknown ("?"); the tags seen so far get a readable name, any other unknown tag is shown as it is.
+SPLICED_STATS = {"WeaponGasDamageMod": "Gas", "WeaponAmmoEfficiency": "Ammo Efficiency",
+                 "WeaponCorrosiveDamageMod": "Corrosive", "WeaponViralDamageMod": "Viral",
+                 "WeaponRadiationDamageMod": "Radiation", "WeaponBlastDamageMod": "Blast",
+                 "WeaponMagneticDamageMod": "Magnetic", "WeaponProcDamageMod": "Status Damage"}
+DISPOSITION = 1.2          # Hotfix 44.1.3: dispositions removed, every riven uses the old 1.2 disposition
+
+
+def _camel(tag: str) -> str:
+    import re
+    t = re.sub(r"^Weapon|Mod$", "", tag)
+    return re.sub(r"(?<=[a-z])(?=[A-Z])", " ", t).strip() or tag
 
 
 def compute(item: dict, partial: bool = False) -> dict:
     """One riven from an inventory upgrade. Raises ValueError with the reason when it cannot be worked out.
-    partial: a stat the game data no longer has (an old roll such as Gas or Ammo Efficiency) is kept with value None
-    instead of failing the whole riven (the Builds tab shows the other stats)."""
+    partial: a stat the game data has no figures for (a spliced stat such as Gas or Ammo Efficiency) is kept with value
+    None and "spliced": True instead of failing the whole riven (the Builds tab shows it, highlighted)."""
     f, d = fingerprint(item), data()
     compat = WEAPON_FIX.get(f.get("compat", ""), f.get("compat", ""))
     if not compat or not f.get("buffs"):
@@ -109,33 +122,34 @@ def compute(item: dict, partial: bool = False) -> dict:
     for entries, positive in ((f["buffs"], True), (f.get("curses") or [], False)):
         for s in entries:
             base = stats.get(s.get("Tag"))
-            if not base and partial:                   # a stat this riven type no longer rolls: another type's figures
+            if not base and partial and s.get("Tag") not in SPLICED_STATS:   # rolled by another riven type: its figures
                 base = next((st[s.get("Tag")] for st in d["types"].values() if s.get("Tag") in st), None)
             if not base and partial:
                 tag = str(s.get("Tag", ""))
-                attrs.append({"tag": tag, "label": OLD_STATS.get(tag) or tag.replace("Weapon", "").replace("Mod", ""),
+                attrs.append({"tag": tag, "label": SPLICED_STATS.get(tag) or _camel(tag), "spliced": True,
                               "positive": positive, "value": None, "raw": float(s.get("Value", 0)), "prefix": "",
                               "suffix": "", "pct": True})
                 continue
             if not base:
-                raise ValueError(f"unknown stat {s.get('Tag')}")
+                raise ValueError(f"spliced stat {SPLICED_STATS.get(s.get('Tag')) or s.get('Tag')}: no figures in the game data")
             raw = float(s.get("Value", 0))
-            v = stat_value(raw, base[0], bool(base[3]), s["Tag"], weapon[1], good if positive else bad, rank)
+            v = stat_value(raw, base[0], bool(base[3]), s["Tag"], DISPOSITION, good if positive else bad, rank)
             if not positive and s["Tag"] == "WeaponMeleeComboPointsOnHitMod" and v > 0:
                 v = -v
             attrs.append({"tag": s["Tag"], "label": base[4], "positive": positive, "value": v, "raw": raw,
                           "prefix": base[1], "suffix": base[2], "pct": bool(base[3])})
     pos = sorted((a for a in attrs if a["positive"]), key=lambda a: -a["raw"])
     neg = [a for a in attrs if not a["positive"]]
-    if any(not a["prefix"] for a in pos):             # an old stat without a name part: no riven name can be built
-        name = "Riven"
+    spliced = any(a.get("spliced") for a in attrs)
+    if any(not a["prefix"] for a in pos):             # a spliced stat has no name part in the data: no name can be built
+        name = "Spliced Riven"
     else:
         name = pos[0]["prefix"].capitalize() + pos[1]["suffix"] if nb == 2 else \
             f"{pos[0]['prefix'].capitalize()}-{pos[1]['prefix']}{pos[2]['suffix']}"
     return {"id": (item.get("ItemId") or {}).get("$oid", ""), "weapon_path": compat, "weapon": weapon[0],
             "mod_name": name, "rank": rank, "rerolls": int(f.get("rerolls") or 0),
             "mastery_rank": int(f.get("lvlReq") or 0), "polarity": POLARITY.get(f.get("pol", ""), (f.get("pol") or "").lower()),
-            "attributes": pos + neg}
+            "attributes": pos + neg, "spliced": spliced}
 
 
 def describe(riven: dict) -> str:

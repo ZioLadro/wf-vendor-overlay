@@ -3,6 +3,19 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.2.9
+- **Spliced Rivens** (a stat fused from two others with a Riven Splicer) are recognised and shown "frozen" in Builds:
+  icy card, ❄ *Spliced* label, the spliced stat highlighted. The game data has no figures for spliced stats yet, so their
+  value shows as "?"; the other stats are computed as usual. (0.2.8 wrongly called them old stats.)
+- **Riven values use the single disposition** of Hotfix 44.1.3 (every Riven now uses the old 1.2 disposition), in Builds,
+  Quantframe and the Riven flip score.
+- **Exalted weapons in Builds** (Exalted Blade, Iron Staff, Artemis Bow, Balefire Charger, Regulators, Noctua…): their
+  own group in *By item*, the Warframe they belong to, their mods, Arcanes and Rivens; the *Exalted* row of *Game
+  loadouts* now opens them. Capacity is not shown for them (their slot polarities are not in the public data).
+- **Arbitration with its tier** in the world strip: the current Arbitration (mission, node, time left) with the tier
+  from **arbi.guide** (Arbitration Goons: S 12+ Vitus Essence/min … D, Special, F; * = Saryn off-meta viable), through the
+  guide's documented API (`tierlist.json`), cached 15 minutes, last good copy kept, link back to the guide on the tier.
+
 ## 0.2.8
 - **World strip** under the player strip: the Steel Path Omnia fissures open now, the Earth / Cetus / Orb Vallis cycles,
   when Baro Ki'Teer comes back (or leaves) and when the Prime Resurgence offer changes, with live countdowns (from

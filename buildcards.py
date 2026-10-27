@@ -104,8 +104,14 @@ class ModCard(QFrame):
         name, kind_role = slot.get("name") or "", slot.get("role", "general")
         self.setObjectName("modcard")
         border = "#3a4250" if name else "#2c323c"
-        self.setStyleSheet(f"#modcard {{ background: #1b2027; border: 1px {'solid' if name else 'dashed'} {border}; border-radius: 6px; }}"
-                           " #modcard QLabel { color: #e8eaed; background: transparent; }")
+        frozen = bool((slot.get("riven") or {}).get("spliced"))
+        if frozen:                                      # a spliced Riven: shown "frozen" (Riven Splicers come from Glacial Defiance)
+            self.setStyleSheet("#modcard { background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #1d3a4d, stop:0.55 #18262f,"
+                               " stop:1 #1b2027); border: 2px solid #8fd3ff; border-radius: 6px; }"
+                               " #modcard QLabel { color: #eaf7ff; background: transparent; }")
+        else:
+            self.setStyleSheet(f"#modcard {{ background: #1b2027; border: 1px {'solid' if name else 'dashed'} {border}; border-radius: 6px; }}"
+                               " #modcard QLabel { color: #e8eaed; background: transparent; }")
         self.setFixedSize(cw, int(cw * CARD_RATIO))
         self._clickable = clickable
         if clickable:
@@ -120,7 +126,7 @@ class ModCard(QFrame):
         if spol:
             left.setToolTip(t("builds.slotpol", pol=t("pol." + spol)))
         top.addWidget(left)
-        cap = QLabel(t("builds.slot." + kind_role) if kind_role != "general" else "")
+        cap = QLabel(t("builds.slot." + kind_role) if kind_role != "general" else ("❄ " + t("builds.spliced") if frozen else ""))
         cap.setStyleSheet(f"font-size: {small + 1}px; color: #9aa4b2;")
         top.addWidget(cap)
         top.addStretch(1)
@@ -162,6 +168,9 @@ class ModCard(QFrame):
             lines = []
             for a in rv["attributes"]:
                 v = a["value"]
+                if a.get("spliced"):                     # the spliced stat: icy, value not in the game data
+                    lines.append(f"<span style='color:#9fe3ff; font-weight:bold'>❄ {'+' if a['positive'] else '−'}? {a['label']}</span>")
+                    continue
                 txt = "?" if v is None else f"{v:+g}%" if a["pct"] else (f"x{v:g}" if a["tag"].endswith(("Grineer", "Corpus", "Infested")) else f"{v:+g}")
                 lines.append(f"<span style='color:{'#e0584a' if not a['positive'] else '#9fd8a6'}'>{txt} {a['label'].split(' (')[0]}</span>")
             st = QLabel("<br>".join(lines))
@@ -169,7 +178,8 @@ class ModCard(QFrame):
             st.setWordWrap(True)
             st.setAlignment(Qt.AlignmentFlag.AlignCenter)
             lay.addWidget(st, 1)
-            self.setToolTip(t("builds.riven.tip", weapon=rv.get("weapon", ""), rerolls=rv.get("rerolls", 0)))
+            self.setToolTip(t("builds.riven.tip", weapon=rv.get("weapon", ""), rerolls=rv.get("rerolls", 0))
+                            + ("\n" + t("builds.spliced.tip") if frozen else ""))
         else:
             lay.addWidget(pic, 1)
         lab = QLabel(name or "—")
@@ -202,11 +212,17 @@ def stats_panel(capacity: dict, stats: dict, level: int = 30, reactor: bool = Tr
     lay = QVBoxLayout(box)
     lay.setContentsMargins(10, 8, 10, 8)
     lay.setSpacing(2)
-    free = capacity.get("free", 0)
-    cap = QLabel(f"<b>{t('builds.capacity')}</b>&nbsp;&nbsp;<span style='color:{'#e0584a' if free < 0 else '#4fbf6a'}'>"
-                 f"{free}</span> / {capacity.get('total', 0)}")
-    cap.setToolTip(t("builds.capacity.tip", level=level, reactor=t("builds.reactor") if reactor else ""))
-    lay.addWidget(cap)
+    if capacity:
+        free = capacity.get("free", 0)
+        cap = QLabel(f"<b>{t('builds.capacity')}</b>&nbsp;&nbsp;<span style='color:{'#e0584a' if free < 0 else '#4fbf6a'}'>"
+                     f"{free}</span> / {capacity.get('total', 0)}")
+        cap.setToolTip(t("builds.capacity.tip", level=level, reactor=t("builds.reactor") if reactor else ""))
+        lay.addWidget(cap)
+    else:                                              # exalted weapons: their slot polarities are not in the public data
+        cap = QLabel(t("builds.capacity.none"))
+        cap.setWordWrap(True)
+        role(cap, "hint")
+        lay.addWidget(cap)
     if stats:
         head = QLabel(t("builds.stats"))
         role(head, "muted")

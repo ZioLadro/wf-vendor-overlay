@@ -749,6 +749,17 @@ EN = {
     "builds.pot.guess": "✔ {what} (deduced)",
     "builds.pot.unknown": "? {what} not stated",
     "builds.pot.tip": "Read from the game file. \"Deduced\": older items do not say it, but a loadout of this item only fits with it. \"Not stated\": the file does not say, and the loadouts fit without it.",
+    "builds.spliced": "Spliced",
+    "builds.spliced.tip": "Spliced Riven: one stat was fused from two others with a Riven Splicer and stays through cycling (marked ❄). The game data has no figures for spliced stats yet, so their value is not shown.",
+    "builds.kind.exalted": "Exalted weapon",
+    "builds.capacity.none": "Capacity is not shown for exalted weapons: their slot polarities are not in the public data.",
+    "strip.arbi": "Arbitration:",
+    "strip.arbi.tier": "Tier {tier}",
+    "strip.arbi.tip.ve": "Tier {tier}: {ve} Vitus Essence per minute (average of analyzed runs, optimal squad)",
+    "strip.arbi.tip.special": "Special: Survival / Disruption, rated separately",
+    "strip.arbi.tip.f": "F: node not in the tier list",
+    "strip.arbi.tip.saryn": "*: Saryn off-meta viable",
+    "strip.arbi.tip.src": "Tiers from arbi.guide (Arbitration Goons): click the tier to open the guide",
 }
 
 IT = {
@@ -1485,6 +1496,17 @@ IT = {
     "builds.pot.guess": "✔ {what} (dedotto)",
     "builds.pot.unknown": "? {what} non indicato",
     "builds.pot.tip": "Letto dal file di gioco. \"Dedotto\": gli oggetti più vecchi non lo dicono, ma un loadout di questo oggetto ci sta solo con esso. \"Non indicato\": il file non lo dice e i loadout ci stanno anche senza.",
+    "builds.spliced": "Spliced",
+    "builds.spliced.tip": "Riven spliced: una statistica è stata fusa da altre due con un Riven Splicer e resta anche ritirando (segnata ❄). I dati del gioco non hanno ancora i valori delle statistiche spliced, quindi il loro valore non è mostrato.",
+    "builds.kind.exalted": "Arma esaltata",
+    "builds.capacity.none": "La capacità non è mostrata per le armi esaltate: le polarità dei loro slot non sono nei dati pubblici.",
+    "strip.arbi": "Arbitrato:",
+    "strip.arbi.tier": "Tier {tier}",
+    "strip.arbi.tip.ve": "Tier {tier}: {ve} Vitus Essence al minuto (media delle run analizzate, squadra ottimale)",
+    "strip.arbi.tip.special": "Special: Survival / Disruption, valutate a parte",
+    "strip.arbi.tip.f": "F: nodo non presente nella tier list",
+    "strip.arbi.tip.saryn": "*: valida anche con Saryn (off-meta)",
+    "strip.arbi.tip.src": "Tier da arbi.guide (Arbitration Goons): clicca il tier per aprire la guida",
 }
 
 STRINGS = {"en": EN, "it": IT}

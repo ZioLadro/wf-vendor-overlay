@@ -3,6 +3,21 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.2.9
+- **Riven spliced** (una statistica fusa da altre due con un Riven Splicer) riconosciute e mostrate "ghiacciate" in
+  Build: card azzurra, etichetta ❄ *Spliced*, la statistica spliced evidenziata. I dati del gioco non hanno ancora i
+  valori delle statistiche spliced, quindi il loro valore appare come "?"; le altre statistiche sono calcolate come
+  sempre. (La 0.2.8 le chiamava per errore statistiche vecchie.)
+- **I valori delle Riven usano la disposizione unica** dell'Hotfix 44.1.3 (ogni Riven ora usa la vecchia disposizione
+  1.2), in Build, Quantframe e nel punteggio del Riven flip.
+- **Armi esaltate in Build** (Exalted Blade, Iron Staff, Artemis Bow, Balefire Charger, Regulators, Noctua…): un loro
+  gruppo in *Per oggetto*, la Warframe a cui appartengono, mod, Arcani e Riven; la riga *Esaltata* dei *Loadout di
+  gioco* ora le apre. La capacità non è mostrata per loro (le polarità dei loro slot non sono nei dati pubblici).
+- **Arbitrato con il suo tier** nella barra del mondo: l'Arbitrato attuale (missione, nodo, tempo rimasto) con il tier di
+  **arbi.guide** (Arbitration Goons: S 12+ Vitus Essence/min … D, Special, F; * = valido con Saryn off-meta), tramite
+  l'API documentata della guida (`tierlist.json`), in cache 15 minuti, ultima copia valida conservata, link alla guida
+  sul tier.
+
 ## 0.2.8
 - **Barra del mondo** sotto la barra del giocatore: le fessure Omnia Steel Path aperte ora, i cicli di Terra / Cetus /
   Orb Vallis, quando torna (o parte) Baro Ki'Teer e quando cambia l'offerta della Prime Resurgence, con conto alla

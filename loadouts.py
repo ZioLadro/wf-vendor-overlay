@@ -19,7 +19,10 @@ DATA_FILE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "l
 CATEGORIES = (("Suits", "warframe"), ("LongGuns", "primary"), ("Pistols", "secondary"), ("Melee", "melee"),
               ("SpaceSuits", "archwing"), ("SpaceGuns", "archgun"), ("MechSuits", "necramech"),
               ("Sentinels", "companion"), ("KubrowPets", "companion"), ("MoaPets", "companion"),
-              ("SentinelWeapons", "companion"))
+              ("SentinelWeapons", "companion"), ("SpecialItems", "exalted"))
+# SpecialItems also holds companion claws and summoned "suits" (Sevagoth's Shadow, Venari, Merulina): only the Warframes'
+# exalted weapons (under /Lotus/Powersuits/) are kept
+EXALTED_SKIP = re.compile(r"(PowerSuit|Suit|/SevagothShadow\w*|/Reaper)$")
 # kind -> slot roles in index order (the 8 general slots come first)
 LAYOUT = {
     "warframe": ["general"] * 8 + ["aura", "exilus", "arcane", "arcane"],
@@ -133,10 +136,20 @@ def read(inv: dict, market=None) -> list:
             item_name = re.sub(r"<[^>]*>\s*", "", names[0] if names else path.rsplit("/", 1)[-1]).strip() or path
             roles = LAYOUT.get(kind)
             cfgs = item.get("Configs") if isinstance(item.get("Configs"), list) else []
+            owner = ""
+            if kind == "exalted":
+                if not path.startswith("/Lotus/Powersuits/") or EXALTED_SKIP.search(path):
+                    continue
+                if not names:                                  # no name in the game data: from the path
+                    item_name = _words(path.rsplit("/", 1)[-1])
+                owner = exalted_owner(path)
+                # melee ones have a stance slot (11 entries), ranged ones an Exilus and an Arcane (10), older ones 8 slots
+                longest = max((len(c.get("Upgrades") or []) for c in cfgs if isinstance(c, dict)), default=8)
+                roles = LAYOUT["melee"] if longest >= 11 else (LAYOUT["primary"] if longest == 10 else ["general"] * 8)
             reactor = bool((item.get("Features") or 0) & 1)
             # file: the game file says it is there; none: the file says it is not; unknown: not stated; guess: deduced from a build
             reactor_src = "file" if reactor else ("none" if "Features" in item else "unknown")
-            level = _rank(item.get("XP"), 1000 if key in _FRAME_KINDS else 500, max_rank(item_name, kind))
+            level = _rank(item.get("XP"), 1000 if key in _FRAME_KINDS + ("SpecialItems",) else 500, max_rank(item_name, kind))
             shards = [shard(a) for a in item.get("ArchonCrystalUpgrades") or [] if isinstance(a, dict)]
             first = len(out)
             for n, cfg in enumerate(cfgs):
@@ -161,7 +174,7 @@ def read(inv: dict, market=None) -> list:
                         filled += role != "arcane"
                         continue
                     if rv:
-                        slots.append({"role": role, "name": rv["mod_name"] + " (Riven)", "rank": rv["rank"], "max": 8, "riven": rv})
+                        slots.append({"role": role, "name": rv["mod_name"] if rv.get("spliced") else rv["mod_name"] + " (Riven)", "rank": rv["rank"], "max": 8, "riven": rv})
                         filled += role != "arcane"
                         continue
                     name, mx = mod_name(mod_path)
@@ -183,8 +196,8 @@ def read(inv: dict, market=None) -> list:
                     s.update(pol=c["pol"], mpol=c["mpol"], drain=c["drain"], state=c["state"])
                 cname = str(cfg.get("Name") or "").strip()
                 out.append({"item": item_name, "kind": kind, "path": path, "config": LETTERS[n] if n < 8 else str(n + 1),
-                            "cfg_name": cname, "reactor": reactor, "level": level,
-                            "capacity": {k: calc[k] for k in ("total", "used", "free")}, "stats": calc["stats"], "bonus": calc["bonus"],
+                            "cfg_name": cname, "owner": owner, "reactor": reactor, "level": level,
+                            "capacity": ({k: calc[k] for k in ("total", "used", "free")} if kind != "exalted" else None), "stats": calc["stats"], "bonus": calc["bonus"],
                             "oid": (item.get("ItemId") or {}).get("$oid", ""), "idx": n,
                             "forma": int(item.get("Polarized") or 0), "slots": slots,
                             "shards": shards if kind == "warframe" else [],
@@ -198,6 +211,23 @@ def read(inv: dict, market=None) -> list:
                 b["reactor"], b["reactor_src"] = reactor, reactor_src
     out.sort(key=lambda b: (b["item"].lower(), b["config"]))
     return out
+
+
+_owners = {}
+
+
+def exalted_owner(path: str) -> str:
+    """The Warframe an exalted weapon belongs to (from the folder its game path shares with the Warframe's own)."""
+    folder = path.rsplit("/", 1)[0] + "/"
+    if not _owners:
+        for suit in data().get("suits", {}):
+            names = I.names_for_path(suit)
+            if names:
+                n = re.sub(r"<[^>]*>\s*", "", names[0]).strip()
+                f = suit.rsplit("/", 1)[0] + "/"
+                if f not in _owners or len(n) < len(_owners[f]):    # the base Warframe (shorter than "… Prime")
+                    _owners[f] = n
+    return _owners.get(folder, "")
 
 
 def _load(path):

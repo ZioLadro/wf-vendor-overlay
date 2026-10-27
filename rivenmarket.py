@@ -440,7 +440,7 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
     rows = []
     for url, wd in store.d["weapons"].items():
         info = weapons_by_url.get(url) or {"name": wd.get("name", url), "type": ""}
-        dispo = info.get("dispo") or _dispo(info["name"])
+        dispo = R.DISPOSITION                    # Hotfix 44.1.3: one disposition (1.2) for every weapon
         scored = []
         for l in wd.get("listings") or []:
             if online_only and l["status"] not in ("ingame", "online"):

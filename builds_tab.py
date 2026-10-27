@@ -22,7 +22,7 @@ from uiutil import age_text, role
 
 CACHE_FILE = APP_DIR / "loadouts.json"
 CACHE_VER = 5                        # bump when the loadout data gains fields (an older cache is read again from the game file)
-KINDS = ["warframe", "primary", "secondary", "melee", "archwing", "archgun", "necramech", "companion"]
+KINDS = ["warframe", "primary", "secondary", "melee", "exalted", "archwing", "archgun", "necramech", "companion"]
 SHARD_RGB = {"RED": "#c8453c", "BLUE": "#3b8fd9", "GREEN": "#3fbf6a", "YELLOW": "#e0b83a", "ORANGE": "#e08a3a",
              "PURPLE": "#a46be0"}
 
@@ -169,16 +169,18 @@ class LoadoutView(QWidget):
         else:
             pot = t("builds.pot.no", what=what)
         self.sub.setToolTip(t("builds.pot.tip"))
-        self.sub.setText(t("builds.kind." + lo["kind"]) + "  ·  " + t("builds.forma", n=lo["forma"]) + "  ·  " + pot)
+        kind_txt = t("builds.kind." + lo["kind"]) + (f" ({lo['owner']})" if lo.get("owner") else "")
+        self.sub.setText(kind_txt + "  ·  " + t("builds.forma", n=lo["forma"])
+                         + ("" if lo["kind"] == "exalted" else "  ·  " + pot))
         self._config_buttons(lo)
         slots = lo["slots"]
         row = QHBoxLayout()
         row.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         row.addWidget(cards_widget(slots, cw=self.scaler.cw))
-        if lo.get("capacity"):
+        if lo.get("capacity") or lo.get("bonus"):
             col = QVBoxLayout()
             col.setAlignment(Qt.AlignmentFlag.AlignTop)
-            col.addWidget(stats_panel(lo["capacity"], lo.get("stats") or {}, lo.get("level", 30), lo.get("reactor", True), lo.get("bonus")))
+            col.addWidget(stats_panel(lo.get("capacity"), lo.get("stats") or {}, lo.get("level", 30), lo.get("reactor", True), lo.get("bonus")))
             row.addSpacing(12)
             row.addLayout(col)
         self.body.addLayout(row)
