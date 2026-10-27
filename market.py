@@ -140,6 +140,10 @@ class Market:
     def info(self, slug: str) -> dict:
         return self._info.get(slug, {})
 
+    def catalog_names(self, kinds=None) -> list:
+        """[(name, slug)] of the catalog, optionally only the given kinds ("mod", "arcane", "other")."""
+        return [(i["name"], s) for s, i in self._info.items() if kinds is None or i.get("kind") in kinds]
+
     def slug_for_name(self, name: str):
         """Market slug for an item name (exact match after normalisation), or None."""
         return self._name_slug.get(norm(name))

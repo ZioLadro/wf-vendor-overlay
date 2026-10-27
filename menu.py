@@ -18,6 +18,7 @@ from player_bar import PlayerBar
 from version import __version__
 from profile_tab import ProfileTab
 from recommend_tab import RecommendTab
+from builds_tab import BuildsTab
 from refresher import Refresher
 from settings_tab import SettingsTab
 from standing import afford_text, get_store
@@ -246,6 +247,7 @@ class PriceList(QWidget):
         self.account = MarketAccount(market)
         self.inv_tab = InventoryTab(market, self.refresher, self.inventory, self.account)
         self.recommend = RecommendTab(market, self.refresher)
+        self.builds = BuildsTab(market, self.refresher, self.inventory)
         self.profile = ProfileTab(market)
         self.world = WorldTab(market)
         self.settings = SettingsTab()
@@ -255,6 +257,7 @@ class PriceList(QWidget):
         self.tabs.addTab(self.prices, t("tab.prices"))
         self.tabs.addTab(self.inv_tab, t("tab.inventory"))
         self.tabs.addTab(self.recommend, t("tab.recommend"))
+        self.tabs.addTab(self.builds, t("tab.builds"))
         self.tabs.addTab(self.profile, t("tab.profile"))
         self.tabs.addTab(self.world, t("tab.world"))
         self.tabs.addTab(self.settings, t("tab.settings"))
@@ -296,6 +299,8 @@ class PriceList(QWidget):
             self.inv_tab.refresh(force=force)
         elif w is self.recommend:
             self.recommend.refresh(force=force)
+        elif w is self.builds:
+            self.builds.refresh(force=force)
         elif w is self.profile:
             self.profile.refresh(force=force)
         elif w is self.world:
@@ -306,6 +311,7 @@ class PriceList(QWidget):
         self.btn_stop.setEnabled(busy)
         self.prices.set_busy(busy)
         self.recommend.set_busy(busy)
+        self.builds.set_busy(busy)
         self.inv_tab.set_busy(busy)
 
     def _on_started(self, total):
