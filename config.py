@@ -76,9 +76,6 @@ DEFAULTS = {
     "theme": "classic",           # colour theme (see theme.py): classic, or a faction: tenno, grineer, corpus, infested, orokin...
     "ui_font": "Segoe UI",        # font family of the windows
     "ui_font_size": 13,           # font size (pixels)
-    "creator_channels": "",       # channels for Builds > From creators (empty = the 10 built-in ones): UC… IDs or /channel/UC… links
-    "creator_min_relevance": 3,   # From creators: how sure a video must be to be a build video (1 = anything, 5 = only clear builds)
-    "creator_videos": 10,         # latest videos read per channel (the feed holds about 15)
     "rec_best_per_vendor": False,  # Recommendations tab: only the best item of each vendor
     "skip_update_version": "",   # a version the user chose not to be reminded about
     "check_updates": True,       # look for a new version at start (nothing is installed without asking)

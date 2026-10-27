@@ -135,13 +135,3 @@ def entries_from_rows(rows):
         elif r["n"] + r["m"] > 0:
             out.append({"slug": r["slug"], "name": r["name"], "rank": None, "qty": r["n"] + r["m"]})
     return out
-
-
-def entries_from_missing(ev, market):
-    """The missing mods of an evaluated build (builds.evaluate) -> wish-list entries (one copy, max rank)."""
-    out = []
-    for r in ev["rows"]:
-        if r["status"] == "missing" and r["slug"]:
-            mr = market.info(r["slug"]).get("max_rank", 0)
-            out.append({"slug": r["slug"], "name": r["name"], "rank": mr if mr > 0 else None, "qty": 1})
-    return out

@@ -95,11 +95,6 @@ GROUPS = [
         ("riven_max_price", "int", (0, 1000000), False),
         ("riven_min_sales", "int", (0, 1000), False),
     ]),
-    ("builds", [
-        ("creator_channels", "text", None, False),
-        ("creator_videos", "int", (1, 15), False),
-        ("creator_min_relevance", "int", (1, 7), False),
-    ]),
     ("recommendations", [
         ("rec_min_volume", "int", (0, 100000), False),
         ("rec_min_price", "int", (0, 100000), False),
