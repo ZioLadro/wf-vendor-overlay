@@ -17,6 +17,12 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
   **arbi.guide** (Arbitration Goons: S 12+ Vitus Essence/min … D, Special, F; * = valido con Saryn off-meta), tramite
   l'API documentata della guida (`tierlist.json`), in cache 15 minuti, ultima copia valida conservata, link alla guida
   sul tier.
+  Quale nodo è l'Arbitrato viene dal calendario orario di browse.wf (`arbys.txt`, letto una volta al giorno e conservato),
+  perché lo stato del mondo spesso non lo riporta; i nomi dei nodi dai dati del gioco (`nodes.json`, creato da
+  `build_nodes.py`).
+- Correzione: dopo l'aggiornamento, Build continuava a mostrare i loadout salvati dalla versione precedente (niente Riven
+  spliced, niente armi esaltate) finché il file di gioco non cambiava; ora la copia salvata viene riletta dopo ogni
+  aggiornamento.
 
 ## 0.2.8
 - **Barra del mondo** sotto la barra del giocatore: le fessure Omnia Steel Path aperte ora, i cicli di Terra / Cetus /

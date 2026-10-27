@@ -92,6 +92,7 @@ class WorldStrip(QFrame):
         self.labels["arbi"].setOpenExternalLinks(True)
         self.lay.addWidget(self.labels["arbi"], 0, 3, 1, 2)
         self.tiers = None
+        self.sched = []
         for col, key in enumerate(("earth", "cetus", "vallis", "baro", "resurgence")):
             self.lay.addWidget(self.labels[key], 1, col)
         self.status = QLabel("")
@@ -123,8 +124,10 @@ class WorldStrip(QFrame):
             try:
                 import arbi
                 self.tiers = arbi.tierlist()            # arbi.guide (cached 15 min; last good copy if it is down)
-            except Exception:
-                pass
+                self.sched = arbi.schedule()            # browse.wf: which node is the Arbitration, hour by hour
+            except Exception as e:
+                import logbus
+                logbus.error("arbitration", f"{type(e).__name__}: {e}")
             try:
                 self.bus.done.emit(fetch_world(CFG["language"]), "")
             except Exception as e:
@@ -152,6 +155,7 @@ class WorldStrip(QFrame):
         d = self.data
         self.status.setText(t("strip.error", err=self._err) if self._err else ("" if d else t("strip.loading")))
         if not d:
+            self._arbitration(now)
             return
         lab = self.labels
         if d["omnia"]:
@@ -185,9 +189,16 @@ class WorldStrip(QFrame):
         """The current Arbitration with its arbi.guide tier (the tier links back to the guide, as it asks)."""
         import arbi
         lab = self.labels["arbi"]
-        a = (self.data or {}).get("arbi")
+        a = None
+        cur = arbi.current(self.sched, now) if self.sched else None
+        if cur:                                         # browse.wf schedule + node names from the game data
+            info = arbi.node_info(cur[0]) or [cur[0], "", "", ""]
+            a = (f"{info[0]} ({info[1]})" if info[1] else info[0], cur[0], info[2], info[3], cur[2])
+        else:                                           # fallback: the world state's own entry, when it has one
+            a = (self.data or {}).get("arbi")
         if not a or not a[4] or a[4] <= now:
             lab.setText(f"<b>{t('strip.arbi')}</b> –")
+            lab.setToolTip(t("strip.arbi.none"))
             return
         node, key, mtype, enemy, exp = a
         tier, saryn, _n = arbi.tier_of(self.tiers, key, node)
@@ -202,4 +213,6 @@ class WorldStrip(QFrame):
             if saryn:
                 tip.append(t("strip.arbi.tip.saryn"))
             tip.append(t("strip.arbi.tip.src"))
+        if cur:
+            tip.append(t("strip.arbi.tip.sched"))
         lab.setToolTip("\n".join(tip))

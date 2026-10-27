@@ -35,7 +35,7 @@ Every tab shows a **player strip**: name (click to set it, the game files do not
 ## Price list window (F7)
 The window **opens by itself when the program starts** (setting *Open the price list at start*). It is a normal window: it comes in front when you open it (hotkey or tray) and does not stay above the game (setting *Window always on top* to keep it there). The overlay keeps working while the window is open; when it is on top of the game its area is blanked before the OCR, so it never reads its own names.
 
-Under the player strip, the **world strip** shows the Steel Path Omnia fissures, the Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer and the Prime Resurgence with live countdowns. The current **Arbitration** is shown with its tier from [arbi.guide](https://arbi.guide) (Arbitration Goons; read from the guide's `tierlist.json` API, cached 15 minutes). The **Console** tab lists what runs in the background and every error.
+Under the player strip, the **world strip** shows the Steel Path Omnia fissures, the Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer and the Prime Resurgence with live countdowns. The current **Arbitration** is shown with its tier from [arbi.guide](https://arbi.guide) (Arbitration Goons; read from the guide's `tierlist.json` API, cached 15 minutes); which node it is comes from browse.wf's hourly schedule (`arbys.txt`). The **Console** tab lists what runs in the background and every error.
 
 The **price list** and the **recommendations** share the first tab (*Prices and recommendations*): the list on top, the recommendations below; drag the divider to change their heights (remembered).
 

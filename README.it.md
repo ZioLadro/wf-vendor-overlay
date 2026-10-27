@@ -36,7 +36,7 @@ Ogni scheda mostra una **barra del giocatore**: nome (clicca per impostarlo, i f
 ## Finestra del listino (F7)
 La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). È una finestra normale: viene davanti quando la apri (tasto rapido o icona) e non resta sopra il gioco (impostazione *Finestra sempre in primo piano* per tenercela). L'overlay continua a funzionare con la finestra aperta; quando è sopra il gioco la sua area viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 
-Sotto la barra del giocatore, la **barra del mondo** mostra le fessure Omnia Steel Path, i cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer e la Prime Resurgence con conto alla rovescia. L'**Arbitrato** attuale è mostrato con il suo tier di [arbi.guide](https://arbi.guide) (Arbitration Goons; letto dall'API `tierlist.json` della guida, in cache 15 minuti). La scheda **Console** elenca cosa gira in background e ogni errore.
+Sotto la barra del giocatore, la **barra del mondo** mostra le fessure Omnia Steel Path, i cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer e la Prime Resurgence con conto alla rovescia. L'**Arbitrato** attuale è mostrato con il suo tier di [arbi.guide](https://arbi.guide) (Arbitration Goons; letto dall'API `tierlist.json` della guida, in cache 15 minuti); quale nodo sia viene dal calendario orario di browse.wf (`arbys.txt`). La scheda **Console** elenca cosa gira in background e ogni errore.
 
 Il **listino prezzi** e i **consigli** condividono la prima scheda (*Prezzi e consigli*): il listino sopra, i consigli sotto; trascina il divisore per cambiarne le altezze (viene ricordato).
 

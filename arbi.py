@@ -6,8 +6,10 @@ Disruption, rated separately); a node not listed is F (or "default_tier"). saryn
 As the guide asks: cached for at least 5 minutes, the last good copy is kept when the site is unavailable, a 429 waits
 for Retry-After, and the program links back to https://arbi.guide where the tier is shown."""
 import json
+import sys
 import threading
 import time
+from pathlib import Path
 
 import requests
 
@@ -67,6 +69,82 @@ def tierlist(force=False):
             _state["retry_at"] = now + 300
             logbus.error("arbi.guide", f"{type(e).__name__}: {e} (the last saved copy is used)")
         return _state["data"]
+
+
+# The Arbitration of each hour: browse.wf publishes the schedule (arbys.txt: "<unix time>,<node id>" per hour), since the
+# game's own world state does not list it. Read once a day, kept on disk; credited in the strip's tooltip.
+SCHEDULE_URL = "https://browse.wf/arbys.txt"
+SCHEDULE_FILE = APP_DIR / "arbys.txt"
+SCHEDULE_AGE = 24 * 3600
+NODES_FILE = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent)) / "nodes.json"
+_sched = {"rows": None, "fetched": 0.0, "retry_at": 0.0}
+_nodes = {}
+
+
+def node_info(node_id: str):
+    """[node, planet, mission type, faction] of a star-chart node id (from the bundled nodes.json), or None."""
+    if not _nodes:
+        try:
+            _nodes.update(json.loads(NODES_FILE.read_text(encoding="utf-8")))
+        except Exception:
+            pass
+    return _nodes.get(node_id)
+
+
+def _parse_schedule(text: str) -> list:
+    rows = []
+    for line in text.splitlines():
+        a, _, b = line.strip().partition(",")
+        if a.isdigit() and b:
+            rows.append((int(a), b.strip()))
+    rows.sort()
+    return rows
+
+
+def schedule():
+    """[(start time, node id)] of the Arbitrations, hour by hour (downloaded once a day; the saved copy otherwise)."""
+    import logbus
+    from market import HEADERS
+    with _lock:
+        now = time.time()
+        if _sched["rows"] is None:
+            try:
+                _sched["rows"] = _parse_schedule(SCHEDULE_FILE.read_text(encoding="utf-8"))
+                _sched["fetched"] = SCHEDULE_FILE.stat().st_mtime
+            except OSError:
+                _sched["rows"] = []
+        last = _sched["rows"][-1][0] if _sched["rows"] else 0
+        if (now - _sched["fetched"] < SCHEDULE_AGE and last > now + 3600) or now < _sched["retry_at"]:
+            return _sched["rows"]
+        try:
+            r = requests.get(SCHEDULE_URL, headers={"User-Agent": HEADERS["User-Agent"]}, timeout=30)
+            r.raise_for_status()
+            rows = _parse_schedule(r.text)
+            if not rows:
+                raise ValueError("empty schedule")
+            _sched["rows"], _sched["fetched"] = rows, now
+            try:
+                SCHEDULE_FILE.write_text(r.text, encoding="utf-8")
+            except OSError:
+                pass
+            logbus.add("arbitration", f"schedule read from browse.wf: {len(rows)} hours, until "
+                       f"{time.strftime('%d/%m/%Y', time.localtime(rows[-1][0]))}", "ok")
+        except Exception as e:
+            _sched["retry_at"] = now + 600
+            logbus.error("arbitration", f"browse.wf schedule: {type(e).__name__}: {e} (the saved copy is used)")
+        return _sched["rows"]
+
+
+def current(rows, now=None):
+    """(node id, start, end) of the Arbitration running now, or None."""
+    import bisect
+    now = time.time() if now is None else now
+    i = bisect.bisect_right(rows, (int(now), "\uffff")) - 1
+    if i < 0 or not rows:
+        return None
+    start, node = rows[i]
+    end = rows[i + 1][0] if i + 1 < len(rows) else start + 3600
+    return (node, start, end) if start <= now < end else None
 
 
 def tier_of(data, node_id="", node_name="") -> tuple:

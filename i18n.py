@@ -760,6 +760,8 @@ EN = {
     "strip.arbi.tip.f": "F: node not in the tier list",
     "strip.arbi.tip.saryn": "*: Saryn off-meta viable",
     "strip.arbi.tip.src": "Tiers from arbi.guide (Arbitration Goons): click the tier to open the guide",
+    "strip.arbi.none": "No Arbitration known right now (the schedule from browse.wf has not been read yet: see the Console).",
+    "strip.arbi.tip.sched": "Schedule: browse.wf (arbys.txt)",
 }
 
 IT = {
@@ -1507,6 +1509,8 @@ IT = {
     "strip.arbi.tip.f": "F: nodo non presente nella tier list",
     "strip.arbi.tip.saryn": "*: valida anche con Saryn (off-meta)",
     "strip.arbi.tip.src": "Tier da arbi.guide (Arbitration Goons): clicca il tier per aprire la guida",
+    "strip.arbi.none": "Nessun Arbitrato noto adesso (il calendario di browse.wf non è ancora stato letto: vedi la Console).",
+    "strip.arbi.tip.sched": "Calendario: browse.wf (arbys.txt)",
 }
 
 STRINGS = {"en": EN, "it": IT}

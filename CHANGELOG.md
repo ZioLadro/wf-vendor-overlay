@@ -15,6 +15,10 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Arbitration with its tier** in the world strip: the current Arbitration (mission, node, time left) with the tier
   from **arbi.guide** (Arbitration Goons: S 12+ Vitus Essence/min … D, Special, F; * = Saryn off-meta viable), through the
   guide's documented API (`tierlist.json`), cached 15 minutes, last good copy kept, link back to the guide on the tier.
+  Which node is the Arbitration comes from browse.wf's hourly schedule (`arbys.txt`, read once a day and kept), since the
+  world state often has none; node names from the game data (`nodes.json`, made by `build_nodes.py`).
+- Fix: after updating, Builds kept showing the loadouts saved by the previous version (no spliced Rivens, no exalted
+  weapons) until the game file changed; the saved copy is now read again after every update.
 
 ## 0.2.8
 - **World strip** under the player strip: the Steel Path Omnia fissures open now, the Earth / Cetus / Orb Vallis cycles,

@@ -14,7 +14,7 @@ Write-Host "Checking the OCR models..."
 $piArgs = @("--noconfirm", "--clean", "--name", "WFVendorOverlay",
             "--collect-all", "rapidocr", "--collect-all", "onnxruntime",
             "--hidden-import", "pynput.keyboard._win32", "--hidden-import", "pynput.mouse._win32",
-            "--add-data", "vendors.json;.", "--add-data", "gamenames.json;.", "--add-data", "rivens.json;.", "--add-data", "loadout_data.json;.", "--add-data", "icon.png;.", "--icon", "icon.ico")
+            "--add-data", "vendors.json;.", "--add-data", "gamenames.json;.", "--add-data", "rivens.json;.", "--add-data", "loadout_data.json;.", "--add-data", "nodes.json;.", "--add-data", "icon.png;.", "--icon", "icon.ico")
 if ($OneFile) { $piArgs += "--onefile" } else { $piArgs += "--onedir" }
 if (-not $Console) { $piArgs += "--noconsole" }
 $piArgs += "main.py"
