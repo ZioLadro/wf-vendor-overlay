@@ -3,7 +3,8 @@ import json
 import os
 import time
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import (
     QComboBox, QFrame, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMessageBox,
     QPushButton, QScrollArea, QSplitter, QVBoxLayout, QWidget,
@@ -11,6 +12,7 @@ from PyQt6.QtWidgets import (
 
 import aleca
 import icons
+import previews
 import loadouts as LO
 from config import APP_DIR
 from i18n import t
@@ -27,8 +29,17 @@ def _card(name, rank, mx, kind_role):
     f = QFrame()
     f.setProperty("card", "empty" if not name else ("special" if kind_role != "general" else "slot"))
     f.setMinimumSize(120, 58)
-    lay = QVBoxLayout(f)
-    lay.setContentsMargins(8, 5, 8, 5)
+    outer = QHBoxLayout(f)
+    outer.setContentsMargins(8, 5, 8, 5)
+    pic = previews.by_name(name) if name else None
+    if pic:                                               # the mod/Arcane card picture (warframe.market, else the wiki)
+        img = QLabel()
+        pm = QPixmap(str(pic))
+        if not pm.isNull():
+            img.setPixmap(pm.scaledToHeight(52, Qt.TransformationMode.SmoothTransformation))
+            outer.addWidget(img)
+    lay = QVBoxLayout()
+    outer.addLayout(lay, 1)
     lay.setSpacing(1)
     top = QLabel(t("builds.slot." + kind_role) if kind_role != "general" else "")
     role(top, "small")
@@ -184,6 +195,17 @@ class BuildsTab(QWidget):
         self.list.currentItemChanged.connect(lambda cur, _p: self.view.show_loadout(
             self.loadouts[cur.data(Qt.ItemDataRole.UserRole)] if cur else None))
         self._fill()
+        # pictures arrive a little later: redraw the shown loadout while some are still on their way
+        self._pic_timer = QTimer(self, interval=2500, timeout=self._pictures)
+        self._pic_timer.start()
+
+    def _pictures(self):
+        n = previews.pending()
+        if n != getattr(self, "_pending_seen", 0) and self.isVisible():
+            cur = self.list.currentItem()
+            if cur:
+                self.view.show_loadout(self.loadouts[cur.data(Qt.ItemDataRole.UserRole)])
+        self._pending_seen = n
 
     # ---------- data ----------
     def _load_cache(self):

@@ -146,6 +146,8 @@ Hovering a row shows how many you can afford with your standing (Profile tab).
 ### Builds
 Your own in-game loadouts, shown like the game's loadout screen: Aura, Exilus and Stance slots, the eight mod slots with each mod's rank (n/max), equipped Arcanes, forma count, the **Archon Shards** installed on a Warframe (colour, tauforged or not, and the effect) and the **Helminth** ability that replaced one of its own ("Ability 4: Miasma → Roar"). Warframes, weapons, Archwing, Necramechs and companions are listed on the left, with a filter by name and by kind.
 
+Mod and Arcane **pictures** are shown on the cards: they are taken as they are needed from warframe.market (item images) and, when it has none, from the Warframe wiki (wiki.warframe.com, standard MediaWiki API, one request at a time with this program's User-Agent), kept in the data folder and never downloaded twice; they appear a few seconds after the loadout opens. Switch off with *Item pictures in tooltips* in Settings.
+
 Everything comes from your AlecaFrame `lastData.dat` (found by itself, same file as Inventory); *Reload from file* re-reads it after AlecaFrame refreshed it. Nothing is downloaded from any website. Mod, Arcane, ability and shard names come from the bundled `loadout_data.json` (rebuilt from the public game data with `build_loadouts.py`). Per-slot polarities and mod drain are not shown.
 
 ### Profile

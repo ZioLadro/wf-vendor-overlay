@@ -153,6 +153,8 @@ Passando il mouse su una riga vedi quanti ne puoi permettere con il tuo standing
 ### Build
 I tuoi loadout in gioco, mostrati come la schermata dei loadout del gioco: slot Aura, Exilus e Postura, gli otto slot mod con il rank di ogni mod (n/max), gli Arcani equipaggiati, il numero di forma, le **Archon Shard** installate su un Warframe (colore, tauforgiata o no, ed effetto) e l'abilità **Helminth** che ha sostituito una delle sue ("Abilità 4: Miasma → Roar"). Warframe, armi, Archwing, Necramech e compagni sono elencati a sinistra, con filtro per nome e per tipo.
 
+Le **immagini** di mod e Arcani compaiono sulle schede: vengono prese al bisogno da warframe.market (immagini degli oggetti) e, se lì mancano, dalla wiki di Warframe (wiki.warframe.com, API MediaWiki standard, una richiesta alla volta con lo User-Agent del programma), tenute nella cartella dei dati e mai scaricate due volte; appaiono qualche secondo dopo l'apertura del loadout. Si disattivano con *Immagini degli oggetti nei suggerimenti* nelle Impostazioni.
+
 Tutto viene dal tuo `lastData.dat` di AlecaFrame (trovato da solo, lo stesso file dell'Inventario); *Ricarica dal file* lo rilegge dopo che AlecaFrame l'ha aggiornato. Non viene scaricato nulla da nessun sito. I nomi di mod, Arcani, abilità e shard vengono dal `loadout_data.json` incluso (rigenerato dai dati pubblici del gioco con `build_loadouts.py`). Polarità dei singoli slot e drain non vengono mostrati.
 
 ### Profilo
