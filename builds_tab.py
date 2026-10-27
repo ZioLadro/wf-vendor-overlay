@@ -108,12 +108,15 @@ class BuildsTab(QWidget):
         self.btn_open = QPushButton(t("builds.open"))
         self.btn_creators = QPushButton(t("builds.creators"))
         self.btn_creators.setToolTip(t("builds.creators.tip"))
+        self.btn_wish = QPushButton(t("qf.btn.wish"))
+        self.btn_wish.setToolTip(t("qf.btn.wish.tip"))
         self.btn_fetch = QPushButton(t("builds.fetch"))
         self.btn_fetch.setToolTip(t("builds.fetch.tip"))
         bar = QHBoxLayout()
         for b in (self.btn_link, self.btn_text, self.btn_creators, self.btn_rename, self.btn_remove, self.btn_open):
             bar.addWidget(b)
         bar.addStretch(1)
+        bar.addWidget(self.btn_wish)
         bar.addWidget(self.btn_fetch)
 
         self.list = QListWidget()
@@ -157,6 +160,7 @@ class BuildsTab(QWidget):
 
         self.btn_link.clicked.connect(self.add_link)
         self.btn_text.clicked.connect(self.add_text)
+        self.btn_wish.clicked.connect(self.send_wish)
         self.btn_creators.clicked.connect(self.open_creators)
         self.btn_rename.clicked.connect(self.rename)
         self.btn_remove.clicked.connect(self.remove)
@@ -205,6 +209,18 @@ class BuildsTab(QWidget):
             found, note = self._fallback, ""
         self._review(self._pending_name or B.page_title(page) or t("builds.untitled"), found, url, note)
         self._pending_name, self._fallback = None, []
+
+    def send_wish(self):
+        """The missing mods of the selected build -> Quantframe's wish list, after a check window."""
+        from quantframe_dialog import SendDialog, entries_from_missing
+        b = self._current()
+        if not b:
+            return
+        entries = entries_from_missing(B.evaluate(b, self.inventory, self.market), self.market)
+        if not entries:
+            QMessageBox.information(self, t("qf.btn.wish"), t("qf.empty.wish"))
+            return
+        SendDialog("wish", entries, self).exec()
 
     def open_creators(self):
         dlg = CreatorsDialog(self.market, self)
@@ -310,7 +326,7 @@ class BuildsTab(QWidget):
 
     def show_build(self):
         b = self._current()
-        for w in (self.btn_rename, self.btn_remove):
+        for w in (self.btn_rename, self.btn_remove, self.btn_wish):
             w.setEnabled(b is not None)
         self.btn_open.setEnabled(bool(b and b.get("url")))
         tb = self.table

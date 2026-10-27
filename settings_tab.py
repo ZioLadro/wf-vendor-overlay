@@ -74,6 +74,9 @@ GROUPS = [
         ("inv_exclude_maxed", "bool", None, False),
         ("sell_price_offset", "int", (-100, 100), False),
     ]),
+    ("quantframe", [
+        ("quantframe_url", "text", None, False),
+    ]),
     ("builds", [
         ("creator_channels", "text", None, False),
         ("creator_videos", "int", (1, 15), False),

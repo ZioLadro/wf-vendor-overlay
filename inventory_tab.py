@@ -234,6 +234,8 @@ class InventoryTab(QWidget):
         self.btn_ducat.setToolTip(t("advice.ducat.tip"))
         self.btn_advice_sell = QPushButton(t("advice.sell.btn"))
         self.btn_advice_sell.setToolTip(t("advice.sell.tip"))
+        self.btn_qf = QPushButton(t("qf.btn"))
+        self.btn_qf.setToolTip(t("qf.btn.tip"))
         self.btn_account = QPushButton("")
         actions = QHBoxLayout()
         for b in (self.btn_import, self.btn_reload, self.btn_paste, self.btn_add, self.btn_edit, self.btn_remove):
@@ -243,6 +245,7 @@ class InventoryTab(QWidget):
         actions.addWidget(self.btn_advice_sell)
         actions.addWidget(self.btn_prices)
         actions.addWidget(self.btn_sell)
+        actions.addWidget(self.btn_qf)
         actions.addWidget(self.btn_account)
 
         self.summary = QLabel("")
@@ -295,6 +298,7 @@ class InventoryTab(QWidget):
         self.btn_remove.clicked.connect(self.remove_items)
         self.btn_prices.clicked.connect(self.update_prices)
         self.btn_sell.clicked.connect(self.sell_selected)
+        self.btn_qf.clicked.connect(self.send_to_quantframe)
         self.btn_account.clicked.connect(self.toggle_account)
         self._account_text()
 
@@ -560,6 +564,20 @@ class InventoryTab(QWidget):
             dlg.password.clear()
         self._account_text()
         return True
+
+    def send_to_quantframe(self):
+        """The selected rows (or all the rows shown, if none is selected) -> Quantframe's stock, after a check window."""
+        from quantframe_dialog import SendDialog, entries_from_rows
+        slugs = self._selected_slugs()
+        rows = self._rows()[0]
+        if slugs:
+            want = set(slugs)
+            rows = [r for r in rows if r["slug"] in want]
+        entries = entries_from_rows(rows)
+        if not entries:
+            QMessageBox.information(self, t("qf.btn"), t("qf.empty"))
+            return
+        SendDialog("stock", entries, self).exec()
 
     def sell_selected(self):
         slugs = self._selected_slugs()

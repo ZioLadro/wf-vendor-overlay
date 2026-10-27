@@ -63,6 +63,7 @@ DEFAULTS = {
     "sell_min_price": 5,         # advice: do not suggest selling items cheaper than this (platinum)
     "rec_overlay": True,         # mark the top recommended items with stars on the overlay
     "rec_overlay_top": 10,       # how many of the vendor's best items get the stars (the first one: "Best here")
+    "quantframe_url": "http://127.0.0.1:4808",  # Quantframe's local HTTP server (Quantframe > Settings > Advanced > HTTP Server); this computer only
     "creator_channels": "",       # channels for Builds > From creators (empty = the 10 built-in ones): UC… IDs or /channel/UC… links
     "creator_videos": 10,         # latest videos read per channel (the feed holds about 15)
     "rec_best_per_vendor": False,  # Recommendations tab: only the best item of each vendor

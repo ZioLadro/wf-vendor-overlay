@@ -95,6 +95,9 @@ I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispi
 
 **Ducat e consigli.** La colonna *Ducat* mostra quanto dà ogni parte prime se scambiata (dai dati del gioco). *Consiglio: ducat* elenca le tue parti prime per ducat guadagnati per ogni platino a cui rinunci (`ducat / max(prezzo × liquidità, 0,5)`, con `liquidità = min(1, volume / volume liquido)`); da un rapporto minimo (default 10) in su dice *Ducat*, altrimenti *Vendi*. I totali usano tutte le tue copie. *Consiglio: vendita* ordina il resto per `prezzo × copie che puoi sperare di vendere (≈ ¼ del volume giornaliero) × liquidità`, escludendo gli oggetti sotto il prezzo minimo o con poco volume. Entrambi possono selezionare le righe scelte nella tabella, pronte per *Vendi*. Qui c'è anche *Nascondi volume zero*. Le soglie sono nelle Impostazioni (gruppo Consigli).
 
+### Quantframe
+Il programma può passare oggetti a [Quantframe](https://github.com/Kenya-DK/quantframe-react), così non devi aggiungerli lì a mano. Attiva il server HTTP locale di Quantframe (Settings > Advanced > HTTP Server; predefinito `127.0.0.1:4808`, impostazione *Indirizzo di Quantframe* qui). **Inventario > Invia a Quantframe…** manda le righe selezionate (tutte quelle mostrate se non ne selezioni nessuna) allo **stock** di Quantframe; le mod con rank vanno per rank (copie a rank 0 e a rank massimo). **Build > Mancanti → Quantframe** manda alla **wish list** le mod che ti mancano per la build selezionata. Prima compare una finestra di controllo (cosa e quante); gli oggetti già inviati restano senza spunta perché le quantità si sommano. Non viene inviato alcun prezzo d'acquisto, quindi non si registra nessuna transazione. Attenzione: il Live Scraper di Quantframe può poi mettere in vendita gli oggetti dello stock e piazzare ordini di acquisto per quelli della wish list, secondo le sue impostazioni. Sono accettati solo indirizzi di questo computer. **I riven non vengono inviati**: Quantframe vuole le loro statistiche in unità reali (nomi degli attributi e valori), che vengono da dati e formule del gioco che ha solo Quantframe; aggiungi i riven in Quantframe.
+
 ### Consigli
 Cosa conviene comprare con lo standing, per ogni coppia (oggetto, vendor) con un costo in standing:
 
@@ -135,7 +138,7 @@ prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Sal
 il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
 valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
 
-## Aggiornamenti (versione attuale 0.1.9)
+## Aggiornamenti (versione attuale 0.1.10)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i
