@@ -37,6 +37,40 @@ PRUNE_AGE = 30 * 24 * 3600                 # forget items not updated for 30 day
 CATALOG_TTL = 24 * 3600
 MIN_INTERVAL = 0.35  # ~2.9 requests/s
 
+def average_prices(rows, max_rank=0):
+    """Volume-weighted average closed price over the last 7 / 30 / 90 days from warframe.market's daily statistics:
+    ([a7, a30, a90] for rank 0 or unranked items, [a7, a30, a90] for max rank or None). A value is None if no trade fell
+    in that window."""
+    now = datetime.now(timezone.utc)
+    spans = (7, 30, 90)
+    acc = {"low": [[0.0, 0] for _ in spans], "top": [[0.0, 0] for _ in spans]}
+    for r in rows:
+        try:
+            when = datetime.fromisoformat(str(r["datetime"]).replace("Z", "+00:00"))
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            vol = int(r.get("volume") or 0)
+            price = r.get("avg_price")
+            if price is None:
+                price = r.get("median")
+            if vol <= 0 or price is None:
+                continue
+            rank = r.get("mod_rank")
+            which = "low" if (not max_rank or rank in (None, 0)) else ("top" if rank == max_rank else None)
+            if which is None:
+                continue
+            age = (now - when).days
+            for i, s in enumerate(spans):
+                if age < s:
+                    acc[which][i][0] += float(price) * vol
+                    acc[which][i][1] += vol
+        except (KeyError, ValueError, TypeError):
+            continue
+    out = lambda a: [round(s / n, 1) if n else None for s, n in a]
+    top = out(acc["top"]) if max_rank else None
+    return out(acc["low"]), (top if top and any(v is not None for v in top) else None)
+
+
 class Market:
     def __init__(self):
         self._lock = threading.Lock()
@@ -204,7 +238,7 @@ class Market:
         """Last known data (even if old): {"price","pmax","pt","vol","vt"} or None."""
         with self._store_lock:
             e = self._data.get(slug)
-            return {k: e.get(k) for k in ("price", "pmax", "pt", "vol", "vt")} if e else None
+            return {k: e.get(k) for k in ("price", "pmax", "pt", "vol", "vt", "avg", "avgm")} if e else None
 
     def snapshot(self, only=None) -> list:
         """The price-list items: those with a standing cost, plus Baro Ki'Teer's (even without market data).
@@ -313,10 +347,15 @@ class Market:
     # ---------- volumes ----------
     def volume_24h(self, slug: str, max_age=None):
         """Number of trades closed in the last 24 hours."""
-        if self._fresh(slug, "vt", max_age):
+        if self._fresh(slug, "vt", max_age) and "avg" in self._data[slug]:
             return self._data[slug]["vol"]
         data = self._request(f"{V1}/items/{slug}/statistics")
-        rows = data["payload"]["statistics_closed"]["48hours"]
+        closed = data["payload"]["statistics_closed"]
+        try:
+            avg, avgm = average_prices(closed.get("90days") or [], self._info.get(slug, {}).get("max_rank", 0))
+        except Exception:
+            avg = avgm = None
+        rows = closed["48hours"]
         cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
         total = 0
         for r in rows:
@@ -326,4 +365,10 @@ class Market:
             if t >= cutoff:
                 total += int(r.get("volume") or 0)
         self._store(slug, vol=total)
+        with self._store_lock:                                       # price averages from the same answer (no extra request)
+            if avg:
+                self._data[slug]["avg"] = avg
+            if avgm:
+                self._data[slug]["avgm"] = avgm
+            self._dirty = True
         return total

@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
 )
 
 import aleca
+import icons
 import loadouts as LO
 from config import APP_DIR
 from i18n import t
@@ -112,6 +113,11 @@ class LoadoutView(QWidget):
                 for s in lo["shards"]:
                     chip = QLabel(f"{t('builds.tau') + ' ' if s['tauforged'] else ''}{s['color_name']}\n{s['effect']}")
                     chip.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    pm = icons.shard(s["color"], s["tauforged"])
+                    if pm:
+                        icon = QLabel()
+                        icon.setPixmap(pm)
+                        row.addWidget(icon)
                     rgb = SHARD_RGB.get(s["color"], "#888888")
                     chip.setStyleSheet(f"background: {rgb}; color: #101010; border-radius: 6px; padding: 5px 8px;"
                                        + (" border: 2px solid #ffd966;" if s["tauforged"] else ""))

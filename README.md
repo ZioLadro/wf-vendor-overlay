@@ -97,6 +97,15 @@ Your items with their market prices, and one-click sell orders (inspired by Alec
 - **Trades left** (top strip) comes from the `lastData.dat`, which the game only updates when AlecaFrame syncs
   (entering or leaving a mission, logging in again): trades made since are not counted yet. A ⚠ appears when the last
   sync is from before the daily reset (00:00 UTC), when the real number is probably higher; the tooltip shows the sync time.
+- **Price trend in the advice.** Together with the 24 h volume, the program now keeps the volume-weighted average closed
+  price over 7, 30 and 90 days (taken from the same statistics answer: no extra request; for mods, separately for rank 0
+  and max rank). The three advice windows show a *vs 30 d* column (current price against the 30-day average; the tooltip
+  has the 7/30/90-day averages), and a price above its 30-day average is pulled towards it by *Advice: trend weight*
+  (default 50%, 0 = ignore the trend), so a short spike does not push an item to the top. Items refresh their averages
+  at the next *Update prices*.
+- **Icons folder (optional).** Settings > Inventory > *Icons folder*: point it at a folder of your own icons (for example
+  the unpacked `assets` of AlecaFrame) and the Builds tab shows the Archon Shard pictures. The files are only read from
+  where they are; they are not copied or shipped with the program.
 - **Sell…** places a **sell order** on warframe.market for every selected item. Sign in first (email and
   password, sent only to warframe.market; **only the session token is stored**, in `market_session.json`;
   *Sign out* deletes it). For each order a window shows quantity, rank (mods/arcanes), price (market price

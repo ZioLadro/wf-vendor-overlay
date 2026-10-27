@@ -246,18 +246,20 @@ class InventoryTab(QWidget):
         self.btn_riven = QPushButton(t("riv.btn"))
         self.btn_riven.setToolTip(t("riv.btn.tip"))
         self.btn_account = QPushButton("")
-        actions = QHBoxLayout()
+        actions = QVBoxLayout()                    # two rows: the data on the left of each, the advice and market on the right
+        row_a, row_b = QHBoxLayout(), QHBoxLayout()
         for b in (self.btn_import, self.btn_reload, self.btn_paste, self.btn_add, self.btn_edit, self.btn_remove):
-            actions.addWidget(b)
-        actions.addStretch(1)
-        actions.addWidget(self.btn_ducat)
-        actions.addWidget(self.btn_advice_sell)
-        actions.addWidget(self.btn_rankup)
-        actions.addWidget(self.btn_prices)
-        actions.addWidget(self.btn_sell)
-        actions.addWidget(self.btn_qf)
-        actions.addWidget(self.btn_riven)
-        actions.addWidget(self.btn_account)
+            row_a.addWidget(b)
+        row_a.addStretch(1)
+        row_a.addWidget(self.btn_prices)
+        row_a.addWidget(self.btn_account)
+        for b in (self.btn_ducat, self.btn_advice_sell, self.btn_rankup):
+            row_b.addWidget(b)
+        row_b.addStretch(1)
+        for b in (self.btn_sell, self.btn_qf, self.btn_riven):
+            row_b.addWidget(b)
+        actions.addLayout(row_a)
+        actions.addLayout(row_b)
 
         self.summary = QLabel("")
         role(self.summary, "muted")

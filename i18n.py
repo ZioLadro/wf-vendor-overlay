@@ -599,6 +599,13 @@ EN = {
     "set.rankup_min_gain.tip": "Rank-up advice: ignore mods that gain less than this many platinum per copy when sold at max rank",
     "set.item_previews": "Item pictures in tooltips",
     "set.item_previews.tip": "Hovering an item name shows its picture (the one warframe.market publishes; downloaded once, one at a time, and kept on disk)",
+    "advice.col.trend": "vs 30 d",
+    "advice.trend.tip": "Average closed price: 7 days {d7}p · 30 days {d30}p · 90 days {d90}p",
+    "advice.trend.note": "“vs 30 d” is the current price against its 30-day average; a price above the average is pulled towards it (Settings: trend weight), so a spike does not inflate the score.",
+    "set.advice_trend_weight": "Advice: trend weight (%)",
+    "set.advice_trend_weight.tip": "How much a price above its 30-day average is pulled towards that average in the advice (0 = ignore the trend, 100 = use the average)",
+    "set.assets_dir": "Icons folder (optional)",
+    "set.assets_dir.tip": "A folder of icons of your own, for example AlecaFrame's unpacked assets folder (it must contain img\\archonShards\\red.webp…). Used for the Archon Shard pictures in Builds. Read only: nothing is copied or included in the program. Empty = no pictures",
 }
 
 IT = {
@@ -1185,6 +1192,13 @@ IT = {
     "set.rankup_min_gain.tip": "Consiglio salita di rank: ignora le mod che guadagnano meno di questi platini per copia vendute a rank massimo",
     "set.item_previews": "Immagini degli oggetti nei suggerimenti",
     "set.item_previews.tip": "Passando il mouse sul nome di un oggetto ne mostra l'immagine (quella pubblicata da warframe.market; scaricata una volta sola, una alla volta, e tenuta su disco)",
+    "advice.col.trend": "vs 30 g",
+    "advice.trend.tip": "Prezzo medio delle vendite: 7 giorni {d7}p · 30 giorni {d30}p · 90 giorni {d90}p",
+    "advice.trend.note": "«vs 30 g» è il prezzo attuale rispetto alla media a 30 giorni; un prezzo sopra la media viene avvicinato ad essa (Impostazioni: peso del trend), così un picco non gonfia il punteggio.",
+    "set.advice_trend_weight": "Consigli: peso del trend (%)",
+    "set.advice_trend_weight.tip": "Quanto un prezzo sopra la media a 30 giorni viene avvicinato a quella media nei consigli (0 = ignora il trend, 100 = usa la media)",
+    "set.assets_dir": "Cartella icone (facoltativa)",
+    "set.assets_dir.tip": "Una cartella di icone tue, per esempio la cartella assets di AlecaFrame decompressa (deve contenere img\\archonShards\\red.webp…). Usata per le immagini delle Archon Shard in Build. Sola lettura: nulla viene copiato né incluso nel programma. Vuota = nessuna immagine",
 }
 
 STRINGS = {"en": EN, "it": IT}

@@ -20,18 +20,18 @@ class AdviceDialog(QDialog):
         if kind == "ducat":
             data, self.missing = ducat_advice(rows)
             heads = ["col.item", "col.owned", "advice.col.ducats", "advice.col.total_ducats", "col.price",
-                     "advice.col.plat_lost", "col.volume", "advice.col.ratio", "advice.col.verdict"]
+                     "advice.col.plat_lost", "col.volume", "advice.col.ratio", "advice.col.verdict", "advice.col.trend"]
         elif kind == "rankup":
             data, self.missing = rankup_advice(rows)
             heads = ["col.item", "col.owned", "advice.col.rarity", "col.price", "col.pmax", "advice.col.gain", "col.volume",
                      "advice.col.sellable", "advice.col.endo", "advice.col.credits", "advice.col.total_gain",
-                     "advice.col.score"]
+                     "advice.col.score", "advice.col.trend"]
         else:
             data, self.missing = sell_advice(rows)
             heads = ["col.item", "col.owned", "col.price", "col.volume", "advice.col.sellable",
-                     "advice.col.expected", "advice.col.score"]
+                     "advice.col.expected", "advice.col.score", "advice.col.trend"]
         self.data = data
-        intro = QLabel(t("advice." + kind + ".intro"))
+        intro = QLabel(t("advice." + kind + ".intro") + " " + t("advice.trend.note"))
         intro.setWordWrap(True)
         role(intro, "muted")
         self.table = QTableWidget(len(data), len(heads))
@@ -54,15 +54,22 @@ class AdviceDialog(QDialog):
                 cells = [Cell(x["name"], x["name"].lower(), center=False), Cell(str(x["n"]), x["n"]),
                          Cell(t("advice.rarity." + x["rarity"]), "CURL".index(x["rarity"])),
                          Cell(f"{x['price']}p", x["price"], PRICE_COLOR), Cell(f"{x['pmax']}p", x["pmax"], MAXRANK_COLOR),
-                         Cell(f"+{x['gain']}p", x["gain"]), Cell(str(x["vol"]), x["vol"], volume_color(x["vol"])),
+                         Cell(f"+{x['gain']:g}p", x["gain"]), Cell(str(x["vol"]), x["vol"], volume_color(x["vol"])),
                          Cell(str(x["sellable"]), x["sellable"]), Cell(f"{x['endo']:,}", x["endo"]),
-                         Cell(f"{x['credits']:,}", x["credits"]), Cell(f"+{x['total_gain']}p", x["total_gain"]),
+                         Cell(f"{x['credits']:,}", x["credits"]), Cell(f"+{x['total_gain']:.0f}p", x["total_gain"]),
                          Cell(f"{x['score']:.1f}", x["score"])]
             else:
                 cells = [Cell(x["name"], x["name"].lower(), center=False), Cell(str(x["n"]), x["n"]),
                          Cell(f"{x['price']}p", x["price"], PRICE_COLOR), Cell(str(x["vol"]), x["vol"], volume_color(x["vol"])),
                          Cell(str(x["sellable"]), x["sellable"]), Cell(f"{x['expected']}p", x["expected"]),
                          Cell(f"{x['score']:.1f}", x["score"])]
+            tr, av = x.get("trend"), x.get("avg")
+            tcell = Cell("–" if tr is None else f"{tr:+.0f}%", -999 if tr is None else tr,
+                         DIM_COLOR if tr is None else (PRICE_COLOR if tr <= 5 else MAXRANK_COLOR))
+            if av and av[1] is not None:
+                tcell.setToolTip(t("advice.trend.tip", d7=av[0] if av[0] is not None else "–", d30=av[1],
+                                   d90=av[2] if av[2] is not None else "–"))
+            cells.append(tcell)
             cells[0].setData(Qt.ItemDataRole.UserRole, x["slug"])
             for c, cell in enumerate(cells):
                 self.table.setItem(i, c, cell)
@@ -71,7 +78,7 @@ class AdviceDialog(QDialog):
         for c in range(1, len(heads)):
             hdr.setSectionResizeMode(c, QHeaderView.ResizeMode.ResizeToContents)
         self.table.setSortingEnabled(True)
-        self.table.sortByColumn(len(heads) - 1 if kind != "ducat" else 7, Qt.SortOrder.DescendingOrder)
+        self.table.sortByColumn({"ducat": 7, "sell": 6, "rankup": 11}[kind], Qt.SortOrder.DescendingOrder)
         attach_item_menu(self.table, 0)
         note = QLabel(t("advice.missing", n=len(self.missing)) if self.missing else "")
         role(note, "hint")

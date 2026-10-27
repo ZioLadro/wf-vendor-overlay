@@ -56,12 +56,14 @@ DEFAULTS = {
     "hide_zero_volume": False,   # hide items with zero trades in the last 24 h (price list)
     "player_name_auto": "",      # last name taken from AlecaFrame's lastUsername.txt (a name typed by hand is never overwritten)
     "player_name": "",           # shown in the player strip (the game files do not contain it)
+    "assets_dir": "",             # optional folder of icons of your own (e.g. AlecaFrame's unpacked assets): shard pictures in Builds
     "item_previews": True,        # picture of the item (from warframe.market) in the tooltip of the item tables
     "inv_exclude_installed": False,   # Inventory: leave out the mods/Arcanes that sit in a loadout
     "rankup_min_gain": 10,        # rank-up advice: minimum platinum gained per copy (max-rank price - current price)
     "inv_hide_zero_volume": False,   # Inventory: hide items with no trades in 24 h
     "hide_negative_ranks": False,    # player strip / Profile: hide syndicates with a negative rank
     "ducat_min_ratio": 10,       # advice: trade for ducats if ducats per platinum (adjusted for liquidity) >= this
+    "advice_trend_weight": 50,   # advice: how much a price above its 30-day average is pulled towards it (0 = ignore the trend, 100 = use the average)
     "advice_liquid_volume": 10,  # advice: volume (24 h) from which an item counts as fully liquid
     "sell_min_price": 5,         # advice: do not suggest selling items cheaper than this (platinum)
     "rec_overlay": True,         # mark the top recommended items with stars on the overlay

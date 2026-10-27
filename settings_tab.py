@@ -81,6 +81,7 @@ GROUPS = [
         ("inv_exclude_maxed", "bool", None, False),
         ("inv_exclude_installed", "bool", None, False),
         ("item_previews", "bool", None, False),
+        ("assets_dir", "text", None, False),
         ("rankup_min_gain", "int", (0, 10000), False),
         ("sell_price_offset", "int", (-100, 100), False),
     ]),
@@ -104,6 +105,7 @@ GROUPS = [
         ("rec_top", "int", (10, 2000), False),
         ("ducat_min_ratio", "int", (1, 500), False),
         ("advice_liquid_volume", "int", (1, 1000), False),
+        ("advice_trend_weight", "int", (0, 100), False),
         ("sell_min_price", "int", (0, 100000), False),
     ]),
 ]

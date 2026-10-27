@@ -101,6 +101,15 @@ I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispi
   sincronizza (entrando o uscendo da una missione, rifacendo il login): gli scambi fatti dopo non sono ancora contati. Compare
   un ⚠ quando l'ultima sincronizzazione è precedente al reset giornaliero (00:00 UTC), quando il numero reale è probabilmente
   più alto; il suggerimento mostra l'ora della sincronizzazione.
+- **Andamento del prezzo nei consigli.** Oltre al volume 24 h, il programma tiene il prezzo medio ponderato sul volume
+  delle vendite a 7, 30 e 90 giorni (preso dalla stessa risposta delle statistiche: nessuna richiesta in più; per le mod,
+  separatamente a rank 0 e a rank massimo). Le tre finestre dei consigli mostrano una colonna *vs 30 g* (prezzo attuale
+  rispetto alla media a 30 giorni; il suggerimento ha le medie a 7/30/90 giorni) e un prezzo sopra la media a 30 giorni
+  viene avvicinato ad essa dal *Peso del trend* (predefinito 50%, 0 = ignora il trend), così un picco breve non porta un
+  oggetto in cima. Le medie di un oggetto si aggiornano al prossimo *Aggiorna prezzi*.
+- **Cartella icone (facoltativa).** Impostazioni > Inventario > *Cartella icone*: indica una cartella di icone tue (per
+  esempio gli `assets` decompressi di AlecaFrame) e la scheda Build mostra le immagini delle Archon Shard. I file sono
+  solo letti da dove stanno; non vengono copiati né distribuiti con il programma.
 - **Vendi…** piazza un **ordine di vendita** su warframe.market per ogni oggetto selezionato. Prima accedi
   (email e password, inviate solo a warframe.market; **si salva solo il token di sessione** in
   `market_session.json`; *Esci* lo cancella). Per ogni ordine una finestra mostra quantità, rank

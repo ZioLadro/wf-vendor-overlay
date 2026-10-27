@@ -463,7 +463,7 @@ def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, excl
         updated = max([t for t in (c.get("pt"), c.get("vt")) if t] or [0]) or None
         rows.append({"slug": slug, "name": name, "category": info.get("category", "other"),
                      "n": n, "m": m, "ranked": ranked, "max_rank": info.get("max_rank", 0),
-                     "price": price, "pmax": pmax, "vol": c.get("vol"), "value": value, "ducats": ducats.get(slug),
+                     "price": price, "pmax": pmax, "vol": c.get("vol"), "avg": c.get("avg"), "avgm": c.get("avgm"), "value": value, "ducats": ducats.get(slug),
                      "updated": updated, "order": inv.orders.get(slug), "inst": ni + mi,
                      "lv": (lv + [0] * n)[:n] if ranked else []})
     rows.sort(key=lambda r: (-(r["value"] or 0), r["name"].lower()))
