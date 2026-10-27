@@ -178,7 +178,7 @@ Everything lives in `%LOCALAPPDATA%\WFVendorOverlay`:
 - `config.json` settings · `prices.json` collected prices and volumes · `items_cache.json` market catalog ·
   `baro.json` Baro's list · `inventory.json` your inventory and the orders placed from the app ·
   `market_session.json` warframe.market session token · `vendors.json` / `gamenames.json` (optional, override
-  the bundled ones) · `overlay.log` errors (useful with the exe).
+  the bundled ones) · `overlay.log` errors (useful with the exe) · `riven.log` Riven flip requests and errors.
 
 | key | meaning (default) |
 |---|---|

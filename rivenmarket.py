@@ -58,6 +58,20 @@ UNKNOWN_WEIGHT = 0.3
 HARMLESS = 0.15                           # a NEGATIVE on a stat worth this little or less costs nothing (bonus)
 
 
+LOG_FILE = APP_DIR / "riven.log"
+
+
+def log(msg):
+    """One line in riven.log (kept under ~200 KB)."""
+    try:
+        if LOG_FILE.exists() and LOG_FILE.stat().st_size > 200_000:
+            LOG_FILE.write_text("", encoding="utf-8")
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')} {msg}\n")
+    except OSError:
+        pass
+
+
 class RivenRateLimited(Exception):
     pass
 
@@ -112,17 +126,21 @@ def get_json(url, limiter, params=None, cancel=None, timeout=12):
         try:
             r = requests.get(url, params=params, headers=HEADERS, timeout=timeout)
         except requests.RequestException as e:
+            log(f"GET {url} failed: {type(e).__name__}: {e}")
             raise RivenError(f"{type(e).__name__}: {e}")
+        log(f"GET {url} {params or ''} -> {r.status_code}")
         if r.status_code == 429:
             ra = r.headers.get("Retry-After")
             limiter.penalty(float(ra) if ra and ra.replace(".", "", 1).isdigit() else None)
             continue
         if r.status_code >= 400:
+            log(f"  answer: {r.text[:300]!r}")
             raise RivenError(f"HTTP {r.status_code}")
         limiter.ok()
         try:
             return r.json()
         except ValueError:
+            log(f"  not JSON: {r.text[:300]!r}")
             raise RivenError("invalid answer")
 
 
@@ -345,7 +363,9 @@ def scan(limiter, store, progress=None, cancel=None, wanted=None, limit=None):
         weapons = weapon_list(limiter, cancel)
         attribute_list(limiter, cancel)
     except (RivenError, RivenRateLimited) as e:
+        log(f"scan stopped before starting: {e}")
         return 0, str(e)
+    log(f"scan: {len(weapons)} weapons known")
     todo = pick_weapons(weapons, store, CFG["riven_weapon_filter"] if wanted is None else wanted,
                         CFG["riven_scan_weapons"] if limit is None else limit)
     done, err = 0, ""

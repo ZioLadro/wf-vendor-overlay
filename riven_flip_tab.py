@@ -100,6 +100,8 @@ class RivenFlipTab(QWidget):
     def start_scan(self):
         if self.running:
             return
+        self.summary.setText(t("rflip.starting"))
+        M.log("scan button pressed")
         self.running = True
         self.cancel.clear()
         self.btn_scan.setEnabled(False)
@@ -113,6 +115,8 @@ class RivenFlipTab(QWidget):
                 done, err = M.scan(limiter, self.store, progress=lambda d, n, name: self.progress.emit(d, n, name),
                                    cancel=self.cancel)
             except Exception as e:                      # never let a thread die silently
+                import traceback
+                M.log("scan crashed:\n" + traceback.format_exc())
                 done, err = 0, f"{type(e).__name__}: {e}"
             self.finished.emit(done, err)
         threading.Thread(target=work, daemon=True, name="riven-scan").start()
@@ -150,7 +154,7 @@ class RivenFlipTab(QWidget):
             return
         self._sig = sig
         if not self._load_lists():
-            self.summary.setText(t("rflip.empty"))
+            self.summary.setText(t("rflip.empty") + (("\n" + t("rflip.error", err=error)) if error else ""))
             self.table.setRowCount(0)
             return
         self._rows = M.opportunities(self.store, self._weapons, self._index)
