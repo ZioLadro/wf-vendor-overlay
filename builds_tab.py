@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
 )
 
 import builds as B
+from creators_dialog import CreatorsDialog
 from config import CFG
 from i18n import t
 from overlay import volume_color
@@ -96,6 +97,8 @@ class BuildsTab(QWidget):
         self.store = B.BuildStore()
         self._shown = None
         self._missing_prices = []
+        self._pending_name = None
+        self._fallback = []
         self.fetched.connect(self._on_page)
 
         self.btn_link = QPushButton(t("builds.add_link"))
@@ -103,10 +106,12 @@ class BuildsTab(QWidget):
         self.btn_rename = QPushButton(t("builds.rename"))
         self.btn_remove = QPushButton(t("builds.remove"))
         self.btn_open = QPushButton(t("builds.open"))
+        self.btn_creators = QPushButton(t("builds.creators"))
+        self.btn_creators.setToolTip(t("builds.creators.tip"))
         self.btn_fetch = QPushButton(t("builds.fetch"))
         self.btn_fetch.setToolTip(t("builds.fetch.tip"))
         bar = QHBoxLayout()
-        for b in (self.btn_link, self.btn_text, self.btn_rename, self.btn_remove, self.btn_open):
+        for b in (self.btn_link, self.btn_text, self.btn_creators, self.btn_rename, self.btn_remove, self.btn_open):
             bar.addWidget(b)
         bar.addStretch(1)
         bar.addWidget(self.btn_fetch)
@@ -152,6 +157,7 @@ class BuildsTab(QWidget):
 
         self.btn_link.clicked.connect(self.add_link)
         self.btn_text.clicked.connect(self.add_text)
+        self.btn_creators.clicked.connect(self.open_creators)
         self.btn_rename.clicked.connect(self.rename)
         self.btn_remove.clicked.connect(self.remove)
         self.btn_open.clicked.connect(self.open_link)
@@ -164,11 +170,15 @@ class BuildsTab(QWidget):
         url, ok = QInputDialog.getText(self, t("builds.add_link"), t("builds.link.prompt"))
         if not ok or not url.strip():
             return
+        self._fetch_url(url)
+
+    def _fetch_url(self, url, name=None):
         try:
             url = B.check_url(url)
         except B.BuildError as e:
             QMessageBox.warning(self, t("builds.add_link"), t("builds.fetch.error", err=e))
             return
+        self._pending_name = name
         self.btn_link.setEnabled(False)
         self.summary.setText(t("builds.fetching"))
 
@@ -183,6 +193,7 @@ class BuildsTab(QWidget):
         self.btn_link.setEnabled(True)
         self.summary.setText("")
         if err or page is None:
+            self._pending_name, self._fallback = None, []
             QMessageBox.warning(self, t("builds.add_link"), t("builds.fetch.error", err=err))
             return
         found = B.extract_mods(B.page_text(page), self.market)
@@ -190,7 +201,25 @@ class BuildsTab(QWidget):
         if not found:                           # mods only inside the page's data: look there too (noisier)
             found = B.extract_mods(B.page_text(page, with_scripts=True), self.market)
             note = t("builds.review.noisy", n=len(found)) if found else t("builds.review.none")
-        self._review(B.page_title(page) or t("builds.untitled"), found, url, note)
+        if not found and self._fallback:                  # nothing in the page: the video description's mods
+            found, note = self._fallback, ""
+        self._review(self._pending_name or B.page_title(page) or t("builds.untitled"), found, url, note)
+        self._pending_name, self._fallback = None, []
+
+    def open_creators(self):
+        dlg = CreatorsDialog(self.market, self)
+        dlg.add_requested.connect(self._from_creator)
+        dlg.exec()
+
+    def _from_creator(self, v):
+        """A video chosen in the creators window: its Overframe link if it has one (the page is read), otherwise the
+        mod names found in its description."""
+        name = f"{v['title']} ({v['channel']})"[:80]
+        if v["links"]:
+            self._fallback = [(s, n) for s, n in v["mods"]]
+            self._fetch_url(v["links"][0], name)
+        else:
+            self._review(name, [(s, n) for s, n in v["mods"]], v["url"])
 
     def add_text(self):
         dlg = QDialog(self)

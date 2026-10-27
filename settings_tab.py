@@ -74,6 +74,10 @@ GROUPS = [
         ("inv_exclude_maxed", "bool", None, False),
         ("sell_price_offset", "int", (-100, 100), False),
     ]),
+    ("builds", [
+        ("creator_channels", "text", None, False),
+        ("creator_videos", "int", (1, 15), False),
+    ]),
     ("recommendations", [
         ("rec_min_volume", "int", (0, 100000), False),
         ("rec_min_price", "int", (0, 100000), False),

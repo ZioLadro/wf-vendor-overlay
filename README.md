@@ -108,6 +108,8 @@ Hovering a row shows how many you can afford with your standing (Profile tab).
 ### Builds
 Mod lists for a Warframe, weapon or companion, checked against your inventory. **Add from link…** takes an Overframe build link (`overframe.gg/build/…`): the page is downloaded once, from your PC and only when you ask, and the mod names written in it are picked out (abbreviations like *Arc. Flow* / *Trans. Fortitude* are expanded). **Add from list…** takes mod names pasted one per line. Either way a window shows what was found so you can uncheck wrong matches and add missing mods before saving. For each build the tab shows which mods you own (from the AlecaFrame file), which are owned but not at max rank (Endo only), and which are missing with their market price (max-rank price for ranked mods); builds are sorted by what is left to buy, so the ones you can already make come first. *Fetch missing prices* downloads the prices still unknown. Overframe's own mod-slot data is not read, only the mod names in the page text, so always check the list. Builds are stored in `builds.json`.
 
+**From creators…** lists builds from the latest videos of ten Warframe YouTube channels (MHBlacky, Tactical Potato, iFlynn, KnightmareFrame, Grind Hard Squad, Brozime, LeyzarGamingViews, Sabuuchi, TheKengineer, kyaii; picked from public lists of Warframe channels). It reads only each channel's **public RSS feed** (title, link, description; no API key, nothing from the video itself) and keeps the videos whose description holds an Overframe link or at least 3 known mod names. Double-click one to add it as a build (the Overframe page is read, or the mods of the description are used), always with the check window first. Change the channels in Settings > Builds (`creator_channels`: UC… IDs or `youtube.com/channel/UC…` links; `@handle` links do not contain the ID). The feed only holds the latest ~15 videos per channel, and a creator who does not write the mods in the description gives nothing.
+
 ### Profile
 Your standing and rank per syndicate, plus your mastery rank, **read from the AlecaFrame `lastData.dat`** (or the
 companion-app JSON) with **Import standing from file…**; *Reload file* re-reads it after AlecaFrame refreshed it.
@@ -128,7 +130,7 @@ recommendations). **Save** applies and stores them in `config.json`; **Save and 
 the program. Settings marked ⟳ (language, hotkeys, OCR, start active, name threshold) need a restart;
 the rest apply immediately. **Restore defaults** loads the default values (press Save to apply).
 
-## Updates (current version 0.1.8)
+## Updates (current version 0.1.9)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**
 and asks if you want to install it (*Install now* / *Later* / *Skip this version*). If the release exists but its package is not ready yet (the automatic build still running or failed) it says so. In **Settings → Updates** you can check by hand and, if you agree, it downloads
 `WFVendorOverlay-windows.zip`, verifies its SHA-256 against the `.sha256` file of the same release, and replaces

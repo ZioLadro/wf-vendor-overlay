@@ -113,6 +113,8 @@ Passando il mouse su una riga vedi quanti ne puoi permettere con il tuo standing
 ### Build
 Elenchi di mod per un Warframe, un'arma o un compagno, confrontati con il tuo inventario. **Aggiungi da link…** accetta il link di una build Overframe (`overframe.gg/build/…`): la pagina viene scaricata una volta, dal tuo PC e solo quando lo chiedi, e ne vengono estratti i nomi delle mod scritti (le abbreviazioni come *Arc. Flow* / *Trans. Fortitude* vengono espanse). **Aggiungi da elenco…** accetta nomi di mod incollati uno per riga. In entrambi i casi una finestra mostra cosa è stato trovato, così puoi togliere i riconoscimenti sbagliati e aggiungere le mod mancanti prima di salvare. Per ogni build la scheda mostra quali mod possiedi (dal file AlecaFrame), quali hai ma non a rank massimo (solo Endo) e quali mancano, con il prezzo sul market (prezzo a rank massimo per le mod con rank); le build sono ordinate per ciò che resta da comprare, quindi quelle che puoi già fare vengono prima. *Scarica prezzi mancanti* scarica i prezzi ancora sconosciuti. I dati degli slot di Overframe non vengono letti, solo i nomi delle mod nel testo della pagina: controlla sempre l'elenco. Le build sono salvate in `builds.json`.
 
+**Dai creator…** elenca le build dagli ultimi video di dieci canali YouTube di Warframe (MHBlacky, Tactical Potato, iFlynn, KnightmareFrame, Grind Hard Squad, Brozime, LeyzarGamingViews, Sabuuchi, TheKengineer, kyaii; scelti da elenchi pubblici di canali Warframe). Legge solo il **feed RSS pubblico** di ogni canale (titolo, link, descrizione; nessuna chiave API, niente dal video stesso) e tiene i video la cui descrizione ha un link Overframe o almeno 3 nomi di mod noti. Doppio clic per aggiungerne uno come build (viene letta la pagina Overframe, oppure si usano le mod della descrizione), sempre con la finestra di controllo prima. I canali si cambiano in Impostazioni > Build (`creator_channels`: ID UC… o link `youtube.com/channel/UC…`; i link `@handle` non contengono l'ID). Il feed contiene solo gli ultimi ~15 video per canale, e un creator che non scrive le mod nella descrizione non dà nulla.
+
 ### Profilo
 Standing e rank per fazione, più il grado di maestria, **letti dal `lastData.dat` di AlecaFrame** (o dal JSON
 dell'app companion) con **Importa lo standing da file…**; *Ricarica il file* lo rilegge dopo che AlecaFrame l'ha
@@ -133,7 +135,7 @@ prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Sal
 il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
 valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
 
-## Aggiornamenti (versione attuale 0.1.8)
+## Aggiornamenti (versione attuale 0.1.9)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i
