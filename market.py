@@ -99,6 +99,9 @@ class Market:
             if r.status_code == 429 and attempt == 0:
                 time.sleep(1.5)
                 continue
+            if r.status_code >= 400:
+                import logbus
+                logbus.error("warframe.market", f"HTTP {r.status_code} for {url.split('?')[0].replace(BASE, '')}")
             r.raise_for_status()
             return r.json()
 

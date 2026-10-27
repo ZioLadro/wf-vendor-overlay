@@ -84,6 +84,8 @@ class ProfileTab(QWidget):
                 self.check.setText(t("profile.check.same", time=now))
                 return
             self.store.apply_profile(path, parse_bytes(raw, path))
+            import logbus
+            logbus.add("profile", "standing and mastery read again from the AlecaFrame file", "ok")
             self.store.sig = sig
             self._file_stat = key
         except ProfileError as e:

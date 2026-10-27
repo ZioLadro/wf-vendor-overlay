@@ -76,6 +76,8 @@ class WorldTab(QWidget):
             try:
                 self.bus.done.emit(fetch_world(CFG["language"]), "")
             except Exception as e:
+                import logbus
+                logbus.error("world", f"{type(e).__name__}: {e}")
                 self.bus.done.emit(None, type(e).__name__)
         threading.Thread(target=run, daemon=True).start()
 

@@ -378,6 +378,13 @@ class PlannerView(QWidget):
         return out, calc
 
     def _draw(self):
+        self.setUpdatesEnabled(False)                  # rebuilt in one go: no flashing
+        try:
+            self._draw_body()
+        finally:
+            self.setUpdatesEnabled(True)
+
+    def _draw_body(self):
         while self.body.count():
             it = self.body.takeAt(0)
             w = it.widget()

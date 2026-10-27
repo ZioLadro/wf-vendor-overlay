@@ -527,7 +527,11 @@ class InventoryTab(QWidget):
             if first and os.path.getmtime(path) <= (self.inv.imported or 0):
                 return                              # first look: same file we imported
             res = parse_file(path, self.market)
-        except Exception:
+            import logbus
+            logbus.add("inventory", f"{os.path.basename(path)} changed: inventory read again", "ok")
+        except Exception as e:
+            import logbus
+            logbus.error("inventory", f"cannot read {os.path.basename(path)}: {e}")
             return
         if res.matched:
             self.inv.replace_with(res, res.path)

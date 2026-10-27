@@ -4,6 +4,8 @@ A theme is a small palette; build_style() turns it into the Qt style sheet. appl
 every window and dialog changes immediately (no restart). All themes are dark: the semantic colours used in the
 tables (green = good, amber = warning, red = bad) are tuned for dark backgrounds.
 """
+import os
+
 from config import CFG
 
 DEFAULT_FONT = "Segoe UI"
@@ -99,14 +101,29 @@ QLabel[role="small"] {{ color: {p['muted']}; font-size: {max(8, size - 3)}px; }}
 BACKDROP_TILE = 560
 
 
-def make_backdrop(p: dict, strength: int) -> str:
-    """Draws the window's background tile (an original pattern in the spirit of Warframe's Orokin / Tenno art: thin gilded
-    lattice lines, diamonds and arcs) in the theme's colours, kept faint so text stays easy to read. Returns the PNG path."""
+# background patterns (original drawings in the spirit of each faction's look) and the one each theme uses by default
+BACKDROPS = ["lattice", "curves", "plates", "circuit", "cells", "waves", "rings"]
+THEME_BACKDROP = {"classic": "lattice", "tenno": "curves", "ostron": "waves", "entrati": "rings",
+                  "steel_meridian": "plates", "red_veil": "curves", "new_loka": "cells", "grineer": "plates",
+                  "corpus": "circuit", "infested": "cells", "orokin": "lattice", "sentient": "waves", "narmer": "rings"}
+
+
+def backdrop_for(theme_id: str) -> str:
+    choice = str(CFG.get("backdrop_style") or "auto")
+    return choice if choice in BACKDROPS else THEME_BACKDROP.get(theme_id, "lattice")
+
+
+def make_backdrop(p: dict, strength: int, style: str = "lattice") -> str:
+    """Draws the window's background tile (a seamless, faint pattern in the theme's colours, so text stays easy to read).
+    Returns the PNG path (made once per theme colours, pattern and strength, then reused)."""
+    import math
+    import random
     from PyQt6.QtCore import QPointF, QRectF, Qt
-    from PyQt6.QtGui import QColor, QImage, QPainter, QPen
+    from PyQt6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen
     from config import APP_DIR
     strength = max(0, min(100, int(strength)))
-    out = APP_DIR / "backdrop" / f"{p['bg'][1:]}_{p['accent'][1:]}_{p['border'][1:]}_{strength}.png"
+    style = style if style in BACKDROPS else "lattice"
+    out = APP_DIR / "backdrop" / f"{style}_{p['bg'][1:]}_{p['accent'][1:]}_{p['border'][1:]}_{strength}.png"
     if out.exists():
         return out.as_posix()
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -114,6 +131,7 @@ def make_backdrop(p: dict, strength: int) -> str:
     img = QImage(n, n, QImage.Format.Format_RGB32)
     img.fill(QColor(p["bg"]))
     k = strength / 100.0
+    rnd = random.Random(style)                       # same drawing every time
 
     def col(c, a):
         q = QColor(c)
@@ -121,41 +139,147 @@ def make_backdrop(p: dict, strength: int) -> str:
         return q
     g = QPainter(img)
     g.setRenderHint(QPainter.RenderHint.Antialiasing)
-    # diagonal lattice
-    g.setPen(QPen(col(p["border"], 120), 1))
-    step = n // 4
-    for i in range(-4, 9):
-        g.drawLine(QPointF(i * step, 0), QPointF(i * step + n, n))
-        g.drawLine(QPointF(i * step, n), QPointF(i * step + n, 0))
-    # small diamonds where the lines cross
-    g.setPen(Qt.PenStyle.NoPen)
-    g.setBrush(col(p["accent"], 70))
-    for x in range(0, n + 1, step):
-        for y in range(0, n + 1, step):
-            cx, cy = x + (step / 2 if (y // step) % 2 else 0), y
-            d = 3.5
-            g.drawPolygon([QPointF(cx, cy - d), QPointF(cx + d, cy), QPointF(cx, cy + d), QPointF(cx - d, cy)])
-    # gilded arcs and rings (centred on the tile corners, so they join across tiles)
-    g.setBrush(Qt.BrushStyle.NoBrush)
-    for r, a, w in ((n * 0.42, 80, 1.6), (n * 0.36, 55, 1.0), (n * 0.18, 60, 1.2)):
-        g.setPen(QPen(col(p["accent"], a), w))
-        for cx, cy in ((0, 0), (n, 0), (0, n), (n, n)):
-            g.drawEllipse(QPointF(cx, cy), r, r)
-    g.setPen(QPen(col(p["accent"], 70), 1.2))
-    c = QPointF(n / 2, n / 2)
-    g.drawEllipse(c, n * 0.11, n * 0.11)
-    g.drawArc(QRectF(n / 2 - n * 0.16, n / 2 - n * 0.16, n * 0.32, n * 0.32), 30 * 16, 120 * 16)
-    g.drawArc(QRectF(n / 2 - n * 0.16, n / 2 - n * 0.16, n * 0.32, n * 0.32), 210 * 16, 120 * 16)
+
+    def tiled(draw, x, y, r):
+        """Draws a shape near (x, y) of size r, repeated across the tile's edges so the tile joins seamlessly."""
+        for dx in (-n, 0, n):
+            for dy in (-n, 0, n):
+                if -r <= x + dx <= n + r and -r <= y + dy <= n + r:
+                    draw(x + dx, y + dy)
+
+    if style == "lattice":                           # Orokin: gilded lattice, diamonds, rings
+        g.setPen(QPen(col(p["border"], 120), 1))
+        step = n // 4
+        for i in range(-4, 9):
+            g.drawLine(QPointF(i * step, 0), QPointF(i * step + n, n))
+            g.drawLine(QPointF(i * step, n), QPointF(i * step + n, 0))
+        g.setPen(Qt.PenStyle.NoPen)
+        g.setBrush(col(p["accent"], 70))
+        for x in range(0, n + 1, step):
+            for y in range(0, n + 1, step):
+                cx, d = x + (step / 2 if (y // step) % 2 else 0), 3.5
+                g.drawPolygon([QPointF(cx, y - d), QPointF(cx + d, y), QPointF(cx, y + d), QPointF(cx - d, y)])
+        g.setBrush(Qt.BrushStyle.NoBrush)
+        for r, a, w in ((n * 0.42, 80, 1.6), (n * 0.36, 55, 1.0), (n * 0.18, 60, 1.2)):
+            g.setPen(QPen(col(p["accent"], a), w))
+            for cx, cy in ((0, 0), (n, 0), (0, n), (n, n)):
+                g.drawEllipse(QPointF(cx, cy), r, r)
+        g.setPen(QPen(col(p["accent"], 70), 1.2))
+        g.drawEllipse(QPointF(n / 2, n / 2), n * 0.11, n * 0.11)
+    elif style == "curves":                          # Tenno: long flowing curls
+        for i in range(9):
+            y0 = i * n / 9
+            path = QPainterPath(QPointF(-20, y0))
+            for j in range(4):
+                x1 = j * n / 4
+                path.cubicTo(QPointF(x1 + n / 12, y0 - 40), QPointF(x1 + n / 6, y0 + 40), QPointF(x1 + n / 4, y0))
+            g.setPen(QPen(col(p["accent"] if i % 3 == 0 else p["border"], 85 if i % 3 == 0 else 120), 1.3 if i % 3 == 0 else 1))
+            g.drawPath(path)
+        for _ in range(7):
+            x, y, r = rnd.uniform(0, n), rnd.uniform(0, n), rnd.uniform(14, 34)
+            g.setPen(QPen(col(p["accent"], 75), 1.2))
+            tiled(lambda a, b, r=r: g.drawArc(QRectF(a - r, b - r, 2 * r, 2 * r), 20 * 16, 250 * 16), x, y, r)
+    elif style == "plates":                          # Grineer / Steel Meridian: riveted armour plates
+        step = n // 5
+        g.setPen(QPen(col(p["border"], 140), 1.4))
+        for i in range(6):
+            for j in range(6):
+                off = step / 2 if j % 2 else 0
+                g.drawRect(QRectF(i * step + off - step, j * step, step, step))
+        g.setPen(Qt.PenStyle.NoPen)
+        g.setBrush(col(p["accent"], 80))
+        for i in range(6):
+            for j in range(6):
+                off = step / 2 if j % 2 else 0
+                for cx, cy in ((8, 8), (step - 8, 8), (8, step - 8), (step - 8, step - 8)):
+                    g.drawEllipse(QPointF(i * step + off - step + cx, j * step + cy), 2.2, 2.2)
+    elif style == "circuit":                         # Corpus: circuit traces with nodes
+        grid = n // 14
+        for _ in range(26):
+            x, y = rnd.randrange(14) * grid, rnd.randrange(14) * grid
+            pts = [QPointF(x, y)]
+            for _s in range(rnd.randint(2, 5)):
+                if rnd.random() < 0.5:
+                    x += rnd.choice((-1, 1)) * rnd.randint(1, 4) * grid
+                else:
+                    y += rnd.choice((-1, 1)) * rnd.randint(1, 4) * grid
+                pts.append(QPointF(x, y))
+            for dx in (-n, 0, n):
+                for dy in (-n, 0, n):
+                    g.setPen(QPen(col(p["border"], 150), 1.2))
+                    for a, b in zip(pts, pts[1:]):
+                        g.drawLine(a + QPointF(dx, dy), b + QPointF(dx, dy))
+                    g.setPen(QPen(col(p["accent"], 110), 1.2))
+                    g.setBrush(Qt.BrushStyle.NoBrush)
+                    g.drawEllipse(pts[-1] + QPointF(dx, dy), 3.5, 3.5)
+    elif style == "cells":                           # Infested / New Loka: organic cells
+        for _ in range(38):
+            x, y, r = rnd.uniform(0, n), rnd.uniform(0, n), rnd.uniform(10, 46)
+            g.setPen(QPen(col(p["border"] if r > 25 else p["accent"], 130 if r > 25 else 80), 1.1))
+            g.setBrush(Qt.BrushStyle.NoBrush)
+            tiled(lambda a, b, r=r: g.drawEllipse(QPointF(a, b), r, r * rnd.uniform(0.75, 1.0)), x, y, r)
+            if r > 30:
+                tiled(lambda a, b, r=r: g.drawEllipse(QPointF(a + r * 0.2, b - r * 0.1), r * 0.25, r * 0.25), x, y, r)
+    elif style == "waves":                           # Ostron / Sentient: layered waves
+        for i in range(12):
+            y0 = i * n / 12
+            path = QPainterPath(QPointF(0, y0))
+            for x in range(0, n + 1, 8):
+                path.lineTo(QPointF(x, y0 + 9 * math.sin(2 * math.pi * x / (n / 2) + i * 0.8)))
+            g.setPen(QPen(col(p["accent"] if i % 4 == 0 else p["border"], 85 if i % 4 == 0 else 125), 1.2))
+            g.drawPath(path)
+    else:                                            # rings (Entrati / Narmer): spirals and concentric rings
+        for cx, cy in ((n * 0.25, n * 0.3), (n * 0.75, n * 0.75)):
+            for j in range(7):
+                r = 18 + j * 20
+                g.setPen(QPen(col(p["accent"] if j % 3 == 0 else p["border"], 80 if j % 3 == 0 else 120), 1.1))
+                tiled(lambda a, b, r=r, j=j: g.drawArc(QRectF(a - r, b - r, 2 * r, 2 * r), (j * 40) * 16, 280 * 16), cx, cy, r)
     g.end()
     img.save(str(out), "PNG")
     return out.as_posix()
 
 
-def backdrop_style(p: dict, path: str) -> str:
-    """The main window shows the background tile; containers and labels inside it become see-through, while tables, lists,
-    inputs, buttons and dialogs keep their solid colours (so text never sits on the pattern where it would be hard to read)."""
+def make_picture_backdrop(p: dict, strength: int, src: str):
+    """Your own picture as background: cropped to 16:9, 1920×1080, and blended into the theme's background colour (the
+    visibility setting is how much of the picture shows), so text stays readable. None if the file cannot be read."""
+    import hashlib
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtGui import QColor, QImage, QPainter
+    from config import APP_DIR
+    try:
+        st = os.stat(src)
+    except OSError:
+        return None
+    strength = max(0, min(100, int(strength)))
+    key = hashlib.md5(f"{src}|{st.st_mtime_ns}|{st.st_size}|{p['bg']}|{strength}".encode()).hexdigest()[:16]
+    out = APP_DIR / "backdrop" / f"picture_{key}.png"
+    if out.exists():
+        return out.as_posix()
+    img = QImage(src)
+    if img.isNull():
+        return None
+    W, H = 1920, 1080
+    img = img.scaled(W, H, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
+    img = img.copy((img.width() - W) // 2, (img.height() - H) // 2, W, H)
+    canvas = QImage(W, H, QImage.Format.Format_RGB32)
+    canvas.fill(QColor(p["bg"]))
+    g = QPainter(canvas)
+    g.setOpacity(0.06 + 0.5 * strength / 100.0)        # 45 (default) -> about a quarter of the picture
+    g.drawImage(0, 0, img)
+    g.end()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    canvas.save(str(out), "PNG")
+    return out.as_posix()
+
+
+def backdrop_style(p: dict, path: str, stretch: bool = False) -> str:
+    """The main window shows the background tile (or your picture, stretched to the window); containers and labels inside
+    it become see-through, while tables, lists, inputs, buttons and dialogs keep their solid colours (so text never sits
+    on the pattern where it would be hard to read)."""
+    paint = (f'border-image: url("{path}") 0 0 0 0 stretch stretch;' if stretch
+             else f'background-image: url("{path}"); background-repeat: repeat-xy;')
     return f"""
-#mainwin {{ background-color: {p['bg']}; background-image: url("{path}"); background-repeat: repeat-xy; }}
+#mainwin {{ background-color: {p['bg']}; {paint} }}
 #mainwin QLabel, #mainwin QCheckBox, #mainwin QRadioButton, #mainwin QGroupBox, #mainwin QStackedWidget,
 #mainwin QSplitter, #mainwin QTabWidget, #mainwin QScrollArea, #mainwin QWidget#qt_scrollarea_viewport,
 #mainwin .QWidget {{ background: transparent; }}
@@ -176,9 +300,16 @@ def apply(app=None, theme_id=None, font=None, size=None):
     p = palette(theme_id)
     if CFG.get("backdrop", True):
         try:
-            style += backdrop_style(p, make_backdrop(p, CFG.get("backdrop_strength", 45)))
-        except Exception:
-            pass                                    # no picture: plain background
+            kind = str(CFG.get("backdrop_style") or "auto")
+            pic = make_picture_backdrop(p, CFG.get("backdrop_strength", 45), str(CFG.get("backdrop_image") or "")) \
+                if kind == "image" and CFG.get("backdrop_image") else None
+            if pic:
+                style += backdrop_style(p, pic, stretch=True)
+            elif kind != "none":
+                style += backdrop_style(p, make_backdrop(p, CFG.get("backdrop_strength", 45), backdrop_for(theme_id)))
+        except Exception as e:
+            import logbus
+            logbus.error("theme", f"background: {type(e).__name__}: {e}")    # plain background
     app.setStyleSheet(style)
     import uiutil
     uiutil.PRICE_COLOR.setNamedColor(p["accent"])

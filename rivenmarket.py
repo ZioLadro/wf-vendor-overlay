@@ -70,7 +70,12 @@ LOG_FILE = APP_DIR / "riven.log"
 
 
 def log(msg):
-    """One line in riven.log (kept under ~200 KB)."""
+    """One line in riven.log (kept under ~200 KB), also shown in the Console."""
+    try:
+        import logbus
+        logbus.add("rivens", msg, "error" if "error" in str(msg).lower() or "stopped" in str(msg).lower() else "info")
+    except Exception:
+        pass
     try:
         if LOG_FILE.exists() and LOG_FILE.stat().st_size > 200_000:
             LOG_FILE.write_text("", encoding="utf-8")

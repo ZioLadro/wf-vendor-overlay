@@ -138,7 +138,7 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
             info = (riven.get("polarity", ""), 10, 8, "", "R", {})
             m = (m[0], riven.get("rank", m[1]))
             for a in riven.get("attributes", []):
-                if a.get("pct"):
+                if a.get("pct") and a.get("value") is not None:
                     lab = _plain(a["label"])
                     bonus[lab] = bonus.get(lab, 0) + a["value"] / 100
         else:

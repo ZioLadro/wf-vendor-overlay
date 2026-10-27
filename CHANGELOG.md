@@ -3,6 +3,25 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.2.8
+- **World strip** under the player strip: the Steel Path Omnia fissures open now, the Earth / Cetus / Orb Vallis cycles,
+  when Baro Ki'Teer comes back (or leaves) and when the Prime Resurgence offer changes, with live countdowns (from
+  api.warframestat.us, read every 5 minutes). Setting *World strip under the player strip*.
+- **Console tab**: what the program does in the background (pictures and logos from the wiki, price updates, Riven
+  scans, files read, world state, overlay messages) and every error, with the jobs in progress on top; filter by source
+  or errors only, save to a file.
+- **No more flashing while pictures download**: they are put where they are missing instead of rebuilding the lists and
+  cards every few seconds.
+- **Builds: Orokin Reactor / Catalyst** shown under the title: installed, not installed, not stated by the file, or
+  deduced (older items do not say it, but one of their loadouts only fits with it).
+- **Rivens with an old stat** (Gas, Ammo Efficiency: rolls the game data no longer has) now show their other stats, with
+  "?" for the old one, instead of no stats at all; a stat their weapon type no longer rolls (e.g. Zoom on a shotgun)
+  uses another type's figures.
+- **Backgrounds**: seven original patterns (Orokin lattice, Tenno curls, Grineer plates, Corpus circuits, Infested cells,
+  waves, Entrati rings), each theme with its own; or pick any of them, **your own picture** (cropped to the window and
+  blended into the theme so text stays readable), or none. Settings *Background* and *Your background picture*.
+- Riven polarity Unairu was reported to Quantframe as Zenurik.
+
 ## 0.2.7
 - **Builds pictures from the Warframe wiki only** (mod cards and items), through the wiki's MediaWiki API (the
   article's main picture, else `File:<name>.png`). At start the program asks in the background for the pictures still

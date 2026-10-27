@@ -115,7 +115,7 @@ def read(inv: dict, market=None) -> list:
         oid = (u.get("ItemId") or {}).get("$oid")
         if oid and "/Randomized/" in str(u.get("ItemType", "")):
             try:
-                rivens[oid] = RV.compute(u)
+                rivens[oid] = RV.compute(u, partial=True)
             except ValueError:
                 rivens[oid] = {"unrevealed": True}
         if oid:
@@ -134,6 +134,8 @@ def read(inv: dict, market=None) -> list:
             roles = LAYOUT.get(kind)
             cfgs = item.get("Configs") if isinstance(item.get("Configs"), list) else []
             reactor = bool((item.get("Features") or 0) & 1)
+            # file: the game file says it is there; none: the file says it is not; unknown: not stated; guess: deduced from a build
+            reactor_src = "file" if reactor else ("none" if "Features" in item else "unknown")
             level = _rank(item.get("XP"), 1000 if key in _FRAME_KINDS else 500, max_rank(item_name, kind))
             shards = [shard(a) for a in item.get("ArchonCrystalUpgrades") or [] if isinstance(a, dict)]
             first = len(out)
@@ -175,7 +177,7 @@ def read(inv: dict, market=None) -> list:
                 calc = BC.evaluate(kind, item_name, roles, mods, pols, reactor, level)
                 if not reactor and "Features" not in item and calc["free"] < 0:
                     # older items do not say whether a Reactor / Catalyst is installed; a build that only fits with one has it
-                    reactor = True
+                    reactor, reactor_src = True, "guess"
                     calc = BC.evaluate(kind, item_name, roles, mods, pols, reactor, level)
                 for s, c in zip(slots, calc["slots"]):
                     s.update(pol=c["pol"], mpol=c["mpol"], drain=c["drain"], state=c["state"])
@@ -190,6 +192,10 @@ def read(inv: dict, market=None) -> list:
             sib = [{"idx": b["idx"], "config": b["config"], "name": b["cfg_name"]} for b in out[first:]]
             for b in out[first:]:
                 b["configs"] = sib
+                if reactor and not b["reactor"]:          # deduced from a later configuration: it is the same item
+                    b["capacity"]["total"] += b["level"]
+                    b["capacity"]["free"] += b["level"]
+                b["reactor"], b["reactor_src"] = reactor, reactor_src
     out.sort(key=lambda b: (b["item"].lower(), b["config"]))
     return out
 

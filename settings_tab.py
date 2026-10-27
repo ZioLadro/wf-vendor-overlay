@@ -34,6 +34,7 @@ GROUPS = [
         ("hide_zero_volume", "bool", None, False),
         ("open_list_on_start", "bool", None, False),
         ("window_on_top", "bool", None, True),
+        ("world_strip", "bool", None, True),
         ("profile_reload_s", "int", (0, 3600), True),
         ("world_refresh_s", "int", (15, 3600), False),
     ]),
@@ -63,6 +64,8 @@ GROUPS = [
     ("theme", [
         ("theme", "choice", "themes", False),
         ("backdrop", "bool", None, False),
+        ("backdrop_style", "choice", "backdrops", False),
+        ("backdrop_image", "text", "picture", False),
         ("backdrop_strength", "int", (0, 100), False),
         ("ui_font", "font", None, False),
         ("ui_font_size", "int", (9, 24), False),
@@ -213,6 +216,14 @@ class SettingsTab(QWidget):
             w = QDoubleSpinBox(minimum=opt[0], maximum=opt[1], decimals=opt[2], singleStep=0.1 if opt[1] > 1 else 0.01)
         elif kind == "choice":
             w = QComboBox()
+            if opt == "backdrops":
+                import theme
+                w.addItem(t("backdrop.auto"), "auto")
+                for b in theme.BACKDROPS:
+                    w.addItem(t("backdrop." + b), b)
+                w.addItem(t("backdrop.image"), "image")
+                w.addItem(t("backdrop.none"), "none")
+                return w
             if opt == "themes":
                 import theme
                 for tid in theme.ORDER:
@@ -229,6 +240,18 @@ class SettingsTab(QWidget):
         else:
             w = QLineEdit()
             w.setMaximumWidth(220)
+            if opt == "picture":                       # a file of yours: a button in the box opens the file chooser
+                from PyQt6.QtWidgets import QFileDialog, QStyle
+                act = w.addAction(w.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon),
+                                  QLineEdit.ActionPosition.TrailingPosition)
+
+                def pick(_c=False, box=w):
+                    path, _ = QFileDialog.getOpenFileName(box, t("set.backdrop_image"), box.text(),
+                                                          "Images (*.png *.jpg *.jpeg *.webp *.bmp)")
+                    if path:
+                        box.setText(path)
+                act.triggered.connect(pick)
+                w.setMaximumWidth(320)
             return w
         w.setMaximumWidth(140)
         return w

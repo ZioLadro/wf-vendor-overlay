@@ -36,6 +36,8 @@ Ogni scheda mostra una **barra del giocatore**: nome (clicca per impostarlo, i f
 ## Finestra del listino (F7)
 La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). È una finestra normale: viene davanti quando la apri (tasto rapido o icona) e non resta sopra il gioco (impostazione *Finestra sempre in primo piano* per tenercela). L'overlay continua a funzionare con la finestra aperta; quando è sopra il gioco la sua area viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 
+Sotto la barra del giocatore, la **barra del mondo** mostra le fessure Omnia Steel Path, i cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer e la Prime Resurgence con conto alla rovescia. La scheda **Console** elenca cosa gira in background e ogni errore.
+
 Il **listino prezzi** e i **consigli** condividono la prima scheda (*Prezzi e consigli*): il listino sopra, i consigli sotto; trascina il divisore per cambiarne le altezze (viene ricordato).
 
 ### Listino prezzi
@@ -164,6 +166,8 @@ Tutto viene dal tuo `lastData.dat` di AlecaFrame (trovato da solo, lo stesso fil
 
 Le card seguono la schermata build del gioco (polarità dello slot in alto a sinistra, polarità e drain della mod in alto a destra, rank a rombi sotto), con accanto la **capacità** (libera / totale) e un **riepilogo statistiche** approssimato: contano solo le mod, non Arcani, Archon Shard, Helminth, bonus di set o effetti condizionali. I nomi che hai dato alle configurazioni in gioco compaiono come pulsanti.
 
+Sotto il titolo: rank dell'oggetto, forma e se ha un **Reattore / Catalizzatore Orokin** (dal file; *dedotto* per gli oggetti vecchi i cui loadout ci stanno solo con esso). Le Riven con una statistica vecchia che i dati del gioco non hanno più la mostrano come "?".
+
 Le immagini di questa scheda (card delle mod, Warframe, armi, compagni) vengono **solo dalla wiki di Warframe**; quelle che mancano vengono chieste in background all'avvio. L'elenco *Per oggetto* è diviso per tipo. La capacità delle mod è il rank dell'oggetto (40 per armi Kuva/Tenet/Coda e Necramech), raddoppiata da un Reactor/Catalyst; le polarità innate vengono messe dove fanno risparmiare più drain, perché il file di gioco non dice dove sono.
 
 Le card **si adattano alla finestra** (larghezza e altezza, stesse proporzioni per mod e Arcani) e mostrano l'immagine della mod al passaggio del mouse.
@@ -198,7 +202,7 @@ valgono subito. **Ripristina predefiniti** carica i valori di default (premi Sal
 
 Le Impostazioni hanno una sotto-scheda per categoria. **Tema e carattere** offre temi di colori ispirati alle fazioni di Warframe, alleate (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) e nemiche (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), più il *Classic* originale, oltre a famiglia e dimensione del carattere. La scelta si vede subito in anteprima in tutte le finestre e resta solo se premi Salva (uscendo dalla scheda torna l'aspetto salvato). L'overlay in gioco mantiene i suoi colori. Tutti i temi sono scuri.
 
-## Aggiornamenti (versione attuale 0.2.7)
+## Aggiornamenti (versione attuale 0.2.8)
 
 Vedi [CHANGELOG.it.md](CHANGELOG.it.md) per cosa cambia in ogni versione (dalla 0.2.1; la pagina della release mostra le stesse note).
 

@@ -3,6 +3,25 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.2.8
+- **Barra del mondo** sotto la barra del giocatore: le fessure Omnia Steel Path aperte ora, i cicli di Terra / Cetus /
+  Orb Vallis, quando torna (o parte) Baro Ki'Teer e quando cambia l'offerta della Prime Resurgence, con conto alla
+  rovescia (da api.warframestat.us, letto ogni 5 minuti). Impostazione *Barra del mondo sotto la barra giocatore*.
+- **Scheda Console**: cosa fa il programma in background (immagini e loghi dalla wiki, aggiornamento prezzi, scansioni
+  Riven, file letti, stato del mondo, messaggi dell'overlay) e ogni errore, con i lavori in corso in alto; filtro per
+  fonte o solo errori, salvataggio su file.
+- **Niente più lampeggi mentre si scaricano le immagini**: vengono messe dove mancano invece di ricostruire elenchi e
+  card ogni pochi secondi.
+- **Build: Reattore / Catalizzatore Orokin** sotto il titolo: installato, non installato, non indicato dal file, oppure
+  dedotto (gli oggetti più vecchi non lo dicono, ma un loro loadout ci sta solo con esso).
+- **Riven con una statistica vecchia** (Gas, Efficienza munizioni: tiri che i dati del gioco non hanno più) ora mostrano
+  le altre statistiche, con "?" per quella vecchia, invece di nessuna; una statistica che il tipo d'arma non tira più
+  (es. Zoom su un fucile a pompa) usa i valori di un altro tipo.
+- **Sfondi**: sette motivi originali (reticolo Orokin, volute Tenno, piastre Grineer, circuiti Corpus, cellule Infested,
+  onde, anelli Entrati), ognuno abbinato a un tema; oppure scegline uno qualsiasi, **una tua immagine** (ritagliata sulla
+  finestra e fusa col tema perché il testo resti leggibile) o nessuno. Impostazioni *Sfondo* e *La tua immagine di sfondo*.
+- La polarità Unairu delle Riven veniva inviata a Quantframe come Zenurik.
+
 ## 0.2.7
 - **Immagini delle Build solo dalla wiki di Warframe** (card delle mod e oggetti), tramite l'API MediaWiki della wiki
   (l'immagine principale della pagina, altrimenti `File:<nome>.png`). All'avvio il programma chiede in background le

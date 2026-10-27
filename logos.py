@@ -104,13 +104,17 @@ def _run():
     global done_count
     while True:
         tag, name = _q.get()
+        import logbus
         try:
             if _fetch(tag, name):
                 done_count += 1
+                logbus.add("logos", f"{name}: logo saved", "ok")
             else:
                 _mark_failed(tag)
-        except Exception:
+                logbus.add("logos", f"{name}: no logo found on the wiki (asked again in a day)", "warn")
+        except Exception as e:
             _mark_failed(tag)
+            logbus.error("logos", f"{name}: {type(e).__name__}: {e}")
         finally:
             _pending.discard(tag)
             time.sleep(GAP)

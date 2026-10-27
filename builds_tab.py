@@ -21,7 +21,7 @@ from i18n import t
 from uiutil import age_text, role
 
 CACHE_FILE = APP_DIR / "loadouts.json"
-CACHE_VER = 4                        # bump when the loadout data gains fields (an older cache is read again from the game file)
+CACHE_VER = 5                        # bump when the loadout data gains fields (an older cache is read again from the game file)
 KINDS = ["warframe", "primary", "secondary", "melee", "archwing", "archgun", "necramech", "companion"]
 SHARD_RGB = {"RED": "#c8453c", "BLUE": "#3b8fd9", "GREEN": "#3fbf6a", "YELLOW": "#e0b83a", "ORANGE": "#e08a3a",
              "PURPLE": "#a46be0"}
@@ -30,15 +30,24 @@ SHARD_RGB = {"RED": "#c8453c", "BLUE": "#3b8fd9", "GREEN": "#3fbf6a", "YELLOW": 
 THUMB = 40
 
 
+_thumbs = {}
+
+
 def thumb(name, size=THUMB):
-    """Picture of a Warframe / weapon / companion from the Warframe wiki (None until it is downloaded)."""
+    """Picture of a Warframe / weapon / companion from the Warframe wiki (None until it is downloaded). Kept in memory once
+    loaded, so redrawing the lists does not read and scale the files again."""
+    key = (name, size)
+    if key in _thumbs:
+        return _thumbs[key]
     f = previews.by_name(name, wiki_only=True) if name else None
     if not f:
         return None
     pm = QPixmap(str(f))
     if pm.isNull():
         return None
-    return pm.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    pm = pm.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+    _thumbs[key] = pm
+    return pm
 
 
 def prefetch_names(loadouts, presets) -> list:
@@ -131,6 +140,13 @@ class LoadoutView(QWidget):
         self.scaler.attach()
 
     def show_loadout(self, lo):
+        self.setUpdatesEnabled(False)                  # rebuilt in one go: no flashing half-drawn cards
+        try:
+            self._show(lo)
+        finally:
+            self.setUpdatesEnabled(True)
+
+    def _show(self, lo):
         self._lo = lo
         self._clear(self.body)
         if not lo:
@@ -145,7 +161,15 @@ class LoadoutView(QWidget):
             self.pic.clear()
         label = lo.get("cfg_name") or t("builds.config", c=lo["config"])
         self.title.setText(f"{lo['item']}  ·  {label}")
-        self.sub.setText(t("builds.kind." + lo["kind"]) + "  ·  " + t("builds.forma", n=lo["forma"]))
+        what = t("builds.catalyst") if lo["kind"] in ("primary", "secondary", "melee", "archgun") else t("builds.reactor.name")
+        if lo.get("reactor"):
+            pot = t("builds.pot.yes" if lo.get("reactor_src") != "guess" else "builds.pot.guess", what=what)
+        elif lo.get("reactor_src") == "unknown":
+            pot = t("builds.pot.unknown", what=what)
+        else:
+            pot = t("builds.pot.no", what=what)
+        self.sub.setToolTip(t("builds.pot.tip"))
+        self.sub.setText(t("builds.kind." + lo["kind"]) + "  ·  " + t("builds.forma", n=lo["forma"]) + "  ·  " + pot)
         self._config_buttons(lo)
         slots = lo["slots"]
         row = QHBoxLayout()
@@ -444,24 +468,37 @@ class BuildsTab(QWidget):
                                    src=os.path.basename(self.source) or "–", when=age_text(self.when)))
 
     def _pictures(self):
-        """Pictures arrive from the wiki in the background: redraw what is on screen when some came in."""
+        """Pictures arrive from the wiki in the background: when some came in, put them where they are missing, without
+        rebuilding the lists (rebuilding everything every few seconds made the window flash)."""
         n = previews.pending()
-        if n != getattr(self, "_pending_seen", 0) and self.isVisible():
+        now = time.monotonic()
+        if n == getattr(self, "_pending_seen", 0) or not self.isVisible() or now - getattr(self, "_pics_at", 0) < 5:
+            return
+        self._pending_seen, self._pics_at = n, now
+        self.setUpdatesEnabled(False)
+        try:
             mode = self.mode.currentData()
             if mode == "items":
-                self._fill(keep=True)
-            elif mode == "game" and self.plist.currentItem() is not None:
-                b = self.pview.group.checkedButton() if getattr(self.pview, "group", None) is not None else None
-                checked = b.text() if b is not None else None
-                self._show_preset(self.plist.currentItem())
-                for btn, r in self.pview._buttons:     # keep the same row selected
-                    if checked is not None and btn.text() == checked:
-                        btn.setChecked(True)
-                        self.pview._pick(r)
-                        break
+                for i in range(self.list.count()):
+                    it = self.list.item(i)
+                    idx = it.data(Qt.ItemDataRole.UserRole)
+                    if idx is not None and it.icon().isNull():
+                        pm = thumb(self.loadouts[idx]["item"], 28)
+                        if pm is not None:
+                            it.setIcon(QIcon(pm))
+                self.view.show_loadout(self.view._lo)
+            elif mode == "game":
+                for btn, r in self.pview._buttons:
+                    if btn.icon().isNull():
+                        pm = thumb(r["item"])
+                        if pm is not None:
+                            btn.setIcon(QIcon(pm))
+                            btn.setIconSize(pm.size())
+                self.pview.detail.show_loadout(self.pview.detail._lo)
             else:
                 self.planner._draw()
-        self._pending_seen = n
+        finally:
+            self.setUpdatesEnabled(True)
 
     # ---------- data ----------
     def _load_cache(self):
@@ -493,9 +530,12 @@ class BuildsTab(QWidget):
             if not silent:
                 QMessageBox.information(self, t("tab.builds"), t("builds.nofile"))
             return False
+        import logbus
         try:
             data = LO.read_all_file(path)
+            logbus.add("builds", f"{len(data['loadouts'])} loadouts read from {os.path.basename(path)}", "ok")
         except (ValueError, OSError) as e:
+            logbus.error("builds", f"cannot read {os.path.basename(path)}: {e}")
             if not silent:
                 QMessageBox.warning(self, t("tab.builds"), t("builds.fail", err=e))
             return False

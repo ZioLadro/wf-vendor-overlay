@@ -45,10 +45,16 @@ class Refresher(QObject):
         self.started.emit(len(slugs))
         market, cancel = self.market, self._cancel
 
+        import logbus
+        logbus.add("prices", f"updating {len(slugs)} items")
+
+        def prog(d, n, e):
+            self.progress.emit(d, n, e)
+            logbus.progress("prices", d, n, f"{e} errors" if e else "")
+
         def run():
             try:
-                done, errors, stopped = market.refresh_many(
-                    slugs, cancel, lambda d, n, e: self.progress.emit(d, n, e), max_age)
+                done, errors, stopped = market.refresh_many(slugs, cancel, prog, max_age)
                 if cancel.is_set():
                     msg = t("job.stopped", done=done, total=len(slugs))
                 elif stopped:
@@ -59,6 +65,9 @@ class Refresher(QObject):
                     msg += t("job.errors", n=errors)
             except Exception as e:
                 msg = t("status.error", err=e)
+                logbus.error("prices", f"{type(e).__name__}: {e}")
+            logbus.progress("prices", 0, 0)
+            logbus.add("prices", msg, "warn" if "error" in msg.lower() or "errori" in msg.lower() else "ok")
             self.finished.emit(msg)
 
         self._thread = threading.Thread(target=run, daemon=True)

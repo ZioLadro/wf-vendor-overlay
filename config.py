@@ -64,6 +64,9 @@ DEFAULTS = {
     "rankup_min_gain": 10,        # rank-up advice: minimum platinum gained per copy (max-rank price - current price)
     "inv_hide_zero_volume": False,   # Inventory: hide items with no trades in 24 h
     "market_split": [3, 2],          # Prices tab: height of the price list and of the recommendations
+    "world_strip": True,             # show fissures (Steel Path Omnia), cycles, Baro and Prime Resurgence under the player strip
+    "backdrop_style": "auto",        # background: auto (the theme's own pattern), one of theme.BACKDROPS, image, none
+    "backdrop_image": "",            # your own picture for backdrop_style "image"
     "backdrop": True,                # themed background pattern behind the tabs (tables and inputs keep solid colours)
     "backdrop_strength": 45,         # how visible the pattern is (0-100)
     "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)

@@ -27,7 +27,7 @@ DENOM = 53687091.0
 MULT = {(2, 0): (0.99, 0.0), (2, 1): (1.2375, -0.495), (3, 0): (0.75, 0.0), (3, 1): (0.9375, -0.75)}
 TWO_DIGIT = ("FactionDamageGrineer", "FactionDamageCorpus", "FactionDamageInfested")
 POLARITY = {"AP_ATTACK": "madurai", "AP_DEFENSE": "vazarin", "AP_TACTIC": "naramon", "AP_UNIVERSAL": "universal",
-            "AP_UMBRA": "umbra", "AP_WARD": "zenurik", "AP_POWER": "zenurik", "AP_PRECEPT": "penjaga",
+            "AP_UMBRA": "umbra", "AP_WARD": "unairu", "AP_POWER": "zenurik", "AP_PRECEPT": "penjaga",
             "AP_ANY": "any"}
 WEAPON_FIX = {"/Lotus/Weapons/Tenno/Melee/Dagger/DarkDaggerBase": "/Lotus/Weapons/Tenno/Melee/Dagger/DarkDagger",
               "/Lotus/Weapons/Tenno/Shotgun/QuadShotgunBase": "/Lotus/Weapons/Tenno/Shotgun/QuadShotgun"}
@@ -83,8 +83,13 @@ def stat_value(raw: float, base: float, pct: bool, tag: str, dispo: float, mult:
     return fmt(v)
 
 
-def compute(item: dict) -> dict:
-    """One riven from an inventory upgrade. Raises ValueError with the reason when it cannot be worked out."""
+OLD_STATS = {"WeaponGasDamageMod": "Gas", "WeaponAmmoEfficiency": "Ammo Efficiency"}   # rolled years ago, gone from the data
+
+
+def compute(item: dict, partial: bool = False) -> dict:
+    """One riven from an inventory upgrade. Raises ValueError with the reason when it cannot be worked out.
+    partial: a stat the game data no longer has (an old roll such as Gas or Ammo Efficiency) is kept with value None
+    instead of failing the whole riven (the Builds tab shows the other stats)."""
     f, d = fingerprint(item), data()
     compat = WEAPON_FIX.get(f.get("compat", ""), f.get("compat", ""))
     if not compat or not f.get("buffs"):
@@ -104,6 +109,14 @@ def compute(item: dict) -> dict:
     for entries, positive in ((f["buffs"], True), (f.get("curses") or [], False)):
         for s in entries:
             base = stats.get(s.get("Tag"))
+            if not base and partial:                   # a stat this riven type no longer rolls: another type's figures
+                base = next((st[s.get("Tag")] for st in d["types"].values() if s.get("Tag") in st), None)
+            if not base and partial:
+                tag = str(s.get("Tag", ""))
+                attrs.append({"tag": tag, "label": OLD_STATS.get(tag) or tag.replace("Weapon", "").replace("Mod", ""),
+                              "positive": positive, "value": None, "raw": float(s.get("Value", 0)), "prefix": "",
+                              "suffix": "", "pct": True})
+                continue
             if not base:
                 raise ValueError(f"unknown stat {s.get('Tag')}")
             raw = float(s.get("Value", 0))
@@ -114,8 +127,11 @@ def compute(item: dict) -> dict:
                           "prefix": base[1], "suffix": base[2], "pct": bool(base[3])})
     pos = sorted((a for a in attrs if a["positive"]), key=lambda a: -a["raw"])
     neg = [a for a in attrs if not a["positive"]]
-    name = pos[0]["prefix"].capitalize() + pos[1]["suffix"] if nb == 2 else \
-        f"{pos[0]['prefix'].capitalize()}-{pos[1]['prefix']}{pos[2]['suffix']}"
+    if any(not a["prefix"] for a in pos):             # an old stat without a name part: no riven name can be built
+        name = "Riven"
+    else:
+        name = pos[0]["prefix"].capitalize() + pos[1]["suffix"] if nb == 2 else \
+            f"{pos[0]['prefix'].capitalize()}-{pos[1]['prefix']}{pos[2]['suffix']}"
     return {"id": (item.get("ItemId") or {}).get("$oid", ""), "weapon_path": compat, "weapon": weapon[0],
             "mod_name": name, "rank": rank, "rerolls": int(f.get("rerolls") or 0),
             "mastery_rank": int(f.get("lvlReq") or 0), "polarity": POLARITY.get(f.get("pol", ""), (f.get("pol") or "").lower()),

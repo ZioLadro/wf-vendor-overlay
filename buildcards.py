@@ -162,7 +162,7 @@ class ModCard(QFrame):
             lines = []
             for a in rv["attributes"]:
                 v = a["value"]
-                txt = f"{v:+g}%" if a["pct"] else (f"x{v:g}" if a["tag"].endswith(("Grineer", "Corpus", "Infested")) else f"{v:+g}")
+                txt = "?" if v is None else f"{v:+g}%" if a["pct"] else (f"x{v:g}" if a["tag"].endswith(("Grineer", "Corpus", "Infested")) else f"{v:+g}")
                 lines.append(f"<span style='color:{'#e0584a' if not a['positive'] else '#9fd8a6'}'>{txt} {a['label'].split(' (')[0]}</span>")
             st = QLabel("<br>".join(lines))
             st.setStyleSheet(f"font-size: {small}px;")

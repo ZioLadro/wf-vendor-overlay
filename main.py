@@ -91,6 +91,8 @@ def main():
     bridge = Bridge()
     bridge.results.connect(overlay.set_items)
     bridge.status.connect(overlay.show_status)
+    import logbus
+    bridge.status.connect(lambda text: logbus.add("overlay", text))
     bridge.clear.connect(lambda: overlay.set_items([]))
     bridge.quit.connect(app.quit)
 

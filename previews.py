@@ -96,7 +96,11 @@ def _from_wiki(name):
     return None
 
 
+_done = [0, 0]                                         # pictures saved, not found / failed (Console)
+
+
 def _run():
+    import logbus
     fails = 0
     while True:
         key, slug, name = _q.get()
@@ -104,22 +108,33 @@ def _run():
             if _file(key).exists():
                 continue
             if fails >= 3:                                    # the sites do not answer: stop trying for a while
+                logbus.add("pictures", "the sites do not answer: pausing the downloads for 10 minutes", "warn")
                 time.sleep(600)
                 fails = 0
+            src = "warframe.market"
             data = _from_market(slug)
             if data is None and name:
+                src = "wiki"
                 data = _from_wiki(name)
             if data:
                 DIR.mkdir(parents=True, exist_ok=True)
                 _file(key).write_bytes(data)
                 fails = 0
+                _done[0] += 1
+                logbus.add("pictures", f"{name or slug}: saved ({src})", "ok")
             else:
                 _failed[key] = time.time()
-        except Exception:
+                _done[1] += 1
+                logbus.add("pictures", f"{name or slug}: no picture found", "warn")
+        except Exception as e:
             _failed[key] = time.time()
             fails += 1
+            _done[1] += 1
+            logbus.error("pictures", f"{name or slug}: {type(e).__name__}: {e}")
         finally:
             _pending.discard(key)
+            logbus.progress("pictures", _done[0] + _done[1], _done[0] + _done[1] + len(_pending),
+                            f"{len(_pending)} waiting")
             time.sleep(GAP)
 
 

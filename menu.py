@@ -267,6 +267,10 @@ class PriceList(QWidget):
         self.settings = SettingsTab()
         self.settings.restart_requested.connect(self.restart_requested)
         self.player_bar = PlayerBar(market)
+        from world_strip import WorldStrip
+        self.world_strip = WorldStrip()
+        from console_tab import ConsoleTab
+        self.console = ConsoleTab()
         self.tabs = QTabWidget()
         # price list and recommendations share one tab: the list on top, the recommendations below (splitter remembered)
         self.market_tab = QSplitter(Qt.Orientation.Vertical)
@@ -284,6 +288,7 @@ class PriceList(QWidget):
         self.tabs.addTab(self.riven_flip, t("tab.rflip"))
         self.tabs.addTab(self.profile, t("tab.profile"))
         self.tabs.addTab(self.world, t("tab.world"))
+        self.tabs.addTab(self.console, t("tab.console"))
         self.tabs.addTab(self.settings, t("tab.settings"))
 
         # status bar shared by the tabs (progress of the updates)
@@ -300,6 +305,7 @@ class PriceList(QWidget):
 
         lay = QVBoxLayout(self)
         lay.addWidget(self.player_bar)
+        lay.addWidget(self.world_strip)
         lay.addWidget(self.tabs, 1)
         lay.addLayout(bottom)
 
