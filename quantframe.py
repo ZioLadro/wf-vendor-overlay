@@ -4,7 +4,8 @@ In Quantframe: Settings > Advanced > HTTP Server > enable (default address 127.0
     /stock_item  {"raw": <market slug | name>, "quantity": n, "sub_type": {"rank": r}}   -> its stock (Live Scraper)
     /wish_list   the same body                                                         -> its wish list
 Without a "bought" price no purchase is recorded. Only addresses on this computer are accepted: the items are
-never sent anywhere else. Rivens are NOT sent (see README).
+never sent anywhere else.
+Revealed rivens go to /stock_riven (see rivens.py).
 """
 import json
 import time

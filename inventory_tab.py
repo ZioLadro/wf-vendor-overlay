@@ -236,6 +236,8 @@ class InventoryTab(QWidget):
         self.btn_advice_sell.setToolTip(t("advice.sell.tip"))
         self.btn_qf = QPushButton(t("qf.btn"))
         self.btn_qf.setToolTip(t("qf.btn.tip"))
+        self.btn_riven = QPushButton(t("riv.btn"))
+        self.btn_riven.setToolTip(t("riv.btn.tip"))
         self.btn_account = QPushButton("")
         actions = QHBoxLayout()
         for b in (self.btn_import, self.btn_reload, self.btn_paste, self.btn_add, self.btn_edit, self.btn_remove):
@@ -246,6 +248,7 @@ class InventoryTab(QWidget):
         actions.addWidget(self.btn_prices)
         actions.addWidget(self.btn_sell)
         actions.addWidget(self.btn_qf)
+        actions.addWidget(self.btn_riven)
         actions.addWidget(self.btn_account)
 
         self.summary = QLabel("")
@@ -299,6 +302,7 @@ class InventoryTab(QWidget):
         self.btn_prices.clicked.connect(self.update_prices)
         self.btn_sell.clicked.connect(self.sell_selected)
         self.btn_qf.clicked.connect(self.send_to_quantframe)
+        self.btn_riven.clicked.connect(self.send_rivens)
         self.btn_account.clicked.connect(self.toggle_account)
         self._account_text()
 
@@ -578,6 +582,26 @@ class InventoryTab(QWidget):
             QMessageBox.information(self, t("qf.btn"), t("qf.empty"))
             return
         SendDialog("stock", entries, self).exec()
+
+    def send_rivens(self):
+        """Revealed rivens (already on a weapon) of the inventory file -> Quantframe's riven stock, after a check window."""
+        import rivens
+        from riven_dialog import RivenDialog
+        path = self.inv.path
+        if not path or not os.path.exists(path):
+            path = aleca.find_data_file()
+        if not path or not os.path.exists(path):
+            QMessageBox.information(self, t("riv.btn"), t("riv.nofile"))
+            return
+        try:
+            items, skipped = rivens.read_file(path)
+        except (ValueError, OSError) as e:
+            QMessageBox.warning(self, t("riv.btn"), t("riv.readfail", err=e))
+            return
+        if not items:
+            QMessageBox.information(self, t("riv.btn"), t("riv.none"))
+            return
+        RivenDialog(items, skipped, self, market=self.market).exec()
 
     def sell_selected(self):
         slugs = self._selected_slugs()
