@@ -54,6 +54,7 @@ DEFAULTS = {
     "volume_high": 50,
     "volume_offset_y": 2,        # pixels between the item name and the volume label
     "hide_zero_volume": False,   # hide items with zero trades in the last 24 h (price list)
+    "player_name_auto": "",      # last name taken from AlecaFrame's lastUsername.txt (a name typed by hand is never overwritten)
     "player_name": "",           # shown in the player strip (the game files do not contain it)
     "inv_hide_zero_volume": False,   # Inventory: hide items with no trades in 24 h
     "hide_negative_ranks": False,    # player strip / Profile: hide syndicates with a negative rank
@@ -61,7 +62,8 @@ DEFAULTS = {
     "advice_liquid_volume": 10,  # advice: volume (24 h) from which an item counts as fully liquid
     "sell_min_price": 5,         # advice: do not suggest selling items cheaper than this (platinum)
     "rec_overlay": True,         # mark the top recommended items with stars on the overlay
-    "rec_overlay_top": 10,       # how many
+    "rec_overlay_top": 10,       # how many of the vendor's best items get the stars (the first one: "Best here")
+    "rec_best_per_vendor": False,  # Recommendations tab: only the best item of each vendor
     "skip_update_version": "",   # a version the user chose not to be reminded about
     "check_updates": True,       # look for a new version at start (nothing is installed without asking)
     "vendor_check": True,        # show prices only when the matched items belong to one vendor (a vendor screen)

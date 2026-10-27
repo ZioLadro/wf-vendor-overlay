@@ -27,7 +27,7 @@ nel vendor) e prezzo a **rank massimo**. Il volume resta il totale degli scambi 
 
 L'OCR legge **solo la finestra di Warframe**, e solo quando è la finestra attiva (Windows; impostazione *Leggi solo la finestra di Warframe*, disattivala se il gioco non viene rilevato, es. cloud gaming). Le etichette si nascondono quando passi a un'altra finestra.
 
-Sullo schermo di gioco, i **primi 10 oggetti consigliati** (stessa classifica della scheda Consigli, dai prezzi salvati) ricevono una piccola etichetta gialla *★ Consigliato ★* sopra il nome (impostazioni *Stelle sugli oggetti consigliati* / *Oggetti consigliati segnati*).
+Sullo schermo di gioco, i **migliori oggetti del vendor che stai guardando** (classificati tra le merci di quel vendor per platino per standing, scontati se si vendono di rado; dai prezzi salvati) ricevono una piccola etichetta gialla *★ Consigliato ★* sopra il nome, e il migliore in assoluto *★ Migliore qui ★* (impostazioni *Stelle sugli oggetti consigliati* / *Oggetti consigliati segnati*). La riga di stato lo nomina: *Miglior acquisto da …*. La scheda Consigli ha la casella *Migliore per vendor* (una riga per vendor).
 
 Ogni scheda mostra una **barra del giocatore**: nome (clicca per impostarlo, i file del gioco non lo contengono), grado di maestria, scambi rimasti e un badge per fazione con rank e standing (mouse sopra: standing giornaliero rimasto). I badge sono disegnati con i colori delle fazioni; per i logo veri metti file `<TagFazione>.png` (es. `CetusSyndicate.png`) nella cartella `icons` della cartella dei dati. Le serie Nightwave non sono mostrate.
 
@@ -114,7 +114,7 @@ Passando il mouse su una riga vedi quanti ne puoi permettere con il tuo standing
 Standing e rank per fazione, più il grado di maestria, **letti dal `lastData.dat` di AlecaFrame** (o dal JSON
 dell'app companion) con **Importa lo standing da file…**; *Ricarica il file* lo rilegge dopo che AlecaFrame l'ha
 aggiornato. Puoi anche scrivere o correggere ogni valore a mano (restano fino alla prossima importazione). È
-un'istantanea: ricaricala dopo aver speso standing. Il file viene **riletto da solo** quando cambia (controllo ogni 10 s, impostazione *Controllo file AlecaFrame*, 0 = spento; serve il riavvio). AlecaFrame riscrive il file ogni volta che entri o esci da una missione, quindi standing e inventario si aggiornano negli stessi momenti (solo con AlecaFrame in esecuzione). La colonna *Rimasto oggi* è lo standing che puoi ancora guadagnare oggi (limite giornaliero).
+un'istantanea: ricaricala dopo aver speso standing. Il file viene **trovato da solo** in `%LOCALAPPDATA%\AlecaFrame` (o `%APPDATA%\AlecaFrame`): non serve importarlo, e il tuo nome in gioco viene preso dal `lastUsername.txt` di AlecaFrame (un nome scritto da te non viene mai sovrascritto). Il file viene **riletto da solo** quando cambia (controllo ogni 10 s, impostazione *Controllo file AlecaFrame*, 0 = spento; serve il riavvio). AlecaFrame riscrive il file ogni volta che entri o esci da una missione, quindi standing e inventario si aggiornano negli stessi momenti (solo con AlecaFrame in esecuzione). La colonna *Rimasto oggi* è lo standing che puoi ancora guadagnare oggi (limite giornaliero).
 Il file contiene lo standing *totale*; il programma sottrae l'inizio del tuo rank attuale, così i numeri coincidono con il gioco (es. 68 195 / 132 000). Scrivi i valori come li mostra il gioco.
 Lo standing negativo indica la fazione opposta (ne puoi comprare 0).
 
@@ -130,7 +130,7 @@ prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Sal
 il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
 valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
 
-## Aggiornamenti (versione attuale 0.1.4)
+## Aggiornamenti (versione attuale 0.1.7)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i

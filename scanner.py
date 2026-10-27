@@ -45,6 +45,7 @@ class Scanner:
         self.busy = False
         self.suspended = False   # (legacy) True = no scanning at all
         self.vendor = None             # vendor recognised on the last scan
+        self.best = None               # best purchase at that vendor (a recommend() pick), when known
         self.exclude_provider = None   # returns the price list's rectangle in screen pixels (or None): not read
         self.items = []          # items currently shown
         self.ref = None          # data used to detect a screen change
@@ -159,16 +160,23 @@ class Scanner:
         self.bridge.results.emit([dict(i) for i in items])
 
     def _mark_recommended(self, items):
-        """Flags the items that are among the top recommended ones (from the saved market data)."""
+        """Ranks the items on screen by what is worth buying AT THIS VENDOR (plat per standing, discounted by how
+        rarely the item trades) and flags the best ones: it["rec"] = 1 for the best, 2.. for the next ones, 0 else.
+        Without a recognised vendor the whole market is ranked instead."""
         if not CFG["rec_overlay"]:
             return
         try:
-            picks, _ = recommend(self.market.snapshot(), top=int(CFG["rec_overlay_top"]))
+            vendor, slugs = self.vendor, [it["slug"] for it in items]
+            rows = self.market.snapshot(only=slugs if vendor else None)
+            picks, _ = recommend(rows, vendor=vendor, top=int(CFG["rec_overlay_top"]))
         except Exception:
             return
-        top = {p["slug"] for p in picks}
+        rank = {}
+        for i, p in enumerate(picks, start=1):
+            rank.setdefault(p["slug"], i)
         for it in items:
-            it["rec"] = it["slug"] in top
+            it["rec"] = rank.get(it["slug"], 0)
+        self.best = picks[0] if picks and vendor else None
 
     def _top_texts(self):
         """Text read in the top part of the captured image (where the vendor's name is): other syndicates' names
@@ -230,6 +238,10 @@ class Scanner:
                     self._publish(items, gen)
         self._mark_recommended(items)           # prices changed: the ranking may too
         self._publish(items, gen, force=True)   # the final state is always shown
+        b = self.best
+        if b and self.gen == gen:
+            self.bridge.status.emit(t("status.best", vendor=b["vendor"], name=b["name"], cost=f"{b['cost']:,}",
+                                      price=b["price"], vol=b["vol"], ppk=f"{b['ppk']:.0f}"))
         return True
 
     def _scan(self, gen: int, kind: str, manual: bool):

@@ -28,7 +28,8 @@ def _k(name: str) -> str:
 
 def main():
     # heavy imports in here: the OCR process (which re-reads this file) does not load them
-    from pynput import keyboard, mouse
+    from pynput import keyboard
+    from wheel import WheelListener
     from PyQt6.QtCore import QObject, QTimer, pyqtSignal
     from PyQt6.QtGui import QAction
     from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
@@ -150,7 +151,7 @@ def main():
         CFG["key_quit"]: bridge.quit.emit,
     })
     hotkeys.start()
-    wheel = mouse.Listener(on_scroll=lambda x, y, dx, dy: scanner.on_scroll())
+    wheel = WheelListener(scanner.on_scroll)
     wheel.start()
 
     code = app.exec()

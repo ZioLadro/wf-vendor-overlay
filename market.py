@@ -197,13 +197,14 @@ class Market:
             e = self._data.get(slug)
             return {k: e.get(k) for k in ("price", "pmax", "pt", "vol", "vt")} if e else None
 
-    def snapshot(self) -> list:
-        """The price-list items: those with a standing cost, plus Baro Ki'Teer's (even without market data)."""
+    def snapshot(self, only=None) -> list:
+        """The price-list items: those with a standing cost, plus Baro Ki'Teer's (even without market data).
+        `only`: a collection of slugs to restrict the result to (much cheaper than the whole list)."""
         rows = []
         by_slug = self.vendors.by_slug if self.vendors else {}
         standing = self.vendors.standing if self.vendors else {}
         with self._store_lock:
-            for slug in set(by_slug):
+            for slug in (set(by_slug) if only is None else set(only) & set(by_slug)):
                 if slug not in standing and BARO not in by_slug[slug]:
                     continue                    # no standing cost and not Baro's: not listed
                 e = self._data.get(slug, {})

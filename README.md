@@ -26,7 +26,7 @@ vendor) and **max-rank** price. The volume is the total of the trades of all ran
 
 The OCR reads **only the Warframe window**, and only while it is the active window (Windows; setting *Read only the Warframe window*, turn it off if the game is not detected, e.g. cloud gaming). Labels are hidden when you switch to another window.
 
-On the game screen, the **top 10 recommended items** (same ranking as the Recommendations tab, from the saved prices) get a small yellow *★ Recommended ★* tag above their name (settings *Stars on recommended items* / *Recommended items marked*).
+On the game screen, the **best items of the vendor you are looking at** (ranked among that vendor's own stock by platinum per standing, discounted by how rarely they trade; from the saved prices) get a small yellow *★ Recommended ★* tag above their name, and the very best one *★ Best here ★* (settings *Stars on recommended items* / *Recommended items marked*). The status line also names it: *Best buy at …*. The Recommendations tab has a *Best per vendor* box (one row per vendor).
 
 Every tab shows a **player strip**: name (click to set it, the game files do not contain it), mastery rank, trades left, and a badge per syndicate with your rank and standing (hover for the daily standing left). Badges are drawn with the syndicate colours; to use the real logos put `<SyndicateTag>.png` files (e.g. `CetusSyndicate.png`) in the `icons` folder of the data folder. Nightwave series are not shown.
 
@@ -109,7 +109,7 @@ Hovering a row shows how many you can afford with your standing (Profile tab).
 Your standing and rank per syndicate, plus your mastery rank, **read from the AlecaFrame `lastData.dat`** (or the
 companion-app JSON) with **Import standing from file…**; *Reload file* re-reads it after AlecaFrame refreshed it.
 You can also type or correct any value by hand (kept until the next import). It is a snapshot: reload after spending
-standing. The file is **re-read automatically** when it changes (checked every 10 s, setting *AlecaFrame file check*, 0 = off; restart to apply). AlecaFrame rewrites the file every time you enter or leave a mission, so standing and inventory update at the same moments (only while AlecaFrame is running). The *Left today* column is the standing you can still earn today (daily cap).
+standing. The file is **found by itself** in `%LOCALAPPDATA%\AlecaFrame` (or `%APPDATA%\AlecaFrame`): no import needed, and your in-game name is taken from AlecaFrame's `lastUsername.txt` (a name you type yourself is never overwritten). The file is **re-read automatically** when it changes (checked every 10 s, setting *AlecaFrame file check*, 0 = off; restart to apply). AlecaFrame rewrites the file every time you enter or leave a mission, so standing and inventory update at the same moments (only while AlecaFrame is running). The *Left today* column is the standing you can still earn today (daily cap).
 The file stores your *total* standing; the program subtracts the start of your current rank, so the numbers match the game (e.g. 68 195 / 132 000). Type values as the game shows them.
 Negative standing means you are in the opposite faction (you can buy 0).
 
@@ -125,7 +125,7 @@ recommendations). **Save** applies and stores them in `config.json`; **Save and 
 the program. Settings marked ⟳ (language, hotkeys, OCR, start active, name threshold) need a restart;
 the rest apply immediately. **Restore defaults** loads the default values (press Save to apply).
 
-## Updates (current version 0.1.4)
+## Updates (current version 0.1.7)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**
 and asks if you want to install it (*Install now* / *Later* / *Skip this version*). If the release exists but its package is not ready yet (the automatic build still running or failed) it says so. In **Settings → Updates** you can check by hand and, if you agree, it downloads
 `WFVendorOverlay-windows.zip`, verifies its SHA-256 against the `.sha256` file of the same release, and replaces

@@ -69,17 +69,19 @@ class Overlay(QWidget):
 
         rec_font = QFont("Segoe UI", 7, QFont.Weight.Bold)
         rec_text = "★ " + t("overlay.recommended") + " ★"
+        best_text = "★ " + t("overlay.best") + " ★"
         for it in self.items:
             if it.get("rec"):           # small yellow stars above the name (does not cover it)
                 p.setFont(rec_font)
+                rec_text_it = best_text if it["rec"] == 1 else rec_text
                 fm = p.fontMetrics()
-                w, h = fm.horizontalAdvance(rec_text) + 8, fm.height() + 1
+                w, h = fm.horizontalAdvance(rec_text_it) + 8, fm.height() + 1
                 x = max(2, min(it["x"], self.width() - w - 2))
                 y = max(2, it["y"] - h - 1)
-                p.setBrush(QColor(20, 20, 20, 190))
-                p.setPen(QColor(255, 210, 40))
+                p.setBrush(QColor(60, 45, 0, 215) if it["rec"] == 1 else QColor(20, 20, 20, 190))
+                p.setPen(QColor(255, 235, 90) if it["rec"] == 1 else QColor(255, 210, 40))
                 p.drawRoundedRect(QRectF(x, y, w, h), 4, 4)
-                p.drawText(QRectF(x, y, w, h), Qt.AlignmentFlag.AlignCenter, rec_text)
+                p.drawText(QRectF(x, y, w, h), Qt.AlignmentFlag.AlignCenter, rec_text_it)
             # price: to the right of the name
             p.setFont(price_font)
             fm = p.fontMetrics()

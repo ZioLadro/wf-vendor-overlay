@@ -10,9 +10,10 @@ The price is the rank 0 one (what the vendor actually sells), not the max-rank o
 from config import CFG
 
 
-def recommend(rows, vendor=None, kind=None, min_volume=None, min_price=None, top=None):
+def recommend(rows, vendor=None, kind=None, min_volume=None, min_price=None, top=None, per_vendor=None):
     """rows: Market.snapshot(). Returns (picks, missing): `missing` lists the slugs of the standing items
-    (within the filters) that have no price/volume yet, so they could not be rated."""
+    (within the filters) that have no price/volume yet, so they could not be rated.
+    per_vendor: keep only the N best items of EACH vendor (the best purchase at every vendor)."""
     min_volume = CFG["rec_min_volume"] if min_volume is None else min_volume
     min_price = CFG["rec_min_price"] if min_price is None else min_price
     top = CFG["rec_top"] if top is None else top
@@ -38,4 +39,11 @@ def recommend(rows, vendor=None, kind=None, min_volume=None, min_price=None, top
                           "cost": e["s"], "tag": e.get("t"), "rank": e.get("r", 0), "price": price, "pmax": r["pmax"],
                           "vol": vol, "ppk": ppk, "score": ppk * min(1.0, vol / target)})
     picks.sort(key=lambda p: (-p["score"], -p["vol"], p["name"]))
+    if per_vendor:
+        seen, kept = {}, []
+        for p in picks:
+            if seen.get(p["vendor"], 0) < per_vendor:
+                seen[p["vendor"]] = seen.get(p["vendor"], 0) + 1
+                kept.append(p)
+        return kept, list(dict.fromkeys(missing))      # one list per vendor: `top` does not cut it
     return picks[:top], list(dict.fromkeys(missing))

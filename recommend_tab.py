@@ -1,7 +1,7 @@
 """Recommendations tab: what is worth buying with standing (see recommend.py for the formula)."""
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QAbstractItemView, QComboBox, QHBoxLayout, QHeaderView, QLabel, QPushButton, QSpinBox,
+    QAbstractItemView, QCheckBox, QComboBox, QHBoxLayout, QHeaderView, QLabel, QPushButton, QSpinBox,
     QTableWidget, QVBoxLayout, QWidget,
 )
 
@@ -31,9 +31,13 @@ class RecommendTab(QWidget):
         self.min_price = QSpinBox(minimum=0, maximum=100000, value=int(CFG["rec_min_price"]))
         self.min_price.setSuffix(" p")
 
+        self.best_only = QCheckBox(t("rec.best_per_vendor"))
+        self.best_only.setToolTip(t("rec.best_per_vendor.tip"))
+        self.best_only.setChecked(bool(CFG["rec_best_per_vendor"]))
         top = QHBoxLayout()
         top.addWidget(QLabel(t("rec.vendor")))
         top.addWidget(self.vendor, 1)
+        top.addWidget(self.best_only)
         top.addWidget(self.kind)
         top.addWidget(QLabel(t("rec.min_volume")))
         top.addWidget(self.min_vol)
@@ -78,6 +82,7 @@ class RecommendTab(QWidget):
         self.fill_vendors()
         self.vendor.currentIndexChanged.connect(lambda _: self.refresh(force=True))
         self.kind.currentIndexChanged.connect(lambda _: self.refresh(force=True))
+        self.best_only.toggled.connect(self._best_toggled)
         self.min_vol.valueChanged.connect(self._limits_changed)
         self.min_price.valueChanged.connect(self._limits_changed)
         self.btn_fetch.clicked.connect(lambda: self.refresher.start(self._missing, CFG["refresh_skip_age"]))
@@ -93,6 +98,10 @@ class RecommendTab(QWidget):
         self.vendor.setCurrentIndex(max(0, self.vendor.findData(cur)))
         self.vendor.blockSignals(False)
 
+    def _best_toggled(self, on):
+        save_config({"rec_best_per_vendor": bool(on)})
+        self.refresh(force=True)
+
     def _limits_changed(self):
         save_config({"rec_min_volume": self.min_vol.value(), "rec_min_price": self.min_price.value()})
         self.refresh(force=True)
@@ -106,7 +115,8 @@ class RecommendTab(QWidget):
             self.fill_vendors()
         picks, self._missing = recommend(
             rows, vendor=self.vendor.currentData(), kind=self.kind.currentData(),
-            min_volume=self.min_vol.value(), min_price=self.min_price.value())
+            min_volume=self.min_vol.value(), min_price=self.min_price.value(),
+            per_vendor=1 if self.best_only.isChecked() and self.vendor.currentData() is None else None)
         tb = self.table
         hdr = tb.horizontalHeader()
         sec, order = hdr.sortIndicatorSection(), hdr.sortIndicatorOrder()

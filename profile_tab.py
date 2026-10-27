@@ -2,6 +2,8 @@
 import os
 import time
 
+import aleca
+
 from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtWidgets import (QFileDialog, QHBoxLayout, QHeaderView, QLabel, QMessageBox, QPushButton, QSpinBox,
                              QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget)
@@ -59,8 +61,14 @@ class ProfileTab(QWidget):
     def auto_reload(self):
         """Looks at the imported file; re-reads it only if its content changed. The result is shown below."""
         path = self.store.path
-        if not path:
-            return
+        if not path or not os.path.exists(path):
+            path = aleca.find_data_file()          # AlecaFrame's file, found by itself: nothing to import by hand
+            if not path:
+                return
+        try:
+            aleca.sync_player_name(path)
+        except Exception:
+            pass
         now = time.strftime("%H:%M:%S")
         try:
             raw = read_raw(path)

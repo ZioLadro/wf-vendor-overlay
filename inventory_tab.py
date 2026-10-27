@@ -1,6 +1,8 @@
 """Inventory tab: your items with market prices, filters like AlecaFrame's, and one-click sell orders."""
 import json
 import hashlib
+
+import aleca
 import os
 import time
 
@@ -466,6 +468,8 @@ class InventoryTab(QWidget):
         """Silently re-reads the imported file when it changed on disk (AlecaFrame rewrites it every time you enter
         or leave a mission). Only the modification time is checked each time."""
         path = self.inv.path
+        if (not path or not os.path.exists(path)) and not self.inv.items:
+            path = aleca.find_data_file()          # empty inventory: take AlecaFrame's file by itself
         if not path or not os.path.exists(path):
             return
         try:
