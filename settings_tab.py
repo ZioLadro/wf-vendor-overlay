@@ -79,6 +79,9 @@ GROUPS = [
     ]),
     ("inventory", [
         ("inv_exclude_maxed", "bool", None, False),
+        ("inv_exclude_installed", "bool", None, False),
+        ("item_previews", "bool", None, False),
+        ("rankup_min_gain", "int", (0, 10000), False),
         ("sell_price_offset", "int", (-100, 100), False),
     ]),
     ("quantframe", [

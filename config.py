@@ -56,6 +56,9 @@ DEFAULTS = {
     "hide_zero_volume": False,   # hide items with zero trades in the last 24 h (price list)
     "player_name_auto": "",      # last name taken from AlecaFrame's lastUsername.txt (a name typed by hand is never overwritten)
     "player_name": "",           # shown in the player strip (the game files do not contain it)
+    "item_previews": True,        # picture of the item (from warframe.market) in the tooltip of the item tables
+    "inv_exclude_installed": False,   # Inventory: leave out the mods/Arcanes that sit in a loadout
+    "rankup_min_gain": 10,        # rank-up advice: minimum platinum gained per copy (max-rank price - current price)
     "inv_hide_zero_volume": False,   # Inventory: hide items with no trades in 24 h
     "hide_negative_ranks": False,    # player strip / Profile: hide syndicates with a negative rank
     "ducat_min_ratio": 10,       # advice: trade for ducats if ducats per platinum (adjusted for liquidity) >= this

@@ -3,9 +3,9 @@ import re
 import time
 from urllib.parse import quote
 
-from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtCore import QEvent, QObject, Qt, QUrl
 from PyQt6.QtGui import QBrush, QColor, QDesktopServices, QFont, QGuiApplication, QIcon, QPainter, QPixmap
-from PyQt6.QtWidgets import QMenu, QTableWidgetItem
+from PyQt6.QtWidgets import QMenu, QTableWidgetItem, QToolTip
 
 from i18n import t
 from standing import afford_text
@@ -139,3 +139,19 @@ def attach_item_menu(table, name_col: int):
             QGuiApplication.clipboard().setText(name)
 
     table.customContextMenuRequested.connect(show)
+
+    class _Hover(QObject):                      # picture + name when the mouse rests on the name cell
+        def eventFilter(self, obj, ev):
+            if ev.type() == QEvent.Type.ToolTip:
+                pos = ev.pos()
+                row, col = table.rowAt(pos.y()), table.columnAt(pos.x())
+                cell = table.item(row, name_col) if row >= 0 and col == name_col else None
+                slug = cell.data(Qt.ItemDataRole.UserRole) if cell else None
+                if slug:
+                    import previews
+                    QToolTip.showText(ev.globalPos(), previews.tooltip(slug, cell.text(), cell.toolTip().replace("\n", "<br>")),
+                                      table.viewport())
+                    return True
+            return False
+    hover = _Hover(table)
+    table.viewport().installEventFilter(hover)

@@ -72,7 +72,26 @@ def parse_profile(data) -> dict:
             factions[tag]["daily"] = left
     tr = res.get("TradesRemaining")
     return {"mr": int(mr) if isinstance(mr, (int, float)) else None, "factions": factions,
-            "trades": int(tr) if isinstance(tr, (int, float)) else None}
+            "trades": int(tr) if isinstance(tr, (int, float)) else None, "synced": sync_time(res)}
+
+
+def sync_time(res):
+    """When the game last sent this inventory (unix seconds), from the id in LastInventorySync (its first 4 bytes are a
+    timestamp). None if the file has no such field. The trades left are only as fresh as this moment."""
+    v = res.get("LastInventorySync") if isinstance(res, dict) else None
+    oid = v.get("$oid") if isinstance(v, dict) else v
+    try:
+        return int(str(oid)[:8], 16)
+    except (TypeError, ValueError):
+        return None
+
+
+def trades_stale(synced, now=None) -> bool:
+    """True when the inventory was synced before the last daily reset (00:00 UTC): the trades left have been reset since."""
+    if not synced:
+        return False
+    now = time.time() if now is None else now
+    return synced < now - (now % 86400)
 
 
 def read_raw(path: str) -> bytes:
@@ -125,6 +144,7 @@ class StandingStore:
         self.mtime = 0
         self.sig = ""          # fingerprint of the last file read (the modification time is unreliable while another
         self.trades = None     # program keeps the file open)
+        self.synced = None     # when the game last synced the inventory (see sync_time)
         self.mr = None
         self.fetched = None
         self.factions = {}     # tag -> {"standing": int, "rank": int|None, "manual": bool}
@@ -139,12 +159,12 @@ class StandingStore:
         self.name, self.mr, self.fetched = d.get("name", ""), d.get("mr"), d.get("fetched")
         self.path = d.get("path", "")
         self.factions = {k: v for k, v in (d.get("factions") or {}).items() if isinstance(v, dict) and not is_nightwave(k)}
-        self.trades = d.get("trades")
+        self.trades, self.synced = d.get("trades"), d.get("synced")
 
     def save(self):
         tmp = STANDING_FILE.with_suffix(".tmp")
         try:
-            tmp.write_text(json.dumps({"name": self.name, "trades": self.trades, "path": self.path, "mr": self.mr, "fetched": self.fetched,
+            tmp.write_text(json.dumps({"name": self.name, "trades": self.trades, "synced": self.synced, "path": self.path, "mr": self.mr, "fetched": self.fetched,
                                        "factions": self.factions}, ensure_ascii=False), encoding="utf-8")
             os.replace(tmp, STANDING_FILE)
         except OSError:
@@ -156,7 +176,7 @@ class StandingStore:
         except OSError:
             self.mtime = 0
         self.path, self.mr, self.fetched = path, profile["mr"], int(time.time())
-        self.trades = profile.get("trades")
+        self.trades, self.synced = profile.get("trades"), profile.get("synced")
         self.factions = {k: v for k, v in self.factions.items() if not is_nightwave(k)}
         for tag, f in profile["factions"].items():
             self.factions[tag] = {"standing": f["standing"], "rank": f["rank"], "manual": False,

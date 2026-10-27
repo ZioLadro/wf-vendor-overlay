@@ -83,6 +83,24 @@ I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispi
   **Escludi mod/arcane a rank massimo** (escono dalla lista e dal totale).
 - **Prezzi**: valore = copie × prezzo a rank 0 + copie a rank massimo × prezzo a rank massimo;
   **Aggiorna prezzi** aggiorna gli oggetti mostrati. Clic destro sul nome per la pagina del market / wiki.
+- **Sali di rank…** indica quali mod conviene portare a rank massimo per venderle. Per ogni mod sotto il rank massimo
+  calcola il platino guadagnato per copia (prezzo a rank max − prezzo attuale), per tante copie quante se ne vendono in
+  circa un giorno (un quarto del volume 24 h), e gli Endo e i Crediti per finirle (`base × (2^max − 2^rank)`; base Endo
+  10/20/30/40 e base Crediti 483/966/1449/1932 per comune/non comune/rara/leggendaria, dalla
+  [wiki](https://wiki.warframe.com/w/Fusion)). Il punteggio è il platino guadagnato ogni 1000 Endo, penalizzato per le
+  mod che si vendono poco; scrivi gli Endo che hai e vengono selezionate le righe migliori che ci stanno. Impostazioni >
+  Inventario: *Sali di rank: guadagno minimo*. Gli Arcani non si salgono con l'Endo, quindi non compaiono.
+- **Escludi installate** esclude le mod e gli Arcani che sono in uno dei tuoi loadout (letti dal `lastData.dat`
+  all'importazione, quindi reimporta o usa *Ricarica file* dopo aver cambiato un loadout). Non contano nel valore né nei
+  consigli, così non ti viene mai detto di vendere ciò che stai usando.
+- **Immagini degli oggetti.** Passando il mouse sul nome di un oggetto appare la sua immagine, quella pubblicata da
+  warframe.market (scaricata una volta, una alla volta, tenuta nella cartella dei dati; si disattiva nelle Impostazioni). I
+  file immagine di AlecaFrame non vengono letti: appartengono a quel programma e stanno sul tuo PC in un formato su cui
+  questo programma non si basa.
+- **Scambi rimasti** (barra in alto) viene dal `lastData.dat`, che il gioco aggiorna solo quando AlecaFrame si
+  sincronizza (entrando o uscendo da una missione, rifacendo il login): gli scambi fatti dopo non sono ancora contati. Compare
+  un ⚠ quando l'ultima sincronizzazione è precedente al reset giornaliero (00:00 UTC), quando il numero reale è probabilmente
+  più alto; il suggerimento mostra l'ora della sincronizzazione.
 - **Vendi…** piazza un **ordine di vendita** su warframe.market per ogni oggetto selezionato. Prima accedi
   (email e password, inviate solo a warframe.market; **si salva solo il token di sessione** in
   `market_session.json`; *Esci* lo cancella). Per ogni ordine una finestra mostra quantità, rank
@@ -152,7 +170,7 @@ valgono subito. **Ripristina predefiniti** carica i valori di default (premi Sal
 
 Le Impostazioni hanno una sotto-scheda per categoria. **Tema e carattere** offre temi di colori ispirati alle fazioni di Warframe, alleate (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) e nemiche (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), più il *Classic* originale, oltre a famiglia e dimensione del carattere. La scelta si vede subito in anteprima in tutte le finestre e resta solo se premi Salva (uscendo dalla scheda torna l'aspetto salvato). L'overlay in gioco mantiene i suoi colori. Tutti i temi sono scuri.
 
-## Aggiornamenti (versione attuale 0.1.13)
+## Aggiornamenti (versione attuale 0.2.0)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
 scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i

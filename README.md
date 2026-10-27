@@ -81,6 +81,22 @@ Your items with their market prices, and one-click sell orders (inspired by Alec
   **Exclude max-rank mods/arcanes** (they leave the list and the total).
 - **Prices**: value = copies × rank 0 price + max-rank copies × max-rank price; **Update prices**
   refreshes the shown items. Right-click a name for the market / wiki page.
+- **Rank up…** tells you which mods are worth ranking up to max rank to sell them. For every mod you own below max
+  rank it computes the platinum gained per copy (max-rank price − current price), for as many copies as sell in about a
+  day (a quarter of the 24 h volume), and the Endo and Credits needed to finish them (`base × (2^max − 2^rank)`; Endo
+  base 10/20/30/40 and Credits base 483/966/1449/1932 for common/uncommon/rare/legendary, per the
+  [wiki](https://wiki.warframe.com/w/Fusion)). The score is the platinum gained per 1000 Endo, discounted for slow
+  sellers; type the Endo you have and the best rows that fit are selected. Settings > Inventory: *Rank up: minimum gain*.
+  Arcanes cannot be ranked with Endo, so they are not listed.
+- **Exclude installed** leaves out the mods and Arcanes that sit in one of your loadouts (read from the `lastData.dat`
+  at import time, so re-import or *Reload file* after changing a loadout). They are not counted in the value or in the
+  advice, so you never get told to sell what you are using.
+- **Item pictures.** Hovering an item name shows its picture, the one warframe.market publishes (downloaded once, one
+  at a time, kept in the data folder; switch off in Settings). AlecaFrame's own image files are not read: they belong to
+  that program and live on your PC in a format this program does not rely on.
+- **Trades left** (top strip) comes from the `lastData.dat`, which the game only updates when AlecaFrame syncs
+  (entering or leaving a mission, logging in again): trades made since are not counted yet. A ⚠ appears when the last
+  sync is from before the daily reset (00:00 UTC), when the real number is probably higher; the tooltip shows the sync time.
 - **Sell…** places a **sell order** on warframe.market for every selected item. Sign in first (email and
   password, sent only to warframe.market; **only the session token is stored**, in `market_session.json`;
   *Sign out* deletes it). For each order a window shows quantity, rank (mods/arcanes), price (market price
@@ -147,7 +163,7 @@ the rest apply immediately. **Restore defaults** loads the default values (press
 
 Settings has one sub-tab per category. **Theme and font** offers colour themes inspired by Warframe's factions, allies (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) and enemies (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), plus the original *Classic*, and a font family and size. The choice is previewed at once in every window and kept only when you press Save (leaving the tab restores the saved look). The in-game overlay keeps its own colours. All themes are dark.
 
-## Updates (current version 0.1.13)
+## Updates (current version 0.2.0)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**
 and asks if you want to install it (*Install now* / *Later* / *Skip this version*). If the release exists but its package is not ready yet (the automatic build still running or failed) it says so. In **Settings → Updates** you can check by hand and, if you agree, it downloads
 `WFVendorOverlay-windows.zip`, verifies its SHA-256 against the `.sha256` file of the same release, and replaces

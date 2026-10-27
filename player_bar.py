@@ -3,6 +3,8 @@
 Badges are drawn from the syndicate colours in the game data (the real logos cannot be downloaded here).
 To use real logos, put PNG files named <SyndicateTag>.png (e.g. CetusSyndicate.png) in the 'icons' folder
 inside the program's data folder (%LOCALAPPDATA%\\WFVendorOverlay\\icons)."""
+import time
+
 from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QColor, QFont, QPainter, QPixmap
 from PyQt6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QInputDialog, QLabel, QWidget
@@ -10,7 +12,7 @@ from PyQt6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QInputDialog, QLab
 from config import APP_DIR, CFG, save_config
 from i18n import t
 from inventory import game_names
-from standing import get_store, is_nightwave, syndicate_name
+from standing import get_store, is_nightwave, syndicate_name, trades_stale
 from uiutil import role
 from uiutil import MUTED_STYLE, thousands
 
@@ -78,15 +80,18 @@ class PlayerBar(QFrame):
         return sorted(tags, key=lambda x: syndicate_name(x).lower())
 
     def refresh(self, force=False):
-        key = (self.store.version, CFG["player_name"], self.store.fetched, CFG["hide_negative_ranks"])
+        key = (self.store.version, int(time.time() // 600), CFG["player_name"], self.store.fetched, CFG["hide_negative_ranks"])
         if not force and key == self._shown:
             return
         self._shown = key
         s = self.store
         name = CFG["player_name"] or t("bar.noname")
         parts = [f"<b>{name}</b>", f"MR {s.mr}" if s.mr is not None else "MR –",
-                 t("bar.trades", n=s.trades if s.trades is not None else "–")]
+                 t("bar.trades", n=s.trades if s.trades is not None else "–")
+                 + (" ⚠" if trades_stale(s.synced) else "")]
         self.info.setText("<br>".join(parts))
+        self.info.setToolTip(t("bar.trades.tip", when=time.strftime("%d/%m %H:%M", time.localtime(s.synced)) if s.synced else "–")
+                             + (" " + t("bar.trades.stale") if trades_stale(s.synced) else ""))
         while self.grid.count():
             it = self.grid.takeAt(0)
             if it.widget():

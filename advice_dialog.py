@@ -1,12 +1,12 @@
 """Dialog with the inventory advice (ducats / selling)."""
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import QDialog, QHBoxLayout, QHeaderView, QLabel, QPushButton, QTableWidget, QVBoxLayout, QAbstractItemView
+from PyQt6.QtWidgets import QDialog, QSpinBox, QHBoxLayout, QHeaderView, QLabel, QPushButton, QTableWidget, QVBoxLayout, QAbstractItemView
 
-from advice import ducat_advice, sell_advice
+from advice import ducat_advice, rankup_advice, sell_advice
 from i18n import t
 from overlay import volume_color
 from uiutil import role
-from uiutil import (DIM_COLOR, HINT_STYLE, MUTED_STYLE, PRICE_COLOR, STYLE, Cell, attach_item_menu, num_key)
+from uiutil import (DIM_COLOR, HINT_STYLE, MAXRANK_COLOR, MUTED_STYLE, PRICE_COLOR, STYLE, Cell, attach_item_menu, num_key)
 
 
 class AdviceDialog(QDialog):
@@ -21,6 +21,11 @@ class AdviceDialog(QDialog):
             data, self.missing = ducat_advice(rows)
             heads = ["col.item", "col.owned", "advice.col.ducats", "advice.col.total_ducats", "col.price",
                      "advice.col.plat_lost", "col.volume", "advice.col.ratio", "advice.col.verdict"]
+        elif kind == "rankup":
+            data, self.missing = rankup_advice(rows)
+            heads = ["col.item", "col.owned", "advice.col.rarity", "col.price", "col.pmax", "advice.col.gain", "col.volume",
+                     "advice.col.sellable", "advice.col.endo", "advice.col.credits", "advice.col.total_gain",
+                     "advice.col.score"]
         else:
             data, self.missing = sell_advice(rows)
             heads = ["col.item", "col.owned", "col.price", "col.volume", "advice.col.sellable",
@@ -45,6 +50,14 @@ class AdviceDialog(QDialog):
                          Cell(str(x["vol"]), x["vol"], volume_color(x["vol"])), Cell(f"{x['ratio']:.1f}", x["ratio"]),
                          Cell(t("advice.verdict.ducat") if x["ducat"] else t("advice.verdict.sell"), int(x["ducat"]),
                               PRICE_COLOR if x["ducat"] else DIM_COLOR)]
+            elif kind == "rankup":
+                cells = [Cell(x["name"], x["name"].lower(), center=False), Cell(str(x["n"]), x["n"]),
+                         Cell(t("advice.rarity." + x["rarity"]), "CURL".index(x["rarity"])),
+                         Cell(f"{x['price']}p", x["price"], PRICE_COLOR), Cell(f"{x['pmax']}p", x["pmax"], MAXRANK_COLOR),
+                         Cell(f"+{x['gain']}p", x["gain"]), Cell(str(x["vol"]), x["vol"], volume_color(x["vol"])),
+                         Cell(str(x["sellable"]), x["sellable"]), Cell(f"{x['endo']:,}", x["endo"]),
+                         Cell(f"{x['credits']:,}", x["credits"]), Cell(f"+{x['total_gain']}p", x["total_gain"]),
+                         Cell(f"{x['score']:.1f}", x["score"])]
             else:
                 cells = [Cell(x["name"], x["name"].lower(), center=False), Cell(str(x["n"]), x["n"]),
                          Cell(f"{x['price']}p", x["price"], PRICE_COLOR), Cell(str(x["vol"]), x["vol"], volume_color(x["vol"])),
@@ -58,7 +71,7 @@ class AdviceDialog(QDialog):
         for c in range(1, len(heads)):
             hdr.setSectionResizeMode(c, QHeaderView.ResizeMode.ResizeToContents)
         self.table.setSortingEnabled(True)
-        self.table.sortByColumn(len(heads) - 1 if kind == "sell" else 7, Qt.SortOrder.DescendingOrder)
+        self.table.sortByColumn(len(heads) - 1 if kind != "ducat" else 7, Qt.SortOrder.DescendingOrder)
         attach_item_menu(self.table, 0)
         note = QLabel(t("advice.missing", n=len(self.missing)) if self.missing else "")
         role(note, "hint")
@@ -70,6 +83,14 @@ class AdviceDialog(QDialog):
         btn_close = QPushButton(t("advice.close"))
         btn_close.clicked.connect(self.accept)
         bottom = QHBoxLayout()
+        self.budget = QSpinBox(minimum=0, maximum=100_000_000, singleStep=5000)
+        self.budget.setGroupSeparatorShown(True)
+        self.budget.setSpecialValueText(t("advice.budget.none"))
+        self.budget.setToolTip(t("advice.budget.tip"))
+        self.budget.valueChanged.connect(self._mark_budget)
+        if kind == "rankup":
+            bottom.addWidget(QLabel(t("advice.budget")))
+            bottom.addWidget(self.budget)
         bottom.addWidget(note, 1)
         bottom.addWidget(btn_sel)
         bottom.addWidget(btn_close)
@@ -79,8 +100,27 @@ class AdviceDialog(QDialog):
         lay.addWidget(self.table, 1)
         lay.addLayout(bottom)
 
+    def _mark_budget(self):
+        """Rank-up advice: the best rows (by score) that fit in the Endo you have are selected."""
+        left, picked = self.budget.value(), set()
+        if left <= 0:
+            self.table.clearSelection()
+            return
+        order = sorted(range(self.table.rowCount()), key=lambda r: -self.table.item(r, 11).key)
+        for r in order:
+            endo = int(self.table.item(r, 8).text().replace(",", ""))
+            if endo <= left:
+                left -= endo
+                picked.add(r)
+        sm = self.table.selectionModel()
+        self.table.clearSelection()
+        for r in picked:
+            sm.select(self.table.model().index(r, 0), sm.SelectionFlag.Select | sm.SelectionFlag.Rows)
+
     def _select(self):
         rows = {i.row() for i in self.table.selectedIndexes()}
+        if not rows and self.kind == "rankup":
+            rows = set(range(self.table.rowCount()))
         if not rows:
             rows = {r for r in range(self.table.rowCount())
                     if (self.kind == "sell" or self.table.item(r, 8).text() == t("advice.verdict.ducat"))}

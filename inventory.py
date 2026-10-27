@@ -61,7 +61,8 @@ class Inventory:
             return
         if not isinstance(d, dict):
             return
-        self.items = {k: {"n": int(v.get("n", 0)), "m": int(v.get("m", 0))}
+        self.items = {k: {**{x: v[x] for x in ("ni", "mi", "lv") if x in v},
+                          "n": int(v.get("n", 0)), "m": int(v.get("m", 0))}
                       for k, v in (d.get("items") or {}).items() if isinstance(v, dict)}
         self.orders = {k: v for k, v in (d.get("orders") or {}).items() if isinstance(v, dict)}
         self.imported, self.source, self.path = d.get("imported"), d.get("source", ""), d.get("path", "")
@@ -83,7 +84,12 @@ class Inventory:
         if n + m == 0:
             self.items.pop(slug, None)
         else:
-            self.items[slug] = {"n": n, "m": m}
+            old = self.items.get(slug, {})
+            e = {"n": n, "m": m}
+            for x, cap in (("ni", n), ("mi", m)):          # keep what is known about installed copies (never more than owned)
+                if old.get(x):
+                    e[x] = min(old[x], cap)
+            self.items[slug] = e
         self.save()
 
     def remove(self, slugs):
@@ -154,20 +160,29 @@ def resolve(market, raw: str):
     return m.slug if m else None
 
 
-def _add(res: ImportResult, market, slug, qty, rank=None):
+def _add(res: ImportResult, market, slug, qty, rank=None, installed=0):
     mr = market.info(slug).get("max_rank", 0)
     e = res.items.setdefault(slug, {"n": 0, "m": 0})
+    installed = min(int(installed), qty)
     if mr > 0 and rank is not None and rank >= mr:
         e["m"] += qty
+        if installed:
+            e["mi"] = e.get("mi", 0) + installed          # copies of those that sit in a loadout
     else:
         e["n"] += qty
+        if installed:
+            e["ni"] = e.get("ni", 0) + installed
+        if mr > 0:                                         # ranks of the not-maxed copies (Endo needed to finish them)
+            lv = e.setdefault("lv", [])
+            if len(lv) < 500:
+                lv.extend([max(0, min(int(rank or 0), mr))] * min(qty, 500 - len(lv)))
 
 
-def _entry(res: ImportResult, market, name, qty, rank=None, slug=None):
+def _entry(res: ImportResult, market, name, qty, rank=None, slug=None, installed=0):
     res.lines += 1
     slug = slug or resolve(market, name)
     if slug:
-        _add(res, market, slug, qty, rank)
+        _add(res, market, slug, qty, rank, installed)
     elif len(res.unmatched) < MAX_UNMATCHED:
         res.unmatched.append((name, qty))
 
@@ -199,7 +214,29 @@ def parse_json(data, market, res=None) -> ImportResult:
     return res
 
 
+def installed_ids(inv) -> set:
+    """Ids of the mods/Arcanes that sit in a loadout (any warframe, weapon, companion, ...): the lists of ids found under
+    a "Upgrades" key inside the equipment, as opposed to the main "Upgrades" list that holds the owned copies."""
+    out = set()
+
+    def walk(n):
+        if isinstance(n, dict):
+            for k, v in n.items():
+                if k == "Upgrades" and isinstance(v, list) and v and all(isinstance(x, str) for x in v):
+                    out.update(x for x in v if x and not x.startswith("/"))
+                else:
+                    walk(v)
+        elif isinstance(n, list):
+            for x in n:
+                walk(x)
+    for k, v in (inv.items() if isinstance(inv, dict) else []):
+        if k != "Upgrades":
+            walk(v)
+    return out
+
+
 def _parse_raw(inv: dict, market, res: ImportResult):
+    inst = installed_ids(inv)
     for section in RAW_LISTS:
         if section in SKIP_KEYS:
             continue
@@ -216,7 +253,9 @@ def _parse_raw(inv: dict, market, res: ImportResult):
                     break
             if section == "Upgrades" and rank is None:
                 rank = 0
-            _entry(res, market, (names_for_path(path) or [path.rsplit("/", 1)[-1]])[0], qty, rank, slug)
+            oid = (it.get("ItemId") or {}).get("$oid") if isinstance(it.get("ItemId"), dict) else None
+            _entry(res, market, (names_for_path(path) or [path.rsplit("/", 1)[-1]])[0], qty, rank, slug,
+                   installed=1 if (oid and oid in inst) else 0)
 
 
 def _walk(node, market, res: ImportResult):
@@ -371,7 +410,8 @@ def is_prime(name: str) -> bool:
 
 
 def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, exclude_maxed=False,
-               multiple=False, part_type=None, vaulted=None, listed=None, hide_zero_volume=False):
+               multiple=False, part_type=None, vaulted=None, listed=None, hide_zero_volume=False,
+               exclude_installed=False):
     """Rows of the Inventory tab after the filters, plus the estimated total value in platinum.
 
     Filters mirror AlecaFrame's: minimum platinum, more than one owned, part type (prime/normal),
@@ -386,6 +426,11 @@ def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, excl
             continue                                   # item no longer in the market catalog
         ranked = info.get("max_rank", 0) > 0
         n, m = e["n"], (0 if (exclude_maxed and ranked) else e["m"])
+        ni, mi = min(e.get("ni", 0), e["n"]), min(e.get("mi", 0), e["m"])
+        lv = sorted(e.get("lv") or [], reverse=True)
+        if exclude_installed:                         # copies in a loadout are not for sale
+            n, m = n - ni, (m if (exclude_maxed and ranked) else m - mi)
+            lv = lv[ni:]                              # the installed ones are taken to be the most ranked
         if n + m == 0:
             continue
         name = info["name"]
@@ -419,6 +464,7 @@ def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, excl
         rows.append({"slug": slug, "name": name, "category": info.get("category", "other"),
                      "n": n, "m": m, "ranked": ranked, "max_rank": info.get("max_rank", 0),
                      "price": price, "pmax": pmax, "vol": c.get("vol"), "value": value, "ducats": ducats.get(slug),
-                     "updated": updated, "order": inv.orders.get(slug)})
+                     "updated": updated, "order": inv.orders.get(slug), "inst": ni + mi,
+                     "lv": (lv + [0] * n)[:n] if ranked else []})
     rows.sort(key=lambda r: (-(r["value"] or 0), r["name"].lower()))
     return rows, total

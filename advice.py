@@ -12,6 +12,13 @@ Selling (items that are not better as ducats):
     liquidity   = min(1, volume / volume_high)
     score       = price * sellable * liquidity                  expected platinum, discounted by how rarely it trades
     -> items under the minimum price or the minimum volume are left out.
+Ranking up (mods you own that are not at max rank, to sell them at max rank):
+    endo/credits to rank a copy from rank r to max M:  base * (2^M - 2^r)   (Endo base 10/20/30/40, Credits 483/966/1449/1932
+                                                       for common/uncommon/rare/legendary)
+    gain        = max-rank price - current price         platinum gained per copy
+    sellable    = min(copies, max(1, round(volume * 0.25)))
+    score       = gain * liquidity per 1000 Endo spent    "how well the Endo is paid", discounted by how rarely it trades
+    -> mods whose gain is under the minimum, or that trade less than the minimum volume, are left out.
 Rows without a price or a volume cannot be rated; their slugs are returned so the prices can be fetched.
 """
 from config import CFG
@@ -63,4 +70,45 @@ def sell_advice(rows):
         out.append({"slug": r["slug"], "name": r["name"], "n": n, "price": p, "vol": vol, "sellable": sellable,
                     "expected": p * sellable, "score": score, "ranked": r["ranked"]})
     out.sort(key=lambda x: (-x["score"], -x["vol"], x["name"].lower()))
+    return out, list(dict.fromkeys(missing))
+
+
+ENDO_BASE = {"C": 10, "U": 20, "R": 30, "L": 40}
+CREDIT_BASE = {"C": 483, "U": 966, "R": 1449, "L": 1932}
+
+
+def rankup_advice(rows):
+    """rows: inventory.build_rows(). Returns (list of dicts sorted by score, missing slugs).
+    Only mods (Arcanes cannot be ranked with Endo). Copies in a loadout are left out when the rows were built with
+    exclude_installed."""
+    import loadouts
+    rarity = loadouts.data().get("rarity", {})
+    out, missing = [], []
+    min_gain, min_vol = float(CFG["rankup_min_gain"]), float(CFG["rec_min_volume"])
+    high = CFG["volume_high"]
+    for r in rows:
+        if not r["ranked"] or r["category"] != "mod" or r["n"] <= 0:
+            continue
+        rar = rarity.get(r["name"])
+        if not rar:
+            continue
+        p, pm, vol = r["price"], r["pmax"], r["vol"]
+        if p is None or pm is None or vol is None:
+            missing.append(r["slug"])
+            continue
+        gain = pm - p
+        if gain < min_gain or vol < min_vol:
+            continue
+        mx = r["max_rank"]
+        sellable = min(r["n"], max(1, round(vol * 0.25)))
+        lv = sorted(r["lv"][:r["n"]], reverse=True)[:sellable]       # the most ranked copies are the cheapest to finish
+        steps = sum((1 << mx) - (1 << min(l, mx)) for l in lv)
+        endo, credits = ENDO_BASE[rar] * steps, CREDIT_BASE[rar] * steps
+        if endo <= 0:
+            continue
+        liq = _liquidity(vol, high)
+        out.append({"slug": r["slug"], "name": r["name"], "n": r["n"], "rarity": rar, "price": p, "pmax": pm, "vol": vol,
+                    "gain": gain, "sellable": sellable, "endo": endo, "credits": credits, "total_gain": gain * sellable,
+                    "score": gain * sellable * liq / endo * 1000})
+    out.sort(key=lambda x: (-x["score"], -x["total_gain"], x["name"].lower()))
     return out, list(dict.fromkeys(missing))

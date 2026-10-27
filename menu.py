@@ -239,6 +239,8 @@ class PriceList(QWidget):
     def __init__(self, market):
         super().__init__()
         self.market = market
+        import previews
+        previews.set_market(market)
         self.setWindowTitle(t("window.title") + " " + __version__)
         self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.WindowStaysOnTopHint)
         self.resize(1080, 680)

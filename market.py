@@ -108,7 +108,7 @@ class Market:
         if CACHE_FILE.exists() and time.time() - CACHE_FILE.stat().st_mtime < CATALOG_TTL:
             try:
                 rows = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
-                if not all(isinstance(r, list) and len(r) >= 7 for r in rows):
+                if not all(isinstance(r, list) and len(r) >= 8 for r in rows):
                     rows = None          # cache from an older version (no id/category)
             except Exception:
                 rows = None
@@ -119,11 +119,14 @@ class Market:
                 if name and it.get("slug"):
                     tags = it.get("tags") or []
                     rows.append([name, it["slug"], int(it.get("maxRank") or 0), self._kind(tags),
-                                 it.get("id") or "", self._category(name, tags), it.get("vaulted")])
+                                 it.get("id") or "", self._category(name, tags), it.get("vaulted"),
+                                 ((it.get("i18n", {}).get("en", {}) or {}).get("thumb")
+                                  or (it.get("i18n", {}).get("en", {}) or {}).get("icon") or "")])
             CACHE_FILE.write_text(json.dumps(rows), encoding="utf-8")
         self._info = {r[1]: {"name": r[0], "max_rank": r[2],
                             "kind": "other" if r[3] == "altro" else r[3],
-                            "id": r[4], "category": r[5], "vaulted": r[6]} for r in rows}
+                            "id": r[4], "category": r[5], "vaulted": r[6],
+                            "thumb": r[7] if len(r) > 7 else ""} for r in rows}
         self._matcher = Matcher(rows)
         self._name_slug = {norm(r[0]): r[1] for r in rows}
         self.vendors = VendorIndex(self._name_slug)

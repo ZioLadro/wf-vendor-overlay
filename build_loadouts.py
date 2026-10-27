@@ -4,6 +4,7 @@
 Source: https://github.com/calamity-inc/warframe-public-export-plus (converted official game data).
 Usage:  python build_loadouts.py [--out loadout_data.json] [--cache download_folder]
   mods:      mod path -> [English name, max rank]
+  rarity:    English mod name -> C/U/R/L (for the Endo cost of ranking a mod up)
   arcanes:   arcane path -> [English name, max rank]
   abilities: ability path -> English name (every Warframe's abilities)
   suits:     Warframe path -> [its 4 ability paths, in order]
@@ -28,10 +29,15 @@ def main():
     cache.mkdir(parents=True, exist_ok=True)
     lang = fetch("dict.en", cache)
     nm = lambda key: re.sub(r"<[^>]+>\s*", "", lang.get(key, "")).strip()
-    mods, arcanes, abilities, suits = {}, {}, {}, {}
+    mods, arcanes, abilities, suits, rarity, best = {}, {}, {}, {}, {}, {}
     for path, u in fetch("ExportUpgrades", cache).items():
         if isinstance(u, dict) and nm(u.get("name", "")):
             mods[path] = [nm(u["name"]), int(u.get("fusionLimit") or 0)]
+            r = {"COMMON": "C", "UNCOMMON": "U", "RARE": "R", "LEGENDARY": "L"}.get(u.get("rarity"))
+            lim = int(u.get("fusionLimit") or 0)
+            if r and lim > 0 and lim >= best.get(nm(u["name"]), 0):          # same name, several versions: the full-rank one
+                best[nm(u["name"])] = lim
+                rarity[nm(u["name"])] = r
     for path, u in fetch("ExportArcanes", cache).items():
         if isinstance(u, dict) and nm(u.get("name", "")):
             arcanes[path] = [nm(u["name"]), int(u.get("fusionLimit") or 0)]
@@ -48,7 +54,7 @@ def main():
         if m and val:
             helminth[m.group(1)] = nm(key)
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
-           "source": "calamity-inc/warframe-public-export-plus", "mods": mods, "arcanes": arcanes,
+           "source": "calamity-inc/warframe-public-export-plus", "mods": mods, "rarity": rarity, "arcanes": arcanes,
            "abilities": abilities, "suits": suits, "helminth": helminth}
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{len(mods)} mods, {len(arcanes)} arcanes, {len(abilities)} abilities, {len(suits)} warframes -> {a.out}")

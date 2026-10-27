@@ -202,6 +202,9 @@ class InventoryTab(QWidget):
         self.exclude_max = QCheckBox(t("inv.exclude_max"))
         self.exclude_max.setToolTip(t("inv.exclude_max.tip"))
         self.exclude_max.setChecked(bool(CFG["inv_exclude_maxed"]))
+        self.exclude_inst = QCheckBox(t("inv.exclude_inst"))
+        self.exclude_inst.setToolTip(t("inv.exclude_inst.tip"))
+        self.exclude_inst.setChecked(bool(CFG["inv_exclude_installed"]))
         self.hide_zero = QCheckBox(t("prices.hide_zero"))
         self.hide_zero.setToolTip(t("prices.hide_zero.tip"))
         self.hide_zero.setChecked(bool(CFG["inv_hide_zero_volume"]))
@@ -216,6 +219,7 @@ class InventoryTab(QWidget):
             row2.addWidget(cb)
         row2.addWidget(self.multiple)
         row2.addWidget(self.exclude_max)
+        row2.addWidget(self.exclude_inst)
         row2.addWidget(self.hide_zero)
         row2.addStretch(1)
 
@@ -233,6 +237,8 @@ class InventoryTab(QWidget):
         self.btn_sell.setToolTip(t("inv.sell.tip"))
         self.btn_ducat = QPushButton(t("advice.ducat.btn"))
         self.btn_ducat.setToolTip(t("advice.ducat.tip"))
+        self.btn_rankup = QPushButton(t("advice.rankup.btn"))
+        self.btn_rankup.setToolTip(t("advice.rankup.tip"))
         self.btn_advice_sell = QPushButton(t("advice.sell.btn"))
         self.btn_advice_sell.setToolTip(t("advice.sell.tip"))
         self.btn_qf = QPushButton(t("qf.btn"))
@@ -246,6 +252,7 @@ class InventoryTab(QWidget):
         actions.addStretch(1)
         actions.addWidget(self.btn_ducat)
         actions.addWidget(self.btn_advice_sell)
+        actions.addWidget(self.btn_rankup)
         actions.addWidget(self.btn_prices)
         actions.addWidget(self.btn_sell)
         actions.addWidget(self.btn_qf)
@@ -292,6 +299,8 @@ class InventoryTab(QWidget):
         self.hide_zero.toggled.connect(self._hide_zero_changed)
         self.btn_ducat.clicked.connect(lambda: self.show_advice("ducat"))
         self.btn_advice_sell.clicked.connect(lambda: self.show_advice("sell"))
+        self.btn_rankup.clicked.connect(lambda: self.show_advice("rankup"))
+        self.exclude_inst.toggled.connect(self._exclude_inst_changed)
         self.exclude_max.toggled.connect(self._exclude_changed)
         self.btn_import.clicked.connect(self.import_file)
         self.btn_paste.clicked.connect(self.paste_list)
@@ -320,7 +329,8 @@ class InventoryTab(QWidget):
 
     def show_advice(self, kind):
         """Ducat / selling advice over everything you own (the table filters do not apply)."""
-        rows, _ = build_rows(self.inv, self.market, exclude_maxed=self.exclude_max.isChecked())
+        rows, _ = build_rows(self.inv, self.market, exclude_maxed=self.exclude_max.isChecked(),
+                             exclude_installed=self.exclude_inst.isChecked())
         dlg = AdviceDialog(kind, rows, self)
         dlg.select_requested.connect(self.select_slugs)
         dlg.exec()
@@ -334,6 +344,10 @@ class InventoryTab(QWidget):
             if tb.item(r, 0).data(Qt.ItemDataRole.UserRole) in want:
                 sm.select(tb.model().index(r, 0), sm.SelectionFlag.Select | sm.SelectionFlag.Rows)
 
+    def _exclude_inst_changed(self, on):
+        save_config({"inv_exclude_installed": bool(on)})
+        self.refresh(force=True)
+
     def _exclude_changed(self, on):
         save_config({"inv_exclude_maxed": bool(on)})
         self.refresh(force=True)
@@ -345,7 +359,7 @@ class InventoryTab(QWidget):
     def _rows(self):
         return build_rows(
             self.inv, self.market, query=self.search.text(), category=self.category.currentData(),
-            min_plat=self.min_plat.currentData(), exclude_maxed=self.exclude_max.isChecked(),
+            min_plat=self.min_plat.currentData(), exclude_maxed=self.exclude_max.isChecked(), exclude_installed=self.exclude_inst.isChecked(),
             multiple=self.multiple.isChecked(), part_type=self.part_type[1].currentData(),
             vaulted=self.vaulted[1].currentData(), listed=self.listed[1].currentData(),
             hide_zero_volume=self.hide_zero.isChecked())
