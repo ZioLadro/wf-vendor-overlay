@@ -90,9 +90,14 @@ TRACKED = {"steel": "/Lotus/Types/Items/MiscItems/SteelEssence", "pathos": "/Lot
            "vitus": "/Lotus/Types/Items/MiscItems/Elitium", "kuva": "/Lotus/Types/Items/MiscItems/Kuva"}
 
 
+AYA = "/Lotus/Types/Items/MiscItems/SchismKey"
+
+
 def wallet(res) -> dict:
-    """What you hold: Endo (FusionPoints), platinum (paid + free), ducats (the PrimeBucks item), Aya (PrimeTokens), Regal Aya,
-    credits. Missing values are left out."""
+    """What you hold: Endo (FusionPoints), platinum (paid + free), ducats (the PrimeBucks item), Aya, Regal Aya, credits.
+    Aya is an item like any resource (MiscItems "/Lotus/Types/Items/MiscItems/SchismKey"), counted the way AlecaFrame
+    counts it; Regal Aya, the premium one, is the PrimeTokens field. (Before 0.4.3 PrimeTokens was shown as Aya: it is
+    Regal Aya.) Missing values are left out."""
     out = {}
     if not isinstance(res, dict):
         return out
@@ -112,10 +117,13 @@ def wallet(res) -> dict:
             counts[str(it.get("ItemType", ""))] = counts.get(str(it.get("ItemType", "")), 0) + int(it.get("ItemCount") or 0)
     for key, path in TRACKED.items():                 # Steel Essence, Pathos Clamps, Riven Slivers, Live Heartcells, Vitus Essence, Kuva
         out[key] = counts.get(path, 0)
-    if num(res.get("PrimeTokens")) is not None:
-        out["aya"] = num(res["PrimeTokens"])
-    if num(res.get("RegalCredits")):
-        out["regal"] = num(res["RegalCredits"])
+    if AYA in counts or any(isinstance(it, dict) for it in res.get("MiscItems") or []):
+        out["aya"] = counts.get(AYA, 0)                 # an inventory without the item: 0 Aya
+    regal = num(res.get("PrimeTokens"))
+    if regal is None:
+        regal = num(res.get("RegalCredits"))
+    if regal:
+        out["regal"] = regal
     return out
 
 

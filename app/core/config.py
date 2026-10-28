@@ -97,7 +97,8 @@ DEFAULTS = {
     "goals_hint_color": "#a0a0a0",   # Activities: hints (activities, goals)
     "goals_soon_color": "#7fd7ff",   # Activities: items you can buy with the standing still earnable before the reset
     "weekly_ocr": True,              # Weekly: check the limited offers listed on the vendor screen (bought out = gone)
-    "goals_by_reset": True,          # Activities: show what today's earnable standing (until 00:00 UTC) still pays for
+    "goals_by_reset": True,
+    "goals_folded": [],              # Activities: categories folded by a click on their title (syndicate tags, weekly…)          # Activities: show what today's earnable standing (until 00:00 UTC) still pays for
     "goals_repeat": True,            # Activities: an item bought stays on the list (counted again from the new copies)
     "goals_routine": True,           # Activities: Sortie, Archon Hunt, Deep / Temporal Archimedea, Descendia
     "goals_manual_done": {},         # Activities: routine entries ticked by hand {key: until when (epoch)}

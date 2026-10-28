@@ -13,7 +13,8 @@ Usage:  python tools/build_loadouts.py [--out data/loadout_data.json] [--cache d
 With --wfcd <folder of WFCD/warframe-items data/json> it also writes (used for polarity, drain, capacity and stats):
   mst:       mod name -> [polarity, base drain, max rank, compatibility, type, {stat: value at max rank}, Exilus (1/0)]
              (Warframe mods: stat keys; weapon mods: labels)
-  frames:    Warframe name -> [health, shield, armor, energy, sprint speed (rank 30), aura polarity, [innate polarities]]
+  frames:    Warframe name -> [health, shield, armor, energy, sprint speed (rank 30), aura polarity, [innate polarities],
+             Exilus polarity]
   weapons:   weapon name -> [kind, type, [innate polarities], exilus polarity, stance polarity]
              (kind "compweapon": Sentinel / MOA / Hound weapons, and "Claws" for the beasts)
   wstats:    weapon name -> {"cc","cd","sc","fr","dmg": {type: value}, guns: "ms","mag","rl","acc","trig",
@@ -86,7 +87,8 @@ def wfcd(folder: Path) -> dict:
     for w in load("Warframes"):
         if w.get("type") == "Warframe" and w.get("name"):
             frames[w["name"]] = [w.get("health", 0), w.get("shield", 0), w.get("armor", 0), w.get("power", 0),
-                                 w.get("sprintSpeed", 1), w.get("aura") or "", w.get("polarities") or []]
+                                 w.get("sprintSpeed", 1), w.get("aura") or "", w.get("polarities") or [],
+                                 w.get("exilusPolarity") or ""]
     companions = {}                     # name -> [family: sentinel / beast / robotic, polarities]
     for c in load("Sentinels"):
         if c.get("name") and c.get("type") == "Sentinel":

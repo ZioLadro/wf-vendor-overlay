@@ -96,6 +96,8 @@ ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elen
   Percorso d'Acciaio). Ciò che il file non dice (se un'Archimedea è finita) è segnato (?): clic destro per spuntarlo a
   mano fino al reset.
 
+**Clic** sul titolo di una categoria (un sindacato, Settimanali, Nightwave, Calendario, Giornaliere e settimanali…) per
+ridurla al solo titolo (▸) o riaprirla (▾); la scelta viene ricordata.
 **Clic destro** su un oggetto per nasconderlo o aprirlo su warframe.market, sul titolo di un sindacato o su un'attività
 per smettere di seguirla (*Segui di nuovo tutte le attività* in ⚙). Con *Attività: cliccabile solo col cursore* (attiva
 di default) la finestra lascia passare i clic quando Warframe nasconde il cursore (in missione), così non dà mai
@@ -364,7 +366,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.4.2)
+## Aggiornamenti (versione attuale 0.4.3)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche
@@ -479,7 +481,8 @@ build.ps1            build per Windows (PyInstaller)
 - L'elenco dei vendor viene dai dati pubblici del gioco: i vendor che mancano (es. Varzia) non sono inclusi. Si rigenera
   con `python tools/build_vendors.py` (una copia nella cartella dei dati ha la precedenza).
 - AlecaFrame aggiorna `lastData.dat` solo quando sincronizza (entrando o uscendo da una missione, al login): ciò che hai
-  fatto nel frattempo compare alla sync successiva. AlecaFrame segnala 0 Aya, quindi scrivili in Impostazioni > Inventario
-  (*Aya (scritti a mano)*).
+  fatto nel frattempo compare alla sync successiva. Gli Aya vengono contati come li conta AlecaFrame
+  (l'oggetto Aya tra le tue risorse; gli Aya Regali a parte); *Aya (scritti a mano)* in Impostazioni > Inventario serve solo
+  quando il file non ne ha.
 - Il completamento di Nightwave e Calendario dipende da ciò che registra il file di gioco; il Calendario è segnato per
   giorno.

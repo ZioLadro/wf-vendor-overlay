@@ -476,9 +476,11 @@ class GoalsOverlay(QWidget):
             ready = any(it.get("can") for it in g["items"])
             icon = "?" if ready else "!"
             self.rows.addSpacing(6)
-            title = self._label(f"{icon}  {g['name']}", "quest")
+            title = self._title(g["tag"] or g["name"], f"{icon}  {g['name']}")
             self._menu_on(title, lambda pos, w=title, g=g: self._quest_menu(w, pos, g))
             self.rows.addWidget(title)
+            if self._folded(g["tag"] or g["name"]):
+                continue
             sub = []
             if g.get("rank") is not None:
                 sub.append(t("goals.q.rank", r=g["rank"]))
@@ -520,8 +522,8 @@ class GoalsOverlay(QWidget):
         recent = [d for d in data["done"] if time.time() - d.get("t", 0) < 86400][-3:]
         if recent:
             self.rows.addSpacing(6)
-            self.rows.addWidget(self._label(t("goals.recent"), "quest"))
-            for d in reversed(recent):
+            self.rows.addWidget(self._title("recent", t("goals.recent")))
+            for d in ([] if self._folded("recent") else reversed(recent)):
                 self.rows.addWidget(self._label(
                     f"   ✔ {d['name']} ({d['vendor']}) · {time.strftime('%H:%M', time.localtime(d['t']))}", "done"))
         n = sum(len(g["items"]) for g in data["groups"])
@@ -587,7 +589,9 @@ class GoalsOverlay(QWidget):
             return
         self.rows.addSpacing(6)
         reset = WK.next_reset(now)
-        self.rows.addWidget(self._label("⟳  " + t("goals.weekly"), "quest"))
+        self.rows.addWidget(self._title("weekly", "⟳  " + t("goals.weekly")))
+        if self._folded("weekly"):
+            return
         self.rows.addWidget(self._label("   " + t("goals.weekly.sub", left=_left(reset - now)), "sub"))
         for o in sorted(tracked, key=lambda o: (o["bought"] >= o["limit"], o["vendor_name"], o["name"])):
             qty = f" ×{thousands(o['qty'])}" if o["qty"] > 1 else ""
@@ -616,16 +620,37 @@ class GoalsOverlay(QWidget):
             return None
 
     def _section(self, key, icon, title, sub):
-        """A quest block title with its grey line; right-click untracks the whole block. False if untracked."""
+        """A quest block title with its grey line; right-click untracks the whole block, a click folds it. False if
+        untracked or folded (then only the title is shown)."""
         if f"{key}|*" in set(CFG.get("goals_untracked") or []):
             return False
         self.rows.addSpacing(6)
-        lab = self._label(f"{icon}  {title}", "quest")
+        lab = self._title(key, f"{icon}  {title}")
         self._menu_on(lab, lambda pos, w=lab, k=key, n=title: self._quest_menu(w, pos, {"tag": k, "name": n}))
         self.rows.addWidget(lab)
+        if self._folded(key):
+            return False
         if sub:
             self.rows.addWidget(self._label("   " + sub, "sub"))
         return True
+
+    # ---------- folding a category (a click on its title) ----------
+    def _folded(self, key) -> bool:
+        return key in set(CFG.get("goals_folded") or [])
+
+    def _title(self, key, text):
+        """A category title (a syndicate, Weekly, Nightwave…): ▾ open / ▸ folded; a click folds or unfolds it."""
+        folded = self._folded(key)
+        lab = self._label(("▸ " if folded else "▾ ") + text, "quest")
+        lab.setCursor(Qt.CursorShape.PointingHandCursor)
+        lab.setToolTip(t("goals.fold.tip"))
+
+        def press(e, k=key):
+            if e.button() == Qt.MouseButton.LeftButton:
+                cur = list(CFG.get("goals_folded") or [])
+                self._set("goals_folded", [x for x in cur if x != k] if k in cur else cur + [k])
+        lab.mousePressEvent = press
+        return lab
 
     def _draw_quests(self):
         """Nightwave's weekly challenges and the 1999 Calendar's, from DE's world state, with what the game file says you

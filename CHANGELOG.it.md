@@ -3,6 +3,19 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.3
+- **Aya contati come fa AlecaFrame**: l'oggetto Aya tra le tue risorse (`SchismKey`); quello che prima appariva come
+  Aya (il campo `PrimeTokens`) sono gli Aya Regali, ora mostrati come tali. *Aya (scritti a mano)* serve solo quando il
+  file non ne ha.
+- **Attività: comprimere una categoria**: un clic sul titolo di un sindacato, Settimanali, Nightwave, Calendario,
+  Giornaliere e settimanali o Acquistati di recente la riduce al titolo (▸) o la riapre (▾); ricordato tra una sessione
+  e l'altra.
+- **Capacità**: ora conta la polarità propria dello slot Exilus dei Warframe che ce l'hanno (Gauss, Hildryn, Baruuk,
+  Inaros…). Il tooltip della capacità elenca ogni slot: polarità e da dove viene (Forma nel file di gioco o propria
+  dell'oggetto), mod, rank, consumo. **Copia i dati per un controllo della capacità** (Build) copia cosa dice il file di
+  gioco sull'oggetto e come è stato letto, per segnalare una capacità diversa da quella del gioco.
+- Icona degli Aya nella barra del giocatore.
+
 ## 0.4.2
 - **Arcani disegnati come nel gioco** (Build e pianificatore): senza carta, l'immagine generica della rarità
   dell'Arcano, il nome centrato sotto, il rank come ◈ / ◇. Solo gli slot Arcano che l'oggetto può avere; uno slot vuoto

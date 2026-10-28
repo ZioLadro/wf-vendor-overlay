@@ -223,13 +223,26 @@ def read(inv: dict, market=None) -> list:
                     # older items do not say whether a Reactor / Catalyst is installed; a build that only fits with one has it
                     reactor, reactor_src = True, "guess"
                     calc = BC.evaluate(kind, item_name, roles, mods, pols, reactor, level)
-                for s, c in zip(slots, calc["slots"]):
-                    s.update(pol=c["pol"], mpol=c["mpol"], drain=c["drain"], state=c["state"])
+                formaed = set()
+                for f in item.get("Polarity") or []:
+                    try:
+                        formaed.add(int(f.get("Slot")))
+                    except (TypeError, ValueError, AttributeError):
+                        pass
+                for i, (s, c) in enumerate(zip(slots, calc["slots"])):
+                    # where the slot's polarity comes from (the capacity details): the file's Forma, or the item's own
+                    s.update(pol=c["pol"], mpol=c["mpol"], drain=c["drain"], state=c["state"],
+                             pol_src="forma" if i in formaed else ("innate" if c["pol"] else ""))
                 cname = str(cfg.get("Name") or "").strip()
                 out.append({"item": item_name, "kind": kind, "path": path, "config": LETTERS[n] if n < 8 else str(n + 1),
                             "cfg_name": cname, "owner": owner, "reactor": reactor, "level": level,
                             "capacity": ({k: calc[k] for k in ("total", "used", "free")} if kind != "exalted" else None), "stats": calc["stats"], "bonus": calc["bonus"],
                             "elements": calc.get("elements") or [],
+                            # what the game file says, as read (Builds: "Copy data for a capacity check")
+                            "raw": {"ItemType": path, "XP": item.get("XP"), "Features": item.get("Features"),
+                                    "Polarized": item.get("Polarized"), "Polarity": item.get("Polarity"),
+                                    "Upgrades": [[(owned.get(r) or (r, None))[0] if r and not str(r).startswith("/") else r,
+                                                  (owned.get(r) or (None, None))[1]] for r in refs[:len(roles)]]},
                             "oid": (item.get("ItemId") or {}).get("$oid", ""), "idx": n,
                             "forma": int(item.get("Polarized") or 0), "slots": slots,
                             "shards": shards if kind == "warframe" else [],

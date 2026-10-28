@@ -3,6 +3,18 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.4.3
+- **Aya counted like AlecaFrame does**: the Aya item among your resources (`SchismKey`); what was shown as Aya before
+  (the `PrimeTokens` field) is Regal Aya and is now shown as such. *Aya (typed by hand)* is used only when the file has
+  none.
+- **Activities: fold a category**: a click on the title of a syndicate, Weekly, Nightwave, the Calendar, Daily and
+  weekly or Bought lately folds it to its title (▸) or opens it again (▾); remembered between sessions.
+- **Capacity**: the Exilus slot's own polarity of the Warframes that have one (Gauss, Hildryn, Baruuk, Inaros…) is now
+  counted. The capacity's tooltip lists every slot: polarity and where it comes from (Forma in the game file or the
+  item's own), mod, rank, drain. **Copy data for a capacity check** (Builds) copies what the game file says about the
+  item and how it was read, to report a capacity that differs from the game's.
+- Aya icon in the player strip.
+
 ## 0.4.2
 - **Arcanes drawn as in the game** (Builds and planner): no card, the generic picture of the Arcane's rarity, the name
   centred under it, the rank as ◈ / ◇. Only the Arcane slots the item can have; an empty slot shows the outline of an

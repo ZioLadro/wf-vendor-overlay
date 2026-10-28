@@ -41,6 +41,8 @@ def innate(kind: str, item: str, roles: list) -> list:
             for i, r in enumerate(roles):
                 if r == "aura":
                     pols[i] = fr[5]
+                elif r == "exilus" and len(fr) > 7:      # a few Warframes have one (Gauss, Hildryn, Baruuk…)
+                    pols[i] = fr[7] or ""
     elif kind in ("companion", "archwing"):
         c = d.get("companions" if kind == "companion" else "archwings", {}).get(item)
         innate_pols = (c[1] if kind == "companion" else c) if c else []

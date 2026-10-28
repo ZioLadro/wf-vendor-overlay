@@ -107,6 +107,18 @@ class LoadoutView(QWidget):
         lab.setStyleSheet("font-weight: bold; letter-spacing: 1px; margin-top: 10px;")
         self.body.addWidget(lab)
 
+    def _copy_data(self, lo):
+        """The item as the game file has it and as the program reads it, to the clipboard (to report a capacity that
+        differs from the game's)."""
+        from PyQt6.QtWidgets import QApplication
+        out = {"item": lo["item"], "kind": lo["kind"], "config": lo.get("cfg_name") or lo["config"], "level": lo.get("level"),
+               "reactor": lo.get("reactor"), "reactor_src": lo.get("reactor_src"), "capacity": lo.get("capacity"),
+               "slots": [{k: s.get(k) for k in ("role", "name", "rank", "max", "pol", "pol_src", "mpol", "drain")}
+                         for s in lo["slots"]], "file": lo.get("raw")}
+        QApplication.clipboard().setText(json.dumps(out, ensure_ascii=False, indent=1))
+        self.empty.setText(t("bs.copydata.done"))
+        self.empty.show()
+
     def _config_clicked(self, i):
         lo = self._lo
         cfgs = (lo or {}).get("configs") or []
@@ -195,6 +207,10 @@ class LoadoutView(QWidget):
             b.setToolTip(t("bs.simulate.tip"))
             b.clicked.connect(lambda: self.on_simulate(lo))
             row.addWidget(b)
+            c = QPushButton("⧉ " + t("bs.copydata"))
+            c.setToolTip(t("bs.copydata.tip"))
+            c.clicked.connect(lambda: self._copy_data(lo))
+            row.addWidget(c)
             row.addStretch(1)
             self.body.addLayout(row)
         if lo["kind"] == "warframe":

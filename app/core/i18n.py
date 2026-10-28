@@ -1106,6 +1106,12 @@ EN = {
     "bs.tip.max": "At max rank ({n}):",
     "bs.tip.src.wiki": "Effect from the Warframe wiki; lower ranks worked out from the game data",
     "bs.tip.src.data": "Effect from the game data (the wiki's text is read in the background)",
+    # ---- 0.4.0 ----
+    "goals.fold.tip": "Click: fold / unfold. Right-click: track / untrack",
+    "bs.cap.innate": "item's own",
+    "bs.copydata": "Copy data for a capacity check",
+    "bs.copydata.tip": "Copies to the clipboard what the game file says about this item (polarities, mods and ranks) and how the program read it: paste it in a bug report when the capacity differs from the game's",
+    "bs.copydata.done": "Copied to the clipboard.",
 }
 
 IT = {
@@ -2199,6 +2205,12 @@ IT = {
     "bs.tip.max": "Al rank massimo ({n}):",
     "bs.tip.src.wiki": "Effetto dalla wiki di Warframe; i rank più bassi ricavati dai dati del gioco",
     "bs.tip.src.data": "Effetto dai dati del gioco (il testo della wiki viene letto in background)",
+    # ---- 0.4.0 ----
+    "goals.fold.tip": "Clic: comprimi / espandi. Clic destro: segui / smetti di seguire",
+    "bs.cap.innate": "propria dell'oggetto",
+    "bs.copydata": "Copia i dati per un controllo della capacità",
+    "bs.copydata.tip": "Copia negli appunti cosa dice il file di gioco su questo oggetto (polarità, mod e rank) e come l'ha letto il programma: incollalo in una segnalazione quando la capacità è diversa da quella del gioco",
+    "bs.copydata.done": "Copiato negli appunti.",
 }
 
 STRINGS = {"en": EN, "it": IT}

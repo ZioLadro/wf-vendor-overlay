@@ -86,6 +86,7 @@ A small always-on-top window over the game, styled like a quest tracker, movable
   Elite Deep / Temporal Archimedea (started, score), Netracells (of 5 a week) and Descendia (floors reached of 21, normal and Steel Path). What
   the file cannot tell (whether an Archimedea is finished) is marked (?): right-click to tick it by hand until the reset.
 
+**Click** a category's title (a syndicate, Weekly, Nightwave, Calendar, Daily and weekly…) to fold it to its title (▸) or unfold it (▾); the choice is remembered.
 **Right-click** an item to hide it or open it on warframe.market, a syndicate's title or an activity to stop following
 it (*Track again every activity* in ⚙). With *Activities: clickable only
 with the cursor* (on by default) the window lets clicks through while Warframe hides the cursor (in missions), so it never gets in
@@ -341,7 +342,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.4.2)
+## Updates (current version 0.4.3)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.
@@ -452,5 +453,5 @@ build.ps1            Windows build (PyInstaller)
 - The vendor list comes from the public game data: vendors missing from it (e.g. Varzia) are not included. Regenerate
   with `python tools/build_vendors.py` (a copy in the data folder takes precedence).
 - AlecaFrame updates `lastData.dat` only when it syncs (entering or leaving a mission, logging in): what you did since
-  shows up at the next sync. AlecaFrame reports 0 Aya, so type it in Settings > Inventory (*Aya (typed by hand)*).
+  shows up at the next sync. Aya are counted as AlecaFrame counts them (the Aya item among your resources; Regal Aya separately); *Aya (typed by hand)* in Settings > Inventory is used only when the file has none.
 - Nightwave and Calendar completion depend on what the game file records; the Calendar is marked by day.

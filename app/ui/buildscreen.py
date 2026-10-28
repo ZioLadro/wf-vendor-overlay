@@ -460,6 +460,27 @@ def _head(text):
 PANEL_W = 300
 
 
+def capacity_detail(m: dict) -> str:
+    """Capacity, slot by slot (tooltip): the slot's polarity and where it comes from (Forma in the game file, the item's
+    own, placed where it fits best), the mod, its rank and drain. To compare with the game when the numbers differ."""
+    from html import escape
+    rows = []
+    for s in m.get("slots") or []:
+        if s.get("role") == "arcane":
+            continue
+        pol = t("pol." + s["pol"]) if s.get("pol") else t("pol.none")
+        src = {"forma": " (Forma)", "innate": " (" + t("bs.cap.innate") + ")"}.get(s.get("pol_src") or "", "")
+        role = t("builds.slot." + s["role"]) if s.get("role") not in (None, "general") else ""
+        if s.get("name"):
+            dr = s.get("drain")
+            drain = "" if dr is None else (f"+{-dr}" if dr < 0 else str(dr))
+            mod = f"{escape(s['name'])} r{s['rank'] if s.get('rank') is not None else '?'}/{s.get('max') or '?'}"
+            rows.append(f"{role + ' · ' if role else ''}{mod}: <b>{drain}</b> · {pol}{src}")
+        elif role:
+            rows.append(f"{role}: — · {pol}{src}")
+    return "<br>".join(rows)
+
+
 def stats_panel(m: dict) -> QFrame:
     """CAPACITY used/total with its bar, then the stats: a Warframe's (health… strength), a weapon's (fire rate…, crit,
     status, every damage type, total, DPS), the Kuva / Tenet / Coda bonus element, the other bonuses of the mods."""
@@ -489,7 +510,10 @@ def stats_panel(m: dict) -> QFrame:
         fill = DOWN if used > total else "#d8dde6"
         bar.setStyleSheet(f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {fill}, stop:{frac:.3f} {fill},"
                           f" stop:{min(1.0, frac + 0.001):.3f} #3b3f48, stop:1 #3b3f48); border-radius: 2px;")
-        bar.setToolTip(t("builds.capacity.tip", level=m.get("level", 30), reactor=t("builds.reactor") if m.get("reactor") else ""))
+        detail = capacity_detail(m)
+        bar.setToolTip(t("builds.capacity.tip", level=m.get("level", 30), reactor=t("builds.reactor") if m.get("reactor") else "")
+                       + ("<br><br>" + detail if detail else ""))
+        b.setToolTip(b.toolTip() + ("<br><br>" + detail if detail else ""))
         lay.addWidget(bar)
     elif m.get("capacity_none"):
         c = QLabel(t("builds.capacity.none"))

@@ -114,7 +114,7 @@ class PlayerBar(QFrame):
               ("steel", "bar.steel"), ("pathos", "bar.pathos"), ("sliver", "bar.sliver"), ("heartcell", "bar.heartcell"),
               ("kuva", "bar.kuva"), ("vitus", "bar.vitus"))
     GAME_NAME = {"steel": "Steel Essence", "pathos": "Pathos Clamp", "sliver": "Riven Sliver", "heartcell": "Live Heartcell",
-                 "vitus": "Vitus Essence", "kuva": "Kuva"}
+                 "vitus": "Vitus Essence", "kuva": "Kuva", "aya": "Aya"}
 
     def _wallet(self):
         """Endo, platinum, ducats and Aya you hold (from the AlecaFrame file), compact (3k, 30k, 1.2M), with the icons of the
