@@ -4,6 +4,8 @@ Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
 ## 0.3.1
+- **La finestra di aggiornamento mostra cosa è cambiato**: tutte le versioni tra quella che hai e la nuova (dalla più
+  recente, dal changelog nella tua lingua), in un elenco scorrevole sopra Installa / Più tardi / Salta.
 - **Stelle dell'overlay**: *★ Migliore qui ★* ora è il miglior acquisto tra **tutti** gli oggetti del vendor che stai
   guardando (non solo le righe a schermo; se è fuori vista lo nomina la riga di stato), e *★ Consigliato ★* segna gli
   oggetti tra i migliori acquisti **di tutti i vendor** (la classifica dei Consigli).

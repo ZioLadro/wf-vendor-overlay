@@ -851,6 +851,12 @@ EN = {
     "quests.cal.active": "(in progress)",
     "set.goals_quests": "Activities: Nightwave and 1999 Calendar",
     "set.goals_quests.tip": "Nightwave's weekly and elite challenges and the 1999 Calendar's challenges, from Digital Extremes' public world state (read every 10 minutes), ticked when the game file shows them completed",
+    "update.head": "Version {v} is available (you have {cur}).",
+    "update.changes": "What changed since your version:",
+    "update.nochanges": "(The list of changes could not be read: see the releases page.)",
+    "update.ask.q": "Download, verify and install it now? The program will restart. Your settings and data are kept.",
+    "update.manual.q": "This copy runs from source or is not the packaged Windows build, so it cannot update itself (use git pull or download the release).",
+    "update.openpage": "Open the releases page",
 }
 
 IT = {
@@ -1689,6 +1695,12 @@ IT = {
     "quests.cal.active": "(in corso)",
     "set.goals_quests": "Attività: Nightwave e Calendario 1999",
     "set.goals_quests.tip": "Le sfide settimanali ed élite di Nightwave e quelle del Calendario 1999, dallo stato del mondo pubblico di Digital Extremes (letto ogni 10 minuti), spuntate quando il file di gioco le mostra completate",
+    "update.head": "È disponibile la versione {v} (hai la {cur}).",
+    "update.changes": "Cosa è cambiato rispetto alla tua versione:",
+    "update.nochanges": "(Impossibile leggere l'elenco delle modifiche: vedi la pagina delle release.)",
+    "update.ask.q": "Scaricarla, verificarla e installarla ora? Il programma si riavvia. Impostazioni e dati vengono mantenuti.",
+    "update.manual.q": "Questa copia è eseguita dai sorgenti o non è la versione Windows pacchettizzata, quindi non può aggiornarsi da sola (usa git pull o scarica la release).",
+    "update.openpage": "Apri la pagina delle release",
 }
 
 STRINGS = {"en": EN, "it": IT}

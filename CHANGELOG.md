@@ -4,6 +4,8 @@ From 0.2.1 on, every release lists its changes here (the release page on GitHub 
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
 ## 0.3.1
+- **Update window shows what changed**: every version between the one you have and the new one (newest first, from
+  the changelog in your language), in a scrollable list above Install / Later / Skip.
 - **Overlay stars**: *★ Best here ★* is now the best purchase among **all** the items of the vendor you are looking at
   (not only the rows on screen; the status line names it if it is scrolled away), and *★ Recommended ★* marks the
   items among the best purchases **across all vendors** (the Recommendations ranking).

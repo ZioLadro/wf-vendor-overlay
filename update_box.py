@@ -4,8 +4,8 @@ import threading
 from PyQt6.QtCore import QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtCore import QUrl
-from PyQt6.QtWidgets import (QApplication, QGroupBox, QHBoxLayout, QLabel, QMessageBox, QProgressBar, QPushButton,
-                             QVBoxLayout)
+from PyQt6.QtWidgets import (QApplication, QDialog, QDialogButtonBox, QGroupBox, QHBoxLayout, QLabel, QMessageBox,
+                             QProgressBar, QPushButton, QTextBrowser, QVBoxLayout)
 
 import updater
 from config import CFG, save_config
@@ -19,6 +19,36 @@ class _Bus(QObject):
     checked = pyqtSignal(object, str)
     progress = pyqtSignal(int, int)
     staged = pyqtSignal(object, str)
+
+
+class ChangesDialog(QDialog):
+    """The update window: the new version, what changed since the installed one (scrollable) and the choices."""
+
+    def __init__(self, parent, info, question, buttons):
+        super().__init__(parent)
+        self.setWindowTitle(t("update.title"))
+        self.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)      # also visible over the game
+        self.clicked = None
+        head = QLabel(t("update.head", v=info["version"], cur=__version__))
+        head.setStyleSheet("font-weight: bold; font-size: 11pt;")
+        sub = QLabel(t("update.changes"))
+        role(sub, "muted")
+        view = QTextBrowser()
+        view.setOpenExternalLinks(True)
+        view.setMarkdown(info.get("changes") or info.get("notes") or t("update.nochanges"))
+        q = QLabel(question)
+        q.setWordWrap(True)
+        bb = QDialogButtonBox()
+        for key, text, r in buttons:
+            b = bb.addButton(text, r)
+            b.clicked.connect(lambda _c=False, k=key: (setattr(self, "clicked", k), self.accept()))
+        lay = QVBoxLayout(self)
+        lay.addWidget(head)
+        lay.addWidget(sub)
+        lay.addWidget(view, 1)
+        lay.addWidget(q)
+        lay.addWidget(bb)
+        self.resize(640, 520)
 
 
 class UpdateBox(QGroupBox):
@@ -79,23 +109,22 @@ class UpdateBox(QGroupBox):
             # the release exists but has no package yet (the build may be running, or it failed)
             QMessageBox.information(self, t("update.title"), t("update.nopackage", v=info["version"]))
             return
+        R = QDialogButtonBox.ButtonRole
         if not updater.can_install():
-            if QMessageBox.question(self, t("update.title"), t("update.manual", v=info["version"], notes=info["notes"])) \
-                    == QMessageBox.StandardButton.Yes:
+            box = ChangesDialog(self, info, t("update.manual.q"),
+                                [("page", t("update.openpage"), R.AcceptRole), ("later", t("update.later"), R.RejectRole)])
+            box.exec()
+            if box.clicked == "page":
                 QDesktopServices.openUrl(QUrl(info["page"]))
             return
-        box = QMessageBox(self)
-        box.setWindowTitle(t("update.title"))
-        box.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)      # also visible over the game
-        box.setText(t("update.ask", v=info["version"], notes=info["notes"]))
-        yes = box.addButton(t("update.install"), QMessageBox.ButtonRole.AcceptRole)
-        box.addButton(t("update.later"), QMessageBox.ButtonRole.RejectRole)
-        skip = box.addButton(t("update.skip"), QMessageBox.ButtonRole.DestructiveRole)
+        box = ChangesDialog(self, info, t("update.ask.q"),
+                            [("yes", t("update.install"), R.AcceptRole), ("later", t("update.later"), R.RejectRole),
+                             ("skip", t("update.skip"), R.DestructiveRole)])
         box.exec()
-        if box.clickedButton() is skip:
+        if box.clicked == "skip":
             save_config({"skip_update_version": info["version"]})
             return
-        if box.clickedButton() is not yes:
+        if box.clicked != "yes":
             return
         self.btn.setEnabled(False)
         self.bar.setVisible(True)

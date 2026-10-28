@@ -26,6 +26,8 @@ ASSET = "WFVendorOverlay-windows.zip"
 RELEASES_PAGE = f"https://github.com/{REPO}/releases"
 ALLOWED_HOSTS = ("api.github.com", "github.com", "objects.githubusercontent.com",
                  "release-assets.githubusercontent.com")
+RAW = f"https://raw.githubusercontent.com/{REPO}"
+LIST_API = f"https://api.github.com/repos/{REPO}/releases?per_page=30"
 UA = f"WFVendorOverlay/{__version__}"
 
 
@@ -70,10 +72,67 @@ def check(timeout: float = 15.0) -> dict:
     d = r.json()
     tag = str(d.get("tag_name") or "")
     assets = {a.get("name"): a.get("browser_download_url") for a in d.get("assets") or [] if isinstance(a, dict)}
-    return {"version": tag.lstrip("vV"), "tag": tag, "notes": str(d.get("body") or "")[:1500],
+    info = {"version": tag.lstrip("vV"), "tag": tag, "notes": str(d.get("body") or ""),
             "page": d.get("html_url") or RELEASES_PAGE, "zip_url": assets.get(ASSET),
             "sha_url": assets.get(ASSET + ".sha256"), "newer": bool(tag) and is_newer(tag),
             "installable": bool(assets.get(ASSET) and assets.get(ASSET + ".sha256"))}
+    info["changes"] = ""
+    if info["newer"]:
+        try:
+            from config import CFG
+            info["changes"] = changes(info, str(CFG.get("language", "en")))
+        except Exception:
+            info["changes"] = info["notes"]
+    return info
+
+
+def _sections(md: str) -> list:
+    """[(version, text)] from a changelog: one entry per "## x.y.z" heading."""
+    out, cur, buf = [], None, []
+    for line in md.splitlines():
+        m = re.match(r"^##\s+v?(\d+(?:\.\d+)*)\s*$", line.strip())
+        if m:
+            if cur:
+                out.append((cur, "\n".join(buf).strip()))
+            cur, buf = m.group(1), []
+        elif cur:
+            buf.append(line)
+    if cur:
+        out.append((cur, "\n".join(buf).strip()))
+    return out
+
+
+def changes(info: dict, lang: str = "en", local: str = __version__, timeout: float = 15.0) -> str:
+    """What changed between the installed version and the new one, as Markdown: every version after `local` up to the
+    new one, newest first. Read from the project's changelog at the new release's tag (CHANGELOG.it.md in Italian);
+    when that fails, from the release notes on GitHub. Falls back to the latest release's notes."""
+    lo, hi = parse_version(local), parse_version(info["version"])
+    names = ["CHANGELOG.it.md", "CHANGELOG.md"] if lang == "it" else ["CHANGELOG.md"]
+    for name in names:
+        for ref in (info.get("tag") or "", "main"):
+            if not ref:
+                continue
+            try:
+                r = requests.get(f"{RAW}/{ref}/{name}", headers={"User-Agent": UA}, timeout=timeout)
+                if r.status_code != 200:
+                    continue
+                secs = [(v, txt) for v, txt in _sections(r.text) if lo < parse_version(v) <= hi]
+                if secs:
+                    return "\n\n".join(f"### {v}\n\n{txt}" for v, txt in secs)
+            except requests.RequestException:
+                pass
+    try:
+        r = requests.get(LIST_API, headers={"Accept": "application/vnd.github+json", "User-Agent": UA}, timeout=timeout)
+        if r.status_code == 200:
+            secs = [(str(d.get("tag_name") or "").lstrip("vV"), str(d.get("body") or "").strip()) for d in r.json()
+                    if isinstance(d, dict) and not d.get("draft") and not d.get("prerelease")]
+            secs = [(v, b) for v, b in secs if v and lo < parse_version(v) <= hi]
+            secs.sort(key=lambda x: parse_version(x[0]), reverse=True)
+            if secs:
+                return "\n\n".join(f"### {v}\n\n{b}" for v, b in secs)
+    except (requests.RequestException, ValueError):
+        pass
+    return info.get("notes") or ""
 
 
 def download(info: dict, progress=None, cancelled=lambda: False) -> Path:
