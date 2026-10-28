@@ -6,7 +6,7 @@
 name: release
 on:
   push:
-    tags: ["v*"]
+    tags: ["v*", "[0-9]*.[0-9]*.[0-9]*"]   # v0.4.2, and 0.4.2 too (the release is always named v0.4.2)
   workflow_dispatch:                # Actions tab -> release -> Run workflow: builds an existing tag again
     inputs:
       tag:
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ env.TAG }}
+          ref: ${{ inputs.tag || github.ref_name }}   # the tag as it exists (0.4.2 or v0.4.2)
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -53,6 +53,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Continue"      # gh writes to stderr when the release does not exist yet: not an error
           $tag = $env:TAG
+          $sha = (git rev-parse HEAD).Trim()       # the release's v-tag is made on the commit that was built
           # release notes: the section of CHANGELOG.md for this version (falls back to generated notes)
           $ver = $tag.TrimStart("v")
           $notes = ""
@@ -68,9 +69,9 @@ jobs:
             gh release upload $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --clobber
           } else {
             if (Test-Path notes.md) {
-              gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --notes-file notes.md
+              gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --target $sha --notes-file notes.md
             } else {
-              gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --generate-notes
+              gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --target $sha --generate-notes
             }
           }
           if ($LASTEXITCODE -ne 0) { exit 1 }
