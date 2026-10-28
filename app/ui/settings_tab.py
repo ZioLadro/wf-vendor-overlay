@@ -50,6 +50,7 @@ GROUPS = [
         ("goals_weekly", "bool", None, False),
         ("goals_quests", "bool", None, False),
         ("goals_where", "bool", None, False),
+        ("goals_routine", "bool", None, False),
         ("goals_untracked", "activities", None, False),
     ]),
     ("detection", [

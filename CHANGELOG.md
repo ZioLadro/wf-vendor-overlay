@@ -3,6 +3,15 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.3.4
+- **Nightwave completion fixed**: a challenge counts as done when its id is in the game file's history, or when the same
+  challenge is there with an id of the same season and week (the world state and the file can write ids differently;
+  `$id` ids are read too). The Console says how many active challenges were found completed and which ids were compared.
+- **Activities: daily and weekly** section: Sortie and Archon Hunt (missions done of 3, from the missions the game file
+  lists as completed), Elite Deep / Temporal Archimedea (started and score; whether it is finished the file does not say:
+  (?), right-click to tick it by hand until the reset) and Descendia (floors reached, normal and Steel Path). Setting
+  *Activities: Sortie, Archon Hunt, Archimedea, Descendia* and ⚙ option.
+
 ## 0.3.3
 - **Riven flip: price history and trend.** Every scan now records, per weapon and per day, the median asking price,
   the cheapest one and the number of listings (180 days), shown in the new *Trend* column (7 / 30 days). A weapon whose

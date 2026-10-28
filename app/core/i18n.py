@@ -873,6 +873,16 @@ EN = {
     "goals.where.tip": "Where to buy it: {place}",
     "set.goals_where": "Activities: where to buy",
     "set.goals_where.tip": "Under every item to buy, the NPC and place that sell it (e.g. Hok, Cetus for Zaw parts; any Relay for the faction syndicates)",
+    "quests.rt": "Daily and weekly",
+    "quests.rt.sub": "{done}/{n} done",
+    "quests.rt.reset": "reset in {left}",
+    "quests.rt.unknown": "The game file does not say whether you finished it: right-click to tick it by hand",
+    "quests.rt.tip": "From the game file (AlecaFrame's lastData.dat): it updates when AlecaFrame syncs, at the end of a mission. Right-click: tick / untick by hand until the reset",
+    "quests.rt.mark": "Mark as done (until the reset)",
+    "quests.rt.unmark": "Not done (remove the tick)",
+    "goals.opt.routine": "Show Sortie, Archon Hunt, Archimedea, Descendia",
+    "set.goals_routine": "Activities: Sortie, Archon Hunt, Archimedea, Descendia",
+    "set.goals_routine.tip": "The daily Sortie, the weekly Archon Hunt, Elite Deep / Temporal Archimedea and Descendia, ticked when the game file shows them done (missions done / floors reached). What the file cannot tell can be ticked with a right-click",
 }
 
 IT = {
@@ -1733,6 +1743,16 @@ IT = {
     "goals.where.tip": "Dove comprarlo: {place}",
     "set.goals_where": "Attività: dove comprare",
     "set.goals_where.tip": "Sotto ogni oggetto da comprare, il personaggio e il luogo che lo vendono (es. Hok, Cetus per i pezzi Zaw; qualsiasi Relay per i sindacati delle fazioni)",
+    "quests.rt": "Giornaliere e settimanali",
+    "quests.rt.sub": "{done}/{n} fatte",
+    "quests.rt.reset": "reset tra {left}",
+    "quests.rt.unknown": "Il file di gioco non dice se l'hai finita: clic destro per spuntarla a mano",
+    "quests.rt.tip": "Dal file di gioco (lastData.dat di AlecaFrame): si aggiorna quando AlecaFrame sincronizza, a fine missione. Clic destro: spunta / togli la spunta a mano fino al reset",
+    "quests.rt.mark": "Segna come fatta (fino al reset)",
+    "quests.rt.unmark": "Non fatta (togli la spunta)",
+    "goals.opt.routine": "Mostra Sortie, Caccia all'Arconte, Archimedea, Descendia",
+    "set.goals_routine": "Attività: Sortie, Caccia all'Arconte, Archimedea, Descendia",
+    "set.goals_routine.tip": "La Sortie giornaliera, la Caccia all'Arconte settimanale, Elite Deep / Temporal Archimedea e Descendia, spuntate quando il file di gioco le mostra fatte (missioni fatte / piani raggiunti). Ciò che il file non dice si spunta con il clic destro",
 }
 
 STRINGS = {"en": EN, "it": IT}

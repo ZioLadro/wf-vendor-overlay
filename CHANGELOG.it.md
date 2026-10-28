@@ -3,6 +3,16 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.3.4
+- **Completamento di Nightwave corretto**: una sfida conta come fatta quando il suo id è nella cronologia del file di
+  gioco, oppure quando c'è la stessa sfida con un id della stessa stagione e settimana (world state e file possono
+  scrivere gli id in modo diverso; vengono letti anche gli id `$id`). La Console dice quante sfide attive risultano fatte
+  e quali id sono stati confrontati.
+- **Attività: sezione giornaliere e settimanali**: Sortie e Caccia all'Arconte (missioni fatte su 3, dalle missioni che il
+  file di gioco elenca come completate), Elite Deep / Temporal Archimedea (iniziata e punteggio; se è finita il file non
+  lo dice: (?), clic destro per spuntarla a mano fino al reset) e Descendia (piani raggiunti, normale e Percorso
+  d'Acciaio). Impostazione *Attività: Sortie, Caccia all'Arconte, Archimedea, Descendia* e opzione in ⚙.
+
 ## 0.3.3
 - **Riven flip: storico e andamento dei prezzi.** Ogni scansione registra, per arma e per giorno, il prezzo mediano
   richiesto, il più basso e il numero di inserzioni (180 giorni), mostrati nella nuova colonna *Andamento* (7 / 30

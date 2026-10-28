@@ -17,7 +17,7 @@ without AlecaFrame the price overlay and the market features still work.
 
 **Contents:** [Getting started](#getting-started) · [Price overlay](#price-overlay-in-game) ·
 [Activities](#activities-in-game-f6) · [Price list window](#price-list-window-f7) · [Data sources](#data-sources) ·
-[Updates](#updates-current-version-033) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
+[Updates](#updates-current-version-034) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
 [For developers](#for-developers) · [Notes and limits](#notes-and-limits)
 
 ## Getting started
@@ -76,7 +76,10 @@ A small always-on-top window over the game, styled like a quest tracker, movable
 - **Nightwave**: this week's challenges (elite ones ★, with their standing) and how many dailies are still open;
   completed ones are ticked ✔ (exact: matched by the challenge id in your game file);
 - **1999 Calendar**: the current season's challenges, the one in progress and how many are done (done = days up to the
-  last completed day in your game file).
+  last completed day in your game file);
+- **Daily and weekly**: the Sortie and the Archon Hunt (missions done of 3, from the game file's completed missions),
+  Elite Deep / Temporal Archimedea (started, score) and Descendia (floors reached of 21, normal and Steel Path). What
+  the file cannot tell (whether an Archimedea is finished) is marked (?): right-click to tick it by hand until the reset.
 
 **Right-click** an item to hide it or open it on warframe.market, a syndicate's title or an activity to stop following
 it (*Track again every activity* in ⚙). With *Activities: clickable only
@@ -262,7 +265,7 @@ only when you press Save. The in-game overlays keep their own colours.
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.3.3)
+## Updates (current version 0.3.4)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

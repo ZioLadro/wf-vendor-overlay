@@ -123,15 +123,44 @@ def refresh_async():
         threading.Thread(target=world_state, daemon=True, name="worldstate-de").start()
 
 
+def _oid(v) -> str:
+    """An id as DE writes it: {"$oid": "…"}, {"$id": "…"} (older files) or a plain string."""
+    if isinstance(v, dict):
+        v = v.get("$oid") or v.get("$id") or ""
+    return str(v or "")
+
+
+def _oid_time(oid: str):
+    """When a MongoDB-style id (24 hex characters) was made: its first 8 characters are the Unix time."""
+    try:
+        return int(oid[:8], 16) if len(oid) == 24 else None
+    except ValueError:
+        return None
+
+
+_nw_logged = {"sig": None}
+
+
 def nightwave(ws, inv) -> dict:
-    """{"expiry", "weekly": [{"name","desc","standing","kind","done","expiry"}], "daily_open": n} or None."""
+    """{"expiry", "weekly": [{"name","desc","standing","kind","done","expiry","maybe"}], "daily_open": n} or None.
+
+    Done, in order of certainty:
+      1. the active challenge's id is in SeasonChallengeHistory (the game records each completed one with its id);
+      2. the same challenge name is in the history with an id of the same season and week (Nightwave ids start with the
+         season and the week: 0019 0013 …), in case the id is written differently;
+      3. otherwise not done. With no id at all, a challenge of the same name done in the latest week of the history is
+         shown as "maybe" (?)."""
     si = (ws or {}).get("SeasonInfo")
     if not isinstance(si, dict):
         return None
-    done_ids = {str(h.get("id")) for h in (inv or {}).get("SeasonChallengeHistory") or [] if isinstance(h, dict)}
-    done_names = {str(h.get("challenge")) for h in (inv or {}).get("SeasonChallengeHistory") or [] if isinstance(h, dict)}
+    hist = [h for h in (inv or {}).get("SeasonChallengeHistory") or [] if isinstance(h, dict)]
+    done_ids = {str(h.get("id")) for h in hist}
+    by_name = {}
+    for h in hist:
+        by_name.setdefault(str(h.get("challenge")), set()).add(str(h.get("id"))[:8])
+    last_week = max((str(h.get("id"))[:8] for h in hist), default="")
     now = time.time()
-    out, daily_open = [], 0
+    out, daily_open, matched, how = [], 0, 0, []
     for c in si.get("ActiveChallenges") or []:
         if not isinstance(c, dict):
             continue
@@ -139,18 +168,113 @@ def nightwave(ws, inv) -> dict:
         if exp and exp < now:
             continue
         path = str(c.get("Challenge") or "")
-        oid = str((c.get("_id") or {}).get("$oid") or "")
+        short = path.rsplit("/", 1)[-1]
+        oid = _oid(c.get("_id") or c.get("id"))
         n = names()["nightwave"].get(path) or [_humanize(path), "", 0, "weekly"]
         if _lang_it() and len(n) >= 6 and n[4]:
             n = [n[4], n[5] or n[1], n[2], n[3]]
-        done = oid in done_ids if oid else None
+        if oid:
+            done = oid in done_ids or (len(oid) >= 8 and oid[:8] in by_name.get(short, set()))
+            maybe = False
+        else:
+            done, maybe = False, bool(last_week) and last_week in by_name.get(short, set())
+        matched += bool(done)
+        how.append(oid[:12] or "no id")
         if c.get("Daily") or n[3] == "daily":
             daily_open += 0 if done else 1
             continue
         out.append({"name": n[0], "desc": n[1], "standing": n[2], "kind": n[3], "done": done, "expiry": exp,
-                    "maybe": (not done) and path.rsplit("/", 1)[-1] in done_names and not oid})
+                    "maybe": maybe})
+    sig = (tuple(how), matched, len(hist))
+    if sig != _nw_logged["sig"]:                        # what was compared, in the Console (once per change)
+        _nw_logged["sig"] = sig
+        try:
+            from app.core import logbus
+            logbus.add("quests", f"Nightwave: {len(how)} active challenges (ids {', '.join(how[:3])}…), "
+                                 f"{matched} found completed in the game file ({len(hist)} entries, latest week "
+                                 f"{last_week or '–'})")
+        except Exception:
+            pass
     out.sort(key=lambda x: (x["done"] is True, x["kind"] != "elite", x["name"]))
     return {"expiry": _date(si.get("Expiry")), "weekly": out, "daily_open": daily_open}
+
+
+# ---------- daily and weekly routine: Sortie, Archon Hunt, Deep / Temporal Archimedea, Descendia ----------
+def _last_weekly_reset(now):
+    day = int(now // 86400)
+    return (day - (day + 3) % 7) * 86400              # Monday 00:00 UTC
+
+
+def _sync_time(inv):
+    """When AlecaFrame last synced the game file (from the id of LastInventorySync), or None."""
+    return _oid_time(_oid((inv or {}).get("LastInventorySync")))
+
+
+def _sortie(ws, inv, now, lite):
+    """Sortie (lite=False) or Archon Hunt (lite=True): (missions done, missions, done, expiry) or None."""
+    key = "LiteSorties" if lite else "Sorties"
+    cur = next((x for x in (ws or {}).get(key) or [] if isinstance(x, dict)
+                and (_date(x.get("Activation")) or 0) <= now < (_date(x.get("Expiry")) or 0)), None)
+    completed = [str(x) for x in (inv or {}).get("CompletedSorties") or []]
+    mine = [x for x in completed if ("_Lite_" in x) == lite]
+    reward = _oid(((inv or {}).get("LastLiteSortieReward" if lite else "LastSortieReward") or [{}])[-1].get("SortieId"))
+    total = 3
+    if cur:
+        sid, exp = _oid(cur.get("_id")), _date(cur.get("Expiry"))
+        total = len(cur.get("Missions") or cur.get("Variants") or []) or 3
+    else:
+        # no world state: the newest id you played, if it is still running (an id is made ~15 min before the start)
+        span = 7 * 86400 if lite else 86400
+        ids = sorted({x.rsplit("_", 1)[-1] for x in mine}, key=lambda i: _oid_time(i) or 0)
+        sid = ids[-1] if ids else ""
+        start = (_oid_time(sid) or 0) + 900
+        exp = start + span if sid else None
+        if not sid or now >= exp:
+            return None
+    n = sum(1 for x in mine if x.endswith("_" + sid)) if sid else 0
+    return min(n, total), total, (reward == sid and bool(sid)) or n >= total, exp
+
+
+def routine(ws, inv, now=None) -> list:
+    """[{"key","name","done" (True / False / None = unknown),"progress","expiry"}] for the Sortie, the Archon Hunt, Deep and
+    Temporal Archimedea and Descendia, from the game file (and the world state for what is running now)."""
+    now = time.time() if now is None else now
+    it = _lang_it()
+    rows = []
+    for lite, key, name in ((False, "sortie", "Sortie"), (True, "archon", "Archon Hunt" if not it else "Caccia all'Arconte")):
+        s = _sortie(ws, inv, now, lite)
+        if s is None:
+            reset = _last_weekly_reset(now) + 7 * 86400 if lite else None
+            rows.append({"key": key, "name": name, "done": False, "progress": "0/3", "expiry": reset})
+        else:
+            n, total, done, exp = s
+            rows.append({"key": key, "name": name, "done": done, "progress": f"{n}/{total}", "expiry": exp})
+    week_end = _last_weekly_reset(now) + 7 * 86400
+    fresh = (_sync_time(inv) or 0) >= _last_weekly_reset(now)     # the file was written this week
+    for key, prefix, name in (("eda", "EntratiLab", "Elite Deep Archimedea"), ("eta", "EchoesHex", "Elite Temporal Archimedea")):
+        if f"{prefix}ConquestUnlocked" not in (inv or {}):
+            continue
+        started = bool((inv or {}).get(f"{prefix}ConquestUnlocked")) and fresh
+        score = int((inv or {}).get(f"{prefix}ConquestCacheScoreMission") or 0) if fresh else 0
+        prog = (t_started(it) + (f" · {score}" if score else "")) if started else ""
+        rows.append({"key": key, "name": name, "done": None if started else False, "progress": prog, "expiry": week_end})
+    for d in (inv or {}).get("DescentRewards") or []:
+        if not isinstance(d, dict):
+            continue
+        exp = _date(d.get("Expiry"))
+        if not exp or exp <= now:
+            continue                                   # last week's run
+        floors = max((p.get("FloorCheckpoint") or 0 for p in d.get("PendingRewards") or []), default=21) or 21
+        got = int(d.get("FloorClaimed") or 0)
+        hard = "HARD" in str(d.get("Category"))
+        name = "Descendia" + ((" (Percorso d'Acciaio)" if it else " (Steel Path)") if hard else "")
+        rows.append({"key": "descendia_" + ("sp" if hard else "n"), "name": name, "done": got >= floors,
+                     "progress": f"{got}/{floors}", "expiry": exp})
+    return rows
+
+
+def t_started(it: bool) -> str:
+    return "iniziata" if it else "started"
 
 
 def calendar(ws, inv) -> dict:

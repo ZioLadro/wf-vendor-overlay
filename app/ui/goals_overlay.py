@@ -287,7 +287,7 @@ class GoalsOverlay(QWidget):
         for key, label in (("goals_per_vendor", "goals.opt.pervendor"), ("goals_activities", "goals.opt.activities"),
                            ("goals_only_short", "goals.opt.onlyshort"),
                            ("goals_click_only_cursor", "goals.opt.cursor"), ("goals_weekly", "goals.opt.weekly"),
-                           ("goals_quests", "goals.opt.quests"), ("goals_where", "goals.opt.where")):
+                           ("goals_quests", "goals.opt.quests"), ("goals_where", "goals.opt.where"), ("goals_routine", "goals.opt.routine")):
             a = QAction(t(label), m, checkable=True)
             a.setChecked(bool(CFG.get(key)))
             a.triggered.connect(lambda c, k=key: self._set(k, bool(c)))
@@ -404,7 +404,8 @@ class GoalsOverlay(QWidget):
             self.status.setText(t("goals.confirmed", name=c["name"]))
         shown = repr((data["groups"], [d["name"] for d in data["done"][-3:]], CFG.get("goals_activities"),
                       WK.get().version, CFG.get("goals_untracked"), CFG.get("goals_weekly"), int(time.time() // 60),
-                      Q._state["fetched"], CFG.get("goals_quests"), CFG.get("goals_where"), self.inv.imported,
+                      Q._state["fetched"], CFG.get("goals_quests"), CFG.get("goals_where"), CFG.get("goals_routine"), repr(CFG.get("goals_manual_done")),
+                      self.inv.imported,
                       CFG.get("goals_only_short")))
         if shown == self._shown_sig and not force:
             return
@@ -471,6 +472,8 @@ class GoalsOverlay(QWidget):
             self._draw_weekly()
         if CFG.get("goals_quests", True):
             self._draw_quests()
+        if CFG.get("goals_routine", True):
+            self._draw_routine()
         recent = [d for d in data["done"] if time.time() - d.get("t", 0) < 86400][-3:]
         if recent:
             self.rows.addSpacing(6)
@@ -620,6 +623,49 @@ class GoalsOverlay(QWidget):
                     self.rows.addWidget(self._label(f"   - {c['name']}{act}", kind))
                     if c["desc"]:
                         self.rows.addWidget(self._label("      " + c["desc"], "act"))
+
+    def _draw_routine(self):
+        """Sortie, Archon Hunt, Elite Deep / Temporal Archimedea and Descendia: done or not, from the game file. What the
+        file cannot tell (Archimedea finished?) can be ticked by hand with a right-click, until the reset."""
+        from app.game import quests as Q
+        rows = Q.routine(Q.cached(), self._raw_inv())
+        if not rows:
+            return
+        now = time.time()
+        manual = {k: v for k, v in (CFG.get("goals_manual_done") or {}).items() if v > now}
+        n_done = sum(1 for r in rows if r["done"] or r["key"] in manual)
+        if not self._section("routine", "⚔", t("quests.rt"), t("quests.rt.sub", done=n_done, n=len(rows))):
+            return
+        for r in rows:
+            done = bool(r["done"]) or r["key"] in manual
+            left = ("  · " + t("quests.rt.reset", left=_left(r["expiry"] - now))) if r.get("expiry") and not done else ""
+            prog = f" {r['progress']}" if r["progress"] else ""
+            if done:
+                lab = self._label(f"   ✔ {r['name']}{prog}", "ready")
+            else:
+                lab = self._label(f"   - {r['name']}{prog}{left}" + (" (?)" if r["done"] is None else ""), "obj")
+            tip = t("quests.rt.unknown") if r["done"] is None and not done else ""
+            lab.setToolTip((tip + "\n" if tip else "") + t("quests.rt.tip"))
+            self._menu_on(lab, lambda pos, w=lab, r=r, d=done: self._routine_menu(w, pos, r, d))
+            self.rows.addWidget(lab)
+
+    def _routine_menu(self, w, pos, r, done):
+        cur = {k: v for k, v in (CFG.get("goals_manual_done") or {}).items() if v > time.time()}
+        m = QMenu(self)
+        if r["key"] in cur:
+            a = m.addAction(t("quests.rt.unmark"))
+            a.triggered.connect(lambda: self._set_manual({k: v for k, v in cur.items() if k != r["key"]}))
+        elif not done:
+            a = m.addAction(t("quests.rt.mark"))
+            until = r.get("expiry") or (time.time() + 86400)
+            a.triggered.connect(lambda: self._set_manual(dict(cur, **{r["key"]: until})))
+        b = m.addAction(t("goals.untrack.all", name=t("quests.rt")))
+        b.triggered.connect(lambda: self._set_untracked(list(CFG.get("goals_untracked") or []) + ["routine|*"]))
+        m.exec(w.mapToGlobal(pos))
+
+    def _set_manual(self, d):
+        save_config({"goals_manual_done": d})
+        self.refresh(force=True)
 
     def _weekly_menu(self, w, pos, o):
         from app.game import weekly as WK
