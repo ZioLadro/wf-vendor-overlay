@@ -86,7 +86,7 @@ class GoalsOverlay(QWidget):
     def __init__(self, market, inv, store):
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
         self.market, self.inv, self.store = market, inv, store
-        self.plan = G.Plan()
+        self.plan = G.get_plan()
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)      # showing it does not take the focus from the game
         self.setWindowTitle(t("goals.title"))
@@ -169,23 +169,28 @@ class GoalsOverlay(QWidget):
         """Look of a quest tracker: almost no panel, gold quest titles, white objectives with their progress, completed
         ones in green, small grey hints, every text with a dark outline so it reads over the game."""
         fs = int(CFG.get("goals_font", 12))
+        title, text = CFG.get("goals_title_color") or "#ffd100", CFG.get("goals_text_color") or "#ffffff"
+        ready, hint = CFG.get("goals_ready_color") or "#40ff40", CFG.get("goals_hint_color") or "#a0a0a0"
+        fam = CFG.get("goals_font_family") or ""
+        family = f"font-family: '{fam}';" if fam else ""
+        self._style_sig = (fs, title, text, ready, hint, fam)
         self.setStyleSheet(f"""
-            QWidget {{ color: #ffffff; font-size: {fs}px; background: transparent; }}
+            QWidget {{ color: {text}; font-size: {fs}px; background: transparent; {family} }}
             #goalshead {{ background: transparent; border-bottom: 1px solid rgba(255, 209, 0, 90); }}
-            #goalstitle {{ font-weight: bold; color: #ffd100; letter-spacing: 1px; font-size: {fs + 1}px; }}
+            #goalstitle {{ font-weight: bold; color: {title}; letter-spacing: 1px; font-size: {fs + 1}px; }}
             #goalsbtn {{ background: transparent; border: none; color: #c8b37a; padding: 0; font-size: {fs}px; }}
-            #goalsbtn:hover {{ color: #ffd100; }}
+            #goalsbtn:hover {{ color: {title}; }}
             #goalsfoot {{ color: #9a9a9a; font-size: {max(9, fs - 2)}px; }}
-            QLabel[g="quest"] {{ color: #ffd100; font-weight: bold; font-size: {fs + 1}px; }}
+            QLabel[g="quest"] {{ color: {title}; font-weight: bold; font-size: {fs + 1}px; }}
             QLabel[g="sub"] {{ color: #b8b8b8; font-size: {max(9, fs - 1)}px; }}
-            QLabel[g="obj"] {{ color: #ffffff; }}
-            QLabel[g="ready"] {{ color: #40ff40; }}
-            QLabel[g="wait"] {{ color: #ffd100; }}
-            QLabel[g="act"] {{ color: #a0a0a0; font-size: {max(9, fs - 1)}px; font-style: italic; }}
-            QLabel[g="done"] {{ color: #ffd100; font-weight: bold; }}
-            QCheckBox {{ spacing: 5px; color: #ffffff; }}
+            QLabel[g="obj"] {{ color: {text}; }}
+            QLabel[g="ready"] {{ color: {ready}; }}
+            QLabel[g="wait"] {{ color: {title}; }}
+            QLabel[g="act"] {{ color: {hint}; font-size: {max(9, fs - 1)}px; font-style: italic; }}
+            QLabel[g="done"] {{ color: {title}; font-weight: bold; }}
+            QCheckBox {{ spacing: 5px; color: {text}; }}
             QCheckBox::indicator {{ width: 10px; height: 10px; border: 1px solid #c8b37a; background: rgba(0, 0, 0, 120); }}
-            QCheckBox::indicator:checked {{ background: #40ff40; border-color: #40ff40; }}
+            QCheckBox::indicator:checked {{ background: {ready}; border-color: {ready}; }}
             QScrollBar:vertical {{ background: transparent; width: 6px; }}
             QScrollBar::handle:vertical {{ background: rgba(255, 209, 0, 70); border-radius: 3px; min-height: 20px; }}
             QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
@@ -287,12 +292,18 @@ class GoalsOverlay(QWidget):
         for key, label in (("goals_per_vendor", "goals.opt.pervendor"), ("goals_activities", "goals.opt.activities"),
                            ("goals_only_short", "goals.opt.onlyshort"),
                            ("goals_click_only_cursor", "goals.opt.cursor"), ("goals_weekly", "goals.opt.weekly"),
-                           ("goals_quests", "goals.opt.quests"), ("goals_where", "goals.opt.where"), ("goals_routine", "goals.opt.routine")):
+                           ("goals_quests", "goals.opt.quests"), ("goals_where", "goals.opt.where"), ("goals_routine", "goals.opt.routine"),
+                           ("goals_repeat", "goals.opt.repeat")):
             a = QAction(t(label), m, checkable=True)
             a.setChecked(bool(CFG.get(key)))
             a.triggered.connect(lambda c, k=key: self._set(k, bool(c)))
             m.addAction(a)
         m.addSeparator()
+        n_unsent = sum(e["qty"] for e in self.plan.unsent())
+        qf = QAction(t("goals.qf", n=n_unsent), m)
+        qf.setEnabled(n_unsent > 0)
+        qf.triggered.connect(self.send_to_quantframe)
+        m.addAction(qf)
         tr = QAction(t("goals.opt.trackall"), m)
         tr.setEnabled(bool(CFG.get("goals_untracked")))
         tr.triggered.connect(lambda: self._set_untracked([]))
@@ -301,6 +312,22 @@ class GoalsOverlay(QWidget):
         a.triggered.connect(lambda: (self.plan.reset(), self.refresh(force=True)))
         m.addAction(a)
         m.exec(self.btn_menu.mapToGlobal(QPoint(0, self.btn_menu.height())))
+
+    def send_to_quantframe(self):
+        """The purchases Activities confirmed (and not sent yet) -> Quantframe's stock, after the usual check window."""
+        from app.trade import quantframe as Q
+        from app.ui.quantframe_dialog import SendDialog
+        entries = []
+        for e in self.plan.unsent():
+            info = self.market.info(e["slug"]) or {}
+            entries.append(dict(e, name=info.get("name") or e["name"], rank=0 if info.get("max_rank", 0) > 0 else None))
+        if not entries:
+            return
+        start = time.time() - 1
+        SendDialog("stock", entries, self, all_checked=True).exec()
+        sent = {e["slug"] for e in entries if (Q.sent_before("stock", e["slug"], e["rank"]) or {}).get("t", 0) >= start}
+        if sent:
+            self.plan.mark_sent(sent)
 
     def _set(self, key, value):
         save_config({key: value})
@@ -384,13 +411,24 @@ class GoalsOverlay(QWidget):
         g, r = self.frameGeometry(), self.devicePixelRatioF()
         return (g.x() * r, g.y() * r, g.width() * r, g.height() * r)
 
+    def _style_changed(self) -> bool:
+        sig = (int(CFG.get("goals_font", 12)), CFG.get("goals_title_color") or "#ffd100", CFG.get("goals_text_color") or "#ffffff",
+               CFG.get("goals_ready_color") or "#40ff40", CFG.get("goals_hint_color") or "#a0a0a0", CFG.get("goals_font_family") or "")
+        return sig != getattr(self, "_style_sig", None)
+
     def refresh(self, force=False):
         """Rebuilt when the game file was read again (standing, inventory), the prices changed, or every minute."""
         from app.game import weekly as WK
         from app.game import quests as Q
+        if self._style_changed():                       # colours / font changed in Settings
+            self._style()
+            self.update()
+            force = True
         sig = (self.store.version, self.inv.imported, len(self.inv.items), int(time.time() // 60), WK.get().version,
-               Q._state["fetched"],
-               repr(CFG.get("goals_untracked")))
+               Q._state["fetched"], repr(CFG.get("goals_untracked")),
+               tuple(CFG.get(k) for k in ("goals_items", "goals_per_vendor", "goals_repeat", "goals_activities",
+                                          "goals_only_short", "goals_where", "goals_weekly", "goals_quests",
+                                          "goals_cal_rows", "goals_routine", "goals_opacity")))
         if not force and sig == self._sig:
             return
         self._sig = sig
@@ -500,8 +538,8 @@ class GoalsOverlay(QWidget):
         h.addWidget(cb)
         if it.get("ticked"):
             text, kind = t("goals.q.wait", name=it["name"]), "wait"
-        elif it["can"]:
-            text, kind = t("goals.q.ready", name=it["name"], n=it["can"], cost=_n(it["cost"])), "ready"
+        elif it.get("buy"):
+            text, kind = t("goals.q.ready", name=it["name"], n=it["buy"], cost=_n(it["cost"] * it["buy"])), "ready"
         else:
             text, kind = t("goals.q.buy", name=it["name"], cost=_n(it["cost"])), "obj"
         if it.get("rank_ok") is False:
@@ -533,7 +571,7 @@ class GoalsOverlay(QWidget):
         from app.game import weekly as WK
         w = WK.get()
         now = time.time()
-        tracked = [o for o in w.offers(False) if o["tracked"]]
+        tracked = [o for o in w.offers(False) if o["tracked"] and o.get("active") is not False]
         unknown = w.unknown()
         if not tracked and not unknown:
             return

@@ -290,10 +290,12 @@ class PriceList(QWidget):
         self.tabs.addTab(self.builds, t("tab.builds"))
         self.tabs.addTab(self.weekly, t("tab.weekly"))
         self.tabs.addTab(self.riven_flip, t("tab.rflip"))
-        self.tabs.addTab(self.profile, t("tab.profile"))
         self.tabs.addTab(self.world, t("tab.world"))
         self.tabs.addTab(self.console, t("tab.console"))
         self.tabs.addTab(self.settings, t("tab.settings"))
+        # your standing and mastery (read from AlecaFrame's file, editable): a page of the Settings
+        self.settings.subtabs.insertTab(1, self.profile, t("tab.profile"))
+        self.settings.subtabs.currentChanged.connect(lambda _i: self._tick(force=True))
 
         # status bar shared by the tabs (progress of the updates)
         self.bar = QProgressBar()
@@ -371,7 +373,7 @@ class PriceList(QWidget):
             self.builds.refresh(force=force)
         elif w is self.riven_flip:
             self.riven_flip.refresh(force=force)
-        elif w is self.profile:
+        elif w is self.settings and self.settings.subtabs.currentWidget() is self.profile:
             self.profile.refresh(force=force)
         elif w is self.world:
             self.world.refresh(force=force)

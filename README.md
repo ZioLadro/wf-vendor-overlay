@@ -17,7 +17,7 @@ without AlecaFrame the price overlay and the market features still work.
 
 **Contents:** [Getting started](#getting-started) · [Price overlay](#price-overlay-in-game) ·
 [Activities](#activities-in-game-f6) · [Price list window](#price-list-window-f7) · [Data sources](#data-sources) ·
-[Updates](#updates-current-version-037) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
+[Updates](#updates-current-version-038) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
 [For developers](#for-developers) · [Notes and limits](#notes-and-limits)
 
 ## Getting started
@@ -68,7 +68,9 @@ data folder, to see why a vendor was or was not recognised. Turn it off with *Re
 A small always-on-top window over the game, styled like a quest tracker, movable (drag the title) and resizable
 (corner). ⚙ sets opacity, text size and what it lists. It shows, per syndicate:
 
-- the **purchases the Recommendations suggest**, the standing each still needs, the days it takes at your daily cap
+- the **purchases the Recommendations suggest**: with the standing you have it tells how many copies to buy (27,000
+  standing, a 10,000 item: *Buy 2×*; what is left goes to the next item, never more copies than the market takes in a
+  day), then the standing each still needs, the days it takes at your daily cap
   (16,000 + 500 × Mastery Rank), **where to buy it** (⌖ the NPC and place: *Hok, Cetus* for Zaw parts, *Rude Zuud,
   Fortuna* for kitgun parts, *any Relay* for the faction syndicates…) and the **activities that earn that standing**. An item is removed only when the game
   file shows you bought it;
@@ -96,7 +98,7 @@ game its area is blanked before the OCR, so it never reads its own names.
 On top of every tab:
 - **Player strip**: your profile glyph and Mastery Rank emblem (pictures from browse.wf, downloaded once), name (from
   AlecaFrame's `lastUsername.txt`, or click to type it), mastery rank, trades left
-  (⚠ when the last sync is before the daily reset), wallet (Endo, platinum, ducats, Aya; compact, exact value in the
+  (⚠ when the last sync is before the daily reset), wallet (Endo, platinum, ducats, Aya, Steel Essence; compact, exact value in the
   tooltip) and a badge per syndicate with rank and standing (hover for the standing left today). Syndicate logos are
   downloaded from the wiki once; without them the badges are drawn in the syndicate colours.
 - **World strip**: Steel Path Omnia fissures, Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer, Prime Resurgence and the
@@ -237,8 +239,13 @@ refreshed it).
   "option 2" when the page cannot be understood).
 - **Rivens** show name, stats, polarity and drain and count in the recap; **spliced Rivens** are shown frozen (❄) with
   their spliced stat as "?".
-- **Build planner** (third view): choose a Warframe or weapon, click a card to pick mod, rank and slot polarity (Forma);
-  capacity, drain and stats update. *Save* keeps plans in `build_plans.json`; *Copy from my loadout…* starts from yours.
+- **Build planner** (third view): plans single items or **whole loadouts** (Warframe, primary, secondary, melee,
+  companion, Archwing, Arch-gun, Arch-melee): pick a kind and an item, click a card to pick mod, rank and slot polarity
+  (Forma); capacity, drain and stats update. Every kind you fill is kept as a piece of the loadout (buttons on top switch
+  between them; *+ add* adds a piece). *Save* keeps plans in `build_plans.json`; *Copy from my loadout…* copies a whole
+  in-game loadout or a single item. *New* starts an empty loadout.
+- Also shown: the name you gave an item, its Focus lens, the Kuva / Tenet / Coda bonus element and percentage, gilded,
+  and (tooltip) Exilus / Arcane slots unlocked and Valence Fusion.
 
 Pictures in this tab come **only from the Warframe wiki** (MediaWiki API, one request at a time); the missing ones are
 fetched in the background at start and kept in the data folder. Names and stats come from the bundled
@@ -251,9 +258,12 @@ The vendor offers with a purchase limit (Teshin, Ironwake, Nightcap, Archimedean
 period and when it resets. The game file records each limited purchase but not which offer it was, so the program works
 it out from what AlecaFrame's `deltas.dat` recorded as gained and from your inventory against the previous sync; when it
 is ambiguous you are asked to pick it (★ = likely candidates). Tick *Track* to follow an offer in Activities.
-**Bought → Quantframe…** sends what you bought this period to Quantframe's stock (tradable items only, check window first).
+Vendors of time-gated events (Jade Shadows, Duviri Murmur, Triad…) are listed only while their event runs (DE's world
+state; *Show ended events* shows them anyway). **Bought (Activities) → Quantframe…** sends the purchases Activities
+confirmed from the game file (Martyr Symbiosis at the Entrati, Aerial Bond at Solaris United…), not sent yet, to
+Quantframe's stock (also in Activities' ⚙ menu).
 
-### Profile
+### Profile (a page of Settings)
 Your standing and rank per syndicate and your mastery rank, **read from `lastData.dat`** (re-read when it changes,
 setting *AlecaFrame file check*, every 10 s). AlecaFrame rewrites the file when you enter or leave a mission, so numbers
 update at those moments. The file stores *total* standing; the program subtracts the start of your current rank, so the
@@ -269,7 +279,9 @@ One sub-tab per category. **Save** applies and stores them in `config.json`; **S
 program; settings marked ⟳ (language, hotkeys, OCR…) need a restart. **Restore defaults** loads the defaults (press Save
 to apply). **Theme and font**: colour themes inspired by Warframe's factions, allies and enemies (plus *Classic*), each
 with its background pattern, another pattern, your own picture or none; font family and size. Previewed at once, kept
-only when you press Save. The in-game overlays keep their own colours.
+only when you press Save. **Overlays**: everything about the two in-game overlays: price and volume label sizes,
+label background, price and stars colours; Activities background, font, size, colours (titles, text, ready, hints) and
+what it lists (also in its ⚙ menu).
 
 ## Data sources
 | What | From |
@@ -286,7 +298,7 @@ only when you press Save. The in-game overlays keep their own colours.
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.3.7)
+## Updates (current version 0.3.8)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

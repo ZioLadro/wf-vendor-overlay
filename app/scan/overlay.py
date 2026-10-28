@@ -56,7 +56,7 @@ class Overlay(QWidget):
         self.update()
 
     def _pill(self, p, rect, text, color):
-        p.setBrush(QColor(20, 20, 20, 225))
+        p.setBrush(QColor(20, 20, 20, int(255 * max(0, min(100, int(CFG.get("ov_bg_opacity", 88)))) / 100)))
         p.setPen(color)
         p.drawRoundedRect(rect, 6, 6)
         p.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
@@ -64,8 +64,9 @@ class Overlay(QWidget):
     def paintEvent(self, _):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        price_font = QFont("Segoe UI", 11, QFont.Weight.Bold)
-        vol_font = QFont("Segoe UI", 9, QFont.Weight.Bold)
+        price_font = QFont("Segoe UI", int(CFG.get("ov_price_font", 11)), QFont.Weight.Bold)
+        vol_font = QFont("Segoe UI", int(CFG.get("ov_vol_font", 9)), QFont.Weight.Bold)
+        price_color, star = QColor(CFG.get("ov_price_color") or "#78c8ff"), QColor(CFG.get("ov_star_color") or "#ffd228")
 
         rec_font = QFont("Segoe UI", 7, QFont.Weight.Bold)
         rec_text = "★ " + t("overlay.recommended") + " ★"
@@ -79,7 +80,7 @@ class Overlay(QWidget):
                 x = max(2, min(it["x"], self.width() - w - 2))
                 y = max(2, it["y"] - h - 1)
                 p.setBrush(QColor(60, 45, 0, 215) if it["rec"] == 1 else QColor(20, 20, 20, 190))
-                p.setPen(QColor(255, 235, 90) if it["rec"] == 1 else QColor(255, 210, 40))
+                p.setPen(star.lighter(115) if it["rec"] == 1 else star)
                 p.drawRoundedRect(QRectF(x, y, w, h), 4, 4)
                 p.drawText(QRectF(x, y, w, h), Qt.AlignmentFlag.AlignCenter, rec_text_it)
             # price: to the right of the name
@@ -91,7 +92,7 @@ class Overlay(QWidget):
             y = it["y"] + (it["h"] - h) / 2
             ok = it.get("price") is not None or it.get("pmax") is not None
             self._pill(p, QRectF(x, y, w, h), text,
-                       QColor(120, 200, 255) if ok else QColor(150, 150, 150))
+                       price_color if ok else QColor(150, 150, 150))
 
             # volume: below the name, centred, coloured by value
             v = it.get("vol")

@@ -45,6 +45,7 @@ class RivenFlipTab(QWidget):
         self._weapons, self._index, self._rows = {}, {}, []
         self._sig = None
         self.progress.connect(self._on_progress)
+        self.queue_scan.connect(lambda: self.start_scan(auto=True))
         self.finished.connect(self._on_finished)
 
         self.btn_scan = QPushButton(t("rflip.scan"))
@@ -89,7 +90,7 @@ class RivenFlipTab(QWidget):
         lay.addWidget(self.summary)
         lay.addWidget(self.bar)
         lay.addWidget(self.table, 1)
-        self.btn_scan.clicked.connect(self.start_scan)
+        self.btn_scan.clicked.connect(lambda: self.start_scan(auto=False))
         self.btn_stop.clicked.connect(self.cancel.set)
         self.btn_open.clicked.connect(self.open_selected)
         self.btn_whisper.clicked.connect(self.copy_whisper)
@@ -120,7 +121,7 @@ class RivenFlipTab(QWidget):
             M.log("scheduled scan")
             from app.core import logbus
             logbus.add("riven", "scheduled riven scan started")
-            self.start_scan()
+            self.start_scan(auto=True)
             return
         left = max(0, due - now)
         self.auto.setText(t("rflip.auto.next", h=CFG.get("riven_auto_hours"),
@@ -130,8 +131,17 @@ class RivenFlipTab(QWidget):
     def set_busy(self, _busy):
         pass
 
-    def start_scan(self):
+    queue_scan = pyqtSignal()
+
+    def start_scan(self, auto=False):
         if self.running:
+            return
+        from app.trade import netguard
+        if not netguard.claim("rivens"):            # the price update is talking to the site: never both at once
+            if auto:
+                return                              # the timer tries again in a minute
+            self.summary.setText(t("rflip.queued"))
+            netguard.when_free(self.queue_scan.emit)
             return
         self.summary.setText(t("rflip.starting"))
         M.log("scan button pressed")
@@ -164,6 +174,8 @@ class RivenFlipTab(QWidget):
 
     def _on_finished(self, done, err):
         self.running = False
+        from app.trade import netguard
+        netguard.release("rivens")
         if err:
             from app.core import logbus
             logbus.error("riven", err)

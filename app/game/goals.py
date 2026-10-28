@@ -101,18 +101,20 @@ class Plan:
 
     def __init__(self):
         self.items, self.done, self.hidden, self.bought = {}, [], set(), set()
+        self.purchases = []    # every purchase confirmed: [{"slug","name","vendor","n","t","sent"}] (for Quantframe)
         try:
             d = json.loads(PLAN_FILE.read_text(encoding="utf-8"))
             self.items = {k: v for k, v in (d.get("items") or {}).items() if isinstance(v, dict)}
             self.done = [x for x in d.get("done") or [] if isinstance(x, dict)]
             self.hidden = set(d.get("hidden") or [])
             self.bought = set(d.get("bought") or [])
+            self.purchases = [x for x in d.get("purchases") or [] if isinstance(x, dict) and x.get("slug")]
         except Exception:
             pass
 
     def save(self):
         text = json.dumps({"items": self.items, "done": self.done[-30:], "hidden": sorted(self.hidden),
-                           "bought": sorted(self.bought)}, ensure_ascii=False, indent=1)
+                           "bought": sorted(self.bought), "purchases": self.purchases[-500:]}, ensure_ascii=False, indent=1)
         if text == getattr(self, "_saved", None):
             return                                     # nothing changed: no disk write (the overlay checks every few seconds)
         try:
@@ -147,7 +149,12 @@ class Plan:
             if have > int(e.get("baseline", 0)):
                 n = have - int(e.get("baseline", 0))
                 confirmed.append({"name": e["name"], "vendor": e["vendor"], "n": n, "t": now})
+                self.purchases.append({"slug": e["slug"], "name": e["name"], "vendor": e["vendor"], "n": n, "t": now,
+                                       "sent": False})
                 logbus.add("plan", f"{e['name']} ({e['vendor']}): purchase confirmed by the game file (+{n})", "ok")
+                if CFG.get("goals_repeat", True):        # a good buy stays a good buy: counted again from the new copies
+                    e["baseline"], e["ticked"] = have, False
+                    continue
                 del self.items[k]
                 self.bought.add(k)
                 continue
@@ -169,6 +176,21 @@ class Plan:
         self.save()
         return confirmed
 
+    def unsent(self) -> list:
+        """Confirmed purchases not sent to Quantframe yet, summed per item: [{"slug","name","qty","rank"}]."""
+        out = {}
+        for p in self.purchases:
+            if not p.get("sent"):
+                e = out.setdefault(p["slug"], {"slug": p["slug"], "name": p["name"], "qty": 0, "rank": None})
+                e["qty"] += int(p.get("n") or 0)
+        return [e for e in out.values() if e["qty"] > 0]
+
+    def mark_sent(self, slugs):
+        for p in self.purchases:
+            if p["slug"] in slugs:
+                p["sent"] = True
+        self.save()
+
     def tick(self, key: str, on: bool):
         if key in self.items:
             self.items[key]["ticked"] = bool(on)
@@ -184,6 +206,17 @@ class Plan:
         self.hidden.clear()
         self.bought.clear()
         self.save()
+
+
+_plan = None
+
+
+def get_plan() -> Plan:
+    """The one plan shared by the Activities overlay and the window (purchases to send to Quantframe)."""
+    global _plan
+    if _plan is None:
+        _plan = Plan()
+    return _plan
 
 
 def build(plan: Plan, market, inv, store) -> dict:
@@ -211,8 +244,20 @@ def build(plan: Plan, market, inv, store) -> dict:
                                rank_ok=None if f.get("rank") is None else f["rank"] >= int(e.get("rank") or 0)))
     out = []
     for g in groups.values():
+        # the standing you have is spent on the best items first, as many copies as it pays for (27,000 standing and a
+        # 10,000 item: buy 2; the rest goes to the next item if it fits), but not more copies than the market buys in
+        # about a day (a quarter of the 24 h volume): those would not sell
+        left = max(0, g["standing"] or 0) if g["standing"] is not None else None
+        for x in sorted(g["items"], key=lambda x: (x.get("rank_ok") is False, -(x.get("ppk") or 0))):
+            if left is None or not x["cost"] or x.get("rank_ok") is False:
+                x["buy"] = 0
+                continue
+            sellable = max(1, int((x.get("vol") or 0) * 0.25)) if x.get("vol") is not None else None
+            x["buy"] = left // x["cost"] if sellable is None else min(left // x["cost"], sellable)
+            left -= x["buy"] * x["cost"]           # no more copies than the market takes in a day: the rest goes on
+        g["left"] = left
         # what you can buy now first, then what you can reach soonest with the standing still earnable
-        g["items"].sort(key=lambda x: (x["days"] if x["days"] is not None else 99, -(x.get("ppk") or 0)))
+        g["items"].sort(key=lambda x: (-(x.get("buy") or 0), x["days"] if x["days"] is not None else 99, -(x.get("ppk") or 0)))
         needs = [x["need"] for x in g["items"] if x["need"]]
         g["short"] = min(needs) if needs else 0
         if g["short"] or g["standing"] is None:

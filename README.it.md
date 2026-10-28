@@ -18,7 +18,7 @@ AlecaFrame l'overlay dei prezzi e le funzioni di mercato funzionano comunque.
 
 **Indice:** [Per iniziare](#per-iniziare) · [Overlay dei prezzi](#overlay-dei-prezzi-in-gioco) ·
 [Attività](#attività-in-gioco-f6) · [Finestra del listino](#finestra-del-listino-f7) · [Fonti dei dati](#fonti-dei-dati) ·
-[Aggiornamenti](#aggiornamenti-versione-attuale-037) · [File e impostazioni](#file-e-impostazioni) ·
+[Aggiornamenti](#aggiornamenti-versione-attuale-038) · [File e impostazioni](#file-e-impostazioni) ·
 [Prestazioni](#prestazioni) · [Per sviluppatori](#per-sviluppatori) · [Note e limiti](#note-e-limiti)
 
 ## Per iniziare
@@ -74,7 +74,9 @@ con *Riconosci la schermata del vendor*.
 Una piccola finestra sempre in primo piano sopra il gioco, in stile quest tracker, spostabile (trascina il titolo) e
 ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elencare. Mostra, per sindacato:
 
-- gli **acquisti suggeriti dai Consigli**, lo standing che manca, i giorni che servono al tuo limite giornaliero
+- gli **acquisti suggeriti dai Consigli**: con lo standing che hai dice quante copie comprare (27.000 di standing, un
+  oggetto da 10.000: *Compra 2×*; il resto va all'oggetto dopo, mai più copie di quante il mercato ne prende in un
+  giorno), poi lo standing che manca, i giorni che servono al tuo limite giornaliero
   (16.000 + 500 × grado di maestria), **dove comprarlo** (⌖ il personaggio e il luogo: *Hok, Cetus* per i pezzi Zaw,
   *Rude Zuud, Fortuna* per i pezzi dei kitgun, *qualsiasi Relay* per i sindacati delle fazioni…) e le **attività che fanno
   guadagnare quello standing**. Un oggetto sparisce solo
@@ -105,7 +107,7 @@ sua area viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 In cima a ogni scheda:
 - **Barra del giocatore**: il glifo del tuo profilo e l'emblema del grado di maestria (immagini da browse.wf, scaricate
   una volta), nome (dal `lastUsername.txt` di AlecaFrame, oppure clicca per scriverlo), grado di maestria,
-  scambi rimasti (⚠ quando l'ultima sync è precedente al reset giornaliero), portafoglio (Endo, platino, ducati, Aya;
+  scambi rimasti (⚠ quando l'ultima sync è precedente al reset giornaliero), portafoglio (Endo, platino, ducati, Aya, Steel Essence;
   compatti, valore esatto nel tooltip) e un badge per sindacato con rank e standing (mouse sopra: standing rimasto oggi).
   I logo dei sindacati vengono scaricati una volta dalla wiki; senza, i badge sono disegnati con i colori del sindacato.
 - **Barra del mondo**: fessure Omnia Steel Path, cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer, Prime Resurgence e
@@ -253,9 +255,14 @@ AlecaFrame l'ha aggiornato).
   `incarnon_perks.json`; "opzione 2" quando la pagina non si riesce a interpretare).
 - I **Riven** mostrano nome, statistiche, polarità e consumo e contano nel riepilogo; i **Riven spliced** sono mostrati
   congelati (❄) con la statistica spliced come "?".
-- **Pianificatore build** (terza vista): scegli un Warframe o un'arma, clicca una carta per scegliere mod, rank e
-  polarità dello slot (Forma); capacità, consumo e statistiche si aggiornano. *Salva* tiene i piani in
-  `build_plans.json`; *Copia da un mio loadout…* parte da uno dei tuoi.
+- **Pianificatore build** (terza vista): pianifica singoli oggetti o **loadout interi** (Warframe, primaria,
+  secondaria, mischia, compagno, Archwing, Arch-gun, Arch-melee): scegli un tipo e un oggetto, clicca una carta per
+  scegliere mod, rank e polarità dello slot (Forma); capacità, consumo e statistiche si aggiornano. Ogni tipo che compili
+  resta come pezzo del loadout (i pulsanti in alto passano da uno all'altro; *+ aggiungi* aggiunge un pezzo). *Salva*
+  tiene i piani in `build_plans.json`; *Copia da un mio loadout…* copia un loadout di gioco intero o un singolo oggetto.
+  *Svuota* parte da un loadout vuoto.
+- Mostrati anche: il nome che hai dato a un oggetto, la sua lente Focus, l'elemento bonus Kuva / Tenet / Coda con la
+  percentuale, se è dorata, e (tooltip) slot Exilus / Arcano sbloccati e Fusione di valenza.
 
 Le immagini di questa scheda vengono **solo dalla wiki di Warframe** (API MediaWiki, una richiesta alla volta); quelle
 mancanti vengono scaricate in background all'avvio e tenute nella cartella dei dati. Nomi e statistiche vengono dal
@@ -269,10 +276,12 @@ comprato in questo periodo e quando si azzera. Il file di gioco registra ogni ac
 fosse, quindi il programma lo ricava da ciò che il `deltas.dat` di AlecaFrame ha registrato come guadagnato e
 dall'inventario rispetto alla sync precedente; quando è ambiguo ti chiede di sceglierla (★ = candidate probabili).
 Spunta *Segui* per seguire un'offerta in Attività.
-**Acquistati → Quantframe…** invia allo stock di Quantframe ciò che hai comprato in questo periodo (solo oggetti
-scambiabili, prima una finestra di controllo).
+I vendor degli eventi a tempo (Jade Shadows, Duviri Murmur, Triad…) compaiono solo mentre il loro evento è in corso
+(world state di DE; *Mostra eventi finiti* li mostra comunque). **Acquistati (Attività) → Quantframe…** invia allo stock
+di Quantframe gli acquisti confermati da Attività dal file di gioco (Martyr Symbiosis dall'Entrati, Aerial Bond da
+Solaris United…) non ancora inviati (anche dal menu ⚙ di Attività).
 
-### Profilo
+### Profilo (una pagina delle Impostazioni)
 Standing e rank per sindacato e grado di maestria, **letti da `lastData.dat`** (riletto quando cambia, impostazione
 *Controllo file AlecaFrame*, ogni 10 s). AlecaFrame riscrive il file quando entri o esci da una missione, quindi i numeri
 si aggiornano in quei momenti. Il file contiene lo standing *totale*; il programma sottrae l'inizio del rank attuale, così
@@ -288,8 +297,10 @@ Una sotto-scheda per categoria. **Salva** applica e memorizza in `config.json`; 
 programma; le impostazioni segnate ⟳ (lingua, tasti, OCR…) richiedono un riavvio. **Ripristina predefiniti** carica i
 valori predefiniti (premi Salva per applicarli). **Tema e carattere**: temi colore ispirati a fazioni, alleati e nemici di
 Warframe (più *Classico*), ognuno con il suo motivo di sfondo, un altro motivo, una tua immagine o niente; famiglia e
-dimensione del carattere. Anteprima immediata, mantenuta solo quando premi Salva. Gli overlay in gioco tengono i loro
-colori.
+dimensione del carattere. Anteprima immediata, mantenuta solo quando premi Salva. **Overlay**: tutto dei due overlay in
+gioco: dimensioni delle etichette di prezzo e volume, sfondo delle etichette, colori del prezzo e delle stelle; per
+Attività sfondo, carattere, dimensione, colori (titoli, testo, pronto, suggerimenti) e cosa elencare (anche dal suo menu
+⚙).
 
 ## Fonti dei dati
 | Cosa | Da dove |
@@ -306,7 +317,7 @@ colori.
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.3.7)
+## Aggiornamenti (versione attuale 0.3.8)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

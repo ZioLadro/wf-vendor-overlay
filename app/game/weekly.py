@@ -251,6 +251,12 @@ class Weekly:
                 k = offer_key(p["vendor"], offer)
                 bought[k] = bought.get(k, 0) + p["n"]
                 expiry[k] = min(expiry.get(k, p["expiry"]), p["expiry"])
+        try:
+            from app.game import quests
+            ws = quests.cached()
+        except Exception:
+            ws = None
+        active = {vend: vendor_active(vend, ws, self.current) for vend in data()}
         out = []
         for vend, v in data().items():
             for i in v["items"]:
@@ -258,8 +264,46 @@ class Weekly:
                     continue
                 k = offer_key(vend, i["id"])
                 out.append(dict(i, vendor=vend, vendor_name=v["name"], bought=bought.get(k, 0), expiry=expiry.get(k),
-                                tracked=k in self.tracked, key=k))
+                                tracked=k in self.tracked, key=k, active=active.get(vend)))
         return out
+
+
+# vendors that only exist during an event (time gated): shown as active only while the event runs
+EVENT_HINT = ("/Events/", "/Prequel/Triad")
+
+
+def event_keyword(vendor: str) -> str:
+    """The word that names the vendor's event in the world state: .../JadeShadowsEventVendorManifest -> JadeShadows."""
+    import re
+    n = vendor.rstrip("/").rsplit("/", 1)[-1]
+    n = re.sub(r"(VendorProducts|Vendor)?Manifest$", "", n)
+    n = re.sub(r"(PostEvent|EventClan|Event|Invasion|Exchange|Clan)+$", "", n)
+    return n
+
+
+def vendor_active(vendor: str, ws=None, purchases=(), now=None):
+    """True / False for event vendors (an active event in DE's world state mentions it, or a purchase of yours from it
+    still counts), None (= always there) for the others."""
+    if not any(h in vendor for h in EVENT_HINT):
+        return None
+    now = time.time() if now is None else now
+    if any(p["vendor"] == vendor and p["expiry"] > now for p in purchases):
+        return True
+    if not ws:
+        return False
+    kw = event_keyword(vendor).lower()
+    if not kw:
+        return False
+    from app.game.quests import _date
+    for g in (ws.get("Goals") or []) + (ws.get("Events") or []):
+        if not isinstance(g, dict):
+            continue
+        start, end = _date(g.get("Activation")), _date(g.get("Expiry"))
+        if (start and start > now) or (end and end < now):
+            continue
+        if kw in json.dumps(g).lower():
+            return True
+    return False
 
 
 _weekly = None

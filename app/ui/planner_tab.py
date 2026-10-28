@@ -4,6 +4,7 @@ import json
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
+    QMenu,
     QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget,
     QMessageBox, QPushButton, QScrollArea, QSpinBox, QVBoxLayout, QWidget,
 )
@@ -16,7 +17,7 @@ from app.core.i18n import t
 from app.core.uiutil import role
 
 PLANS_FILE = APP_DIR / "build_plans.json"
-KINDS = ("warframe", "primary", "secondary", "melee")
+KINDS = ("warframe", "primary", "secondary", "melee", "companion", "archwing", "archgun", "archmelee")
 INNATE = "__innate__"                                 # slot polarity as the game has it (no Forma change)
 
 
@@ -122,10 +123,11 @@ class SlotDialog(QDialog):
 
 
 class PlannerView(QWidget):
-    def __init__(self, get_loadouts):
+    def __init__(self, get_loadouts, get_presets=None):
         super().__init__()
-        self.get_loadouts = get_loadouts
+        self.get_loadouts, self.get_presets = get_loadouts, get_presets
         self.kind, self.item = "warframe", ""
+        self.pieces = {}               # a full loadout: kind -> {"item","mods","forma","reactor","level"} (see _store_piece)
         self.mods, self.forma = [], {}
         self.roles = []
         self.reactor, self.level = True, 30
@@ -225,7 +227,50 @@ class PlannerView(QWidget):
         self.saved.blockSignals(False)
 
     # ---------- state ----------
-    def _kind_changed(self):
+    # ---------- a full loadout: one piece per kind, kept while you switch between them ----------
+    def _store_piece(self):
+        if self.kind not in KINDS:
+            return
+        if self.item:
+            self.pieces[self.kind] = {"item": self.item, "mods": list(self.mods), "forma": dict(self.forma),
+                                      "reactor": self.reactor, "level": self.level}
+        else:
+            self.pieces.pop(self.kind, None)
+
+    def _restore_piece(self, kind):
+        p = self.pieces.get(kind)
+        if not p:
+            return False
+        self._set_item(kind, p["item"])
+        mods = p.get("mods") or []
+        self.mods = [tuple(m) if m else None for m in mods[:len(self.roles)]] + [None] * max(0, len(self.roles) - len(mods))
+        self.forma = {int(k): v for k, v in (p.get("forma") or {}).items()}
+        self.reactor, self.level = bool(p.get("reactor", True)), int(p.get("level", 30))
+        self.chk_reactor.blockSignals(True)
+        self.spin_level.blockSignals(True)
+        self.chk_reactor.setChecked(self.reactor)
+        self.spin_level.setValue(self.level)
+        self.chk_reactor.blockSignals(False)
+        self.spin_level.blockSignals(False)
+        return True
+
+    def switch_to(self, kind):
+        """Shows another piece of the loadout (the current one is kept)."""
+        self._store_piece()
+        self.kind_box.blockSignals(True)
+        self.kind_box.setCurrentIndex(max(0, self.kind_box.findData(kind)))
+        self.kind_box.blockSignals(False)
+        if not self._restore_piece(kind):
+            self._kind_changed(store=False)
+            return
+        self._draw()
+
+    def _kind_changed(self, store=True):
+        if store and self.kind_box.currentData() != self.kind:
+            self._store_piece()
+            if self.pieces.get(self.kind_box.currentData()):
+                self.switch_to(self.kind_box.currentData())
+                return
         self.kind = self.kind_box.currentData()
         self.item_box.blockSignals(True)
         self.item_box.clear()
@@ -268,7 +313,7 @@ class PlannerView(QWidget):
             self.spin_level.setValue(cap)
             self.spin_level.blockSignals(False)
             self.level = cap
-        self.roles = LO.LAYOUT.get(self.kind) or ["general"] * 8
+        self.roles = BC.plan_roles(self.kind)
         self.mods = [None] * len(self.roles)
         self.forma = {}
 
@@ -277,7 +322,13 @@ class PlannerView(QWidget):
         self._draw()
 
     def _clear(self):
+        """A new, empty loadout."""
+        self.pieces = {}
+        self.item = ""
+        self.item_box.setCurrentIndex(-1)
+        self.item_box.setEditText("")
         self._reset_slots()
+        self.name.clear()
         self._draw()
 
     def _set_item(self, kind, item):
@@ -296,6 +347,14 @@ class PlannerView(QWidget):
         self._reset_slots()
 
     def _copy(self):
+        presets = [p for p in (self.get_presets() or {}).get("presets") or []] if self.get_presets else []
+        if presets:
+            choice, ok = QInputDialog.getItem(self, t("plan.copy.title"), t("plan.copy.what"),
+                                              [t("plan.copy.loadout"), t("plan.copy.item")], 0, False)
+            if not ok:
+                return
+            if choice == t("plan.copy.loadout"):
+                return self._copy_loadout(presets)
         los = [lo for lo in self.get_loadouts() if lo["kind"] in KINDS]
         if not los:
             QMessageBox.information(self, t("tab.builds"), t("plan.copy.none"))
@@ -321,13 +380,48 @@ class PlannerView(QWidget):
         self.name.setText(label)
         self._draw()
 
+    def _copy_loadout(self, presets):
+        """A whole in-game loadout (Warframe, weapons, companion…) as a plan: every piece with its mods."""
+        labels = [p["name"] for p in presets]
+        label, ok = QInputDialog.getItem(self, t("plan.copy.title"), t("plan.copy.prompt"), labels, 0, False)
+        if not ok:
+            return
+        p = presets[labels.index(label)]
+        los = self.get_loadouts()
+        self.pieces = {}
+        role_kind = {"warframe": "warframe", "primary": "primary", "secondary": "secondary", "melee": "melee",
+                     "companion": "companion", "archwing": "archwing", "archgun": "archgun", "archmelee": "archmelee"}
+        rows = list(p.get("warframe") or []) + list(p.get("companion") or [])
+        tenno = (self.get_presets() or {}).get("tenno") or {}
+        rows += list(tenno.get("archwing") or [])
+        for r in rows:
+            kind = role_kind.get(r.get("role"))
+            if not kind:
+                continue
+            lo = next((x for x in los if x.get("oid") == r.get("oid") and x.get("idx") == r.get("idx")), None) or \
+                next((x for x in los if x["item"] == r["item"] and x.get("idx") == r.get("idx")), None)
+            mods, forma = [], {}
+            for i, s in enumerate((lo or {}).get("slots") or []):
+                mods.append(((s["name"], s["rank"], s["riven"]) if s.get("riven") and s["riven"].get("attributes")
+                             else (s["name"], s["rank"])) if s.get("name") else None)
+                if s.get("pol") is not None:
+                    forma[i] = s["pol"]
+            self.pieces[kind] = {"item": r["item"], "mods": mods, "forma": forma,
+                                 "reactor": bool((lo or {}).get("reactor", True)), "level": int((lo or {}).get("level", 30))}
+        self.name.setText(label)
+        first = next((k for k in KINDS if k in self.pieces), "warframe")
+        self.kind = None
+        self.switch_to(first)
+
     def _save(self):
         name = self.name.text().strip()
         if not name:
             QMessageBox.information(self, t("tab.builds"), t("plan.noname"))
             return
+        self._store_piece()
+        pieces = {k: dict(v, forma={str(i): p for i, p in v["forma"].items()}) for k, v in self.pieces.items()}
         self.plans[name] = {"kind": self.kind, "item": self.item, "mods": self.mods, "forma": {str(k): v for k, v in self.forma.items()},
-                            "reactor": self.reactor, "level": self.level}
+                            "reactor": self.reactor, "level": self.level, "pieces": pieces}
         self._write_plans()
         self._fill_saved(name)
         QMessageBox.information(self, t("tab.builds"), t("plan.saved", name=name))
@@ -337,6 +431,13 @@ class PlannerView(QWidget):
         p = self.plans.get(name) if name else None
         if not p:
             return
+        if p.get("pieces"):                               # a full loadout
+            self.pieces = {k: v for k, v in p["pieces"].items() if k in KINDS and v.get("item")}
+            self.name.setText(name)
+            self.kind = None
+            self.switch_to(p.get("kind") if p.get("kind") in self.pieces else next(iter(self.pieces), "warframe"))
+            return
+        self.pieces = {}
         self._set_item(p.get("kind", "warframe"), p.get("item", ""))
         mods = p.get("mods") or []
         self.mods = [tuple(m) if m else None for m in mods[:len(self.roles)]] + [None] * max(0, len(self.roles) - len(mods))
@@ -398,6 +499,7 @@ class PlannerView(QWidget):
             lab.setWordWrap(True)
             self.body.addWidget(lab)
             return
+        self._draw_strip()
         if not self.item:
             return
         slots, calc = self.slots()
@@ -415,6 +517,46 @@ class PlannerView(QWidget):
         row.addLayout(col)
         wrap = QWidget()
         wrap.setLayout(row)
+        self.body.addWidget(wrap)
+
+    def _draw_strip(self):
+        """The pieces of the loadout being planned: one button per kind (pressed = the one shown); a click switches to it."""
+        from PyQt6.QtWidgets import QGridLayout, QSizePolicy
+        self._store_piece()
+        if not any(self.pieces.values()):
+            return
+        grid = QGridLayout()
+        grid.setHorizontalSpacing(6)
+        grid.setVerticalSpacing(4)
+        lab = QLabel(t("plan.loadout"))
+        role(lab, "muted")
+        grid.addWidget(lab, 0, 0)
+        n = 0
+        for k in KINDS:
+            p = self.pieces.get(k)
+            if not p and k != self.kind:
+                continue
+            b = QPushButton(f"{t('builds.kind.' + k)}: {p['item'] if p else '—'}")
+            b.setCheckable(True)
+            b.setChecked(k == self.kind)
+            if k == self.kind:
+                b.setStyleSheet("font-weight: bold; text-decoration: underline;")
+            b.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+            b.clicked.connect(lambda _c=False, kk=k: self.switch_to(kk))
+            grid.addWidget(b, n // 4, 1 + n % 4)
+            n += 1
+        missing = [k for k in KINDS if k not in self.pieces and k != self.kind]
+        if missing:
+            add = QPushButton("+ " + t("plan.loadout.addshort"))
+            add.setToolTip(t("plan.loadout.add"))
+            menu = QMenu(add)
+            for k in missing:
+                menu.addAction(t("builds.kind." + k), lambda kk=k: self.switch_to(kk))
+            add.setMenu(menu)
+            grid.addWidget(add, n // 4, 1 + n % 4)
+        grid.setColumnStretch(5, 1)
+        wrap = QWidget()
+        wrap.setLayout(grid)
         self.body.addWidget(wrap)
 
     def _wipe(self, layout):

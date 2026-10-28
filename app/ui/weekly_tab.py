@@ -42,6 +42,8 @@ class WeeklyTab(QWidget):
         self.weekly_only = QCheckBox(t("weekly.only7"))
         self.weekly_only.setChecked(True)
         self.only_tracked = QCheckBox(t("weekly.onlytracked"))
+        self.show_inactive = QCheckBox(t("weekly.inactive"))
+        self.show_inactive.setToolTip(t("weekly.inactive.tip"))
         self.summary = QLabel("")
         role(self.summary, "muted")
         bar = QHBoxLayout()
@@ -49,8 +51,9 @@ class WeeklyTab(QWidget):
         bar.addWidget(self.vendor, 1)
         bar.addWidget(self.weekly_only)
         bar.addWidget(self.only_tracked)
-        self.btn_qf = QPushButton(t("weekly.qf"))
-        self.btn_qf.setToolTip(t("weekly.qf.tip"))
+        bar.addWidget(self.show_inactive)
+        self.btn_qf = QPushButton(t("rec.qf"))
+        self.btn_qf.setToolTip(t("rec.qf.tip"))
         self.btn_qf.clicked.connect(self.send_to_quantframe)
         bar.addWidget(self.btn_qf)
         self.table = QTableWidget(0, len(self.COLS))
@@ -71,6 +74,7 @@ class WeeklyTab(QWidget):
         self.vendor.currentIndexChanged.connect(lambda _i: self.refresh(force=True))
         self.weekly_only.toggled.connect(lambda _c: self.refresh(force=True))
         self.only_tracked.toggled.connect(lambda _c: self.refresh(force=True))
+        self.show_inactive.toggled.connect(lambda _c: self.refresh(force=True))
         self.table.itemChanged.connect(self._track_changed)
         # the game file is checked every few seconds (only its date is read unless it changed), visible or not: the
         # standing plan overlay shows the same data
@@ -104,6 +108,7 @@ class WeeklyTab(QWidget):
     # ---------- showing ----------
     def refresh(self, force=False):
         sig = (self.w.version, self.vendor.currentData(), self.weekly_only.isChecked(), self.only_tracked.isChecked(),
+               self.show_inactive.isChecked(),
                int(time.time() // 60))
         if not force and sig == self._shown:
             return
@@ -113,7 +118,8 @@ class WeeklyTab(QWidget):
         now = time.time()
         rows = [o for o in self.w.offers(self.weekly_only.isChecked())
                 if (not self.vendor.currentData() or o["vendor"] == self.vendor.currentData())
-                and (not self.only_tracked.isChecked() or o["tracked"])]
+                and (not self.only_tracked.isChecked() or o["tracked"])
+                and (self.show_inactive.isChecked() or o.get("active") is not False)]
         tb = self.table
         tb.blockSignals(True)
         tb.setSortingEnabled(False)
@@ -121,7 +127,9 @@ class WeeklyTab(QWidget):
         for r, o in enumerate(rows):
             reset = o["expiry"] or (WK.next_reset(now) if o["hours"] == 168 else None)
             done = o["bought"] >= o["limit"]
-            cells = [Cell(o["vendor_name"], o["vendor_name"].lower(), center=False),
+            vname = o["vendor_name"] + ("  " + t("weekly.ev.on") if o.get("active") else "  " + t("weekly.ev.off")
+                                        if o.get("active") is False else "")
+            cells = [Cell(vname, o["vendor_name"].lower(), center=False),
                      Cell(o["name"] + (f" ×{thousands(o['qty'])}" if o["qty"] > 1 else ""), o["name"].lower(), center=False),
                      Cell(cost_text(o["cost"]), cost_text(o["cost"]).lower(), center=False),
                      Cell(f"{o['bought']}/{o['limit']}" + ("  ✔" if done else ""), o["bought"] / max(1, o["limit"])),
@@ -142,36 +150,27 @@ class WeeklyTab(QWidget):
         self.summary.setText(t("weekly.summary", n=len(rows), b=n_b, reset=left(WK.next_reset(now) - now),
                                region=self.w.region or "–"))
 
-    def qf_entries(self):
-        """What you bought this period, as Quantframe entries ([{"slug","name","rank","qty"}]) plus the names that are not
-        on warframe.market (not tradable: Kuva, Steel Essence…), which are left out."""
-        entries, skipped = {}, []
-        for o in self.w.offers(False):
-            if o["bought"] <= 0:
-                continue
-            slug = self.market.slug_for_name(o["name"]) if self.market else None
-            if not slug:
-                skipped.append(o["name"])
-                continue
-            info = self.market.info(slug) or {}
-            rank = 0 if info.get("max_rank", 0) > 0 else None
-            e = entries.setdefault((slug, rank), {"slug": slug, "name": info.get("name") or o["name"], "rank": rank, "qty": 0})
-            e["qty"] += o["bought"] * max(1, int(o["qty"]))
-        return list(entries.values()), sorted(set(skipped))
-
     def send_to_quantframe(self):
-        """The items bought at the limited vendors this period -> Quantframe's stock, after the usual check window."""
+        """The purchases the Activities overlay confirmed from the game file (Martyr Symbiosis at the Entrati, Aerial Bond
+        at Solaris United…) and not sent yet -> Quantframe's stock, after the usual check window."""
+        import time as _time
         from PyQt6.QtWidgets import QMessageBox
+        from app.game import goals as G
+        from app.trade import quantframe as Q
         from app.ui.quantframe_dialog import SendDialog
-        entries, skipped = self.qf_entries()
+        plan = G.get_plan()
+        entries = []
+        for e in plan.unsent():
+            info = (self.market.info(e["slug"]) if self.market else None) or {}
+            entries.append(dict(e, name=info.get("name") or e["name"], rank=0 if info.get("max_rank", 0) > 0 else None))
         if not entries:
-            QMessageBox.information(self, t("weekly.qf"), t("weekly.qf.empty") + (
-                "\n\n" + t("weekly.qf.skipped", names=", ".join(skipped)) if skipped else ""))
+            QMessageBox.information(self, t("rec.qf"), t("rec.qf.empty"))
             return
-        if skipped:
-            from app.core import logbus
-            logbus.add("weekly", "not sent to Quantframe (not tradable): " + ", ".join(skipped))
-        SendDialog("stock", entries, self).exec()
+        start = _time.time() - 1
+        SendDialog("stock", entries, self, all_checked=True).exec()
+        sent = {e["slug"] for e in entries if (Q.sent_before("stock", e["slug"], e["rank"]) or {}).get("t", 0) >= start}
+        if sent:
+            plan.mark_sent(sent)
 
     def _track_changed(self, item):
         if item.column() != 5 or item.data(Qt.ItemDataRole.UserRole) is None:

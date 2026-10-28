@@ -81,6 +81,17 @@ DEFAULTS = {
     "goals_only_short": False,       # only the syndicates you still lack standing for
     "goals_quests": True,            # Nightwave weekly challenges and the 1999 Calendar (DE's world state)
     "goals_cal_rows": 4,             # how many Calendar challenges still to do are listed
+    "ov_price_font": 11,           # price overlay: price label size (pt)
+    "ov_vol_font": 9,              # price overlay: volume label size (pt)
+    "ov_bg_opacity": 88,           # price overlay: label background opacity (%)
+    "ov_price_color": "#78c8ff",   # price overlay: price text colour
+    "ov_star_color": "#ffd228",    # price overlay: Best here / Recommended stars colour
+    "goals_font_family": "",       # Activities: font ("" = the program's font)
+    "goals_title_color": "#ffd100",  # Activities: titles
+    "goals_text_color": "#ffffff",   # Activities: objectives
+    "goals_ready_color": "#40ff40",  # Activities: ready / done
+    "goals_hint_color": "#a0a0a0",   # Activities: hints (activities, goals)
+    "goals_repeat": True,            # Activities: an item bought stays on the list (counted again from the new copies)
     "goals_routine": True,           # Activities: Sortie, Archon Hunt, Deep / Temporal Archimedea, Descendia
     "goals_manual_done": {},         # Activities: routine entries ticked by hand {key: until when (epoch)}
     "goals_where": True,             # Activities: where to buy each item (the NPC and place) under it
@@ -108,7 +119,7 @@ DEFAULTS = {
     "riven_min_score": 50,        # smallest stats score (0-100)
     "riven_max_price": 0,         # platinum: do not show rivens above this price (0 = no limit)
     "riven_max_age_days": 14,     # Riven flip: listings on sale for longer than this are not shown as deals (0 = no limit)
-    "riven_auto_hours": 0,        # Riven flip: scan by itself every N hours while the program runs (0 = only by hand)
+    "riven_auto_hours": 6,        # Riven flip: scan by itself every N hours while the program runs (0 = only by hand)
     "riven_min_sales": 0,         # listings gone in 7 days (estimated sales) from which a weapon is shown, once observed for a day
     "theme": "classic",           # colour theme (see theme.py): classic, or a faction: tenno, grineer, corpus, infested, orokin...
     "ui_font": "Segoe UI",        # font family of the windows

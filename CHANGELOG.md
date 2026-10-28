@@ -3,6 +3,27 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.3.8
+- **Activities: buy with all your standing**: each syndicate's standing is spent on its best items, as many copies as
+  it pays for (*Buy 2× Martyr Symbiosis (20,000 standing)* with 27,000), the rest on the next item, never more copies
+  than the market takes in a day. A bought item stays on the list for tomorrow (setting *Activities: keep an item after
+  buying it*).
+- **Activities purchases → Quantframe**: every purchase Activities confirms from the game file is kept; *Bought
+  (Activities) → Quantframe…* (Weekly tab, and Activities' ⚙ menu) sends the ones not sent yet to Quantframe's stock.
+  (The Weekly button of 0.3.6, which sent every weekly purchase, is replaced by this.)
+- **Build planner: whole loadouts**: Warframe, weapons, companion, Archwing, Arch-gun and Arch-melee in one plan, saved
+  together; *Copy from my loadout…* copies a whole in-game loadout. Companion, Archwing, Arch-gun and Arch-melee items and
+  mods added to the bundled data.
+- **Builds: more from the game file**: your item names, Focus lens, Kuva / Tenet / Coda bonus element and percentage,
+  gilded, Exilus / Arcane slot unlocked, Valence Fusion.
+- **Weekly: event vendors only while the event runs** (Jade Shadows, Duviri Murmur, Triad…, from DE's world state;
+  *Show ended events* to see them anyway); their offers leave Activities too.
+- **Steel Essence** in the player strip.
+- **Riven auto scan on by default** (every 6 hours) and **never at the same time as a price update**: the second one
+  waits for the first (an automatic one simply tries later), so warframe.market's limits are not exceeded.
+- **Profile moved into Settings** (a page of it), and a new **Overlays** page: price overlay label sizes, background,
+  colours; Activities background, font, colours and contents.
+
 ## 0.3.7
 - **Blueprints are no longer priced as the finished item**: a vendor that sells a blueprint (Purified Heciphron
   Blueprint, Zymos Blueprint…) was matched to the finished item on warframe.market when the blueprint itself is not

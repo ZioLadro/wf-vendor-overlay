@@ -27,10 +27,7 @@ GROUPS = [
         ("vendor_header_required", "bool", None, False),
         ("vendor_min_items", "int", (1, 20), False),
         ("only_warframe", "bool", None, True),
-        ("rec_overlay", "bool", None, False),
-        ("rec_overlay_top", "int", (1, 50), False),
         ("auto_detect", "bool", None, False),
-        ("show_volume", "bool", None, False),
         ("hide_zero_volume", "bool", None, False),
         ("hide_operational_supply", "bool", None, False),
         ("open_list_on_start", "bool", None, False),
@@ -45,12 +42,38 @@ GROUPS = [
         ("key_clear", "text", None, True),
         ("key_quit", "text", None, True),
         ("key_goals", "text", None, True),
-        ("goals_click_only_cursor", "bool", None, False),
-        ("goals_track_interact", "bool", None, False),
+    ]),
+    ("overlays", [
+        # prices over the vendor screen
+        ("show_volume", "bool", None, False),
+        ("volume_offset_y", "int", (-20, 40), False),
+        ("rec_overlay", "bool", None, False),
+        ("rec_overlay_top", "int", (1, 50), False),
+        ("ov_price_font", "int", (7, 24), False),
+        ("ov_vol_font", "int", (6, 20), False),
+        ("ov_bg_opacity", "int", (0, 100), False),
+        ("ov_price_color", "color", None, False),
+        ("ov_star_color", "color", None, False),
+        # Activities
+        ("goals_opacity", "int", (0, 100), False),
+        ("goals_font", "int", (8, 24), False),
+        ("goals_font_family", "font", "empty", False),
+        ("goals_title_color", "color", None, False),
+        ("goals_text_color", "color", None, False),
+        ("goals_ready_color", "color", None, False),
+        ("goals_hint_color", "color", None, False),
+        ("goals_items", "int", (1, 40), False),
+        ("goals_per_vendor", "bool", None, False),
+        ("goals_repeat", "bool", None, False),
+        ("goals_activities", "bool", None, False),
+        ("goals_only_short", "bool", None, False),
+        ("goals_where", "bool", None, False),
         ("goals_weekly", "bool", None, False),
         ("goals_quests", "bool", None, False),
-        ("goals_where", "bool", None, False),
+        ("goals_cal_rows", "int", (0, 20), False),
         ("goals_routine", "bool", None, False),
+        ("goals_click_only_cursor", "bool", None, False),
+        ("goals_track_interact", "bool", None, False),
         ("goals_untracked", "activities", None, False),
     ]),
     ("detection", [
@@ -82,7 +105,6 @@ GROUPS = [
     ("appearance", [
         ("volume_low", "int", (1, 10000), False),
         ("volume_high", "int", (2, 100000), False),
-        ("volume_offset_y", "int", (-20, 40), False),
         ("menu_refresh_ms", "int", (500, 30000), False),
     ]),
     ("performance", [
@@ -229,6 +251,19 @@ class SettingsTab(QWidget):
             return w
         if kind == "bool":
             return QCheckBox()
+        if kind == "color":                           # a button showing the colour; a click opens the colour picker
+            w = QPushButton()
+            w.value = "#ffffff"
+            w.setMaximumWidth(140)
+
+            def pick(_c=False, b=w):
+                from PyQt6.QtGui import QColor
+                from PyQt6.QtWidgets import QColorDialog
+                c = QColorDialog.getColor(QColor(b.value), b)
+                if c.isValid():
+                    SettingsTab._paint_color(b, c.name())
+            w.clicked.connect(pick)
+            return w
         if kind == "int":
             w = QSpinBox(minimum=opt[0], maximum=opt[1])
         elif kind == "float":
@@ -275,9 +310,18 @@ class SettingsTab(QWidget):
         w.setMaximumWidth(140)
         return w
 
+    @staticmethod
+    def _paint_color(b, value):
+        b.value = str(value or "#ffffff")
+        b.setText(b.value)
+        b.setStyleSheet(f"QPushButton {{ background: {b.value}; color: {'#000' if _light(b.value) else '#fff'}; }}")
+
     # ---------- values <-> widgets ----------
     def _set(self, key, value):
         w, kind, _ = self.widgets[key]
+        if kind == "color":
+            self._paint_color(w, value)
+            return
         if kind == "activities":
             w.value = list(value or [])
             w.setText(t("set.goals_untracked.button") + (f" ({len(w.value)} ✘)" if w.value else ""))
@@ -289,7 +333,7 @@ class SettingsTab(QWidget):
         elif kind == "choice":
             w.setCurrentIndex(max(0, w.findData(value)))
         elif kind == "font":
-            w.setCurrentFont(QFont(str(value)))
+            w.setCurrentFont(QFont(str(value) or "Segoe UI"))
         else:
             w.setText(str(value))
 
@@ -343,6 +387,8 @@ class SettingsTab(QWidget):
         w, kind, _ = self.widgets[key]
         if kind == "activities":
             return list(w.value or [])
+        if kind == "color":
+            return w.value
         if kind == "bool":
             return w.isChecked()
         if kind == "int":
@@ -401,6 +447,15 @@ class SettingsTab(QWidget):
         theme.apply()
         if restart:
             self.restart_requested.emit()
+
+
+def _light(hexcolor: str) -> bool:
+    try:
+        h = hexcolor.lstrip("#")
+        r, g, b = int(h[0:2], 16), int(h[2:4], 16), int(h[4:6], 16)
+        return r * 0.3 + g * 0.59 + b * 0.11 > 150
+    except (ValueError, IndexError):
+        return True
 
 
 def _config_path():

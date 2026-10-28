@@ -101,6 +101,8 @@ def wallet(res) -> dict:
     duc = sum(int(it.get("ItemCount") or 0) for it in res.get("MiscItems") or []
               if isinstance(it, dict) and str(it.get("ItemType", "")).endswith("/MiscItems/PrimeBucks"))
     out["ducats"] = duc
+    out["steel"] = sum(int(it.get("ItemCount") or 0) for it in res.get("MiscItems") or []
+                       if isinstance(it, dict) and str(it.get("ItemType", "")).endswith("/SteelEssence"))
     if num(res.get("PrimeTokens")) is not None:
         out["aya"] = num(res["PrimeTokens"])
     if num(res.get("RegalCredits")):

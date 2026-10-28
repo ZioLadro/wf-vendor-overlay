@@ -163,7 +163,8 @@ class LoadoutView(QWidget):
         else:
             self.pic.clear()
         label = lo.get("cfg_name") or t("builds.config", c=lo["config"])
-        self.title.setText(f"{lo['item']}  ·  {label}")
+        ex = lo.get("extras") or {}
+        self.title.setText(f"{lo['item']}" + (f"  “{ex['custom']}”" if ex.get("custom") else "") + f"  ·  {label}")
         what = t("builds.catalyst") if lo["kind"] in ("primary", "secondary", "melee", "archgun") else t("builds.reactor.name")
         if lo.get("reactor"):
             pot = t("builds.pot.yes" if lo.get("reactor_src") != "guess" else "builds.pot.guess", what=what)
@@ -176,7 +177,14 @@ class LoadoutView(QWidget):
         self.sub.setText(kind_txt + "  ·  " + t("builds.forma", n=lo["forma"])
                          + ("" if lo["kind"] == "exalted" else "  ·  " + pot)
                          + (("  ·  ✦ " + __import__("app.game.incarnon", fromlist=["x"]).describe(lo["incarnon"], t)[0])
-                            if lo.get("incarnon") else ""))
+                            if lo.get("incarnon") else "")
+                         + (f"  ·  {t('builds.valence', el=ex['valence']['element'], pct=ex['valence']['pct'])}"
+                            if ex.get("valence") else "")
+                         + (f"  ·  ◈ {ex['lens']}" if ex.get("lens") else "")
+                         + ("  ·  " + t("builds.gilded") if ex.get("gilded") else ""))
+        unlocked = [t(k) for k, on in (("builds.exilus_on", ex.get("exilus")), ("builds.arcane_on", ex.get("arcane_slot")),
+                                       ("builds.valence_swap", ex.get("valence_swap"))) if on]
+        self.sub.setToolTip(t("builds.pot.tip") + ("\n" + ", ".join(unlocked) if unlocked else ""))
         self._config_buttons(lo)
         slots = lo["slots"]
         row = QHBoxLayout()
@@ -405,7 +413,7 @@ class BuildsTab(QWidget):
         self.stack = QStackedWidget()
         self.stack.addWidget(psplit)
         self.stack.addWidget(split)
-        self.planner = PlannerView(lambda: self.loadouts)
+        self.planner = PlannerView(lambda: self.loadouts, lambda: self.presets)
         self.stack.addWidget(self.planner)
         lay = QVBoxLayout(self)
         lay.addLayout(bar)

@@ -30,7 +30,7 @@ STAT_KEYS = {"Health": "health", "Shield Capacity": "shield", "Armor": "armor", 
              "Sprint Speed": "sprint", "Ability Duration": "duration", "Ability Efficiency": "efficiency",
              "Ability Range": "range", "Ability Strength": "strength"}
 MOD_TYPES = {"Warframe Mod": "W", "Primary Mod": "P", "Shotgun Mod": "G", "Secondary Mod": "S", "Melee Mod": "M",
-             "Stance Mod": "T"}
+             "Stance Mod": "T", "Companion Mod": "C", "Archwing Mod": "A", "Arch-Gun Mod": "R", "Arch-Melee Mod": "X"}
 
 
 def wfcd(folder: Path) -> dict:
@@ -66,14 +66,24 @@ def wfcd(folder: Path) -> dict:
         if w.get("type") == "Warframe" and w.get("name"):
             frames[w["name"]] = [w.get("health", 0), w.get("shield", 0), w.get("armor", 0), w.get("power", 0),
                                  w.get("sprintSpeed", 1), w.get("aura") or "", w.get("polarities") or []]
+    companions = {}                     # name -> [family: sentinel / beast / robotic, polarities]
+    for c in load("Sentinels"):
+        if c.get("name") and c.get("type") == "Sentinel":
+            companions[c["name"]] = ["sentinel", c.get("polarities") or []]
+    for c in load("Pets"):
+        if c.get("name") and c.get("type") == "Pets":
+            fam = "robotic" if re.search(r"Moa|Hound", c["name"]) else "beast"
+            companions[c["name"]] = [fam, c.get("polarities") or []]
+    archwings = {a["name"]: a.get("polarities") or [] for a in load("Archwing") if a.get("name") and a.get("type") == "Archwing"}
     weapons = {}
-    for fn, kind in (("Primary", "primary"), ("Secondary", "secondary"), ("Melee", "melee")):
+    for fn, kind in (("Primary", "primary"), ("Secondary", "secondary"), ("Melee", "melee"), ("Arch-Gun", "archgun"),
+                     ("Arch-Melee", "archmelee")):
         for w in load(fn):
             if w.get("name") and w.get("type") not in ("Zaw Component",):
                 weapons[w["name"]] = [kind, w.get("type") or "", w.get("polarities") or [], w.get("exilusPolarity") or "",
                                       w.get("stancePolarity") or ""]
     arc = {a["name"]: a.get("type", "") for a in load("Arcanes") if a.get("name")}
-    return {"mst": mst, "frames": frames, "weapons": weapons, "arc": arc}
+    return {"mst": mst, "frames": frames, "weapons": weapons, "arc": arc, "companions": companions, "archwings": archwings}
 
 
 def main():

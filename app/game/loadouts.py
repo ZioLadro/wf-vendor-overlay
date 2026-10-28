@@ -110,6 +110,34 @@ def helminth(cfg: dict, suit_path: str):
     return {"slot": idx + 1, "replaced": replaced, "ability": ability_name(ov["Ability"])}
 
 
+ELEMENTS = {"Heat": "Heat", "Freeze": "Cold", "Electricity": "Electricity", "Toxin": "Toxin", "Impact": "Impact",
+            "Mag": "Magnetic", "Radiation": "Radiation", "Rad": "Radiation", "Puncture": "Puncture", "Slash": "Slash"}
+
+
+def extras(item: dict) -> dict:
+    """What else the game file says about an item: the name you gave it, the Focus lens, the Kuva / Tenet / Coda bonus
+    element (25-60 %), the Exilus / Arcane slots unlocked, gilded, Valence Fusion."""
+    out = {}
+    nm = item.get("ItemName")
+    if isinstance(nm, str) and nm.strip():
+        out["custom"] = nm.split("|", 1)[1].strip() if "|" in nm else ("" if nm.startswith("/") else nm.strip())
+    if item.get("FocusLens"):
+        names = I.names_for_path(item["FocusLens"])
+        out["lens"] = names[0] if names else _words(item["FocusLens"].rsplit("/", 1)[-1])
+    try:
+        fp = json.loads(item.get("UpgradeFingerprint") or "{}") if "InnateDamage" in str(item.get("UpgradeType") or "") else {}
+    except ValueError:
+        fp = {}
+    for b in fp.get("buffs") or []:
+        m = re.fullmatch(r"Innate(\w+?)Damage", str(b.get("Tag") or ""))
+        if m:
+            pct = 25 + 35 * min(1.0, max(0.0, int(b.get("Value") or 0) / 0x3FFFFFFF))
+            out["valence"] = {"element": ELEMENTS.get(m.group(1), m.group(1)), "pct": round(pct, 1)}
+    f = int(item.get("Features") or 0)
+    out["exilus"], out["arcane_slot"], out["gilded"], out["valence_swap"] = bool(f & 2), bool(f & 32), bool(f & 8), bool(f & 1024)
+    return out
+
+
 def read(inv: dict, market=None) -> list:
     """[{"item","kind","config","forma","slots","shards","helminth"}] for every loadout with at least MIN_MODS mods.
     slots: [{"role": general|aura|exilus|stance|arcane, "name": str|"", "rank": int|None, "max": int|None}]"""
@@ -205,7 +233,8 @@ def read(inv: dict, market=None) -> list:
                             "forma": int(item.get("Polarized") or 0), "slots": slots,
                             "shards": shards if kind == "warframe" else [],
                             "helminth": helminth(cfg, path) if kind == "warframe" else None,
-                            "incarnon": INC.info(item, item_name, evo, genesis) if kind in ("primary", "secondary", "melee") else None})
+                            "incarnon": INC.info(item, item_name, evo, genesis) if kind in ("primary", "secondary", "melee") else None,
+                            "extras": extras(item)})
             sib = [{"idx": b["idx"], "config": b["config"], "name": b["cfg_name"]} for b in out[first:]]
             for b in out[first:]:
                 b["configs"] = sib

@@ -41,6 +41,12 @@ def innate(kind: str, item: str, roles: list) -> list:
             for i, r in enumerate(roles):
                 if r == "aura":
                     pols[i] = fr[5]
+    elif kind in ("companion", "archwing"):
+        c = d.get("companions" if kind == "companion" else "archwings", {}).get(item)
+        innate_pols = (c[1] if kind == "companion" else c) if c else []
+        general = [i for i, r in enumerate(roles) if r == "general"]
+        for slot, p in zip(general, innate_pols or []):
+            pols[slot] = p
     else:
         w = d.get("weapons", {}).get(item)
         if w:
@@ -191,7 +197,19 @@ def items(kind: str) -> list:
     d = LO.data()
     if kind == "warframe":
         return sorted(d.get("frames", {}))
+    if kind == "companion":
+        return sorted(d.get("companions", {}))
+    if kind == "archwing":
+        return sorted(d.get("archwings", {}))
     return sorted(n for n, w in d.get("weapons", {}).items() if w[0] == kind)
+
+
+# mod slots the planner gives each kind (the game file's own layouts are in loadouts.LAYOUT)
+PLAN_LAYOUT = {"companion": ["general"] * 10, "archwing": ["general"] * 8, "archmelee": ["general"] * 8}
+
+
+def plan_roles(kind: str) -> list:
+    return LO.LAYOUT.get(kind) or PLAN_LAYOUT.get(kind) or ["general"] * 8
 
 
 def candidates(kind: str, item: str, role: str) -> list:
@@ -209,6 +227,19 @@ def candidates(kind: str, item: str, role: str) -> list:
             else:
                 ok = m[3] in ("WARFRAME", item, base)
             if ok:
+                out.append(n)
+    elif kind in ("companion", "archwing", "archgun", "archmelee"):
+        letter = {"companion": "C", "archwing": "A", "archgun": "R", "archmelee": "X"}[kind]
+        fam = (LO.data().get("companions", {}).get(item) or ["", []])[0] if kind == "companion" else ""
+        base = item.replace(" Prime", "").strip()
+        words = {item.lower(), base.lower()} | {w.lower() for w in base.split()}
+        fam_ok = {"sentinel": ("sentinel", "robotic"), "robotic": ("robotic", "moa", "hound"),
+                  "beast": ("beast", "kubrow", "kavat", "claws", "vulpaphyla", "predasite", "helminth charger")}.get(fam, ())
+        for n, m in mst.items():
+            if m[4] != letter:
+                continue
+            compat = str(m[3]).strip().lower()
+            if kind != "companion" or compat in ("companion",) or compat in fam_ok or compat in words:
                 out.append(n)
     else:
         w = LO.data().get("weapons", {}).get(item)
@@ -230,5 +261,5 @@ def candidates(kind: str, item: str, role: str) -> list:
 
 def arcane_candidates(kind: str) -> list:
     want = {"warframe": ("Warframe Arcane",), "primary": ("Primary Arcane", "Shotgun Arcane", "Bow Arcane"),
-            "secondary": ("Secondary Arcane",), "melee": ("Melee Arcane",)}.get(kind, ())
+            "secondary": ("Secondary Arcane",), "melee": ("Melee Arcane",), "archgun": ("Primary Arcane",)}.get(kind, ())
     return sorted(n for n, ty in LO.data().get("arc", {}).items() if ty in want)

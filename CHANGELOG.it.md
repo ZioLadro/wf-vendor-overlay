@@ -3,6 +3,27 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.3.8
+- **Attività: compra con tutto il tuo standing**: lo standing di ogni sindacato va ai suoi oggetti migliori, quante
+  copie ne paga (*Compra 2× Martyr Symbiosis (20.000 standing)* con 27.000), il resto all'oggetto dopo, mai più copie di
+  quante il mercato ne prende in un giorno. Un oggetto comprato resta in lista per domani (impostazione *Attività: tieni
+  un oggetto dopo averlo comprato*).
+- **Acquisti di Attività → Quantframe**: ogni acquisto che Attività conferma dal file di gioco viene tenuto; *Acquistati
+  (Attività) → Quantframe…* (scheda Settimanali, e menu ⚙ di Attività) invia allo stock di Quantframe quelli non ancora
+  inviati. (Sostituisce il pulsante della 0.3.6, che inviava tutti gli acquisti settimanali.)
+- **Pianificatore build: loadout interi**: Warframe, armi, compagno, Archwing, Arch-gun e Arch-melee in un solo piano,
+  salvati insieme; *Copia da un mio loadout…* copia un loadout di gioco intero. Aggiunti ai dati inclusi oggetti e mod di
+  compagni, Archwing, Arch-gun e Arch-melee.
+- **Build: più dati dal file di gioco**: i nomi che dai agli oggetti, lente Focus, elemento bonus Kuva / Tenet / Coda e
+  percentuale, dorata, slot Exilus / Arcano sbloccati, Fusione di valenza.
+- **Settimanali: vendor degli eventi solo mentre l'evento è in corso** (Jade Shadows, Duviri Murmur, Triad…, dal world
+  state di DE; *Mostra eventi finiti* per vederli comunque); le loro offerte escono anche da Attività.
+- **Steel Essence** nella barra del giocatore.
+- **Scansione automatica dei riven attiva di default** (ogni 6 ore) e **mai insieme a un aggiornamento dei prezzi**: il
+  secondo aspetta il primo (uno automatico riprova più tardi), così non si superano i limiti di warframe.market.
+- **Profilo spostato nelle Impostazioni** (una sua pagina), e una nuova pagina **Overlay**: dimensioni, sfondo e colori
+  delle etichette dell'overlay prezzi; sfondo, carattere, colori e contenuti di Attività.
+
 ## 0.3.7
 - **Le blueprint non vengono più valutate come l'oggetto finito**: un vendor che vende una blueprint (Purified Heciphron
   Blueprint, Zymos Blueprint…) veniva abbinato all'oggetto finito su warframe.market quando la blueprint non è

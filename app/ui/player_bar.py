@@ -106,7 +106,7 @@ class PlayerBar(QFrame):
         tags.update(e["t"] for r in self.market.snapshot() for e in r["standing"] if e.get("t") and not is_hidden(e["t"]))
         return sorted(tags, key=lambda x: syndicate_name(x).lower())
 
-    WALLET = (("endo", "bar.endo"), ("plat", "bar.plat"), ("ducats", "bar.ducats"), ("aya", "bar.aya"), ("regal", "bar.regal"))
+    WALLET = (("endo", "bar.endo"), ("plat", "bar.plat"), ("ducats", "bar.ducats"), ("aya", "bar.aya"), ("steel", "bar.steel"), ("regal", "bar.regal"))
 
     def _wallet(self):
         """Endo, platinum, ducats and Aya you hold (from the AlecaFrame file), compact (3k, 30k, 1.2M), with the icons of the
@@ -130,6 +130,10 @@ class PlayerBar(QFrame):
             h.setContentsMargins(0, 0, 0, 0)
             h.setSpacing(4)
             pm = icons.wallet(k)
+            if pm is None and k == "steel":            # the game's own icon (browse.wf), downloaded once
+                from app.ui import playericons
+                f = playericons.path_for("/Lotus/Interface/Icons/StoreIcons/Currency/SteelEssence.png")
+                pm = QPixmap(f).scaledToHeight(20, Qt.TransformationMode.SmoothTransformation) if f else None
             if pm:
                 ic = QLabel()
                 ic.setPixmap(pm)

@@ -22,7 +22,7 @@ class SendDialog(QDialog):
     progress = pyqtSignal(int, int, str)            # done, total, error text ("" = ok)
     finished_all = pyqtSignal()
 
-    def __init__(self, kind, entries, parent=None, sender=None):
+    def __init__(self, kind, entries, parent=None, sender=None, all_checked=False):
         super().__init__(parent)
         self.kind, self.entries = kind, entries
         self._send = sender or (Q.send_stock if kind == "stock" else Q.send_wish)
@@ -44,7 +44,8 @@ class SendDialog(QDialog):
         for i, e in enumerate(entries):
             prev = Q.sent_before(kind, e["slug"], e.get("rank"))
             chk = QCheckBox()
-            chk.setChecked(prev is None and e["qty"] > 0)         # sent before: unchecked, to avoid counting twice
+            # sent before: unchecked, to avoid counting twice (unless these are new copies: Activities purchases)
+            chk.setChecked((all_checked or prev is None) and e["qty"] > 0)
             spin = QSpinBox(minimum=1, maximum=100000, value=max(1, int(e["qty"])))
             wrap = QTableWidgetItem()
             self.table.setItem(i, COL_CHECK, wrap)

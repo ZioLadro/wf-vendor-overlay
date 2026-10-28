@@ -12,12 +12,14 @@ class Refresher(QObject):
     started = pyqtSignal(int)             # total number of items
     progress = pyqtSignal(int, int, int)  # done, total, errors   (emitted from the worker thread)
     finished = pyqtSignal(str)            # final message
+    queue_start = pyqtSignal(object, object)   # a click that waited for the Riven scan: start it now (window's thread)
 
     def __init__(self, market, parent_widget):
         super().__init__(parent_widget)
         self.market, self.parent_widget = market, parent_widget
         self._cancel = threading.Event()
         self._thread = None
+        self.queue_start.connect(lambda slugs, age: self.start(slugs, age, confirm=False))
 
     @property
     def busy(self) -> bool:
@@ -42,6 +44,14 @@ class Refresher(QObject):
                 t("job.confirm.text", n=len(slugs), minutes=eta // 60 + 1, requests=len(slugs) * 2))
             if ans != QMessageBox.StandardButton.Yes:
                 return False
+        from app.trade import netguard
+        if not netguard.claim("prices"):                # a Riven scan is talking to the site: wait for it
+            from app.core import logbus
+            if confirm:                                  # a click: starts by itself when the scan ends
+                logbus.add("prices", "a Riven scan is running: the price update starts when it ends", "warn")
+                self.finished.emit(t("job.queued"))
+                netguard.when_free(lambda s=slugs, a=max_age: self.queue_start.emit(s, a))
+            return False
         self._cancel.clear()
         self.started.emit(len(slugs))
         market, cancel = self.market, self._cancel
@@ -68,6 +78,8 @@ class Refresher(QObject):
                 msg = t("status.error", err=e)
                 logbus.error("prices", f"{type(e).__name__}: {e}")
             logbus.progress("prices", 0, 0)
+            from app.trade import netguard
+            netguard.release("prices")
             logbus.add("prices", msg, "warn" if "error" in msg.lower() or "errori" in msg.lower() else "ok")
             self.finished.emit(msg)
 
