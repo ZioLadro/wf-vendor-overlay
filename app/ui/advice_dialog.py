@@ -29,7 +29,7 @@ class AdviceDialog(QDialog):
         else:
             data, self.missing = sell_advice(rows)
             heads = ["col.item", "col.owned", "col.price", "col.volume", "advice.col.sellable",
-                     "advice.col.expected", "advice.col.score", "advice.col.trend"]
+                     "advice.col.expected", "advice.col.score", "advice.col.trend", "col.signal"]
         self.data = data
         intro = QLabel(t("advice." + kind + ".intro") + " " + t("advice.trend.note"))
         intro.setWordWrap(True)
@@ -70,6 +70,12 @@ class AdviceDialog(QDialog):
                 tcell.setToolTip(t("advice.trend.tip", d7=av[0] if av[0] is not None else "–", d30=av[1],
                                    d90=av[2] if av[2] is not None else "–"))
             cells.append(tcell)
+            if x.get("ind") or x.get("bid"):
+                from app.trade import signals as S
+                tcell.setToolTip((tcell.toolTip() + "\n" if tcell.toolTip() else "") + S.describe(x["price"], x.get("ind"), x.get("bid"), t))
+            if kind == "sell":
+                sg = x.get("signal") or ""
+                cells.append(Cell(t("sig." + sg) if sg else "–", sg, MAXRANK_COLOR if sg == "sell" else PRICE_COLOR if sg == "wait" else DIM_COLOR))
             cells[0].setData(Qt.ItemDataRole.UserRole, x["slug"])
             for c, cell in enumerate(cells):
                 self.table.setItem(i, c, cell)

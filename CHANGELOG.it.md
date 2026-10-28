@@ -19,6 +19,13 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
   consigli di rank up e vendita).
 - **Prezzi vecchi aggiornati da soli**: le righe di listino e consigli più vecchie di 2 ore (impostazione *Aggiorna i dati
   più vecchi di (ore)*) vengono aggiornate automaticamente, 150 alla volta, prima i consigliati e i più vecchi.
+- **Consigli e consigli di vendita con segnali di trading** (`signals.py`): prezzo di vendita atteso dalla media a 30
+  giorni, un andamento EMA 7 / EMA 30, la calibrazione da backtest dell'oggetto e il miglior ordine di acquisto online
+  (bid); colonna *Andamento* con *vendi ora* (in calo o picco di Bollinger) / *aspetta* (in salita), e colonna *Segnale*
+  nei consigli di vendita.
+- **Riven flip: età delle inserzioni**: colonna *In vendita da* (data di creazione su warframe.market); le inserzioni più
+  vecchie di 14 giorni (impostazione) non sono mostrate come affari e quelle più vecchie di 28 sono escluse dal prezzo
+  equo, che ora conta anche le inserzioni dei venditori offline.
 
 ## 0.3.5
 - **Completamento di Nightwave letto dal posto giusto**: *SeasonChallengeHistory* nel file di gioco elenca tutte le sfide

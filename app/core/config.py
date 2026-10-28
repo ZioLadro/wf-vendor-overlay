@@ -107,6 +107,7 @@ DEFAULTS = {
     "riven_min_margin": 20,       # platinum: smallest expected profit shown
     "riven_min_score": 50,        # smallest stats score (0-100)
     "riven_max_price": 0,         # platinum: do not show rivens above this price (0 = no limit)
+    "riven_max_age_days": 14,     # Riven flip: listings on sale for longer than this are not shown as deals (0 = no limit)
     "riven_auto_hours": 0,        # Riven flip: scan by itself every N hours while the program runs (0 = only by hand)
     "riven_min_sales": 0,         # listings gone in 7 days (estimated sales) from which a weapon is shown, once observed for a day
     "theme": "classic",           # colour theme (see theme.py): classic, or a faction: tenno, grineer, corpus, infested, orokin...

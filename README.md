@@ -126,8 +126,15 @@ last update. Click headers to sort; search box and vendor/type filters.
 ```
 plat per 1000 standing = price / standing cost × 1000
 copies per day         = min(daily standing cap / standing cost, max(1, volume × 0.25))
-~plat per day (score)  = price × copies per day        (daily cap = 16,000 + 500 × Mastery Rank)
+~plat per day (score)  = expected price × copies per day   (daily cap = 16,000 + 500 × Mastery Rank)
 ```
+**Expected price** (`app/trade/signals.py`: classic, open trading techniques scaled to warframe.market's daily data):
+the current price, pulled towards the 30-day average when above it; × a **trend** factor from two exponential moving
+averages (EMA 7 / EMA 30 days: falling prices lower it, up to −15 %); × the item's **backtest calibration** (the same
+estimate replayed on the item's last weeks with only the data known each day, against the price it really traded at in
+the 7 days after: an item whose estimates were 10 % too optimistic gets 10 % less); never above the lowest seller and never
+below the best **buy order** online (bid). The *Trend* column shows ↑/↓ with *sell now* (falling, or a **spike**: today
+far above its 20-day Bollinger band, z ≥ 2) or *wait* (rising); its tooltip lists EMAs, z, backtest and bid/ask.
 As many copies as one day of standing buys, but no more than the market absorbs (about a quarter of the 24 h volume).
 A price above its 30-day average is pulled towards it, and an item that needs a higher syndicate rank than yours counts
 half (⚠). Items below the **minimum volume** or **minimum price** (editable in the tab) are left out; prices are rank 0.
@@ -150,7 +157,8 @@ Your items with their market prices, sell advice and one-click sell orders (insp
   towards it by *Advice: trend weight* (default 50 %).
 - **Advice: ducats** lists prime parts by ducats per platinum given up (`ducats / max(price × liquidity, 0.5)`, with
   `liquidity = min(1, volume / liquid volume)`): *Ducats* at or above the minimum ratio (default 10), else *Sell*.
-  **Advice: sell** ranks the rest by `price × copies you can expect to sell (≈ ¼ of the daily volume)`. Both can select
+  **Advice: sell** ranks the rest by `expected price × copies you can expect to sell (≈ ¼ of the daily volume)`, with a
+  *Signal* column (*sell now* / *wait*, as in the recommendations). Both can select
   the rows, ready for *Sell*.
 - **Rank up…**: which mods are worth ranking to max to sell them: platinum gained per copy (max-rank price − current
   price) per 1000 Endo, with the Endo and Credits needed (`base × (2^max − 2^rank)`, per the
@@ -198,6 +206,12 @@ worth**, best profit first:
 **Scheduled scans**: *Scan by itself every (hours)* (Settings > Riven flip; 0 = off) scans the next weapons every N
 hours while the program runs, with the same request limit; the tab shows when the next one is due. More scans make the
 history and the sales estimate better.
+
+**Listing age**: the scan reads every direct-buy listing, of online and offline sellers (all of them count for the fair
+price and the sales estimate); the table shows deals from sellers in game or online only (setting). The *On sale for*
+column shows how long a listing has been up (its creation date on warframe.market); listings older than *Hide listings
+older than (days)* (default 14) are not shown as deals, and those older than twice that are left out of the fair price
+(a price that has not sold for weeks says what does NOT sell).
 
 Riven requests have their own limiter (*Riven requests per minute*, default 12, never above 20, as warframe.market
 asks); on "too many requests" it waits and stops after three in a row. The tab only reads: nothing is posted.
@@ -351,7 +365,7 @@ app/
   scan/              screen reading: scanner, ocr, ocr_worker (separate process), matcher, overlay (price labels),
                      winrect, wheel
   trade/             warframe.market: market (catalog, prices, volumes), refresher, market_auth (sell orders),
-                     recommend, advice, rivenmarket (riven listings), quantframe
+                     recommend, advice, signals (trend, spikes, backtest), rivenmarket (riven listings), quantframe
   game/              game data and your account: vendors, standing, inventory, aleca (AlecaFrame file), loadouts,
                      buildcalc, rivens, weekly, quests (Nightwave / Calendar), goals (Activities plan), world, arbi
   ui/                windows and tabs: menu (main window), *_tab, *_dialog, goals_overlay (Activities), buildcards,

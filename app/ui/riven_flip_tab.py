@@ -17,7 +17,7 @@ from app.core.uiutil import role
 from app.core.uiutil import DIM_COLOR, HINT_STYLE, MUTED_STYLE, PRICE_COLOR, Cell, num_key
 
 GREEN, AMBER, RED = QColor(110, 220, 140), QColor(255, 205, 110), QColor(255, 120, 120)
-COLS = ["weapon", "riven", "stats", "rank", "price", "fair", "trend", "margin", "score", "sales", "listed", "seller"]
+COLS = ["weapon", "riven", "stats", "rank", "price", "fair", "trend", "margin", "score", "sales", "listed", "age", "seller"]
 
 
 def describe_listing(l, index):
@@ -215,6 +215,9 @@ class RivenFlipTab(QWidget):
                 (f"+{r['margin']}p", r["margin"], GREEN if r["margin"] >= 2 * int(CFG["riven_min_margin"]) else AMBER),
                 (f"{r['score']:.0f}", r["score"], GREEN if r["score"] >= 75 else AMBER if r["score"] >= 55 else RED),
                 (sales, r["sales"] if r["days"] >= 1 else -1, None), (str(r["n"]), r["n"], DIM_COLOR),
+                ("–" if r.get("age") is None else (f"{r['age']:.0f} g" if CFG.get("language") == "it" else f"{r['age']:.0f} d")
+                 if r["age"] >= 1 else ("<1 g" if CFG.get("language") == "it" else "<1 d"),
+                 -1 if r.get("age") is None else r["age"], DIM_COLOR if (r.get("age") or 0) > 7 else None),
                 (f"{l['seller']} ({l['status']})", l["seller"].lower(), None),
             ]
             for c, (text, key, color) in enumerate(vals):

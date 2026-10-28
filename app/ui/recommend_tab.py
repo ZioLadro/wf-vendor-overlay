@@ -7,6 +7,9 @@ from PyQt6.QtWidgets import (
 
 from app.core.config import CFG, save_config
 from app.core.i18n import t
+from app.trade import signals as S
+from PyQt6.QtGui import QColor
+GREEN_T, RED_T = QColor(110, 220, 140), QColor(255, 120, 120)
 from app.game.standing import afford_text, get_store
 from app.scan.overlay import volume_color
 from app.trade.recommend import recommend
@@ -55,7 +58,7 @@ class RecommendTab(QWidget):
         bar.addWidget(self.btn_fetch)
 
         self.headers = [t("col.rank"), t("col.item"), t("col.vendor"), t("col.cost"), t("col.reqrank"),
-                        t("col.price"), t("col.volume"), t("col.ppk"), t("col.pday")]
+                        t("col.price"), t("col.volume"), t("col.ppk"), t("col.pday"), t("col.trend")]
         self.table = QTableWidget(0, len(self.headers))
         self.table.setHorizontalHeaderLabels(self.headers)
         self.table.verticalHeader().hide()
@@ -65,7 +68,7 @@ class RecommendTab(QWidget):
         self.table.setShowGrid(False)
         hdr = self.table.horizontalHeader()
         hdr.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
-        for c in (0, 2, 3, 4, 5, 6, 7, 8):
+        for c in (0, 2, 3, 4, 5, 6, 7, 8, 9):
             hdr.setSectionResizeMode(c, QHeaderView.ResizeMode.ResizeToContents)
         hdr.setSortIndicator(0, Qt.SortOrder.AscendingOrder)
 
@@ -145,7 +148,11 @@ class RecommendTab(QWidget):
                 Cell(str(p["vol"]), p["vol"], volume_color(p["vol"])),
                 Cell(f"{p['ppk']:.1f}", p["ppk"], MAXRANK_COLOR),
                 Cell(f"{p['pday']:.0f}p", p["score"]),
+                Cell(S.arrow(p.get("ind")) + ("  " + t("sig." + p["signal"]) if p.get("signal") else ""),
+                     (p.get("ind") or {}).get("trend") if (p.get("ind") or {}).get("trend") is not None else -9,
+                     GREEN_T if (p.get("ind") or {}).get("trend", 0) >= 0.03 else RED_T if (p.get("ind") or {}).get("trend", 0) <= -0.03 else None),
             ]
+            cells[9].setToolTip(t("rec.expected", e=f"{p['expected']:.0f}") + "\n" + S.describe(p["price"], p.get("ind"), p.get("bid"), t))
             cells[8].setToolTip(t("rec.pday.tip", copies=f"{p['copies']:.1f}", price=p["price"]))
             if p.get("rank_short"):
                 cells[4].setToolTip(t("rec.rank_short"))

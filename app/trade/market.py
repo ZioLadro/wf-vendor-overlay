@@ -268,6 +268,8 @@ class Market:
             e = self._data.setdefault(slug, {})
             if "price" in kw:
                 e["price"], e["pmax"], e["pt"] = kw["price"], kw.get("pmax"), now
+                if "bid" in kw:
+                    e["bid"] = kw["bid"]
             if "vol" in kw:
                 e["vol"], e["vt"] = kw["vol"], now
             self._dirty = True
@@ -292,7 +294,7 @@ class Market:
             e = self._data.get(slug)
             if not e:
                 return None
-            out = {k: e.get(k) for k in ("price", "pmax", "pt", "vol", "vt", "avg", "avgm", "volm", "volm7")}
+            out = {k: e.get(k) for k in ("price", "pmax", "pt", "vol", "vt", "avg", "avgm", "volm", "volm7", "bid", "ind")}
         out["pmax_raw"] = out["pmax"]
         out["pmax"] = effective_pmax(out["price"], out["pmax"], self._info.get(slug, {}).get("max_rank", 0), out["volm7"])
         return out
@@ -323,7 +325,7 @@ class Market:
                     "pmax": effective_pmax(e.get("price"), e.get("pmax"), info.get("max_rank", 0), e.get("volm7")),
                     "updated": max(times) if times else None,
                     "vendors": [v for v in by_slug.get(slug, []) if v not in hidden_vendors],
-                    "standing": entries, "avg": e.get("avg"),
+                    "standing": entries, "avg": e.get("avg"), "bid": e.get("bid"), "ind": e.get("ind"),
                 })
         rows.sort(key=lambda r: r["name"].lower())
         return rows
@@ -401,7 +403,10 @@ class Market:
             top = self._low3(o["platinum"] for o in sells if o.get("rank") == mr)
         else:
             base, top = self._low3(o["platinum"] for o in sells), None
-        self._store(slug, price=base, pmax=top)
+        # the best price a buyer online pays right now (rank 0): what an instant sale gets (see signals.py)
+        bids = [o["platinum"] for o in orders if o.get("type") == "buy"
+                and (o.get("user") or {}).get("status") in ("online", "ingame") and (mr == 0 or (o.get("rank") or 0) == 0)]
+        self._store(slug, price=base, pmax=top, bid=max(bids) if bids else None)
         with self._store_lock:
             volm7 = self._data.get(slug, {}).get("volm7")
         return base, effective_pmax(base, top, mr, volm7)
@@ -412,7 +417,7 @@ class Market:
     # ---------- volumes ----------
     def volume_24h(self, slug: str, max_age=None):
         """Number of trades closed in the last 24 hours."""
-        if self._fresh(slug, "vt", max_age) and "avg" in self._data[slug] and (
+        if self._fresh(slug, "vt", max_age) and "avg" in self._data[slug] and "ind" in self._data[slug] and (
                 not self._info.get(slug, {}).get("max_rank") or "volm7" in self._data[slug]):
             return self._data[slug]["vol"]
         data = self._request(f"{V1}/items/{slug}/statistics")
@@ -432,6 +437,12 @@ class Market:
                 total += int(r.get("volume") or 0)
         self._store(slug, vol=total)
         mr = self._info.get(slug, {}).get("max_rank", 0)
+        try:                                                         # trend, spike, backtest (signals.py)
+            from app.trade import signals
+            w = max(0, min(100, float(CFG["advice_trend_weight"]))) / 100
+            ind = signals.indicators(signals.daily_series(closed.get("90days") or [], mr), w)
+        except Exception:
+            ind = None
         try:                                                         # trades at max rank (is that price real?)
             volm, _ = max_rank_volumes(rows, mr)
             _, volm7 = max_rank_volumes(closed.get("90days") or [], mr)
@@ -444,5 +455,6 @@ class Market:
                 self._data[slug]["avgm"] = avgm
             if mr and volm is not None:
                 self._data[slug]["volm"], self._data[slug]["volm7"] = volm, volm7
+            self._data[slug]["ind"] = ind
             self._dirty = True
         return total

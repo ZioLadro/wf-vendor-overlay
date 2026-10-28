@@ -17,6 +17,12 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
   max-rank price is not shown nor counted (overlay, price list, inventory value, rank-up and sell advice).
 - **Old prices refreshed by themselves**: rows of the price list and recommendations older than 2 hours (setting
   *Refresh data older than (hours)*) are updated automatically, 150 at a time, recommended and oldest first.
+- **Recommendations and sell advice with trading signals** (`signals.py`): expected sale price from the 30-day
+  average, an EMA 7 / EMA 30 trend, the item's own backtest calibration and the best buy order online (bid); *Trend*
+  column with *sell now* (falling or a Bollinger spike) / *wait* (rising), and a *Signal* column in the sell advice.
+- **Riven flip: listing age**: *On sale for* column (creation date on warframe.market); listings older than 14 days
+  (setting) are not shown as deals and those older than 28 are left out of the fair price, which now counts offline
+  sellers' listings too.
 
 ## 0.3.5
 - **Nightwave completion read from the right place**: the game file's *SeasonChallengeHistory* lists every challenge you

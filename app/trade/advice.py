@@ -61,7 +61,8 @@ def ducat_advice(rows):
         if p is None or vol is None:
             missing.append(r["slug"])
             continue
-        p_eff = eff_price(p, r.get("avg")) * _liquidity(vol, scale)
+        from app.trade.signals import expected_price
+        p_eff = expected_price(p, r.get("avg"), r.get("ind"), r.get("bid")) * _liquidity(vol, scale)
         ratio = d / max(p_eff, 0.5)
         out.append({"slug": r["slug"], "name": r["name"], "n": n, "ducats": d, "total_ducats": n * d,
                     "price": p, "vol": vol, "plat_lost": n * p, "ratio": ratio, "ducat": ratio >= min_ratio,
@@ -87,11 +88,13 @@ def sell_advice(rows):
         if p < min_price or vol < min_vol:
             continue
         sellable = min(n, max(1, round(vol * 0.25)))
-        pe = eff_price(p, r.get("avg"))
+        from app.trade.signals import expected_price, signal
+        pe = expected_price(p, r.get("avg"), r.get("ind"), r.get("bid"))
         score = pe * sellable                    # expected platinum: `sellable` already follows the volume
         out.append({"slug": r["slug"], "name": r["name"], "n": n, "price": p, "vol": vol, "sellable": sellable,
                     "expected": p * sellable, "score": score, "ranked": r["ranked"],
-                    "trend": trend(p, r.get("avg")), "avg": r.get("avg")})
+                    "trend": trend(p, r.get("avg")), "avg": r.get("avg"), "ind": r.get("ind"), "bid": r.get("bid"),
+                    "signal": signal(p, r.get("ind"))})
     out.sort(key=lambda x: (-x["score"], -x["vol"], x["name"].lower()))
     return out, list(dict.fromkeys(missing))
 

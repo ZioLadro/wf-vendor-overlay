@@ -893,6 +893,20 @@ EN = {
     "weekly.qf.empty": "Nothing bought this period that can be traded on warframe.market.",
     "weekly.qf.skipped": "Not tradable, left out: {names}",
     "bar.avatar.tip": "Your in-game profile glyph (from AlecaFrame's file; picture from browse.wf)",
+    "col.trend": "Trend",
+    "col.signal": "Signal",
+    "sig.sell": "sell now",
+    "sig.wait": "wait",
+    "sig.trend": "Trend: EMA 7 days {e7}p, EMA 30 days {e30}p ({pct}%)",
+    "sig.z": "Today against the last 20 days: z = {z} (average {mean}p; ≥ +1.5 = a spike)",
+    "sig.bt": "Backtest on this item's last weeks: it really sold at {pct}% of the estimate ({n} days tested)",
+    "sig.bt.none": "Backtest: not enough history yet",
+    "sig.none": "No price history yet (it comes with the next update of this item)",
+    "sig.bid": "Best buy order online: {bid}p (lowest seller: {ask}p)",
+    "rec.expected": "Expected sale price: {e}p (used for the score)",
+    "rflip.col.age": "On sale for",
+    "set.riven_max_age_days": "Hide listings older than (days)",
+    "set.riven_max_age_days.tip": "Rivens on sale for longer than this (from the listing's creation date on warframe.market) are not shown as deals: a price that has not sold for weeks is rarely a real offer. Listings older than twice this are also left out of the fair price. 0 = no limit",
 }
 
 IT = {
@@ -1773,6 +1787,20 @@ IT = {
     "weekly.qf.empty": "Niente di acquistato in questo periodo che si possa scambiare su warframe.market.",
     "weekly.qf.skipped": "Non scambiabili, esclusi: {names}",
     "bar.avatar.tip": "Il glifo del tuo profilo nel gioco (dal file di AlecaFrame; immagine da browse.wf)",
+    "col.trend": "Andamento",
+    "col.signal": "Segnale",
+    "sig.sell": "vendi ora",
+    "sig.wait": "aspetta",
+    "sig.trend": "Andamento: EMA 7 giorni {e7}p, EMA 30 giorni {e30}p ({pct}%)",
+    "sig.z": "Oggi rispetto agli ultimi 20 giorni: z = {z} (media {mean}p; ≥ +1,5 = un picco)",
+    "sig.bt": "Backtest sulle ultime settimane di questo oggetto: si è venduto davvero al {pct}% della stima ({n} giorni provati)",
+    "sig.bt.none": "Backtest: storico ancora insufficiente",
+    "sig.none": "Ancora nessuno storico dei prezzi (arriva col prossimo aggiornamento di questo oggetto)",
+    "sig.bid": "Miglior ordine di acquisto online: {bid}p (venditore più basso: {ask}p)",
+    "rec.expected": "Prezzo di vendita atteso: {e}p (usato per il punteggio)",
+    "rflip.col.age": "In vendita da",
+    "set.riven_max_age_days": "Nascondi inserzioni più vecchie di (giorni)",
+    "set.riven_max_age_days.tip": "I riven in vendita da più di così (dalla data di creazione dell'asta su warframe.market) non vengono mostrati come affari: un prezzo che non vende da settimane raramente è un'offerta vera. Le inserzioni più vecchie del doppio sono escluse anche dal prezzo equo. 0 = nessun limite",
 }
 
 STRINGS = {"en": EN, "it": IT}

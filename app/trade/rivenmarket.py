@@ -257,7 +257,8 @@ def parse_auction(a):
         return {"id": a["id"], "price": int(price), "name": it.get("name") or "", "rank": int(it.get("mod_rank") or 0),
                 "rerolls": int(it.get("re_rolls") or 0), "mr": int(it.get("mastery_level") or 0),
                 "pol": str(it.get("polarity") or ""), "attrs": attrs, "seller": owner.get("ingame_name") or "",
-                "status": str(owner.get("status") or "").lower(), "updated": str(a.get("updated") or "")}
+                "status": str(owner.get("status") or "").lower(), "updated": str(a.get("updated") or ""),
+                "created": str(a.get("created") or "")}
     except (KeyError, TypeError, ValueError):
         return None
 
@@ -305,6 +306,22 @@ def stats_score(listing, wtype, dispo, index, w=None):
         else:
             score -= 30.0 * wt
     return max(0.0, min(100.0, score)), tags
+
+
+def _iso(s):
+    try:
+        from datetime import datetime, timezone
+        d = datetime.fromisoformat(str(s).replace("Z", "+00:00"))
+        return (d if d.tzinfo else d.replace(tzinfo=timezone.utc)).timestamp()
+    except (TypeError, ValueError):
+        return None
+
+
+def listing_age(listing, seen, now):
+    """Days a listing has been on the market: from its creation date on warframe.market (or, if missing, from when this
+    program first saw it). None if neither is known."""
+    t = [x for x in (_iso(listing.get("created")), seen.get(listing["id"]) if seen else None) if x]
+    return (now - min(t)) / 86400 if t else None
 
 
 def fair_price(score, others, factor, window=15.0, min_comps=3):
@@ -493,26 +510,36 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
     min_score = int(CFG["riven_min_score"]) if min_score is None else min_score
     max_price = int(CFG["riven_max_price"]) if max_price is None else max_price
     min_sales = int(CFG["riven_min_sales"]) if min_sales is None else min_sales
+    max_age = float(CFG.get("riven_max_age_days", 14) or 0)
+    now_ = int(now or time.time())
     w = weights()
     rows = []
     for url, wd in store.d["weapons"].items():
         info = weapons_by_url.get(url) or {"name": wd.get("name", url), "type": ""}
         dispo = R.DISPOSITION                    # Hotfix 44.1.3: one disposition (1.2) for every weapon
-        scored = []
+        scored, comps_all = [], []
+        seen = wd.get("seen") if isinstance(wd.get("seen"), dict) else {}
         for l in wd.get("listings") or []:
+            s, tags = stats_score(l, info["type"], dispo, index, w)
+            age = listing_age(l, seen, now_)
+            # comparables: every seller (online or not), but listings stuck for more than twice the max age say what
+            # does NOT sell, so they are left out of the fair price
+            if not (max_age and age is not None and age > 2 * max_age):
+                comps_all.append((s, l, age))
             if online_only and l["status"] not in ("ingame", "online"):
                 continue
-            s, tags = stats_score(l, info["type"], dispo, index, w)
-            scored.append((s, l, tags))
+            scored.append((s, l, tags, age))
         sales, days = store.sales(url, now)
         sold = store.likely_sold(url, now)
         sold_scored = [(stats_score(x, info["type"], dispo, index, w)[0], x["price"]) for x in sold]
         t7, t30 = store.trend(url, 7), store.trend(url, 30)
         sell_days = statistics.median([x["age"] for x in sold]) / 86400 if sold else None
-        for s, l, tags in scored:
+        for s, l, tags, age in scored:
             if s < min_score or (max_price and l["price"] > max_price):
                 continue
-            ask = fair_price(s, [(o[0], o[1]["price"]) for o in scored if o[1]["id"] != l["id"]], factor)
+            if max_age and age is not None and age > max_age:
+                continue                           # on sale for too long at that price: probably not a real offer
+            ask = fair_price(s, [(o[0], o[1]["price"]) for o in comps_all if o[1]["id"] != l["id"]], factor)
             got = fair_price(s, sold_scored, SOLD_FACTOR)
             if ask is None and got is None:
                 continue
@@ -529,7 +556,8 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
             rows.append({"weapon": info["name"], "url": url, "listing": l, "score": s, "tags": tags, "fair": fair,
                          "margin": margin, "sales": sales, "days": days, "n": wd.get("n", len(scored)),
                          "ask": ask, "got": got, "basis": basis, "t7": t7, "t30": t30, "n_sold": len(sold),
-                         "sell_days": sell_days, "median": hist[-1][1] if hist else None, "hist_days": len(hist)})
+                         "sell_days": sell_days, "median": hist[-1][1] if hist else None, "hist_days": len(hist),
+                         "age": age})
     rows.sort(key=lambda r: -r["margin"])
     return rows
 

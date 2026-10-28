@@ -135,8 +135,16 @@ nell'overlay), ultimo aggiornamento. Clic sulle intestazioni per ordinare; ricer
 ```
 plat per 1000 standing = prezzo / costo in standing × 1000
 copie al giorno        = min(limite giornaliero / costo in standing, max(1, volume × 0,25))
-~plat al giorno (punteggio) = prezzo × copie al giorno   (limite giornaliero = 16.000 + 500 × grado di maestria)
+~plat al giorno (punteggio) = prezzo atteso × copie al giorno   (limite giornaliero = 16.000 + 500 × grado di maestria)
 ```
+**Prezzo atteso** (`app/trade/signals.py`: tecniche di trading classiche e aperte, adattate ai dati giornalieri di
+warframe.market): il prezzo attuale, avvicinato alla media a 30 giorni quando è sopra; × un fattore di **andamento** da
+due medie mobili esponenziali (EMA 7 / EMA 30 giorni: prezzi in calo lo abbassano, fino a −15 %); × la **calibrazione da
+backtest** dell'oggetto (la stessa stima rifatta sulle sue ultime settimane con i soli dati noti ogni giorno, confrontata
+col prezzo a cui è stato davvero scambiato nei 7 giorni dopo: un oggetto le cui stime erano ottimiste del 10 % riceve il
+10 % in meno); mai sopra il venditore più basso e mai sotto il miglior **ordine di acquisto** online (bid). La colonna
+*Andamento* mostra ↑/↓ con *vendi ora* (in calo, o un **picco**: oggi molto sopra la sua banda di Bollinger a 20 giorni,
+z ≥ 2) o *aspetta* (in salita); il tooltip elenca EMA, z, backtest e bid/ask.
 Quante copie compra un giorno di standing, ma non più di quante ne assorbe il mercato (circa un quarto del volume
 24 h). Un prezzo sopra la media a 30 giorni viene avvicinato a essa, e un oggetto che richiede un rank del sindacato più
 alto del tuo conta la metà (⚠). Gli oggetti sotto il **volume minimo** o il **prezzo minimo** (modificabili nella
@@ -161,7 +169,7 @@ Inventario di AlecaFrame).
   media a 30 giorni viene avvicinato a essa secondo *Consigli: peso del trend* (default 50 %).
 - **Consiglio: ducat** elenca le parti prime per ducati ottenuti per platino a cui rinunci
   (`ducati / max(prezzo × liquidità, 0,5)`, con `liquidità = min(1, volume / volume liquido)`): *Ducati* dal rapporto
-  minimo in su (default 10), altrimenti *Vendi*. **Consiglio: vendita** ordina il resto per
+  minimo in su (default 10), altrimenti *Vendi*. **Consiglio: vendita** (con la colonna *Segnale*: *vendi ora* / *aspetta*, come nei consigli) ordina il resto per
   `prezzo × copie che puoi aspettarti di vendere (≈ ¼ del volume giornaliero)`. Entrambi possono selezionare le righe,
   pronte per *Vendi*.
 - **Sali di rank…**: quali mod conviene portare a rank massimo per venderle: platino guadagnato per copia (prezzo a rank
@@ -213,6 +221,12 @@ il valore di quelli comparabili**, dal profitto migliore:
 **Scansioni programmate**: *Scansiona da solo ogni (ore)* (Impostazioni > Riven flip; 0 = spento) scansiona le armi
 successive ogni N ore mentre il programma è aperto, con lo stesso limite di richieste; la scheda mostra quando tocca
 alla prossima. Più scansioni rendono migliori lo storico e la stima delle vendite.
+
+**Età delle inserzioni**: la scansione legge tutte le aste a prezzo fisso, di venditori online e offline (contano tutte
+per il prezzo equo e la stima delle vendite); la tabella mostra come affari solo i venditori in gioco o online
+(impostazione). La colonna *In vendita da* dice da quanto è pubblicata un'asta (data di creazione su warframe.market); le
+inserzioni più vecchie di *Nascondi inserzioni più vecchie di (giorni)* (default 14) non vengono mostrate come affari, e
+quelle più vecchie del doppio sono escluse dal prezzo equo (un prezzo che non vende da settimane dice cosa NON si vende).
 
 Le richieste di riven hanno un loro limitatore (*Richieste riven al minuto*, default 12, mai sopra 20, come chiede
 warframe.market); a un "troppe richieste" aspetta e si ferma dopo tre di fila. La scheda legge soltanto: non pubblica
@@ -372,7 +386,7 @@ app/
   scan/              lettura dello schermo: scanner, ocr, ocr_worker (processo separato), matcher, overlay
                      (etichette dei prezzi), winrect, wheel
   trade/             warframe.market: market (catalogo, prezzi, volumi), refresher, market_auth (ordini di vendita),
-                     recommend, advice, rivenmarket (annunci riven), quantframe
+                     recommend, advice, signals (andamento, picchi, backtest), rivenmarket (annunci riven), quantframe
   game/              dati di gioco e il tuo account: vendors, standing, inventory, aleca (file di AlecaFrame),
                      loadouts, buildcalc, rivens, weekly, quests (Nightwave / Calendario), goals (piano di Attività),
                      world, arbi

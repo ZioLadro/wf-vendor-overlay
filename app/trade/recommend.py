@@ -2,8 +2,9 @@
 
 For every (item, vendor) pair with a standing cost and known market data:
     plat per 1000 standing = price / standing cost * 1000                       (the "Plat / 1k standing" column)
-    price used             = the current price, or (when it is above its 30-day average: a spike) pulled towards that
-                             average by advice_trend_weight percent, as in the inventory advice
+    price used             = the expected sale price (signals.expected_price): the current price, pulled towards its
+                             30-day average when above it, corrected by the trend (EMA 7 / EMA 30), by the item's own
+                             backtest calibration, and never below the best buy order online (bid)
     copies per day         = min(daily standing cap / standing cost,             what one day of standing buys
                                  max(1, volume * 0.25))                          what the market can absorb in a day
     score (~plat / day)    = price used * copies per day
@@ -25,7 +26,7 @@ def recommend(rows, vendor=None, kind=None, min_volume=None, min_price=None, top
     min_volume = CFG["rec_min_volume"] if min_volume is None else min_volume
     min_price = CFG["rec_min_price"] if min_price is None else min_price
     top = CFG["rec_top"] if top is None else top
-    from app.trade.advice import eff_price
+    from app.trade.signals import expected_price, signal
     try:
         from app.game.standing import get_store
         store = get_store()
@@ -50,7 +51,8 @@ def recommend(rows, vendor=None, kind=None, min_volume=None, min_price=None, top
             if vol < min_volume or price < min_price or e["s"] <= 0:
                 continue
             ppk = price / e["s"] * 1000
-            pe = eff_price(price, r.get("avg"))
+            ind = r.get("ind")
+            pe = expected_price(price, r.get("avg"), ind, r.get("bid"))
             copies = min(cap / e["s"], max(1.0, vol * SELL_SHARE))
             pday = pe * copies
             f = store.get(e.get("t")) if store is not None and e.get("t") else None
@@ -58,6 +60,7 @@ def recommend(rows, vendor=None, kind=None, min_volume=None, min_price=None, top
             picks.append({"slug": r["slug"], "name": r["name"], "kind": r["kind"], "vendor": e["v"],
                           "cost": e["s"], "tag": e.get("t"), "rank": e.get("r", 0), "price": price, "pmax": r["pmax"],
                           "vol": vol, "ppk": ppk, "pday": pday, "copies": copies, "rank_short": rank_short,
+                          "expected": pe, "ind": ind, "bid": r.get("bid"), "signal": signal(price, ind),
                           "score": pday * (0.5 if rank_short else 1.0)})
     picks.sort(key=lambda p: (-p["score"], -p["vol"], p["name"]))
     if per_vendor:
