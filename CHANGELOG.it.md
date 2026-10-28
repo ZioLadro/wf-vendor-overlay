@@ -4,6 +4,9 @@ Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
 ## 0.3.1
+- **Codice sorgente riorganizzato** in cartelle: `app/core`, `app/scan`, `app/trade`, `app/game`, `app/ui`, con i dati
+  inclusi in `data/`, l'icona in `assets/` e i generatori di dati in `tools/` (vedi *Struttura del progetto* nel README).
+  Per te non cambia nulla: stesso programma, stessa cartella dei dati.
 - **La finestra di aggiornamento mostra cosa è cambiato**: tutte le versioni tra quella che hai e la nuova (dalla più
   recente, dal changelog nella tua lingua), in un elenco scorrevole sopra Installa / Più tardi / Salta.
 - **Stelle dell'overlay**: *★ Migliore qui ★* ora è il miglior acquisto tra **tutti** gli oggetti del vendor che stai

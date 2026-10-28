@@ -4,6 +4,9 @@ From 0.2.1 on, every release lists its changes here (the release page on GitHub 
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
 ## 0.3.1
+- **Source code reorganised** into folders: `app/core`, `app/scan`, `app/trade`, `app/game`, `app/ui`, with the bundled
+  data in `data/`, the icon in `assets/` and the data builders in `tools/` (see the README's *Project layout*). Nothing
+  changes for you: same program, same data folder.
 - **Update window shows what changed**: every version between the one you have and the new one (newest first, from
   the changelog in your language), in a scrollable list above Install / Later / Skip.
 - **Overlay stars**: *★ Best here ★* is now the best purchase among **all** the items of the vendor you are looking at

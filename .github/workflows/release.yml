@@ -35,7 +35,7 @@ jobs:
       - name: Check the tag matches version.py
         shell: powershell
         run: |
-          $v = (.venv\Scripts\python -c "from version import __version__; print(__version__)").Trim()
+          $v = (.venv\Scripts\python -c "from app.core.version import __version__; print(__version__)").Trim()
           if ("v$v" -ne $env:TAG) { throw "tag $env:TAG does not match version.py ($v)" }
       - name: Build
         shell: powershell

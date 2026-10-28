@@ -17,13 +17,13 @@ os.environ.pop("PYINSTALLER_RESET_ENVIRONMENT", None)
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     if len(sys.argv) >= 4 and sys.argv[1] == "--ocr-worker":     # the OCR process: this same program, started by OcrClient
-        from ocr_worker import worker_main
+        from app.scan.ocr_worker import worker_main
         worker_main(int(sys.argv[2]), sys.argv[3])
         sys.exit(0)
 
-from config import APP_DIR, CFG
-from i18n import t
-from version import __version__
+from app.core.config import APP_DIR, CFG
+from app.core.i18n import t
+from app.core.version import __version__
 
 # with --noconsole (exe) stdout/stderr do not exist: redirect them to a log file
 if sys.stdout is None or sys.stderr is None:
@@ -39,16 +39,16 @@ def _k(name: str) -> str:
 def main():
     # heavy imports in here: the OCR process (which re-reads this file) does not load them
     from pynput import keyboard
-    from wheel import WheelListener
+    from app.scan.wheel import WheelListener
     from PyQt6.QtCore import QObject, QTimer, pyqtSignal
     from PyQt6.QtGui import QAction
     from PyQt6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
-    from market import Market
-    from ocr_worker import OcrClient
-    from menu import PriceList, make_icon
-    from overlay import Overlay
-    from scanner import Scanner
+    from app.trade.market import Market
+    from app.scan.ocr_worker import OcrClient
+    from app.ui.menu import PriceList, make_icon
+    from app.scan.overlay import Overlay
+    from app.scan.scanner import Scanner
 
     class Bridge(QObject):
         menu = pyqtSignal()
@@ -66,7 +66,7 @@ def main():
         except Exception:
             pass
     app = QApplication(sys.argv)
-    import theme
+    from app.core import theme
     theme.apply(app)
     app.setQuitOnLastWindowClosed(False)     # closing the price list must not quit the program
     icon = make_icon()
@@ -92,7 +92,7 @@ def main():
     bridge = Bridge()
     bridge.results.connect(overlay.set_items)
     bridge.status.connect(overlay.show_status)
-    import logbus
+    from app.core import logbus
     bridge.status.connect(lambda text: logbus.add("overlay", text))
     bridge.clear.connect(lambda: overlay.set_items([]))
     bridge.quit.connect(app.quit)
@@ -103,8 +103,8 @@ def main():
     pricelist = PriceList(market)
     pricelist.setWindowIcon(icon)
     # in-game Activities overlay (hotkey key_goals): what to buy with standing and how to earn it
-    from goals_overlay import GoalsOverlay
-    from standing import get_store
+    from app.ui.goals_overlay import GoalsOverlay
+    from app.game.standing import get_store
     goals = GoalsOverlay(market, pricelist.inventory, get_store())
     bridge.goals.connect(goals.toggle)
     bridge.results.connect(lambda items: goals.vendor_shown(bool(items)))     # a vendor recognised: the plan switches off
@@ -143,7 +143,7 @@ def main():
         if not CFG["check_updates"]:
             return
         try:
-            import updater
+            from app.core import updater
             info = updater.check()
             if info["newer"]:
                 bridge.status.emit(t("update.notice", v=info["version"]))

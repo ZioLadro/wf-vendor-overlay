@@ -221,7 +221,7 @@ AlecaFrame l'ha aggiornato).
 
 Le immagini di questa scheda vengono **solo dalla wiki di Warframe** (API MediaWiki, una richiesta alla volta); quelle
 mancanti vengono scaricate in background all'avvio e tenute nella cartella dei dati. Nomi e statistiche vengono dal
-`loadout_data.json` incluso (dati pubblici del gioco e WFCD/warframe-items, ricostruito con `build_loadouts.py`). Una
+`loadout_data.json` incluso (dati pubblici del gioco e WFCD/warframe-items, ricostruito con `tools/build_loadouts.py`). Una
 **cartella delle icone** facoltativa (Impostazioni > Inventario; gli `assets` estratti di AlecaFrame vengono trovati da
 soli) aggiunge le immagini dei Frammenti Arconte e del portafoglio; quei file vengono solo letti dove sono, mai copiati.
 
@@ -256,7 +256,7 @@ colori.
 |---|---|
 | Prezzi, volumi, catalogo, ordini di vendita, annunci di riven | [warframe.market](https://warframe.market) (API v1 e v2, max 3 richieste/s) |
 | Il tuo standing, inventario, loadout, acquisti, sfide | `lastData.dat` / `deltas.dat` di AlecaFrame sul tuo PC |
-| Vendor, costi in standing, nomi, offerte settimanali, nomi delle sfide | dati pubblici del gioco, inclusi (`build_*.py`) |
+| Vendor, costi in standing, nomi, offerte settimanali, nomi delle sfide | dati pubblici del gioco, inclusi (`tools/build_*.py`) |
 | Immagini (build, logo dei sindacati), lista di Baro | [wiki.warframe.com](https://wiki.warframe.com) |
 | Stato del mondo (fessure, cicli, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave e Calendario 1999 | world state pubblico di DE (`content.warframe.com`), ogni 10 min |
@@ -313,7 +313,7 @@ Chiavi principali di `config.json` (tutte sono nelle Impostazioni, con spiegazio
 
 ## Prestazioni
 La scansione (OCR) è la parte pesante. Per non disturbare il gioco:
-- OCR e abbinamento dei nomi girano in un **processo separato** (`ocr_worker.py`) a priorità "sotto il normale" e con
+- OCR e abbinamento dei nomi girano in un **processo separato** (`app/scan/ocr_worker.py`) a priorità "sotto il normale" e con
   pochi thread (circa 1/4 dei core, da 1 a 3); overlay, tasti e rotellina restano sempre reattivi.
 - Se lo schermo non è cambiato dall'ultima scansione, il risultato viene riusato senza rifare l'OCR.
 - Mentre giochi, lo schermo viene controllato meno spesso (`watch_interval_moving`).
@@ -335,24 +335,33 @@ powershell -ExecutionPolicy Bypass -File build.ps1 -Console   # con console (per
 powershell -ExecutionPolicy Bypass -File build.ps1 -OneFile   # singolo .exe (avvio più lento)
 ```
 
-**Pubblicare una versione**: cambia `version.py`, aggiungi la sezione della versione a `CHANGELOG.md` e
+**Pubblicare una versione**: cambia `app/core/version.py`, aggiungi la sezione della versione a `CHANGELOG.md` e
 `CHANGELOG.it.md`, fai il commit, poi `git tag vX.Y.Z && git push origin vX.Y.Z`. Il workflow in
 `.github/workflows/release.yml` costruisce il pacchetto Windows e crea la release (zip, checksum, note dal changelog).
 
-**File sorgente**
+**Struttura del progetto**
 
-| Area | File |
-|---|---|
-| Avvio, scansione, OCR | `main.py`, `scanner.py`, `ocr_worker.py`, `ocr.py`, `winrect.py`, `matcher.py`, `wheel.py`, `overlay.py` |
-| Mercato e prezzi | `market.py`, `refresher.py`, `market_auth.py`, `recommend.py`, `recommend_tab.py`, `advice.py`, `advice_dialog.py` |
-| Vendor e standing | `vendors.py`, `standing.py`, `profile_tab.py`, `weekly.py`, `weekly_tab.py` |
-| Attività | `goals.py`, `goals_overlay.py`, `quests.py` |
-| Inventario, riven, Quantframe | `inventory.py`, `inventory_tab.py`, `aleca.py`, `rivens.py`, `riven_dialog.py`, `riven_flip_tab.py`, `rivenmarket.py`, `quantframe.py`, `quantframe_dialog.py` |
-| Build | `loadouts.py`, `builds_tab.py`, `buildcards.py`, `buildcalc.py`, `planner_tab.py`, `icons.py`, `previews.py` |
-| Mondo | `world.py`, `world_tab.py`, `world_strip.py`, `arbi.py` |
-| Finestra e interfaccia | `menu.py`, `player_bar.py`, `logos.py`, `settings_tab.py`, `console_tab.py`, `logbus.py`, `theme.py`, `uiutil.py`, `i18n.py`, `config.py` |
-| Aggiornamenti | `version.py`, `updater.py`, `update_box.py` |
-| Generatori di dati | `build_vendors.py`, `build_loadouts.py`, `build_rivens.py`, `build_weekly.py`, `build_nodes.py`, `build_challenges.py`, `build_icon.py`, `prepare_models.py`, `build.ps1` |
+```
+main.py              punto di avvio (avvia anche il processo OCR)
+app/
+  core/              impostazioni (config), traduzioni (i18n), percorsi (paths), log (logbus), tema, pezzi UI
+                     condivisi (uiutil), versione, aggiornamento automatico (updater)
+  scan/              lettura dello schermo: scanner, ocr, ocr_worker (processo separato), matcher, overlay
+                     (etichette dei prezzi), winrect, wheel
+  trade/             warframe.market: market (catalogo, prezzi, volumi), refresher, market_auth (ordini di vendita),
+                     recommend, advice, rivenmarket (annunci riven), quantframe
+  game/              dati di gioco e il tuo account: vendors, standing, inventory, aleca (file di AlecaFrame),
+                     loadouts, buildcalc, rivens, weekly, quests (Nightwave / Calendario), goals (piano di Attività),
+                     world, arbi
+  ui/                finestre e schede: menu (finestra principale), *_tab, *_dialog, goals_overlay (Attività),
+                     buildcards, player_bar, world_strip, update_box, logos, icons, previews
+data/                dati di gioco inclusi (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges .json)
+assets/              icon.png, icon.ico
+tools/               generatori di data/ (build_*.py: python tools/build_vendors.py …), build_icon.py,
+                     prepare_models.py (modelli OCR)
+docs/                screenshot
+build.ps1            build per Windows (PyInstaller)
+```
 
 ## Note e limiti
 - I volumi usano l'endpoint statistiche v1 di warframe.market (deprecato ma attivo); se smette di funzionare viene
@@ -360,7 +369,7 @@ powershell -ExecutionPolicy Bypass -File build.ps1 -OneFile   # singolo .exe (av
 - Prezzo a rank massimo = mediana dei 3 ordini di vendita più bassi di utenti online con quel rank; `–` se nessuno vende
   a quel rank.
 - L'elenco dei vendor viene dai dati pubblici del gioco: i vendor che mancano (es. Varzia) non sono inclusi. Si rigenera
-  con `python build_vendors.py` (una copia nella cartella dei dati ha la precedenza).
+  con `python tools/build_vendors.py` (una copia nella cartella dei dati ha la precedenza).
 - AlecaFrame aggiorna `lastData.dat` solo quando sincronizza (entrando o uscendo da una missione, al login): ciò che hai
   fatto nel frattempo compare alla sync successiva. AlecaFrame segnala 0 Aya, quindi scrivili in Impostazioni > Inventario
   (*Aya (scritti a mano)*).

@@ -9,12 +9,12 @@ if (-not (Test-Path $py)) { throw ".venv environment not found. Create it with: 
 
 & $py -m pip install --upgrade pyinstaller
 Write-Host "Checking the OCR models..."
-& $py prepare_models.py
+& $py tools\prepare_models.py
 
 $piArgs = @("--noconfirm", "--clean", "--name", "WFVendorOverlay",
             "--collect-all", "rapidocr", "--collect-all", "onnxruntime",
             "--hidden-import", "pynput.keyboard._win32", "--hidden-import", "pynput.mouse._win32",
-            "--add-data", "vendors.json;.", "--add-data", "gamenames.json;.", "--add-data", "rivens.json;.", "--add-data", "loadout_data.json;.", "--add-data", "nodes.json;.", "--add-data", "weekly.json;.", "--add-data", "challenges.json;.", "--add-data", "icon.png;.", "--icon", "icon.ico")
+            "--add-data", "data;data", "--add-data", "assets\icon.png;assets", "--icon", "assets\icon.ico")
 if ($OneFile) { $piArgs += "--onefile" } else { $piArgs += "--onedir" }
 if (-not $Console) { $piArgs += "--noconsole" }
 $piArgs += "main.py"

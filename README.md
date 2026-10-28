@@ -206,7 +206,7 @@ refreshed it).
 
 Pictures in this tab come **only from the Warframe wiki** (MediaWiki API, one request at a time); the missing ones are
 fetched in the background at start and kept in the data folder. Names and stats come from the bundled
-`loadout_data.json` (public game data and WFCD/warframe-items, rebuilt with `build_loadouts.py`). An optional **icons
+`loadout_data.json` (public game data and WFCD/warframe-items, rebuilt with `tools/build_loadouts.py`). An optional **icons
 folder** (Settings > Inventory; AlecaFrame's unpacked `assets` is found by itself) adds Archon Shard and wallet pictures;
 those files are only read where they are, never copied.
 
@@ -239,7 +239,7 @@ only when you press Save. The in-game overlays keep their own colours.
 |---|---|
 | Prices, volumes, item catalog, sell orders, riven listings | [warframe.market](https://warframe.market) (v1 and v2 API, max 3 requests/s) |
 | Your standing, inventory, loadouts, purchases, challenges | AlecaFrame's `lastData.dat` / `deltas.dat` on your PC |
-| Vendors, standing costs, names, weekly offers, challenge names | public game data, bundled (`build_*.py`) |
+| Vendors, standing costs, names, weekly offers, challenge names | public game data, bundled (`tools/build_*.py`) |
 | Pictures (builds, syndicate logos), Baro's list | [wiki.warframe.com](https://wiki.warframe.com) |
 | World state (fissures, cycles, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave and 1999 Calendar | DE's public world state (`content.warframe.com`), every 10 min |
@@ -295,7 +295,7 @@ Main keys of `config.json` (all of them are in Settings, with explanations):
 
 ## Performance
 The scan (OCR) is the heavy part. To avoid disturbing the game:
-- OCR and name matching run in a **separate process** (`ocr_worker.py`) at "below normal" priority with few threads
+- OCR and name matching run in a **separate process** (`app/scan/ocr_worker.py`) at "below normal" priority with few threads
   (about 1/4 of the cores, 1 to 3); the overlay, keys and mouse wheel always stay responsive.
 - If the screen has not changed since the last scan, the result is reused without redoing the OCR.
 - While playing, the screen is checked less often (`watch_interval_moving`).
@@ -317,31 +317,39 @@ powershell -ExecutionPolicy Bypass -File build.ps1 -Console   # with a console (
 powershell -ExecutionPolicy Bypass -File build.ps1 -OneFile   # single .exe (slower startup)
 ```
 
-**Publishing a version**: change `version.py`, add the version's section to `CHANGELOG.md` and `CHANGELOG.it.md`,
+**Publishing a version**: change `app/core/version.py`, add the version's section to `CHANGELOG.md` and `CHANGELOG.it.md`,
 commit, then `git tag vX.Y.Z && git push origin vX.Y.Z`. The workflow in `.github/workflows/release.yml` builds the
 Windows package and creates the release (zip, checksum, notes from the changelog).
 
-**Source files**
+**Project layout**
 
-| Area | Files |
-|---|---|
-| Startup, scanning, OCR | `main.py`, `scanner.py`, `ocr_worker.py`, `ocr.py`, `winrect.py`, `matcher.py`, `wheel.py`, `overlay.py` |
-| Market and prices | `market.py`, `refresher.py`, `market_auth.py`, `recommend.py`, `recommend_tab.py`, `advice.py`, `advice_dialog.py` |
-| Vendors and standing | `vendors.py`, `standing.py`, `profile_tab.py`, `weekly.py`, `weekly_tab.py` |
-| Activities | `goals.py`, `goals_overlay.py`, `quests.py` |
-| Inventory, rivens, Quantframe | `inventory.py`, `inventory_tab.py`, `aleca.py`, `rivens.py`, `riven_dialog.py`, `riven_flip_tab.py`, `rivenmarket.py`, `quantframe.py`, `quantframe_dialog.py` |
-| Builds | `loadouts.py`, `builds_tab.py`, `buildcards.py`, `buildcalc.py`, `planner_tab.py`, `icons.py`, `previews.py` |
-| World | `world.py`, `world_tab.py`, `world_strip.py`, `arbi.py` |
-| Window and UI | `menu.py`, `player_bar.py`, `logos.py`, `settings_tab.py`, `console_tab.py`, `logbus.py`, `theme.py`, `uiutil.py`, `i18n.py`, `config.py` |
-| Updates | `version.py`, `updater.py`, `update_box.py` |
-| Data builders | `build_vendors.py`, `build_loadouts.py`, `build_rivens.py`, `build_weekly.py`, `build_nodes.py`, `build_challenges.py`, `build_icon.py`, `prepare_models.py`, `build.ps1` |
+```
+main.py              entry point (also starts the OCR process)
+app/
+  core/              settings (config), translations (i18n), paths, log (logbus), theme, shared UI pieces (uiutil),
+                     version, self-update (updater)
+  scan/              screen reading: scanner, ocr, ocr_worker (separate process), matcher, overlay (price labels),
+                     winrect, wheel
+  trade/             warframe.market: market (catalog, prices, volumes), refresher, market_auth (sell orders),
+                     recommend, advice, rivenmarket (riven listings), quantframe
+  game/              game data and your account: vendors, standing, inventory, aleca (AlecaFrame file), loadouts,
+                     buildcalc, rivens, weekly, quests (Nightwave / Calendar), goals (Activities plan), world, arbi
+  ui/                windows and tabs: menu (main window), *_tab, *_dialog, goals_overlay (Activities), buildcards,
+                     player_bar, world_strip, update_box, logos, icons, previews
+data/                bundled game data (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges .json)
+assets/              icon.png, icon.ico
+tools/               builders of data/ (build_*.py: python tools/build_vendors.py …), build_icon.py,
+                     prepare_models.py (OCR models)
+docs/                screenshots
+build.ps1            Windows build (PyInstaller)
+```
 
 ## Notes and limits
 - Volumes use the warframe.market v1 statistics endpoint (deprecated but alive); if it stops working only the price is
   shown.
 - Max-rank price = median of the 3 lowest sell orders from online users at that rank; `–` if nobody sells at that rank.
 - The vendor list comes from the public game data: vendors missing from it (e.g. Varzia) are not included. Regenerate
-  with `python build_vendors.py` (a copy in the data folder takes precedence).
+  with `python tools/build_vendors.py` (a copy in the data folder takes precedence).
 - AlecaFrame updates `lastData.dat` only when it syncs (entering or leaving a mission, logging in): what you did since
   shows up at the next sync. AlecaFrame reports 0 Aya, so type it in Settings > Inventory (*Aya (typed by hand)*).
 - Nightwave and Calendar completion depend on what the game file records; the Calendar is marked by day.
