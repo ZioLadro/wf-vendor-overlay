@@ -64,6 +64,32 @@ def activities(tag: str, name: str) -> list:
     return [r.replace("{name}", name) for r in rows]
 
 
+def daily_cap(mr) -> int | None:
+    """Standing you can earn per day with a syndicate: 16,000 + 500 × Mastery Rank."""
+    return 16000 + 500 * int(mr) if mr is not None else None
+
+
+def earnable_today(f: dict, store) -> int | None:
+    """Standing still earnable today with a syndicate: what the game file said at the last sync, or the whole daily cap
+    if that sync was before today's reset (00:00 UTC)."""
+    from standing import trades_stale
+    if trades_stale(store.synced):
+        return daily_cap(store.mr)
+    return f.get("daily")
+
+
+def days_to(need: int, today, cap) -> int | None:
+    """Days to earn `need` standing at the daily cap: 0 = already there, 1 = today, 2 = by tomorrow…"""
+    if not need:
+        return 0
+    if today is not None and need <= today:
+        return 1
+    if not cap:
+        return None
+    rest = need - max(0, today or 0)
+    return 1 + -(-rest // cap)
+
+
 def owned(inv, slug: str) -> int:
     e = (inv.items or {}).get(slug) or {}
     return int(e.get("n", 0)) + int(e.get("m", 0))
@@ -174,19 +200,24 @@ def build(plan: Plan, market, inv, store) -> dict:
         tag = e.get("tag") or ""
         f = store.get(tag) or {}
         g = groups.setdefault(tag, {"tag": tag, "name": syndicate_name(tag) if tag else e["vendor"],
-                                    "standing": f.get("standing"), "rank": f.get("rank"), "daily": f.get("daily"),
-                                    "items": [], "activities": []})
+                                    "standing": f.get("standing"), "rank": f.get("rank"),
+                                    "daily": earnable_today(f, store) if f else None,
+                                    "cap": daily_cap(store.mr), "items": [], "activities": []})
         have = f.get("standing")
         can = (max(0, have) // e["cost"]) if have is not None and e["cost"] else None
-        g["items"].append(dict(e, key=k, can=can, need=None if have is None else max(0, e["cost"] - max(0, have)),
+        need = None if have is None else max(0, e["cost"] - max(0, have))
+        g["items"].append(dict(e, key=k, can=can, need=need,
+                               days=None if need is None else days_to(need, g["daily"], g["cap"]),
                                rank_ok=None if f.get("rank") is None else f["rank"] >= int(e.get("rank") or 0)))
     out = []
     for g in groups.values():
-        g["items"].sort(key=lambda x: (-(x.get("ppk") or 0)))
+        # what you can buy now first, then what you can reach soonest with the standing still earnable
+        g["items"].sort(key=lambda x: (x["days"] if x["days"] is not None else 99, -(x.get("ppk") or 0)))
         needs = [x["need"] for x in g["items"] if x["need"]]
         g["short"] = min(needs) if needs else 0
         if g["short"] or g["standing"] is None:
             g["activities"] = activities(g["tag"], g["name"])
         out.append(g)
-    out.sort(key=lambda g: (g["short"] > 0, g["name"].lower()))
+    soon = lambda g: min([x["days"] for x in g["items"] if x["days"] is not None] or [99])
+    out.sort(key=lambda g: (soon(g), g["name"].lower()))
     return {"groups": out, "done": plan.done, "confirmed": confirmed}

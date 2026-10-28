@@ -107,8 +107,9 @@ def main():
     from standing import get_store
     goals = GoalsOverlay(market, pricelist.inventory, get_store())
     bridge.goals.connect(goals.toggle)
-    if CFG.get("goals_visible"):
-        QTimer.singleShot(1500, goals.show)
+    bridge.results.connect(lambda items: goals.vendor_shown(bool(items)))     # a vendor on screen: the plan steps aside
+    bridge.clear.connect(lambda: goals.vendor_shown(False))
+    QTimer.singleShot(1500, goals.start)
     scanner.exclude_provider = lambda: [r for r in (pricelist.screen_rect_px(), goals.screen_rect_px()) if r]
     pricelist.visibility.connect(lambda _v: scanner.list_changed())
     bridge.menu.connect(pricelist.toggle)

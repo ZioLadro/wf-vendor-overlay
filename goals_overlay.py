@@ -48,7 +48,7 @@ class GoalsOverlay(QWidget):
         self.btn_refresh = self._tool("⟳", t("goals.refresh"), lambda: self.refresh(force=True))
         self.btn_menu = self._tool("⚙", t("goals.options"), self._options)
         self.btn_fold = self._tool("▾", t("goals.fold"), self._fold)
-        self.btn_close = self._tool("✕", t("goals.hide", key=CFG.get("key_goals", "")), self.hide)
+        self.btn_close = self._tool("✕", t("goals.hide", key=CFG.get("key_goals", "")), self.toggle)
         for b in (self.btn_refresh, self.btn_menu, self.btn_fold, self.btn_close):
             h.addWidget(b)
         self.head.installEventFilter(self)
@@ -88,6 +88,10 @@ class GoalsOverlay(QWidget):
             self.setGeometry(scr.right() - 380, scr.top() + 140, 340, 420)
         self._apply_fold()
         self._timer = QTimer(self, interval=3000, timeout=self.refresh)
+        # shown when you want it (hotkey / ✕) and no vendor is on screen: over a vendor it steps aside
+        self._wanted = bool(CFG.get("goals_visible", False))
+        self._vendor = False
+        self._restore = QTimer(self, singleShot=True, interval=1500, timeout=self._vendor_gone)
         self._save_timer = QTimer(self, singleShot=True, interval=600, timeout=self._save_geom)
 
     # ---------- look ----------
@@ -210,21 +214,45 @@ class GoalsOverlay(QWidget):
 
     # ---------- showing ----------
     def toggle(self):
-        if self.isVisible():
-            self.hide()
-        else:
+        """Hotkey / ✕ / tray: you want it shown or not (remembered). Over a vendor screen it stays hidden until the vendor
+        closes."""
+        self._wanted = not self._wanted
+        save_config({"goals_visible": self._wanted})
+        self._apply_visibility()
+
+    def start(self):
+        self._apply_visibility()
+
+    def vendor_shown(self, on: bool):
+        """The overlay found a vendor (prices shown on the game): the plan hides at once, and comes back a moment after
+        the vendor screen is gone (a rescan while scrolling does not make it flash)."""
+        if on:
+            self._restore.stop()
+            if not self._vendor:
+                self._vendor = True
+                self._apply_visibility()
+        elif self._vendor and not self._restore.isActive():
+            self._restore.start()
+
+    def _vendor_gone(self):
+        self._vendor = False
+        self._apply_visibility()
+
+    def _apply_visibility(self):
+        want = self._wanted and not self._vendor
+        if want and not self.isVisible():
             self.show()
             self.raise_()
+        elif not want and self.isVisible():
+            self.hide()
 
     def showEvent(self, e):
         super().showEvent(e)
-        save_config({"goals_visible": True})
         self.refresh(force=True)
         self._timer.start()
 
     def hideEvent(self, e):
         super().hideEvent(e)
-        save_config({"goals_visible": False})
         self._timer.stop()
 
     def screen_rect_px(self):
@@ -276,6 +304,8 @@ class GoalsOverlay(QWidget):
             self.rows.addWidget(lab)
         for g in groups:
             daily = f" · {t('goals.daily', n=_n(g['daily']))}" if g.get("daily") is not None else ""
+            if g.get("cap") and g.get("daily") is not None:
+                daily += f"/{_n(g['cap'])}"
             rank = f" · R{g['rank']}" if g.get("rank") is not None else ""
             head = QLabel(f"{g['name']}  {_n(g['standing'])}{rank}{daily}")
             head.setProperty("g", "group")
@@ -321,8 +351,11 @@ class GoalsOverlay(QWidget):
             st = QLabel(t("goals.can", n=it["can"], cost=_n(it["cost"])))
             st.setProperty("g", "ok")
         elif it["need"] is not None:
-            st = QLabel(t("goals.need", n=_n(it["need"])))
+            d = it.get("days")
+            when = t("goals.today") if d == 1 else (t("goals.days", n=d) if d else "")
+            st = QLabel(t("goals.need", n=_n(it["need"])) + (f" · {when}" if when else ""))
             st.setProperty("g", "need")
+            st.setToolTip(t("goals.need.tip"))
         else:
             st = QLabel(_n(it["cost"]))
         if it.get("rank_ok") is False:

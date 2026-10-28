@@ -776,7 +776,7 @@ EN = {
     "goals.opt.reset": "Show again hidden and bought items",
     "goals.confirmed": "✔ {name}: purchase confirmed by the game file",
     "goals.empty": "Nothing to plan: the Recommendations have no picks yet (update the prices in the price list), or every pick is bought or hidden.",
-    "goals.daily": "today {n}",
+    "goals.daily": "earnable today {n}",
     "goals.recent": "Bought lately",
     "goals.foot": "{n} purchases tracked · updated when AlecaFrame rewrites lastData.dat",
     "goals.item.tip": "{vendor} · {cost} standing (rank {rank} needed) · {price}p · {vol} trades in 24 h\nTick it once bought: it leaves the list when the game file shows the new copy. Right-click: hide, open on warframe.market",
@@ -789,6 +789,9 @@ EN = {
     "tray.goals": "Standing plan ({key})",
     "set.key_goals": "Standing plan key",
     "set.key_goals.tip": "Shows/hides the in-game standing plan. Format: <f6>, <ctrl>+<f6>, …",
+    "goals.today": "reachable today",
+    "goals.days": "~{n} days",
+    "goals.need.tip": "Standing still missing. \"Reachable today\": it is within what you can still earn today (daily cap, from the game file); otherwise the days needed at the full daily cap (16,000 + 500 × Mastery Rank).",
 }
 
 IT = {
@@ -1552,7 +1555,7 @@ IT = {
     "goals.opt.reset": "Mostra di nuovo nascosti e acquistati",
     "goals.confirmed": "✔ {name}: acquisto confermato dal file di gioco",
     "goals.empty": "Niente da pianificare: i Consigli non hanno ancora scelte (aggiorna i prezzi nel listino), oppure ogni scelta è già acquistata o nascosta.",
-    "goals.daily": "oggi {n}",
+    "goals.daily": "guadagnabile oggi {n}",
     "goals.recent": "Acquistati di recente",
     "goals.foot": "{n} acquisti seguiti · si aggiorna quando AlecaFrame riscrive lastData.dat",
     "goals.item.tip": "{vendor} · {cost} standing (serve rank {rank}) · {price}p · {vol} scambi in 24 h\nSpuntalo quando l'hai comprato: lascia la lista quando il file di gioco mostra la nuova copia. Clic destro: nascondi, apri su warframe.market",
@@ -1565,6 +1568,9 @@ IT = {
     "tray.goals": "Piano standing ({key})",
     "set.key_goals": "Tasto piano standing",
     "set.key_goals.tip": "Mostra/nasconde il piano standing in gioco. Formato: <f6>, <ctrl>+<f6>, …",
+    "goals.today": "raggiungibile oggi",
+    "goals.days": "~{n} giorni",
+    "goals.need.tip": "Standing che manca. \"Raggiungibile oggi\": rientra in quanto puoi ancora guadagnare oggi (limite giornaliero, dal file di gioco); altrimenti i giorni necessari al limite giornaliero pieno (16.000 + 500 × Mastery Rank).",
 }
 
 STRINGS = {"en": EN, "it": IT}
