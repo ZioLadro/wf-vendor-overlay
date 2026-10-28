@@ -143,8 +143,18 @@ def names_for_path(path: str) -> list:
         out.append(g["names"][path])
     if path in g["recipes"]:                  # blueprint of an item
         base = g["recipes"][path]
-        out += [base + " Blueprint", base]
+        out.append(base + " Blueprint")
+        if blueprint_is_item(base):
+            out.append(base)
     return out
+
+
+def blueprint_is_item(base: str) -> bool:
+    """True when warframe.market lists the blueprint of `base` under the name of the item itself. That is the case only
+    for Prime parts (the "Soma Prime Barrel" you own is the part's blueprint; the market's Prime part items are the
+    tradable blueprints whatever their name). Anything else (the Purified Heciphron
+    a vendor sells as a blueprint, a weapon's blueprint…) must never be priced as the finished item."""
+    return bool(re.search(r"\bPrime\b", base or ""))
 
 
 # ---------- name -> market slug ----------

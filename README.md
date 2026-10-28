@@ -17,7 +17,7 @@ without AlecaFrame the price overlay and the market features still work.
 
 **Contents:** [Getting started](#getting-started) · [Price overlay](#price-overlay-in-game) ·
 [Activities](#activities-in-game-f6) · [Price list window](#price-list-window-f7) · [Data sources](#data-sources) ·
-[Updates](#updates-current-version-036) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
+[Updates](#updates-current-version-037) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
 [For developers](#for-developers) · [Notes and limits](#notes-and-limits)
 
 ## Getting started
@@ -231,6 +231,10 @@ refreshed it).
 - **Capacity** = rank (40 for Kuva/Tenet/Coda weapons and Necramechs) × 2 with Reactor/Catalyst + aura; innate
   polarities are placed where they save the most drain (the file does not say where they are). An approximate **stat
   recap** counts mods only (not Arcanes, shards, Helminth, set bonuses or conditional effects).
+- **Incarnon**: whether the Genesis adapter is installed (or the Incarnon is built in, or the Genesis is on another
+  variant of the weapon), the evolution tier reached (shared by all variants) and the perk chosen in each tier, from the
+  game file; perk names and the adapter's picture from the weapon's wiki page (read once, kept in `incarnon_perks.json`;
+  "option 2" when the page cannot be understood).
 - **Rivens** show name, stats, polarity and drain and count in the recap; **spliced Rivens** are shown frozen (❄) with
   their spliced stat as "?".
 - **Build planner** (third view): choose a Warframe or weapon, click a card to pick mod, rank and slot polarity (Forma);
@@ -282,7 +286,7 @@ only when you press Save. The in-game overlays keep their own colours.
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.3.6)
+## Updates (current version 0.3.7)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

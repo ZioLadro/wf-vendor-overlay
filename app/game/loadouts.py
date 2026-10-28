@@ -129,6 +129,8 @@ def read(inv: dict, market=None) -> list:
                 lvl = None
             owned[oid] = (u.get("ItemType", ""), lvl)
     from app.game import buildcalc as BC
+    from app.game import incarnon as INC
+    evo, genesis = INC.index(inv, I.names_for_path)
     out = []
     for key, kind in CATEGORIES:
         for item in inv.get(key) or []:
@@ -202,7 +204,8 @@ def read(inv: dict, market=None) -> list:
                             "oid": (item.get("ItemId") or {}).get("$oid", ""), "idx": n,
                             "forma": int(item.get("Polarized") or 0), "slots": slots,
                             "shards": shards if kind == "warframe" else [],
-                            "helminth": helminth(cfg, path) if kind == "warframe" else None})
+                            "helminth": helminth(cfg, path) if kind == "warframe" else None,
+                            "incarnon": INC.info(item, item_name, evo, genesis) if kind in ("primary", "secondary", "melee") else None})
             sib = [{"idx": b["idx"], "config": b["config"], "name": b["cfg_name"]} for b in out[first:]]
             for b in out[first:]:
                 b["configs"] = sib

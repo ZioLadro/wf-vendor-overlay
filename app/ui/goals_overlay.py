@@ -417,7 +417,7 @@ class GoalsOverlay(QWidget):
             it = self.rows.takeAt(0)
             w = it.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()                        # spacers (addSpacing) need nothing more
 
     def _draw(self, data):

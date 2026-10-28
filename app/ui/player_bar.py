@@ -116,7 +116,7 @@ class PlayerBar(QFrame):
             it = self.wallet_g.takeAt(0)
             w = it.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
         w = dict(self.store.wallet or {})
         if not w.get("aya") and CFG.get("aya_manual"):         # the game file does not always carry Aya: the number typed in Settings
@@ -186,7 +186,7 @@ class PlayerBar(QFrame):
             it = self.grid.takeAt(0)
             w = it.widget()
             if w:
-                w.setParent(None)                    # off the window now (deleteLater alone left it drawn for a moment)
+                w.hide()                    # off the window now (deleteLater alone left it drawn for a moment)
                 w.deleteLater()
         shown = [tg for tg in self._tags() if not (CFG["hide_negative_ranks"] and (s.get(tg) or {}).get("rank") is not None
                                                    and s.get(tg)["rank"] < 0)]

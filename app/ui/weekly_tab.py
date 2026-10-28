@@ -197,13 +197,13 @@ class WeeklyTab(QWidget):
             it = self.unknown_lay.takeAt(0)
             w = it.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
             elif it.layout():
                 while it.layout().count():
                     x = it.layout().takeAt(0).widget()
                     if x:
-                        x.setParent(None)
+                        x.hide()
                         x.deleteLater()
         unk = self.w.unknown()
         self.unknown_box.setVisible(bool(unk))

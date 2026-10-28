@@ -3,6 +3,19 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.3.7
+- **Le blueprint non vengono più valutate come l'oggetto finito**: un vendor che vende una blueprint (Purified Heciphron
+  Blueprint, Zymos Blueprint…) veniva abbinato all'oggetto finito su warframe.market quando la blueprint non è
+  scambiabile, e così era consigliata al prezzo dell'oggetto. Ora una blueprint conta solo come sé stessa, sia negli
+  elenchi dei vendor sia nel tuo inventario; solo le parti Prime (i cui oggetti sul mercato sono le blueprint) tengono il
+  nome dell'oggetto come alternativa.
+- **Build: sezione Incarnon**: adattatore Genesis installato / integrata / su un'altra variante, livello di evoluzione
+  raggiunto e perk scelto in ogni livello (dal file di gioco), nomi dei perk e immagine dalla pagina wiki dell'arma; il
+  livello compare anche sotto il titolo.
+- **Niente più finestre bianche**: la barra del mondo veniva mostrata prima di essere messa nella finestra, e si apriva
+  per un attimo come finestra separata (bianca); i widget tolti da un layout ora vengono nascosti prima di essere
+  eliminati invece di essere staccati.
+
 ## 0.3.6
 - **File di AlecaFrame letto una volta, in background**: ogni scheda controllava, decifrava e analizzava `lastData.dat`
   per conto suo sul thread della finestra ogni volta che AlecaFrame lo riscriveva. Ora un solo controllore aspetta che il

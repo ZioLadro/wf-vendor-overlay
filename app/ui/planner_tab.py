@@ -389,7 +389,7 @@ class PlannerView(QWidget):
             it = self.body.takeAt(0)
             w = it.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
             elif it.layout():
                 self._wipe(it.layout())
@@ -422,7 +422,7 @@ class PlannerView(QWidget):
             it = layout.takeAt(0)
             w = it.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
             elif it.layout():
                 self._wipe(it.layout())

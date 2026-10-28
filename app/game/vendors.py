@@ -104,7 +104,11 @@ class VendorIndex:
                 cost = rank = tag = None
                 if isinstance(e, dict):                             # {"n": name | [blueprint, base], "s": standing, "r": rank}
                     cost, rank, tag, e = e.get("s"), e.get("r"), e.get("t"), e.get("n")
-                for cand in ([e] if isinstance(e, str) else e):     # [blueprint name, base name]: the first that exists
+                from app.game.inventory import blueprint_is_item
+                # [blueprint name, base name]: the vendor sells the BLUEPRINT, so only its own market item counts (the
+                # finished item only where the market lists the blueprint under that name: Prime weapon parts)
+                cands = [e] if isinstance(e, str) else [e[0]] + ([e[1]] if len(e) > 1 and blueprint_is_item(e[1]) else [])
+                for cand in cands:
                     slug = self.name_slug.get(norm(cand))
                     if slug:
                         by_slug.setdefault(slug, set()).add(vname)

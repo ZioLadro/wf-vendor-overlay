@@ -102,7 +102,8 @@ class WorldStrip(QFrame):
         self.bus = _Bus()
         self.bus.done.connect(self._done)
         self._timer = QTimer(self, interval=1000, timeout=self._tick)
-        self.setVisible(bool(CFG.get("world_strip", True)))
+        if not CFG.get("world_strip", True):
+            self.hide()             # never setVisible(True) here: the strip has no parent yet, it would open as a window
 
     def showEvent(self, e):
         super().showEvent(e)

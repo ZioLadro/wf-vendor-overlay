@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import (
 from app.game import aleca
 from app.ui import icons
 from app.ui import previews
-from app.ui.buildcards import Scaler, cards_widget, stats_panel
+from app.ui.buildcards import _scaled, Scaler, cards_widget, stats_panel
 from app.ui.planner_tab import PlannerView
 from app.game import loadouts as LO
 from app.core.config import APP_DIR
@@ -100,7 +100,7 @@ class LoadoutView(QWidget):
             it = layout.takeAt(0)
             w = it.widget()
             if w:
-                w.setParent(None)
+                w.hide()
                 w.deleteLater()
             elif it.layout():
                 self._clear(it.layout())
@@ -174,7 +174,9 @@ class LoadoutView(QWidget):
         self.sub.setToolTip(t("builds.pot.tip"))
         kind_txt = t("builds.kind." + lo["kind"]) + (f" ({lo['owner']})" if lo.get("owner") else "")
         self.sub.setText(kind_txt + "  ·  " + t("builds.forma", n=lo["forma"])
-                         + ("" if lo["kind"] == "exalted" else "  ·  " + pot))
+                         + ("" if lo["kind"] == "exalted" else "  ·  " + pot)
+                         + (("  ·  ✦ " + __import__("app.game.incarnon", fromlist=["x"]).describe(lo["incarnon"], t)[0])
+                            if lo.get("incarnon") else ""))
         self._config_buttons(lo)
         slots = lo["slots"]
         row = QHBoxLayout()
@@ -187,6 +189,23 @@ class LoadoutView(QWidget):
             row.addSpacing(12)
             row.addLayout(col)
         self.body.addLayout(row)
+        if lo.get("incarnon"):                           # Genesis installed / built in, evolution tier and perks chosen
+            from app.game import incarnon as INC
+            inc = lo["incarnon"]
+            head, lines = INC.describe(inc, t)
+            self._section(t("builds.sec.incarnon"))
+            row = QHBoxLayout()
+            row.setAlignment(Qt.AlignmentFlag.AlignLeft)
+            f = previews.by_name(inc["page"], wiki_only=True)       # the Genesis adapter's / weapon's wiki picture
+            if f:
+                pic = QLabel()
+                pic.setPixmap(_scaled(f, 44))
+                row.addWidget(pic)
+            txt = QLabel(f"<b>{head}</b>" + ("<br>" + " &nbsp;·&nbsp; ".join(lines) if lines else ""))
+            txt.setWordWrap(True)
+            txt.setToolTip(t("inc.tip"))
+            row.addWidget(txt, 1)
+            self.body.addLayout(row)
         if lo["kind"] == "warframe":
             self._section(t("builds.sec.shards"))
             row = QHBoxLayout()
@@ -246,7 +265,7 @@ class PresetView(QWidget):
                 it = layout.takeAt(0)
                 w = it.widget()
                 if w:
-                    w.setParent(None)
+                    w.hide()
                     w.deleteLater()
                 elif it.layout():
                     wipe(it.layout())
@@ -626,6 +645,13 @@ class BuildsTab(QWidget):
 
     def refresh(self, force=False, select=None):
         """Called by the window's timer: first time, loads the game file by itself; later, only when it changed."""
+        from app.game import incarnon as INC
+        if INC.done_count != getattr(self, "_inc_seen", 0) and self.isVisible():   # Incarnon perk names arrived
+            self._inc_seen = INC.done_count
+            if self.mode.currentData() == "items":
+                self.view.show_loadout(self.view._lo)
+            elif self.mode.currentData() == "game":
+                self.pview.detail.show_loadout(self.pview.detail._lo)
         # the game file is watched and read in the background (app/game/gamefile.py -> apply_file); here only what was
         # read while the tab was hidden is shown
         if getattr(self, "_stale", False):

@@ -18,7 +18,7 @@ AlecaFrame l'overlay dei prezzi e le funzioni di mercato funzionano comunque.
 
 **Indice:** [Per iniziare](#per-iniziare) · [Overlay dei prezzi](#overlay-dei-prezzi-in-gioco) ·
 [Attività](#attività-in-gioco-f6) · [Finestra del listino](#finestra-del-listino-f7) · [Fonti dei dati](#fonti-dei-dati) ·
-[Aggiornamenti](#aggiornamenti-versione-attuale-036) · [File e impostazioni](#file-e-impostazioni) ·
+[Aggiornamenti](#aggiornamenti-versione-attuale-037) · [File e impostazioni](#file-e-impostazioni) ·
 [Prestazioni](#prestazioni) · [Per sviluppatori](#per-sviluppatori) · [Note e limiti](#note-e-limiti)
 
 ## Per iniziare
@@ -247,6 +247,10 @@ AlecaFrame l'ha aggiornato).
 - **Capacità** = rank (40 per armi Kuva/Tenet/Coda e Necramech) × 2 con Reattore/Catalizzatore + aura; le polarità
   innate sono messe dove fanno risparmiare più consumo (il file non dice dove sono). Un **riepilogo statistiche**
   approssimato conta solo le mod (non Arcane, frammenti, Helminth, bonus dei set o effetti condizionali).
+- **Incarnon**: se l'adattatore Genesis è installato (o l'Incarnon è integrata, o la Genesis è su un'altra variante
+  dell'arma), il livello di evoluzione raggiunto (condiviso da tutte le varianti) e il perk scelto in ogni livello, dal
+  file di gioco; nomi dei perk e immagine dell'adattatore dalla pagina wiki dell'arma (letti una volta, tenuti in
+  `incarnon_perks.json`; "opzione 2" quando la pagina non si riesce a interpretare).
 - I **Riven** mostrano nome, statistiche, polarità e consumo e contano nel riepilogo; i **Riven spliced** sono mostrati
   congelati (❄) con la statistica spliced come "?".
 - **Pianificatore build** (terza vista): scegli un Warframe o un'arma, clicca una carta per scegliere mod, rank e
@@ -302,7 +306,7 @@ colori.
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.3.6)
+## Aggiornamenti (versione attuale 0.3.7)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

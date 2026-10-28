@@ -907,6 +907,13 @@ EN = {
     "rflip.col.age": "On sale for",
     "set.riven_max_age_days": "Hide listings older than (days)",
     "set.riven_max_age_days.tip": "Rivens on sale for longer than this (from the listing's creation date on warframe.market) are not shown as deals: a price that has not sold for weeks is rarely a real offer. Listings older than twice this are also left out of the fair price. 0 = no limit",
+    "builds.sec.incarnon": "Incarnon",
+    "inc.genesis": "Incarnon Genesis installed",
+    "inc.builtin": "Incarnon built in",
+    "inc.available": "Incarnon Genesis not installed on this one (it is on another variant of the weapon)",
+    "inc.evo": "evolution {n}{total}",
+    "inc.option": "option {n}",
+    "inc.tip": "From the game file: the Genesis adapter flag, the evolution tiers unlocked (shared by all variants of the weapon) and the perk chosen in each tier. Perk names and picture from the Warframe wiki (read once, kept in incarnon_perks.json)",
 }
 
 IT = {
@@ -1801,6 +1808,13 @@ IT = {
     "rflip.col.age": "In vendita da",
     "set.riven_max_age_days": "Nascondi inserzioni più vecchie di (giorni)",
     "set.riven_max_age_days.tip": "I riven in vendita da più di così (dalla data di creazione dell'asta su warframe.market) non vengono mostrati come affari: un prezzo che non vende da settimane raramente è un'offerta vera. Le inserzioni più vecchie del doppio sono escluse anche dal prezzo equo. 0 = nessun limite",
+    "builds.sec.incarnon": "Incarnon",
+    "inc.genesis": "Incarnon Genesis installata",
+    "inc.builtin": "Incarnon integrata",
+    "inc.available": "Incarnon Genesis non installata su questa (è su un'altra variante dell'arma)",
+    "inc.evo": "evoluzione {n}{total}",
+    "inc.option": "opzione {n}",
+    "inc.tip": "Dal file di gioco: l'indicatore dell'adattatore Genesis, i livelli di evoluzione sbloccati (condivisi da tutte le varianti dell'arma) e il perk scelto in ogni livello. Nomi dei perk e immagine dalla wiki di Warframe (letti una volta, tenuti in incarnon_perks.json)",
 }
 
 STRINGS = {"en": EN, "it": IT}

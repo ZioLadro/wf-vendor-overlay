@@ -3,6 +3,17 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.3.7
+- **Blueprints are no longer priced as the finished item**: a vendor that sells a blueprint (Purified Heciphron
+  Blueprint, Zymos Blueprint…) was matched to the finished item on warframe.market when the blueprint itself is not
+  traded, so it was recommended at the item's price. Now a blueprint counts only as itself, both in the vendor lists and
+  in your inventory; only Prime parts (whose market items are the blueprints) keep the item name as an alternative.
+- **Builds: Incarnon** section: Genesis adapter installed / built in / on another variant, evolution tier reached and
+  the perk chosen in each tier (from the game file), perk names and picture from the weapon's wiki page; the tier is also
+  shown under the title.
+- **No more white windows**: the world strip was shown before being put in the window, so it opened for a moment as a
+  separate (white) window; widgets taken out of a layout are now hidden before being deleted instead of being detached.
+
 ## 0.3.6
 - **AlecaFrame's file read once, in the background**: every tab used to watch, decrypt and parse `lastData.dat` on its
   own on the window's thread each time AlecaFrame rewrote it. Now one watcher waits until the file has finished
