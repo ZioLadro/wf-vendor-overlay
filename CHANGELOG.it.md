@@ -3,10 +3,19 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
-## 0.3.1
+## 0.3.2
+- **Attività: cliccabile con il cursore del gioco.** In molti menu Warframe nasconde il cursore di Windows e disegna il
+  suo, quindi l'overlay credeva che fossi in missione e lasciava passare ogni clic. Ora diventa cliccabile anche quando il
+  cursore ci arriva sopra muovendosi liberamente (in missione la telecamera tiene il cursore nascosto fermo e confinato,
+  quindi lì i clic vanno ancora al gioco).
+- **Nightwave e Calendario 1999 di nuovo letti**: Digital Extremes ha spostato il world state su
+  `api.warframe.com/cdn/worldState.php` (il vecchio indirizzo risponde 404); il vecchio resta come riserva, e la Console
+  indica l'errore di ciascuno.
 - **Codice sorgente riorganizzato** in cartelle: `app/core`, `app/scan`, `app/trade`, `app/game`, `app/ui`, con i dati
   inclusi in `data/`, l'icona in `assets/` e i generatori di dati in `tools/` (vedi *Struttura del progetto* nel README).
   Per te non cambia nulla: stesso programma, stessa cartella dei dati.
+
+## 0.3.1
 - **La finestra di aggiornamento mostra cosa è cambiato**: tutte le versioni tra quella che hai e la nuova (dalla più
   recente, dal changelog nella tua lingua), in un elenco scorrevole sopra Installa / Più tardi / Salta.
 - **Stelle dell'overlay**: *★ Migliore qui ★* ora è il miglior acquisto tra **tutti** gli oggetti del vendor che stai
@@ -15,7 +24,7 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 - **Piano standing rinominato *Attività*** (titolo dell'overlay, impostazioni, tray, tasto).
 - **Attività: Nightwave e Calendario 1999**: le sfide settimanali di Nightwave (elite segnate ★, standing indicato,
   giornaliere aperte contate) e le sfide della stagione corrente del Calendario 1999 (quella in corso segnata), lette
-  dal world state pubblico di Digital Extremes (api.warframe.com, ogni 10 minuti, copia salvata se offline). Il
+  dal world state pubblico di Digital Extremes (content.warframe.com, ogni 10 minuti, copia salvata se offline). Il
   completamento viene da lastData.dat: Nightwave dall'id della sfida in *SeasonChallengeHistory* (esatto), il Calendario
   da *CalendarProgress* (giorni fino all'ultimo completato). Impostazione *Attività: Nightwave e Calendario 1999* e opzione in ⚙.
 - **Consigli rivisti**: il punteggio ora è *~plat al giorno*: prezzo × le copie che compra un giorno di standing (limite

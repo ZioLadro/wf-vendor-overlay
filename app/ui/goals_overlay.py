@@ -1,4 +1,4 @@
-"""In-game standing plan: a small window over the game (always on top, semi-transparent) listing what to buy with standing
+"""In-game Activities overlay (once the "standing plan"): a small window over the game (always on top, semi-transparent) listing what to buy with standing
 (the Recommendations' picks), how much standing is still missing and what to do to earn it.
 
 It can be moved (drag the title bar), resized (corner grip), collapsed, made more or less transparent, and shown/hidden
@@ -17,11 +17,13 @@ from PyQt6.QtWidgets import (
 from app.game import goals as G
 
 
-def cursor_visible() -> bool:
-    """True when the mouse cursor is on screen. In a mission Warframe hides it (camera control), in menus, the Orbiter's
-    consoles and vendors it shows it. Off Windows (or if the check fails) the answer is always True."""
+def cursor_info():
+    """(showing, (x, y), pinned): whether Windows shows its cursor, where it is (physical pixels) and whether it is
+    confined to a tiny area (ClipCursor: camera control in a mission). Warframe hides the Windows cursor in a mission,
+    but in many menus it also draws its OWN cursor with the Windows one hidden, so "showing" alone is not enough (see
+    GoalsOverlay._check_cursor). Off Windows (or if the check fails): (True, None, False)."""
     if sys.platform != "win32":
-        return True
+        return True, None, False
     try:
         import ctypes
         from ctypes import wintypes
@@ -29,13 +31,21 @@ def cursor_visible() -> bool:
         class CURSORINFO(ctypes.Structure):
             _fields_ = [("cbSize", wintypes.DWORD), ("flags", wintypes.DWORD), ("hCursor", wintypes.HANDLE),
                         ("ptScreenPos", wintypes.POINT)]
+        u = ctypes.windll.user32
         ci = CURSORINFO()
         ci.cbSize = ctypes.sizeof(CURSORINFO)
-        if not ctypes.windll.user32.GetCursorInfo(ctypes.byref(ci)):
-            return True
-        return bool(ci.flags & 1) and bool(ci.hCursor)        # CURSOR_SHOWING, and a cursor shape at all
+        if not u.GetCursorInfo(ctypes.byref(ci)):
+            return True, None, False
+        showing = bool(ci.flags & 1) and bool(ci.hCursor)         # CURSOR_SHOWING, and a cursor shape at all
+        clip = wintypes.RECT()
+        pinned = bool(u.GetClipCursor(ctypes.byref(clip))) and (clip.right - clip.left <= 8 or clip.bottom - clip.top <= 8)
+        return showing, (ci.ptScreenPos.x, ci.ptScreenPos.y), pinned
     except Exception:
-        return True
+        return True, None, False
+
+
+def cursor_visible() -> bool:
+    return cursor_info()[0]
 
 
 def set_click_through(widget, on: bool):
@@ -141,7 +151,8 @@ class GoalsOverlay(QWidget):
         self._wanted = bool(CFG.get("goals_visible", False))
         # clickable only while the cursor is visible (menus, consoles): in a mission clicks go through to the game
         self._clickable = True
-        self._cursor_timer = QTimer(self, interval=250, timeout=self._check_cursor)
+        self._last_pos, self._moved_at = None, 0.0
+        self._cursor_timer = QTimer(self, interval=150, timeout=self._check_cursor)
         self._save_timer = QTimer(self, singleShot=True, interval=600, timeout=self._save_geom)
 
     # ---------- look ----------
@@ -342,7 +353,7 @@ class GoalsOverlay(QWidget):
     def _check_cursor(self):
         """In a mission (no cursor) the plan lets every click through to the game and its buttons fade; as soon as the
         cursor comes back (menu, console, vendor) it can be used again. Setting goals_click_only_cursor."""
-        on = (not CFG.get("goals_click_only_cursor", True)) or cursor_visible()
+        on = (not CFG.get("goals_click_only_cursor", True)) or self._cursor_free()
         if on == self._clickable:
             return
         self._clickable = on
@@ -350,6 +361,21 @@ class GoalsOverlay(QWidget):
         for b in (self.btn_refresh, self.btn_menu, self.btn_fold, self.btn_close):
             b.setVisible(on)                              # no buttons to aim at while they cannot be clicked
         self.head.setCursor(Qt.CursorShape.SizeAllCursor if on else Qt.CursorShape.ArrowCursor)
+
+    def _cursor_free(self) -> bool:
+        """True when you are using a cursor, Windows' or the game's own: Windows shows its cursor, OR the cursor is over
+        this window, it is moving freely (not confined to a tiny area) and it moved in the last 2 seconds. In a mission the
+        camera keeps the (hidden) cursor still, usually in the middle of the game, so it never "walks" onto the window;
+        in menus Warframe hides the Windows cursor and draws its own, which moves the real one along with it."""
+        showing, pos, pinned = cursor_info()
+        if showing or pos is None:
+            return True
+        now = time.monotonic()
+        if pos != self._last_pos:
+            self._last_pos, self._moved_at = pos, now
+        r = self.screen_rect_px()
+        inside = bool(r) and r[0] <= pos[0] < r[0] + r[2] and r[1] <= pos[1] < r[1] + r[3]
+        return inside and not pinned and (self._clickable or now - self._moved_at < 2.0)
 
     def screen_rect_px(self):
         """Its rectangle in physical pixels (None if hidden): the OCR must not read the item names in it."""

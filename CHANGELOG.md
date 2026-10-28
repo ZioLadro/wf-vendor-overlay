@@ -3,10 +3,19 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
-## 0.3.1
+## 0.3.2
+- **Activities: clickable with the game's cursor.** In many menus Warframe hides the Windows cursor and draws its own,
+  so the overlay thought you were in a mission and let every click through. Now it also becomes clickable when the cursor
+  moves onto it freely (in a mission the camera keeps the hidden cursor still and confined, so clicks still go to the
+  game there).
+- **Nightwave and 1999 Calendar read again**: Digital Extremes moved its world state to
+  `api.warframe.com/cdn/worldState.php` (the old address answers 404); the old one stays as a fallback, and the Console
+  names the error of each.
 - **Source code reorganised** into folders: `app/core`, `app/scan`, `app/trade`, `app/game`, `app/ui`, with the bundled
   data in `data/`, the icon in `assets/` and the data builders in `tools/` (see the README's *Project layout*). Nothing
   changes for you: same program, same data folder.
+
+## 0.3.1
 - **Update window shows what changed**: every version between the one you have and the new one (newest first, from
   the changelog in your language), in a scrollable list above Install / Later / Skip.
 - **Overlay stars**: *★ Best here ★* is now the best purchase among **all** the items of the vendor you are looking at
@@ -15,7 +24,7 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Standing plan renamed *Activities*** (overlay title, settings, tray, hotkey label).
 - **Activities: Nightwave and 1999 Calendar**: this week's Nightwave challenges (elite ones marked ★, standing shown,
   open dailies counted) and the current 1999 Calendar season's challenges (the one in progress marked), read from
-  Digital Extremes' public world state (api.warframe.com, every 10 minutes, saved copy when offline). Completion is
+  Digital Extremes' public world state (content.warframe.com, every 10 minutes, saved copy when offline). Completion is
   read from lastData.dat: Nightwave by the challenge id in *SeasonChallengeHistory* (exact), the Calendar from
   *CalendarProgress* (days up to the last completed one). Setting *Activities: Nightwave and 1999 Calendar* and ⚙ option.
 - **Recommendations reviewed**: the score is now *~plat per day*: price × the copies one day of standing buys (daily cap
