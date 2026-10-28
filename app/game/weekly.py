@@ -36,9 +36,11 @@ def data() -> dict:
             _data = json.loads(DATA_FILE.read_text(encoding="utf-8")).get("vendors") or {}
         except Exception:
             _data = {}
+        from app.game.weekly_ocr import ALIASES
         for v in _data.values():
             for i in v.get("items", []):
                 i["id"] = f"{i['store']}#{i['qty']}"
+                i["name"] = ALIASES.get(i["name"], i["name"])      # the name the game shows (Requiem I Relic…)
     return _data
 
 

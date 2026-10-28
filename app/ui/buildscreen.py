@@ -482,10 +482,13 @@ class IncarnonPath(QWidget):
 
     COL_W, NODE, ROW_H = 150, 14, 56
 
-    def __init__(self, tiers, chosen, unlocked, editable=False):
+    def __init__(self, tiers, chosen, unlocked, editable=False, count=None):
         super().__init__()
         self.tiers = [list(x) for x in (tiers or [])]
-        n = max(len(self.tiers), len(chosen or []), 5)
+        # as many tiers as the weapon has: Evolution V only where it exists (Incarnon built in)
+        n = count or max(len(self.tiers), 4)
+        self.tiers = self.tiers[:n]
+        chosen = list(chosen or [])[:n]
         while len(self.tiers) < n:
             self.tiers.append([])
         self.chosen = list(chosen or []) + [-1] * (n - len(chosen or []))
@@ -891,7 +894,8 @@ class BuildScreen(QWidget):
             role(n, "hint")
             self.lay.addWidget(n)
         if inc.get("show_path", True):
-            path = IncarnonPath(inc.get("tiers"), inc.get("chosen"), inc.get("unlocked", 0), editable=self.editable)
+            path = IncarnonPath(inc.get("tiers"), inc.get("chosen"), inc.get("unlocked", 0), editable=self.editable,
+                                count=inc.get("count"))
             path.setToolTip(t("inc.tip"))
             if self.editable:
                 path.picked.connect(self.perk_picked.emit)
@@ -917,5 +921,7 @@ def incarnon_model(inc_kind: str, page: str, chosen: list, unlocked: int, head: 
     """The Incarnon part of a model: the perk names of the wiki page (asked in the background when missing)."""
     from app.game import incarnon as INC
     tiers = INC.perks(page) or []
-    return {"tiers": tiers, "chosen": chosen, "unlocked": unlocked, "head": head, "note": note, "kind": inc_kind,
+    count = INC.tier_count(inc_kind, page)
+    return {"tiers": tiers[:count], "chosen": list(chosen or [])[:count], "unlocked": min(unlocked, count), "count": count,
+            "head": head, "note": note, "kind": inc_kind,
             "page": page}

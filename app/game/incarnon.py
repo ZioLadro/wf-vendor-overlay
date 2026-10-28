@@ -65,6 +65,15 @@ def lists() -> tuple:
     return GENESIS, BUILTIN
 
 
+def tier_count(kind: str, page: str) -> int:
+    """How many evolution tiers the weapon has: the wiki's table when it was read, else 5 for weapons with Incarnon
+    built in (Zariman, Entrati, Duviri: Evolution I-V) and 4 for Genesis adapters (EVO1-EVO4)."""
+    tiers = perks(page) if page else None
+    if tiers:
+        return max(1, min(5, len(tiers)))
+    return 5 if kind == "builtin" else 4
+
+
 def available(name: str) -> dict | None:
     """What a weapon can have, whoever owns it: {"kind": "genesis"|"builtin", "page"} or None (the build planner)."""
     gen, built = lists()
@@ -451,11 +460,11 @@ def describe(inc: dict, t) -> tuple:
     if inc["kind"] == "available":
         return head, []
     tiers = perks(inc["page"])
-    unlocked = max(inc["evo"], len(inc["skill"]))
-    total = len(tiers) if tiers else None
+    total = tier_count(inc["kind"], inc["page"])
+    unlocked = min(total, max(inc["evo"], len(inc["skill"])))
     head += " · " + t("inc.evo", n=ROMAN[unlocked - 1] if 0 < unlocked <= 5 else "–",
                       total=f"/{ROMAN[total - 1]}" if total and total <= 5 else "")
-    lines = [f"{ROMAN[i]}: {perk_name(tiers, i, ch, t)}" for i, ch in enumerate(inc["skill"][:5])]
+    lines = [f"{ROMAN[i]}: {perk_name(tiers, i, ch, t)}" for i, ch in enumerate(inc["skill"][:total])]
     return head, lines
 
 

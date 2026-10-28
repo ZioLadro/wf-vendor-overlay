@@ -290,8 +290,8 @@ confirmed from the game file (Martyr Symbiosis at the Entrati, Aerial Bond at So
 Quantframe's stock (also in Activities' ⚙ menu). Above the list: how much of each currency the shown vendors take you
 hold (Steel Essence, Pathos Clamps, Riven Slivers, Vosfor…).
 **Check on the vendor screen**: while a vendor is scanned (automatically or F8), the limited offers listed on screen are
-read too. An offer whose limit you reached disappears from the vendor's list, so: an offer still listed was not the
-purchase being identified (and a purchase taken for it is asked again), and an offer seen earlier this period that is
+read too. An offer whose limit you reached shows **PURCHASE LIMIT REACHED** on its card (or, at some vendors, disappears
+from the list), so: an offer still on sale was not the purchase being identified (and a purchase taken for it is asked again), and an offer seen earlier this period that is
 gone — not scrolled away: the rest of the list stayed where it was — identifies the purchase, or shows as bought
 **(OCR)** until the game file says so too (setting *Weekly: check the offers on the vendor screen*).
 
@@ -332,7 +332,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.4.0)
+## Updates (current version 0.4.1)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

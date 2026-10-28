@@ -3,6 +3,18 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.1
+- **Settimanali: controllo sullo schermo del vendor tarato su schermate vere** (Palladino, Archimedean Yonta, Acrithis,
+  Kaya Velasco, Flare Varleon, Teshin): un'offerta con **PURCHASE LIMIT REACHED** sulla carta viene letta come esaurita
+  (il gioco la lascia nella lista); le quantità scritte prima del nome vengono capite ("35.000 X Kuva", "150,000
+  Credits", "6.000 Endo"); i nomi su due righe e le parole che l'OCR attacca ("Requiem IRelic") vengono riconosciuti; le
+  reliquie Requiem sono riconosciute col nome che mostra il gioco (anche nella scheda Settimanali); nomi vicini (Requiem
+  I / II Relic) non vengono più confusi; il vendor nominato nell'intestazione (letta in modo tollerante: l'OCR spesso ne
+  tiene solo una parte) decide di quale vendor cercare le offerte.
+- **Incarnon**: l'Evoluzione V compare solo sulle armi che ce l'hanno (Incarnon integrata); le armi con Genesis mostrano
+  i loro quattro livelli (decide la tabella della wiki quando è stata letta). Il livello di evoluzione del pianificatore
+  si adegua.
+
 ## 0.4.0
 - **Build: disposte come la schermata potenziamenti del gioco.** *POTENZIAMENTI / OGGETTO [rank]* con il numero di
   Forma, le schede delle configurazioni (Config A, B, C…), la barra della capacità (rimasta / totale, come la mostra il

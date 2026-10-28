@@ -312,8 +312,8 @@ di Quantframe gli acquisti confermati da Attività dal file di gioco (Martyr Sym
 Solaris United…) non ancora inviati (anche dal menu ⚙ di Attività). Sopra la lista: quanto hai di ogni valuta chiesta dai vendor
 mostrati (Steel Essence, Pathos Clamp, Riven Sliver, Vosfor…).
 **Controllo sullo schermo del vendor**: mentre un vendor viene scansionato (in automatico o con F8), vengono lette anche
-le offerte limitate elencate. Un'offerta di cui hai raggiunto il limite sparisce dalla lista del vendor, quindi:
-un'offerta ancora elencata non era l'acquisto da identificare (e un acquisto attribuito a lei viene chiesto di nuovo), e
+le offerte limitate elencate. Un'offerta di cui hai raggiunto il limite mostra **PURCHASE LIMIT REACHED** sulla carta (o,
+da alcuni vendor, sparisce dalla lista), quindi: un'offerta ancora in vendita non era l'acquisto da identificare (e un acquisto attribuito a lei viene chiesto di nuovo), e
 un'offerta vista prima in questo periodo e ora sparita — non scorsa via: il resto della lista è rimasto dov'era —
 identifica l'acquisto, o viene mostrata acquistata **(OCR)** finché anche il file di gioco non lo dice (impostazione
 *Settimanali: controlla le offerte sullo schermo del vendor*).
@@ -356,7 +356,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.4.0)
+## Aggiornamenti (versione attuale 0.4.1)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

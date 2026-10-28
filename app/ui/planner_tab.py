@@ -676,8 +676,9 @@ class PlannerView(QWidget):
                 inc["on"] = True
             h.addWidget(QLabel(t("bs.opt.evo")))
             evo = QSpinBox()
-            evo.setRange(1, 5)
-            evo.setValue(int(inc.get("evo", 5) or 5))
+            top = INC.tier_count(avail["kind"], avail["page"])        # Evolution V only on weapons that have it
+            evo.setRange(1, top)
+            evo.setValue(min(top, int(inc.get("evo", 5) or 5)))
             evo.setKeyboardTracking(False)
             evo.setEnabled(bool(inc.get("on")))
             evo.valueChanged.connect(lambda x: (inc.__setitem__("evo", int(x)), self._draw()))

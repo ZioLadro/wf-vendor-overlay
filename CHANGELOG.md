@@ -3,6 +3,16 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.4.1
+- **Weekly: vendor screen check tuned on real screens** (Palladino, Archimedean Yonta, Acrithis, Kaya Velasco, Flare
+  Varleon, Teshin): an offer showing **PURCHASE LIMIT REACHED** on its card is read as bought out (the game keeps it in
+  the list); amounts written before the name are understood ("35.000 X Kuva", "150,000 Credits", "6.000 Endo"); names on
+  two lines and words the OCR glues together ("Requiem IRelic") are matched; the Requiem relics are recognised under
+  their screen name (also in the Weekly tab); close names (Requiem I / II Relic) are no longer confused; the vendor named
+  in the header (read loosely, the OCR often keeps only part of it) decides which vendor's offers are looked for.
+- **Incarnon**: Evolution V is shown only on weapons that have it (Incarnon built in); Genesis weapons show their four
+  tiers (the wiki's table decides when it was read). The planner's evolution tier follows.
+
 ## 0.4.0
 - **Builds: laid out like the game's upgrade screen.** *UPGRADES / ITEM [rank]* with the Forma count, configuration
   tabs (Config A, B, C…), the capacity bar (left / total, as the game shows it) and the stats on the left, Aura / Stance /

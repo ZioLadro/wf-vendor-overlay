@@ -1,18 +1,23 @@
-"""What the vendor screen itself says about the limited offers (Weekly tab): an offer whose limit you reached is no longer
-listed by the vendor, so the text read on the screen (the same OCR that reads the prices) is a second check of what you
-bought, besides the game file.
+"""What the vendor screen itself says about the limited offers (Weekly tab), as a second check of what you bought,
+besides the game file. Read from the text of every scan (automatic or F8), the same OCR that reads the prices.
 
-From every scan (automatic or F8) the program looks for the names of the limited offers (data/weekly.json) in the text
-read. A vendor counts as recognised when at least two of its offers are on screen (or one and the vendor's name). Then:
-  - an offer on screen is NOT sold out this period: a purchase the game file has not identified cannot be that offer
-    (when its limit would be reached), and an assignment saying it was is wrong and is asked again;
-  - an offer seen on screen earlier this period and now missing, while the rest of that view is still there and nothing
-    took its place (scrolling shows new offers in place of the old ones; a purchase leaves a gap), has been bought out:
-    an unidentified purchase at that vendor is assigned to it, and the Weekly tab shows it bought ("OCR") until the
-    game file says so too.
-Two offers with the same name (Teshin's Kuva ×10,000 and ×50,000) are told apart by the amount read next to the name;
+What the game shows (checked on Palladino, Archimedean Yonta, Acrithis, Kaya Velasco, Flare Varleon, Teshin):
+  - a limited offer whose limit you reached stays in the list with "PURCHASE LIMIT REACHED" over its card (the name
+    still under it): that offer is bought out;
+  - some vendors drop it from the list instead: an offer seen earlier this period and now missing, while the rest of
+    that view is still there and nothing took its place (a scroll swaps as many offers as it hides), is bought out;
+  - an offer listed without the overlay is still on sale.
+Names are written "35.000 X Kuva", "150,000 Credits", "6.000 Endo" (the amount first), often on two lines
+("Arcane Universal" / "Fallout") and sometimes with the OCR gluing words ("Requiem IRelic"): the amount is taken off,
+two lines of the same card are joined, and names are compared without spaces. A few offers have another name on
+screen than in the game data (the Requiem relics). The vendor is the one with the most offers on screen, or the one
+named in the header ("THE STEEL PATH HONORS", "PALLADINO", "ARCHIMEDEAN YONTA"…, read loosely: the OCR often keeps
+only part of it). Two offers with the same name (Teshin's Kuva ×10,000 and ×50,000) are told apart by the amount;
 when it cannot be read they are not used as evidence.
-Kept in weekly_state.json with the rest (key "ocr"), until each offer's own reset."""
+
+What it is used for: an offer on sale cannot be the purchase being identified (when its limit would be reached), and
+an assignment saying it was is asked again; a bought-out offer identifies the purchase, or shows as bought "(OCR)" until
+the game file says so too. Kept in weekly_state.json (key "ocr") until each offer's own reset."""
 import re
 import time
 
@@ -38,14 +43,53 @@ def period_end(offer: dict, now: float, vendor: str = "") -> float:
     return now + 30 * 86400                  # an event's lifetime limit: a month is plenty
 
 
-def _vendor_words(name: str) -> set:
-    """Words of the vendor's display name that the game shows in its header: "Teshin (Steel Path)" -> {"teshin"}."""
+# the header the game shows for a vendor (the vendor manifest's last part -> words, spaces left out when compared)
+HEADERS = {"TeshinHardModeVendorManifest": ("thesteelpathhonors", "teshin"),
+           "IronwakeDondaVendorManifest": ("palladino", "ironwake"),
+           "ArchimedeanVendorManifest": ("archimedeanyonta", "archimedean"),
+           "AcrithisVendorManifest": ("acrithis",),
+           "Nova1999ConquestShopManifest": ("kayavelasco",),
+           "Temple1999VendorManifest": ("flarevarleon", "memorabilia"),
+           "NightcapVendorManifest": ("nightcap",),
+           "AspirantZorbaVendorManifest": ("zorba",),
+           "HunhowVendorManifest": ("hunhow",),
+           "EntratiLabVendorManifest": ("cavia", "bird3"),
+           "ShadowgrapherEventVendorManifest": ("shadowgrapher",)}
+# offers the game names otherwise on screen than in its data
+ALIASES = {"T5 Void Projection Immortal ABronze": "Requiem I Relic", "T5 Void Projection Immortal BBronze": "Requiem II Relic",
+           "T5 Void Projection Immortal CBronze": "Requiem III Relic", "T5 Void Projection Immortal DBronze": "Requiem IV Relic"}
+_LIMIT = re.compile(r"purchase\s*limit|limit\s*reach|^\s*reached\s*$", re.I)
+_AMOUNT = re.compile(r"^\s*(\d{1,3}(?:[.,\s]\d{3})+|\d+)\s*[xX×]?\s+(?=\D)")
+
+
+def key(s: str) -> str:
+    """A name compared without spaces or punctuation (the OCR glues or splits words)."""
+    return re.sub(r"[^a-z0-9]", "", norm(s))
+
+
+def split_amount(text: str) -> tuple:
+    """("35.000 X Kuva") -> (35000, "Kuva"); a text without an amount in front -> (None, text)."""
+    m = _AMOUNT.match(text or "")
+    if not m:
+        return None, text or ""
+    try:
+        return int(re.sub(r"[.,\s]", "", m.group(1))), text[m.end():]
+    except ValueError:
+        return None, text
+
+
+def _vendor_words(vend: str, name: str) -> tuple:
+    """Header words of a vendor: the known ones, else the first word of its name ("Teshin (Steel Path)" -> teshin)."""
+    last = vend.rstrip("/").rsplit("/", 1)[-1]
+    if last in HEADERS:
+        return HEADERS[last]
     base = re.split(r"[(·]", name)[0]
-    return {w for w in norm(base).split() if len(w) >= 4}
+    return tuple(key(w) for w in norm(base).split() if len(w) >= 5)
 
 
 def index():
-    """{vendor: {"names": {norm name: [offers]}, "words": {header words}}} for every vendor with limited offers."""
+    """{vendor: {"names": {name key: [offers]}, "words": (header words)}}; every offer gets "shown_qty", the amount
+    written on its card when the data puts it in the name ("150000 Credits")."""
     global _index
     if _index is None:
         from app.game.weekly import data
@@ -53,43 +97,77 @@ def index():
         for vend, v in data().items():
             names = {}
             for i in v.get("items") or []:
-                n = norm(i.get("name") or "")
-                if len(n) >= 4:
-                    names.setdefault(n, [])
-                    if all(o["id"] != i["id"] for o in names[n]):
-                        names[n].append(i)
+                qty, base = split_amount(ALIASES.get(i.get("name") or "", i.get("name") or ""))
+                k = key(base)
+                if len(k) >= 4:
+                    names.setdefault(k, [])
+                    if all(o["id"] != i["id"] for o in names[k]):
+                        names[k].append(dict(i, shown_qty=qty or int(i.get("qty") or 1)))
             if names:
-                out[vend] = {"names": names, "words": _vendor_words(v.get("name") or "")}
+                out[vend] = {"names": names, "words": _vendor_words(vend, v.get("name") or "")}
         _index = out
     return _index
 
 
-def _match(text: str, name: str) -> bool:
-    if text == name:
-        return True
-    if len(name) >= 5:
-        try:
-            from rapidfuzz import fuzz
-            if fuzz.ratio(text, name) >= 88:
+def _lines(texts) -> list:
+    """The text read as {"t","x","y","w","h","xc"}; a name on two lines of the same card is also given joined."""
+    ls = [{"t": str(tx), "x": float(x), "y": float(y), "w": float(w), "h": float(h), "xc": float(x) + float(w) / 2}
+          for tx, x, y, w, h in (texts or []) if tx]
+    out = list(ls)
+    for a in ls:
+        for b in ls:
+            dy = b["y"] - a["y"]
+            if b is not a and 0 < dy <= 1.8 * max(a["h"], b["h"], 1) and abs(b["xc"] - a["xc"]) <= 0.5 * max(a["w"], b["w"]):
+                out.append(dict(a, t=a["t"] + " " + b["t"], h=dy + b["h"], joined=True))
+    return out
+
+
+def _best_name(k: str, names: dict):
+    """The vendor's offer name a text is: the same without spaces, else the only close one (Requiem I / II Relic are
+    close to each other: a fuzzy match counts only when no other name is nearly as close)."""
+    if k in names:
+        return k
+    if len(k) < 6:
+        return None
+    try:
+        from rapidfuzz import fuzz
+    except ImportError:
+        return None
+    scored = sorted(((fuzz.ratio(k, n), n) for n in names if len(n) >= 6), reverse=True)
+    if scored and scored[0][0] >= 90 and (len(scored) == 1 or scored[1][0] < scored[0][0] - 4):
+        return scored[0][1]
+    return None
+
+
+def _header(lines, words) -> bool:
+    """The vendor's name in the header (the topmost text), read loosely: "JRABILIA" is MEMORABILIA cut short."""
+    if not lines or not words:
+        return False
+    bottom = max(l["y"] + l["h"] for l in lines)
+    top = [key(l["t"]) for l in lines if l["y"] < 0.1 * bottom and not l.get("joined")]
+    try:
+        from rapidfuzz import fuzz
+    except ImportError:
+        fuzz = None
+    for t_ in top:
+        for w in words:
+            if len(t_) >= 4 and (w in t_ or (len(t_) >= 6 and t_ in w)):
                 return True
-        except ImportError:
-            pass
-    # the name with something around it on the same line (an amount, a "x2"…), but not a longer item's name
-    return len(name) >= 8 and name in text and len(text) <= len(name) + 12
+            if fuzz and len(t_) >= 6 and fuzz.partial_ratio(t_, w) >= 85 and len(w) >= 6:
+                return True
+    return False
 
 
-_QTY = re.compile(r"(?<![\d.,])x?\s?(\d{1,3}(?:[.,\s]\d{3})+|\d+)\s?x?(?![\d.,])", re.I)
-
-
-def _amounts(line, texts) -> set:
-    """Numbers written on the name's own line or right under / above it (the offer's amount: "x10,000", "10.000")."""
-    txt, x, y, w, h = line
+def _amounts(line, lines) -> set:
+    """The offer's amount: in front of the name ("35.000 X Kuva"), else a number right under / above it."""
+    q, _rest = split_amount(line["t"])
+    if q:
+        return {q}
     found = set()
-    for t2, x2, y2, w2, h2 in texts:
-        same = t2 is txt or (abs(y2 - y) <= 2.5 * max(h, h2) and abs((x2 + w2 / 2) - (x + w / 2)) <= max(w, w2))
-        if not same:
+    for o in lines:
+        if o.get("joined") or abs(o["y"] - line["y"]) > 2.5 * max(o["h"], line["h"]) or abs(o["xc"] - line["xc"]) > max(o["w"], line["w"]):
             continue
-        for m in _QTY.finditer(str(t2)):
+        for m in re.finditer(r"(?<![\d.,])x?\s?(\d{1,3}(?:[.,\s]\d{3})+|\d+)\s?x?(?![\d.,])", o["t"], re.I):
             try:
                 found.add(int(re.sub(r"[.,\s]", "", m.group(1))))
             except ValueError:
@@ -98,47 +176,53 @@ def _amounts(line, texts) -> set:
 
 
 def read(texts) -> dict | None:
-    """The limited-offer vendor shown in the scanned text: {"vendor", "sure": {offer ids surely listed}, "any": {offer
-    ids that may be listed}} or None. texts: [(text, x, y, w, h)] as the OCR returns them."""
-    lines = [(str(tx), x, y, w, h) for tx, x, y, w, h in (texts or []) if tx]
-    normed = [(norm(l[0]), l) for l in lines]
+    """The limited-offer vendor shown in the scanned text: {"vendor", "sure": {offers surely on sale}, "any": {offers
+    maybe listed}, "maxed": {offers showing PURCHASE LIMIT REACHED}, "pos": {offer: [x, y, h]}} or None.
+    texts: [(text, x, y, w, h)] as the OCR returns them."""
+    lines = _lines(texts)
+    singles = [l for l in lines if not l.get("joined")]
     best = None
+    named = {v for v, ix in index().items() if _header(singles, ix["words"])}
     for vend, ix in index().items():
-        hits = {}
-        for nt, line in normed:
-            if len(nt) < 4:
+        if named and vend not in named:
+            continue                                     # the header names another vendor: only that one counts
+        hits = {}                                       # name key -> [lines where it is written]
+        for l in lines:
+            if _LIMIT.search(l["t"]):
                 continue
-            for n, offers in ix["names"].items():
-                if _match(nt, n):
-                    hits.setdefault(n, []).append(line)
-        header = any(w in nt.split() for nt, _l in normed for w in ix["words"])
-        score = len(hits)
-        if score >= MIN_OFFERS or (score >= 1 and header):
-            key = (score, header)
-            if best is None or key > best[0]:
-                best = (key, vend, hits, None)
-            elif key == best[0]:
-                best = (key, None, None, True)          # two vendors fit as well: do not guess
+            k = _best_name(key(split_amount(l["t"])[1]), ix["names"])
+            if k:
+                hits.setdefault(k, []).append(l)
+        header = vend in named
+        score = len(hits) + (2 if header else 0)
+        if hits and (len(hits) >= MIN_OFFERS or header):
+            if best is None or score > best[0]:
+                best = (score, vend, hits)
+            elif score == best[0]:
+                best = (score, None, None)              # two vendors fit as well: do not guess
     if not best or best[1] is None:
         return None
-    _key, vend, hits, _tie = best
-    sure, anyp, pos = set(), set(), {}
+    _score, vend, hits = best
+    overlays = [l for l in singles if _LIMIT.search(l["t"])]
+    sure, anyp, maxed, pos = set(), set(), set(), {}
     for n, found in hits.items():
         offers = index()[vend]["names"][n]
+        top = min(found, key=lambda l: l["y"])
         for o in offers:                                   # where the name is written (to tell a scroll from a gap)
-            pos[o["id"]] = [round(found[0][1]), round(found[0][2]), round(found[0][4])]
-        if len(offers) == 1:
-            sure.add(offers[0]["id"])
-            anyp.add(offers[0]["id"])
-            continue
-        amounts = set()
-        for line in found:
-            amounts |= _amounts(line, lines)
-        matched = [o for o in offers if int(o.get("qty") or 1) in amounts]
-        for o in matched:
-            sure.add(o["id"])
+            pos[o["id"]] = [round(top["x"]), round(top["y"]), round(top["h"])]
         anyp |= {o["id"] for o in offers}
-    return {"vendor": vend, "sure": sure, "any": anyp, "pos": pos}
+        if len(offers) == 1:
+            ids = {offers[0]["id"]}
+        else:
+            amounts = set()
+            for line in found:
+                amounts |= _amounts(line, singles)
+            ids = {o["id"] for o in offers if o["shown_qty"] in amounts}
+        # PURCHASE LIMIT REACHED written on the card, above its name
+        limit = any(0 < top["y"] - o["y"] <= 6 * max(o["h"], 1) and abs(o["xc"] - top["xc"]) <= 0.6 * max(o["w"], top["w"]) + 10
+                    for o in overlays)
+        (maxed if limit else sure).update(ids)
+    return {"vendor": vend, "sure": sure, "any": anyp, "maxed": maxed, "pos": pos}
 
 
 def scrolled(old_pos: dict, pos: dict) -> bool:
@@ -188,6 +272,10 @@ def apply(w, seen: dict, now=None) -> list:
     sure, anyp = set(seen["sure"]), set(seen["any"])
     log = []
     gone = gone_from(st["views"], anyp, seen.get("pos") or {}) - anyp
+    for oid in seen.get("maxed") or ():                  # PURCHASE LIMIT REACHED on its card
+        if oid in items and oid not in st["gone"]:
+            st["gone"][oid] = {"t": now, "until": period_end(items[oid], now, vend), "how": "limit"}
+            log.append(f"{items[oid]['name']}: purchase limit reached (on screen)")
     for oid in sure:
         until = period_end(items[oid], now, vend)
         st["seen"][oid] = {"t": now, "until": until}
