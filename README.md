@@ -251,6 +251,15 @@ refreshed it).
   weapon's wiki page, read from its evolution table (*EVO1…* on Genesis pages, *Evolution I…* on built-in weapons; read
   once, kept in `incarnon_perks.json`; "option 2" only when the page cannot be understood). Tier I of built-in weapons
   is the Incarnon form itself.
+- **Arcanes** are drawn as in the game: no card, the Arcane's generic picture (its rarity's, from the icons folder; a drawn
+  one without it), the name centred under it and the rank as ◈ / ◇. Only the Arcane slots the item can have are shown
+  (two on Warframes, one on weapons); an empty slot shows the outline of an Arcane, with a 🔒 when the slot is not
+  unlocked (a weapon without its Arcane adapter).
+- **Tooltips with the effect at the rank**: resting the mouse on a mod or an Arcane shows what it does at its rank
+  (Serration rank 6: +105% Damage) and at max rank. The text comes from the wiki's data modules (Module:Mods/data,
+  Module:Arcane/data, read once in the background and kept in `wiki_mods.json`, again after 14 days); the lower ranks
+  are worked out from the game data (each number goes up in a straight line from rank 0), which is also used until the
+  wiki has been read.
 - **Simulate in the planner** opens the item shown (all its configurations, Forma, adapters, Incarnon, bonus element)
   in the build planner.
 - **Rivens** show name, stats, polarity and drain and count in the recap; **spliced Rivens** are shown frozen (❄) with
@@ -332,7 +341,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.4.1)
+## Updates (current version 0.4.2)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

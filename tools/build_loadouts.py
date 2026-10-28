@@ -20,6 +20,7 @@ With --wfcd <folder of WFCD/warframe-items data/json> it also writes (used for p
              melee: "rng","cdur","ft","slam","slide","heavy"} (base stats at rank 30, the build planner's stat recap)
   incarnon:  {"genesis": [weapon families with an Incarnon Genesis], "builtin": [weapons with Incarnon built in]}
   arc:       Arcane name -> type
+  mtext:     mod / Arcane name -> [effect at rank 0, effect at max rank] (tooltips; the wiki's text is preferred)
 """
 import argparse
 import json
@@ -39,11 +40,22 @@ MOD_TYPES = {"Warframe Mod": "W", "Primary Mod": "P", "Shotgun Mod": "G", "Secon
              "Posture Mod": "Y"}
 
 
+def _stat_text(level: dict) -> str:
+    """One rank's effect as text: its lines without markup, the "+1 Arcane Revive" note and repeated lines left out."""
+    out = []
+    for line in level.get("stats") or []:
+        for part in re.sub(r"<[^>]+>", "", str(line)).replace("\\n", "\n").split("\n"):
+            part = part.strip()
+            if part and part not in out and not re.fullmatch(r"\+\d+ Arcane Revives?", part):
+                out.append(part)
+    return "\n".join(out)
+
+
 def wfcd(folder: Path) -> dict:
     """Polarity, drain and stats from the community-maintained WFCD/warframe-items data."""
     def load(name):
         return json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
-    mst = {}
+    mst, mtext = {}, {}
     for m in load("Mods"):
         kind = MOD_TYPES.get(m.get("type"))
         name = m.get("name")
@@ -68,6 +80,8 @@ def wfcd(folder: Path) -> dict:
                     stats[label] = round(stats.get(label, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
         mst[name] = [m.get("polarity") or "", int(m["baseDrain"]), lim, m.get("compatName") or "", kind, stats,
                      1 if m.get("isUtility") else 0]
+        if levels:
+            mtext[name] = [_stat_text(levels[0]), _stat_text(levels[-1])]
     frames = {}
     for w in load("Warframes"):
         if w.get("type") == "Warframe" and w.get("name"):
@@ -112,7 +126,10 @@ def wfcd(folder: Path) -> dict:
     builtin = sorted(w["name"] for fn in ("Primary", "Secondary", "Melee") for w in load(fn)
                      if w.get("name") and "Incarnon" in (w.get("tags") or []))
     arc = {a["name"]: a.get("type", "") for a in load("Arcanes") if a.get("name")}
-    return {"mst": mst, "frames": frames, "weapons": weapons, "arc": arc, "companions": companions, "archwings": archwings,
+    for a in load("Arcanes"):
+        if a.get("name") and a.get("levelStats"):
+            mtext[a["name"]] = [_stat_text(a["levelStats"][0]), _stat_text(a["levelStats"][-1])]
+    return {"mtext": mtext, "mst": mst, "frames": frames, "weapons": weapons, "arc": arc, "companions": companions, "archwings": archwings,
             "wstats": wstats, "incarnon_builtin": builtin}
 
 

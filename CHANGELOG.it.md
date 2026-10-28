@@ -3,6 +3,14 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.2
+- **Arcani disegnati come nel gioco** (Build e pianificatore): senza carta, l'immagine generica della rarità
+  dell'Arcano, il nome centrato sotto, il rank come ◈ / ◇. Solo gli slot Arcano che l'oggetto può avere; uno slot vuoto
+  mostra il contorno di un Arcano, con un 🔒 quando non è sbloccato (un'arma senza adattatore Arcano, dal file di gioco).
+- **Tooltip con l'effetto al rank** su ogni mod e Arcano (slot e libreria): cosa fa al suo rank e al rank massimo, dai
+  moduli dati della wiki (letti una volta in background, tenuti in `wiki_mods.json`); i rank più bassi ricavati dai dati
+  del gioco, usati anche finché la wiki non è stata letta.
+
 ## 0.4.1
 - **Settimanali: controllo sullo schermo del vendor tarato su schermate vere** (Palladino, Archimedean Yonta, Acrithis,
   Kaya Velasco, Flare Varleon, Teshin): un'offerta con **PURCHASE LIMIT REACHED** sulla carta viene letta come esaurita

@@ -1102,6 +1102,10 @@ EN = {
     "dmg.true": "True",
     # ---- 0.4.0 ----
     "bs.cap.tip": "Capacity left / total, as the game shows it: the mods take {used} of {total}",
+    # ---- 0.4.0 ----
+    "bs.tip.max": "At max rank ({n}):",
+    "bs.tip.src.wiki": "Effect from the Warframe wiki; lower ranks worked out from the game data",
+    "bs.tip.src.data": "Effect from the game data (the wiki's text is read in the background)",
 }
 
 IT = {
@@ -2191,6 +2195,10 @@ IT = {
     "dmg.true": "Puro",
     # ---- 0.4.0 ----
     "bs.cap.tip": "Capacità rimasta / totale, come la mostra il gioco: le mod ne usano {used} su {total}",
+    # ---- 0.4.0 ----
+    "bs.tip.max": "Al rank massimo ({n}):",
+    "bs.tip.src.wiki": "Effetto dalla wiki di Warframe; i rank più bassi ricavati dai dati del gioco",
+    "bs.tip.src.data": "Effetto dai dati del gioco (il testo della wiki viene letto in background)",
 }
 
 STRINGS = {"en": EN, "it": IT}

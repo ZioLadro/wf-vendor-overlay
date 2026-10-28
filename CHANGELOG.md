@@ -3,6 +3,14 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.4.2
+- **Arcanes drawn as in the game** (Builds and planner): no card, the generic picture of the Arcane's rarity, the name
+  centred under it, the rank as ◈ / ◇. Only the Arcane slots the item can have; an empty slot shows the outline of an
+  Arcane, with a 🔒 when it is not unlocked (a weapon without its Arcane adapter, from the game file).
+- **Tooltips with the effect at the rank** on every mod and Arcane (slots and library): what it does at its rank and at
+  max rank, from the wiki's data modules (read once in the background, kept in `wiki_mods.json`); lower ranks worked out
+  from the game data, which is also used until the wiki has been read.
+
 ## 0.4.1
 - **Weekly: vendor screen check tuned on real screens** (Palladino, Archimedean Yonta, Acrithis, Kaya Velasco, Flare
   Varleon, Teshin): an offer showing **PURCHASE LIMIT REACHED** on its card is read as bought out (the game keeps it in

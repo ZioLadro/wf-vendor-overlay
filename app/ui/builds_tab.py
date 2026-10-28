@@ -163,7 +163,10 @@ class LoadoutView(QWidget):
              if lo["kind"] in weapons else None,
              "bonus": lo.get("bonus") or {}, "valence": ex.get("valence"), "unique": bool(ex.get("valence")),
              "subtitle": sub, "subtitle_tip": t("builds.pot.tip") + ("\n" + ", ".join(unlocked) if unlocked else ""),
-             "pic": thumb(lo["item"], 48)}
+             "pic": thumb(lo["item"], 48),
+             # an empty Arcane slot of a weapon without its Arcane adapter (game file) is drawn locked
+             "locked": {"arcane": lo["kind"] in weapons and "arcane_slot" in ex and not ex["arcane_slot"]
+                        and not any(s_.get("name") for s_ in lo["slots"] if s_["role"] == "arcane")}}
         inc = lo.get("incarnon")
         if inc:
             head, _lines = INC.describe(inc, t)

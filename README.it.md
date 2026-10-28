@@ -270,6 +270,14 @@ AlecaFrame l'ha aggiornato).
   nomi dei perk dalla pagina wiki dell'arma, letti dalla sua tabella delle evoluzioni (*EVO1…* nelle pagine Genesis,
   *Evolution I…* nelle armi integrate; letti una volta, tenuti in `incarnon_perks.json`; "opzione 2" solo quando la
   pagina non si riesce a interpretare). Il livello I delle armi integrate è la forma Incarnon stessa.
+- Gli **Arcani** sono disegnati come nel gioco: senza carta, l'immagine generica dell'Arcano (quella della sua rarità,
+  dalla cartella delle icone; disegnata senza di essa), il nome centrato sotto e il rank come ◈ / ◇. Vengono mostrati
+  solo gli slot Arcano che l'oggetto può avere (due sui Warframe, uno sulle armi); uno slot vuoto mostra il contorno di
+  un Arcano, con un 🔒 quando lo slot non è sbloccato (un'arma senza adattatore Arcano).
+- **Tooltip con l'effetto al rank**: tenendo il mouse su una mod o un Arcano si vede cosa fa al suo rank (Serration rank
+  6: +105% Danno) e al rank massimo. Il testo viene dai moduli dati della wiki (Module:Mods/data, Module:Arcane/data,
+  letti una volta in background e tenuti in `wiki_mods.json`, di nuovo dopo 14 giorni); i rank più bassi vengono
+  ricavati dai dati del gioco (ogni numero sale in linea retta dal rank 0), usati anche finché la wiki non è stata letta.
 - **Simula nel pianificatore** apre l'oggetto mostrato (tutte le sue configurazioni, Forma, adattatori, Incarnon,
   elemento bonus) nel pianificatore.
 - I **Riven** mostrano nome, statistiche, polarità e consumo e contano nel riepilogo; i **Riven spliced** sono mostrati
@@ -356,7 +364,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.4.1)
+## Aggiornamenti (versione attuale 0.4.2)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

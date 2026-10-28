@@ -80,7 +80,8 @@ class Card(QWidget):
         self.slot, self.editable, self.selected, self.locked, self.library = slot, editable, selected, locked, library
         self.owned = owned
         self.name = slot.get("name") or ""
-        self.setFixedSize(int(w), int(w * CARD_ASPECT))
+        arcane_slot = slot.get("role") == "arcane" and not library
+        self.setFixedSize(int(w), int(w * (0.62 if arcane_slot else CARD_ASPECT)))   # an Arcane: taller, no card
         self._press = None
         arcane = slot.get("role") == "arcane"
         rv = slot.get("riven")
@@ -102,21 +103,49 @@ class Card(QWidget):
         self._tooltip()
 
     def _tooltip(self):
+        self.setToolTip("")                             # built when the mouse rests on the card (see event)
+
+    def tip_text(self) -> str:
+        """The card's tooltip: name, rank, what it does at that rank (wiki, else the bundled data), at max rank, the
+        picture, how many you own."""
+        from html import escape
+        from app.game import modtext
         s, n = self.slot, self.name
         if self.locked:
-            self.setToolTip(t("bs.locked." + ("arcane" if s.get("role") == "arcane" else "exilus")))
-            return
+            return t("bs.locked." + ("arcane" if s.get("role") == "arcane" else "exilus"))
         if not n:
-            self.setToolTip(t("builds.slot." + s.get("role", "general")) if s.get("role") not in (None, "general") else "")
-            return
-        rank = t("builds.rank", rank=s.get("max") if s.get("rank") is None else s["rank"], max=s.get("max")) if s.get("max") else ""
+            return t("builds.slot." + s.get("role", "general")) if s.get("role") not in (None, "general") else ""
         if s.get("riven"):
             rv = s["riven"]
-            self.setToolTip(t("builds.riven.tip", weapon=rv.get("weapon", ""), rerolls=rv.get("rerolls", 0)))
-            return
-        f = previews.by_name(n, wiki_only=True, fetch=False) if s.get("role") != "arcane" else None
-        extra = ("<br>" + t("bs.owned", n=self.owned["n"], rank=self.owned.get("rank", 0))) if self.owned else ""
-        self.setToolTip(f"<b>{n}</b><br>" + (f"<img src='{f.as_posix()}' width='220'><br>" if f else "") + rank + extra)
+            return t("builds.riven.tip", weapon=rv.get("weapon", ""), rerolls=rv.get("rerolls", 0))
+        arcane = s.get("role") == "arcane"
+        eff = modtext.effect(n, s.get("rank"), s.get("max"), arcane=arcane)
+        mx = eff.get("max") or s.get("max")
+        rank = eff.get("rank") if eff else s.get("rank")
+        parts = [f"<b>{escape(n)}</b>" + (f" &nbsp;·&nbsp; {t('builds.rank', rank=mx if rank is None else rank, max=mx)}" if mx else "")]
+        if eff:
+            parts.append("<span style='color:#7fd7ff'>" + escape(eff["text"]).replace("\n", "<br>") + "</span>")
+            if eff["rank"] != eff["max"]:
+                parts.append("<span style='color:#9aa4b2'>" + t("bs.tip.max", n=eff["max"]) + "<br>"
+                             + escape(eff["max_text"]).replace("\n", "<br>") + "</span>")
+            parts.append("<span style='color:#6b7280; font-size:small'>" + t("bs.tip.src." + eff["source"]) + "</span>")
+        f = previews.by_name(n, wiki_only=True, fetch=False) if not arcane else None
+        if f:
+            parts.append(f"<img src='{f.as_posix()}' width='200'>")
+        if self.owned:
+            parts.append(t("bs.owned", n=self.owned["n"], rank=self.owned.get("rank", 0)))
+        return "<br>".join(parts)
+
+    def event(self, e):
+        from PyQt6.QtCore import QEvent
+        if e.type() == QEvent.Type.ToolTip:
+            text = self.tip_text()
+            if text:
+                QToolTip.showText(e.globalPos(), text, self)
+            else:
+                QToolTip.hideText()
+            return True
+        return super().event(e)
 
     # --- drawing ---
     def paintEvent(self, _e):
@@ -124,6 +153,10 @@ class Card(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         W, H = self.width(), self.height()
+        if self.slot.get("role") == "arcane":
+            self._paint_arcane(p, W, H)
+            p.end()
+            return
         r = QRectF(1.5, 1.5, W - 3, H - 3)
         path = QPainterPath()
         path.addRoundedRect(r, 7, 7)
@@ -251,6 +284,55 @@ class Card(QWidget):
             p.drawText(box, Qt.AlignmentFlag.AlignCenter, txt)
         p.end()
 
+    def _paint_arcane(self, p, W, H):
+        """An Arcane as the game draws it: no card, the Arcane's generic picture (its rarity's), the name under it, the
+        rank as ◈ / ◇. An empty slot: the outline of an Arcane, with a lock when the slot is not unlocked."""
+        name, s = self.name, self.slot
+        icon_h = int(H * (0.58 if name else 0.66))
+        top = 4
+        if self.selected:
+            g = QRadialGradient(QPointF(W / 2, top + icon_h / 2), icon_h * 0.9)
+            g.setColorAt(0, QColor(95, 215, 230, 90))
+            g.setColorAt(1, QColor(95, 215, 230, 0))
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QBrush(g))
+            p.drawEllipse(QPointF(W / 2, top + icon_h / 2), icon_h * 0.9, icon_h * 0.9)
+        pm = icons.arcane(name, icon_h) if name else None
+        if pm is not None and not pm.isNull():
+            p.drawPixmap(int((W - pm.width()) / 2), top, pm)
+        else:                                          # no icons folder (or an empty slot): a drawn Arcane frame
+            col = QColor(self.frame or ("#c4c9d4" if name else "#3f4652"))
+            _arcane_shape(p, QRectF((W - icon_h * 1.45) / 2, top, icon_h * 1.45, icon_h), col, filled=bool(name))
+        if self.locked:
+            f = QFont(self.font())
+            f.setPixelSize(max(12, int(icon_h * 0.36)))
+            p.setFont(f)
+            p.setPen(QColor("#9aa4b2"))
+            p.drawText(QRectF(0, top, W, icon_h), Qt.AlignmentFlag.AlignCenter, "🔒")
+        f = QFont(self.font())
+        if name:
+            f.setPixelSize(max(10, int(H * 0.16)))
+            f.setBold(True)
+            p.setFont(f)
+            p.setPen(QColor("#d6dae2"))
+            p.drawText(QRectF(2, top + icon_h + 1, W - 4, H * 0.2), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                       QFontMetrics(f).elidedText(name, Qt.TextElideMode.ElideRight, W - 4))
+            mx = s.get("max") or 0
+            if mx:
+                r = mx if s.get("rank") is None else max(0, min(int(s["rank"]), mx))
+                f.setPixelSize(max(9, int(H * 0.12)))
+                f.setBold(False)
+                p.setFont(f)
+                p.setPen(QColor("#c9ced8"))
+                p.drawText(QRectF(0, top + icon_h + H * 0.2, W, H * 0.16), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                           " ".join("◈" if k < r else "◇" for k in range(mx)))
+        elif not self.locked:
+            f.setPixelSize(max(9, int(H * 0.11)))
+            p.setFont(f)
+            p.setPen(QColor("#6b7280"))
+            p.drawText(QRectF(0, top + icon_h + 2, W, H * 0.2), Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignTop,
+                       t("builds.slot.arcane").upper())
+
     # --- mouse, drag and drop ---
     def mousePressEvent(self, e):
         if e.button() == Qt.MouseButton.LeftButton:
@@ -284,6 +366,33 @@ class Card(QWidget):
         if name:
             self.dropped.emit(name)
             e.acceptProposedAction()
+
+
+def _arcane_shape(p, r: QRectF, col: QColor, filled=True):
+    """The generic Arcane frame: a half dome on a base, with the round emblem in the middle (drawn when the icons
+    folder is not set, and as the outline of an empty slot)."""
+    p.save()
+    w, h = r.width(), r.height()
+    cx, base = r.center().x(), r.top() + h * 0.86
+    dome = QPainterPath()
+    dome.moveTo(r.left() + w * 0.06, base)
+    dome.arcTo(QRectF(r.left() + w * 0.06, r.top() + h * 0.06, w * 0.88, h * 1.6), 180, -180)
+    dome.closeSubpath()
+    pen = QPen(col, max(1.5, h * 0.045))
+    if not filled:
+        pen.setStyle(Qt.PenStyle.DashLine)
+    p.setPen(pen)
+    p.setBrush(QColor(col.red(), col.green(), col.blue(), 50) if filled else Qt.BrushStyle.NoBrush)
+    p.drawPath(dome)
+    p.drawRoundedRect(QRectF(r.left(), base - h * 0.02, w, h * 0.12), 3, 3)
+    rad = h * 0.3
+    emblem = QPointF(cx, r.top() + h * 0.48)
+    p.setBrush(QColor(15, 30, 40, 220) if filled else Qt.BrushStyle.NoBrush)
+    p.setPen(QPen(QColor("#4fe3f0") if filled else col, max(1.5, h * 0.04)))
+    p.drawEllipse(emblem, rad, rad)
+    if filled:
+        p.drawEllipse(emblem, rad * 0.45, rad * 0.45)
+    p.restore()
 
 
 def library_slot(name, info, arcane=False) -> dict:
