@@ -81,6 +81,10 @@ ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elen
   *Rude Zuud, Fortuna* per i pezzi dei kitgun, *qualsiasi Relay* per i sindacati delle fazioni…) e le **attività che fanno
   guadagnare quello standing**. Un oggetto sparisce solo
   quando il file di gioco mostra che l'hai comprato;
+- **cosa puoi comprare entro il reset giornaliero** (azzurro): lo standing che puoi ancora guadagnare oggi (limite
+  giornaliero, mai oltre quanto ne tiene il tuo rank) paga altre copie o l'oggetto dopo: *Entro il reset: compra 2×
+  Martyr Symbiosis (guadagnane altri 13.000)*, con il tempo che manca alle 00:00 UTC (impostazione *Attività: oggetti
+  acquistabili entro il reset*);
 - le **offerte settimanali dei vendor che segui** (acquistate / limite, conto alla rovescia del reset; vedi la scheda
   Settimanali);
 - **Nightwave**: le giornaliere di oggi (☼) e le sfide della settimana (elite ★), con standing, obiettivo e avanzamento
@@ -108,7 +112,7 @@ In cima a ogni scheda:
 - **Barra del giocatore**: il glifo del tuo profilo e l'emblema del grado di maestria (immagini da browse.wf, scaricate
   una volta), nome (dal `lastUsername.txt` di AlecaFrame, oppure clicca per scriverlo), grado di maestria,
   scambi rimasti (⚠ quando l'ultima sync è precedente al reset giornaliero), portafoglio sotto nome e MR (platino, Endo,
-  ducati, Aya, Steel Essence, Pathos Clamp, Riven Sliver, Live Heartcell, Vitus Essence, ognuno con la sua icona di
+  ducati, Aya, Steel Essence, Pathos Clamp, Riven Sliver, Live Heartcell, Kuva, Vitus Essence, ognuno con la sua icona di
   gioco; compatti, valore esatto nel tooltip) e un badge per sindacato con rank e standing (mouse sopra: standing rimasto oggi).
   I logo dei sindacati vengono scaricati una volta dalla wiki; senza, i badge sono disegnati con i colori del sindacato.
 - **Barra del mondo**: fessure Omnia Steel Path, cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer, Prime Resurgence e
@@ -243,26 +247,50 @@ AlecaFrame l'ha aggiornato).
 - **Loadout di gioco** (vista predefinita): i tuoi loadout con Warframe, armi, arma exalted, compagno, Archwing e
   Necramech; clicca una riga per la build di quell'oggetto. **Per oggetto**: le configurazioni di ogni oggetto,
   raggruppate per tipo, con miniature e filtro per nome/tipo. Scuola Focus e K-Drive non sono mostrati.
-- **Carte** come nella schermata build del gioco: slot Aura, Exilus e Stance, otto slot mod (polarità dello slot,
-  polarità e consumo della mod, rank), Arcane, **Frammenti Arconte** (colore, tauforgiato, effetto), abilità
-  **Helminth**, numero di forma, **Reattore / Catalizzatore** Orokin (dal file, *dedotto* per gli oggetti vecchi i cui
-  loadout ci stanno solo con uno). Le carte **si adattano alla finestra** e mostrano l'immagine della mod al passaggio
-  del mouse.
+- **Disposta come la schermata potenziamenti del gioco**: *POTENZIAMENTI / OGGETTO [rank]* con il numero di Forma, le
+  schede delle configurazioni (Config A, B, C… o i nomi che hai dato: clic per cambiare), a sinistra la **capacità**
+  (rimasta / totale, come la mostra il gioco) con la sua barra e le **statistiche**, al centro Aura / Postura / Exilus in
+  alto e le otto mod su due righe, a destra gli Arcani (e l'Exilus delle armi da fuoco), la riga **Tratto unico** delle
+  armi Kuva / Tenet / Coda. Le carte sono orizzontali come quelle del gioco: l'immagine della mod dietro il nome, consumo
+  e polarità (verde: uguale allo slot, rossa: diversa), polarità dello slot, rank a pallini, cornice del colore della
+  rarità. **Frammenti Arconte** (colore, tauforgiato, effetto), abilità **Helminth** e **Reattore / Catalizzatore**
+  Orokin (dal file, *dedotto* per gli oggetti vecchi i cui loadout ci stanno solo con uno) sono elencati sotto. Le carte
+  **si adattano alla finestra** e mostrano l'immagine della mod al passaggio del mouse.
+- **Statistiche dell'arma** come nel pannello del gioco: cadenza / velocità d'attacco, multicolpo, caricatore, ricarica,
+  probabilità e danno critico, status, **ogni tipo di danno** con gli elementi combinati nell'ordine delle mod (Calore +
+  Tossina = Gas…, l'elemento bonus Kuva / Tenet / Coda contato come proprio dell'arma), totale e un danno al secondo
+  approssimato; *base ▸ con le mod* quando una mod li cambia (verde meglio, rosso peggio). Warframe: salute, scudi,
+  armatura, energia, scatto e le statistiche delle abilità.
 - **Capacità** = rank (40 per armi Kuva/Tenet/Coda e Necramech) × 2 con Reattore/Catalizzatore + aura; le polarità
   innate sono messe dove fanno risparmiare più consumo (il file non dice dove sono). Un **riepilogo statistiche**
   approssimato conta solo le mod (non Arcane, frammenti, Helminth, bonus dei set o effetti condizionali).
 - **Incarnon**: se l'adattatore Genesis è installato (o l'Incarnon è integrata, o la Genesis è su un'altra variante
   dell'arma), il livello di evoluzione raggiunto (condiviso da tutte le varianti) e il perk scelto in ogni livello, dal
-  file di gioco; nomi dei perk e immagine dell'adattatore dalla pagina wiki dell'arma (letti una volta, tenuti in
-  `incarnon_perks.json`; "opzione 2" quando la pagina non si riesce a interpretare).
+  file di gioco, disegnati come **percorso di evoluzione** (i perk di ogni livello, quelli scelti illuminati e uniti);
+  nomi dei perk dalla pagina wiki dell'arma, letti dalla sua tabella delle evoluzioni (*EVO1…* nelle pagine Genesis,
+  *Evolution I…* nelle armi integrate; letti una volta, tenuti in `incarnon_perks.json`; "opzione 2" solo quando la
+  pagina non si riesce a interpretare). Il livello I delle armi integrate è la forma Incarnon stessa.
+- **Simula nel pianificatore** apre l'oggetto mostrato (tutte le sue configurazioni, Forma, adattatori, Incarnon,
+  elemento bonus) nel pianificatore.
 - I **Riven** mostrano nome, statistiche, polarità e consumo e contano nel riepilogo; i **Riven spliced** sono mostrati
   congelati (❄) con la statistica spliced come "?".
-- **Pianificatore build** (terza vista): pianifica singoli oggetti o **loadout interi** (Warframe, primaria,
-  secondaria, mischia, compagno, Archwing, Arch-gun, Arch-melee): scegli un tipo e un oggetto, clicca una carta per
-  scegliere mod, rank e polarità dello slot (Forma); capacità, consumo e statistiche si aggiornano. Ogni tipo che compili
-  resta come pezzo del loadout (i pulsanti in alto passano da uno all'altro; *+ aggiungi* aggiunge un pezzo). *Salva*
-  tiene i piani in `build_plans.json`; *Copia da un mio loadout…* copia un loadout di gioco intero o un singolo oggetto.
-  *Svuota* parte da un loadout vuoto.
+- **Pianificatore build** (terza vista): un **simulatore della schermata potenziamenti**, per singoli oggetti o **loadout
+  interi** (Warframe, primaria, secondaria, mischia, compagno, arma del compagno, Archwing, Arch-gun, Arch-melee). Sotto
+  la build c'è la **libreria delle mod** come nel gioco: ricerca, filtro per polarità, ordinamento (rank, nome, consumo,
+  polarità, prima le possedute), *Solo le mod che possiedo* (dal file di gioco, con quante ne hai), due righe di carte da
+  scorrere di lato. **Clicca uno slot** per selezionarlo (la libreria mostra cosa ci va: mod, mod Exilus, posture,
+  Arcani), poi **clicca una mod** (o **trascinala** su uno slot); viene selezionato lo slot vuoto seguente, così una build
+  si compone in pochi clic. Le mod che il gioco non lascia montare insieme (Vitality e Umbral Vitality, la stessa mod due
+  volte…) vengono rifiutate. **Clic destro su uno slot**: rank, **polarità (Forma)** con quella originale dell'oggetto,
+  rimuovi; adattatori. Gli interruttori sopra gli slot: rank (fino a 40 per Kuva / Tenet / Coda), **Reattore /
+  Catalizzatore Orokin**, **adattatore Exilus**, **adattatore Arcano** (armi; uno slot bloccato mostra 🔒), **elemento
+  bonus e percentuale** delle armi Kuva / Tenet / Coda (Fusione di valenza, 25-60 %), **Incarnon Genesis** e il livello di
+  evoluzione (clicca un perk sul percorso di evoluzione per sceglierlo). **Configurazioni** A, B, C… (⊕ ne aggiunge una;
+  *Azioni*: copia, rinomina, elimina una configurazione, togli tutte le Forma, Forma ogni slot alla polarità della sua
+  mod). Numero di Forma, capacità e statistiche seguono ogni modifica. Ogni tipo che compili resta come pezzo del loadout
+  (i pulsanti in alto passano da uno all'altro; *+ aggiungi* aggiunge un pezzo). *Salva* tiene i piani in
+  `build_plans.json` (i piani delle versioni precedenti si aprono com'erano); *Copia da un mio loadout…* copia un loadout
+  di gioco intero o un singolo oggetto. *Svuota* parte da un loadout vuoto.
 - Mostrati anche: il nome che hai dato a un oggetto, la sua lente Focus, l'elemento bonus Kuva / Tenet / Coda con la
   percentuale, se è dorata, e (tooltip) slot Exilus / Arcano sbloccati e Fusione di valenza.
 
@@ -283,6 +311,12 @@ I vendor degli eventi a tempo (Jade Shadows, Duviri Murmur, Triad…) compaiono 
 di Quantframe gli acquisti confermati da Attività dal file di gioco (Martyr Symbiosis dall'Entrati, Aerial Bond da
 Solaris United…) non ancora inviati (anche dal menu ⚙ di Attività). Sopra la lista: quanto hai di ogni valuta chiesta dai vendor
 mostrati (Steel Essence, Pathos Clamp, Riven Sliver, Vosfor…).
+**Controllo sullo schermo del vendor**: mentre un vendor viene scansionato (in automatico o con F8), vengono lette anche
+le offerte limitate elencate. Un'offerta di cui hai raggiunto il limite sparisce dalla lista del vendor, quindi:
+un'offerta ancora elencata non era l'acquisto da identificare (e un acquisto attribuito a lei viene chiesto di nuovo), e
+un'offerta vista prima in questo periodo e ora sparita — non scorsa via: il resto della lista è rimasto dov'era —
+identifica l'acquisto, o viene mostrata acquistata **(OCR)** finché anche il file di gioco non lo dice (impostazione
+*Settimanali: controlla le offerte sullo schermo del vendor*).
 
 ### Profilo (una pagina delle Impostazioni)
 Standing e rank per sindacato e grado di maestria, **letti da `lastData.dat`** (riletto quando cambia, impostazione
@@ -312,7 +346,8 @@ sistema, o un tuo `.wav`).
 | Prezzi, volumi, catalogo, ordini di vendita, annunci di riven | [warframe.market](https://warframe.market) (API v1 e v2, max 3 richieste/s) |
 | Il tuo standing, inventario, loadout, acquisti, sfide | `lastData.dat` / `deltas.dat` di AlecaFrame sul tuo PC |
 | Vendor, costi in standing, nomi, offerte settimanali, nomi delle sfide | dati pubblici del gioco, inclusi (`tools/build_*.py`) |
-| Immagini (build, logo dei sindacati), lista di Baro | [wiki.warframe.com](https://wiki.warframe.com) |
+| Immagini (build, logo dei sindacati), lista di Baro, nomi dei perk Incarnon | [wiki.warframe.com](https://wiki.warframe.com) |
+| Statistiche base delle armi, polarità / consumo / Exilus delle mod (pianificatore) | [WFCD/warframe-items](https://github.com/WFCD/warframe-items), inclusi (`tools/build_loadouts.py`) |
 | Stato del mondo (fessure, cicli, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave e Calendario 1999 | world state pubblico di DE (`api.warframe.com`), ogni 10 min |
 | Glifo del profilo, emblema del grado di maestria | [browse.wf](https://browse.wf) (icone del gioco per percorso), una volta |
@@ -321,7 +356,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.3.9)
+## Aggiornamenti (versione attuale 0.4.0)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche
@@ -407,10 +442,12 @@ app/
   trade/             warframe.market: market (catalogo, prezzi, volumi), refresher, market_auth (ordini di vendita),
                      recommend, advice, signals (andamento, picchi, backtest), rivenmarket (annunci riven), quantframe
   game/              dati di gioco e il tuo account: vendors, standing, inventory, aleca (file di AlecaFrame),
-                     loadouts, buildcalc, rivens, weekly, quests (Nightwave / Calendario), goals (piano di Attività),
+                     loadouts, buildcalc, incarnon, rivens, weekly, weekly_ocr (offerte lette sullo schermo del
+                     vendor), quests (Nightwave / Calendario), goals (piano di Attività),
                      world, arbi
   ui/                finestre e schede: menu (finestra principale), *_tab, *_dialog, goals_overlay (Attività),
-                     buildcards, player_bar, world_strip, update_box, logos, icons, previews
+                     buildcards, buildscreen (la schermata potenziamenti di Build e del pianificatore), player_bar,
+                     world_strip, update_box, logos, icons, previews
 data/                dati di gioco inclusi (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places, player_icons .json)
 assets/              icon.png, icon.ico
 tools/               generatori di data/ (build_*.py: python tools/build_vendors.py …; build_places.py: dove comprare), build_icon.py,

@@ -229,6 +229,7 @@ def read(inv: dict, market=None) -> list:
                 out.append({"item": item_name, "kind": kind, "path": path, "config": LETTERS[n] if n < 8 else str(n + 1),
                             "cfg_name": cname, "owner": owner, "reactor": reactor, "level": level,
                             "capacity": ({k: calc[k] for k in ("total", "used", "free")} if kind != "exalted" else None), "stats": calc["stats"], "bonus": calc["bonus"],
+                            "elements": calc.get("elements") or [],
                             "oid": (item.get("ItemId") or {}).get("$oid", ""), "idx": n,
                             "forma": int(item.get("Polarized") or 0), "slots": slots,
                             "shards": shards if kind == "warframe" else [],
@@ -357,7 +358,33 @@ def presets(inv: dict) -> dict:
     return {"presets": out, "tenno": tenno}
 
 
+def owned_mods(inv: dict) -> dict:
+    """Mods and Arcanes you own: {name: {"n": copies, "rank": highest rank among them}} (Upgrades: ranked copies, one
+    entry each; RawUpgrades: unranked copies, counted). Rivens are left out (they are not picked by name)."""
+    out = {}
+    for u in inv.get("Upgrades") or []:
+        path = str(u.get("ItemType") or "") if isinstance(u, dict) else ""
+        if not path or "/Randomized/" in path:
+            continue
+        try:
+            lvl = int(json.loads(u.get("UpgradeFingerprint") or "{}").get("lvl") or 0)
+        except (ValueError, TypeError, AttributeError):
+            lvl = 0
+        name = mod_name(path)[0]
+        e = out.setdefault(name, {"n": 0, "rank": 0})
+        e["n"] += 1
+        e["rank"] = max(e["rank"], lvl)
+    for u in inv.get("RawUpgrades") or []:
+        path = str(u.get("ItemType") or "") if isinstance(u, dict) else ""
+        if not path or "/Randomized/" in path:
+            continue
+        name = mod_name(path)[0]
+        e = out.setdefault(name, {"n": 0, "rank": 0})
+        e["n"] += int(u.get("ItemCount") or 1)
+    return out
+
+
 def read_all_file(path) -> dict:
-    """Everything the Builds tab shows: {"loadouts": read(), "presets": presets()}."""
+    """Everything the Builds tab shows: {"loadouts": read(), "presets": presets(), "owned": owned_mods()}."""
     inv = _load(path)
-    return {"loadouts": read(inv), "presets": presets(inv)}
+    return {"loadouts": read(inv), "presets": presets(inv), "owned": owned_mods(inv)}

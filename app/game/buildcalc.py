@@ -131,9 +131,13 @@ def drain(info, rank, slot_pol: str):
     return (d + math.ceil(d / 4), "mismatch") if d >= 0 else (-(abs(d) - round(abs(d) * 0.25)), "mismatch")
 
 
-def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor: bool = True, level: int = 30) -> dict:
+def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor: bool = True, level: int = 30,
+             locked: dict | None = None) -> dict:
     """mods: per slot (name, rank or None) or None. Returns {"slots": [{"drain","state","pol","mpol"}], "total", "used", "free",
-    "stats": {...} (Warframes only)}."""
+    "stats": {...} (Warframes only), "bonus": {label: %} and "elements": [(element, fraction)] in slot order (weapons)}.
+    locked: {"exilus": True} when the Exilus slot has no adapter (its mod counts for nothing)."""
+    locked = locked or {}
+    elements = []
     out, used, aura_bonus = [], 0, 0
     sums = {k: 0.0 for k in STAT_ORDER}
     bonus = {}                                   # weapons: label -> total percentage bonus of the mods and the Riven
@@ -161,13 +165,22 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
             used += dr
         mx = info[2] or 1
         rank = mx if m[1] is None else max(0, min(int(m[1]), mx))
+        if role == "exilus" and locked.get("exilus"):
+            continue                              # an Exilus slot without its adapter: the mod does nothing
         for k, v in info[5].items():
             if k in sums and kind == "warframe":
                 sums[k] += v * (rank / mx)
             elif kind != "warframe" and not riven:
                 bonus[k] = bonus.get(k, 0) + v * (rank / mx)
+                if k in ELEMENTS or k in COMBINED:
+                    elements.append((k, v * (rank / mx)))
+        if riven:
+            for a in riven.get("attributes", []):
+                lab = _plain(a.get("label", ""))
+                if a.get("pct") and a.get("value") is not None and (lab in ELEMENTS or lab in COMBINED):
+                    elements.append((lab, a["value"] / 100))
     total = max(0, min(40, int(level))) * (2 if reactor else 1) + aura_bonus
-    res = {"slots": out, "total": total, "used": used, "free": total - used, "stats": {},
+    res = {"slots": out, "total": total, "used": used, "free": total - used, "stats": {}, "elements": elements,
            "bonus": {k: round(v * 100, 1) for k, v in sorted(bonus.items(), key=lambda kv: -abs(kv[1])) if abs(v) > 1e-9}}
     fr = LO.data().get("frames", {}).get(item) if kind == "warframe" else None
     if fr:
@@ -182,6 +195,141 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
         s["range"] = round(max(10.0, 100 * (1 + sums["range"])), 1)
         s["strength"] = round(max(0.0, 100 * (1 + sums["strength"])), 1)
     return res
+
+
+# ---------- weapon stats (the planner's recap, like the in-game screen) ----------
+ELEMENTS = ("Heat", "Cold", "Electricity", "Toxin")
+COMBO = {frozenset(("Heat", "Cold")): "Blast", frozenset(("Heat", "Electricity")): "Radiation",
+         frozenset(("Heat", "Toxin")): "Gas", frozenset(("Cold", "Electricity")): "Magnetic",
+         frozenset(("Cold", "Toxin")): "Viral", frozenset(("Electricity", "Toxin")): "Corrosive"}
+COMBINED = ("Blast", "Radiation", "Gas", "Magnetic", "Viral", "Corrosive")
+DAMAGE_ORDER = ("Impact", "Puncture", "Slash", "Heat", "Cold", "Electricity", "Toxin", "Blast", "Radiation", "Gas",
+                "Magnetic", "Viral", "Corrosive", "Void", "Tau", "True")
+VALENCE = ("Heat", "Cold", "Electricity", "Toxin", "Impact", "Magnetic", "Radiation")
+
+
+def valence_capable(item: str) -> bool:
+    """Kuva, Tenet and Coda weapons have a bonus element (25-60 %) that a Valence Fusion can change."""
+    return item.startswith(("Kuva ", "Tenet ", "Coda ", "Dual Coda "))
+
+
+def combine(order: list, innate: dict) -> dict:
+    """Elements as the game combines them: the mods' elements in slot order (the same element twice counts once, at its
+    first place), then the weapon's own single elements (the Kuva / Tenet / Coda bonus among them); every two in a row
+    make their combined element. order: [(element, amount)]; innate: {element: amount} (single and combined).
+    Returns {element: amount}."""
+    seq, amount, direct = [], {}, {}
+    for el, v in order:
+        if el not in ELEMENTS:                      # a mod of a combined element (Magnetic Capacity…): as it is
+            direct[el] = direct.get(el, 0) + v
+            continue
+        if el not in amount:
+            seq.append(el)
+        amount[el] = amount.get(el, 0) + v
+    for el, v in innate.items():
+        if el in ELEMENTS:
+            if el not in amount:
+                seq.append(el)
+            amount[el] = amount.get(el, 0) + v
+    out = {el: v for el, v in innate.items() if el not in ELEMENTS and v}
+    for el, v in direct.items():
+        out[el] = out.get(el, 0) + v
+    i = 0
+    while i < len(seq):
+        if i + 1 < len(seq):
+            a, b = seq[i], seq[i + 1]
+            c = COMBO[frozenset((a, b))]
+            out[c] = out.get(c, 0) + amount[a] + amount[b]
+            i += 2
+        else:
+            out[seq[i]] = out.get(seq[i], 0) + amount[seq[i]]
+            i += 1
+    return out
+
+
+def weapon_stats(kind: str, item: str, bonus: dict, elements: list, valence: dict | None = None) -> dict | None:
+    """The weapon's stats with the build: {"rows": [(key, base, modded)], "damage": [(element, base, modded)], "total":
+    (base, modded), "dps": (base, modded)} or None without base stats. bonus: {label: %} (evaluate()["bonus"]);
+    elements: evaluate()["elements"]; valence: {"element", "pct"} for Kuva / Tenet / Coda weapons.
+    Not counted: conditional effects (Galvanized stacks, Condition Overload…), Arcanes, Incarnon perks, ammo, falloff."""
+    ws = LO.data().get("wstats", {}).get(item)
+    if not ws:
+        return None
+    b = lambda *labels: sum(bonus.get(lab, 0) for lab in labels) / 100
+    melee = kind in ("melee", "archmelee") or "rng" in ws
+    base = {k.title() if k != "true" else "True": float(v) for k, v in (ws.get("dmg") or {}).items()}
+    total0 = sum(base.values())
+    mult = 1 + (b("Melee Damage") if melee else b("Damage"))
+    phys = {p: base.get(p, 0) * mult * (1 + b(p)) for p in ("Impact", "Puncture", "Slash") if base.get(p)}
+    innate = {el: v * mult for el, v in base.items() if el not in ("Impact", "Puncture", "Slash")}
+    if valence and valence.get("element"):
+        el, v = valence["element"], total0 * float(valence.get("pct") or 0) / 100 * mult
+        if el in ("Impact", "Puncture", "Slash"):
+            phys[el] = phys.get(el, 0) + v * (1 + b(el))
+        else:
+            innate[el] = innate.get(el, 0) + v
+    mods = [(el, total0 * mult * frac) for el, frac in elements]
+    dmg = dict(phys)
+    for el, v in combine(mods, innate).items():
+        dmg[el] = dmg.get(el, 0) + v
+    base_dmg = dict(base)
+    if valence and valence.get("element"):
+        base_dmg[valence["element"]] = base_dmg.get(valence["element"], 0) + total0 * float(valence.get("pct") or 0) / 100
+    total = sum(dmg.values())
+    cc0, cd0, sc0 = ws.get("cc", 0), ws.get("cd", 1), ws.get("sc", 0)
+    cc, cd, sc = cc0 * (1 + b("Critical Chance")), cd0 * (1 + b("Critical Damage")), sc0 * (1 + b("Status Chance"))
+    rows = []
+    if melee:
+        rate0 = ws.get("fr", 1)
+        rate = rate0 * (1 + b("Attack Speed"))
+        rows.append(("attack_speed", rate0, rate))
+        if ws.get("rng"):
+            rows.append(("range", ws["rng"], ws["rng"]))
+        if ws.get("slam"):
+            rows.append(("slam", ws["slam"], ws["slam"] * mult))
+        if ws.get("slide"):
+            rows.append(("slide", ws["slide"], ws["slide"] * mult))
+        if ws.get("cdur"):
+            rows.append(("combo", ws["cdur"], ws["cdur"]))
+        if ws.get("ft"):
+            rows.append(("follow", ws["ft"], ws["ft"]))
+        ms0 = ms = 1.0
+    else:
+        rate0 = ws.get("fr", 1)
+        rate = rate0 * (1 + b("Fire Rate"))
+        ms0 = ws.get("ms", 1) or 1
+        ms = ms0 * (1 + b("Multishot"))
+        rows.append(("fire_rate", rate0, rate))
+        rows.append(("multishot", ms0, ms))
+        if ws.get("mag"):
+            rows.append(("magazine", ws["mag"], max(1, round(ws["mag"] * (1 + b("Magazine Capacity"))))))
+        if ws.get("rl"):
+            rows.append(("reload", ws["rl"], ws["rl"] / max(0.05, 1 + b("Reload Speed"))))
+        if ws.get("trig"):
+            rows.append(("trigger", ws["trig"], ws["trig"]))
+    crit = [("crit_chance", cc0, cc), ("crit_damage", cd0, cd), ("status", sc0, sc)]
+    dps = lambda t, r, m, c, d: t * r * m * (1 + min(c, 10) * (d - 1))
+    order = {el: n for n, el in enumerate(DAMAGE_ORDER)}
+    names = sorted(set(dmg) | set(base_dmg), key=lambda el: order.get(el, 99))
+    return {"rows": rows, "crit": crit,
+            "damage": [(el, base_dmg.get(el, 0), dmg.get(el, 0)) for el in names if base_dmg.get(el) or dmg.get(el)],
+            "total": (total0, total), "dps": (dps(total0, rate0, ms0, cc0, cd0), dps(total, rate, ms, cc, cd)),
+            "melee": melee}
+
+
+def forma_count(kind: str, item: str, roles: list, forma: dict) -> int:
+    """Forma a planned build needs. The item's own polarities are not tied to a slot in the public data, so among the
+    general slots they count as a set: a polarity the item already has (once per copy) needs no Forma, wherever it is.
+    Aura / Exilus / Stance slots are compared one by one (their own kind of Forma, counted the same here)."""
+    from collections import Counter
+    base = innate(kind, item, roles)
+    pols = slot_polarities(kind, item, roles, forma or {})
+    general = [i for i, r in enumerate(roles) if r == "general"]
+    have = Counter(base[i] for i in general if base[i])
+    want = Counter(pols[i] for i in general if pols[i])
+    n = sum(max(0, c - have.get(p, 0)) for p, c in want.items())
+    n += sum(1 for i, r in enumerate(roles) if r != "general" and r != "arcane" and pols[i] != base[i] and pols[i])
+    return n
 
 
 GENERIC = {"primary": {"Rifle": {"Rifle", "Assault Rifle", "PRIMARY"}, "Sniper": {"Sniper", "Rifle", "PRIMARY"},
@@ -204,17 +352,37 @@ def items(kind: str) -> list:
     return sorted(n for n, w in d.get("weapons", {}).items() if w[0] == kind)
 
 
+def item_type(item: str) -> str:
+    """The weapon type of the data ("Rifle", "Shotgun", "Claws", "Robotic"…), "" for the others."""
+    w = LO.data().get("weapons", {}).get(item)
+    return w[1] if w else ""
+
+
 # mod slots the planner gives each kind (the game file's own layouts are in loadouts.LAYOUT)
-PLAN_LAYOUT = {"companion": ["general"] * 10, "archwing": ["general"] * 8, "archmelee": ["general"] * 8}
+PLAN_LAYOUT = {"companion": ["general"] * 10, "archwing": ["general"] * 8, "archmelee": ["general"] * 8,
+               "compweapon": ["general"] * 8}
 
 
-def plan_roles(kind: str) -> list:
+def plan_roles(kind: str, item: str = "") -> list:
+    if kind == "compweapon" and item_type(item) == "Claws":       # beasts' claws: a Posture slot like a stance
+        return ["general"] * 8 + ["stance"]
     return LO.LAYOUT.get(kind) or PLAN_LAYOUT.get(kind) or ["general"] * 8
+
+
+def exilus_ok(name: str) -> bool:
+    """A mod that can go in an Exilus slot (utility mods). Data made before 0.4.0 does not say: then every mod can."""
+    row = LO.data().get("mst", {}).get(name)
+    return bool(row and (len(row) < 7 or row[6]))
 
 
 def candidates(kind: str, item: str, role: str) -> list:
     """Names of the mods that fit a slot (the public data's compatibility field is rough: weapon-specific mods are matched by
-    the weapon's name)."""
+    the weapon's name). An Exilus slot takes only the utility mods."""
+    out = _candidates(kind, item, role)
+    return [n for n in out if exilus_ok(n)] if role == "exilus" else out
+
+
+def _candidates(kind: str, item: str, role: str) -> list:
     mst = LO.data().get("mst", {})
     out = []
     if kind == "warframe":
@@ -226,6 +394,21 @@ def candidates(kind: str, item: str, role: str) -> list:
                 ok = m[3] == "AURA"
             else:
                 ok = m[3] in ("WARFRAME", item, base)
+            if ok:
+                out.append(n)
+    elif kind == "compweapon":
+        claws = item_type(item) == "Claws"
+        for n, m in mst.items():
+            if role == "stance":
+                if m[4] == "Y":
+                    out.append(n)
+                continue
+            compat = str(m[3]).strip().lower()
+            if claws:
+                ok = m[4] == "C" and compat.endswith("claws")
+            else:                                  # robotic weapons: rifle / shotgun mods and their own
+                ok = (m[4] == "P" and m[3] in ("Rifle", "Assault Rifle", "PRIMARY")) or (m[4] == "G" and m[3] == "Shotgun") \
+                    or (m[4] == "C" and compat in ("robotic", item.lower()))
             if ok:
                 out.append(n)
     elif kind in ("companion", "archwing", "archgun", "archmelee"):

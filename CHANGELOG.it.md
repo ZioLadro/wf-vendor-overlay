@@ -3,6 +3,40 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.0
+- **Build: disposte come la schermata potenziamenti del gioco.** *POTENZIAMENTI / OGGETTO [rank]* con il numero di
+  Forma, le schede delle configurazioni (Config A, B, C…), la barra della capacità (rimasta / totale, come la mostra il
+  gioco) e le statistiche a sinistra, Aura / Postura / Exilus sopra le otto mod, gli Arcani (e l'Exilus delle armi da
+  fuoco) a destra, la riga *Tratto unico* delle armi Kuva / Tenet / Coda. Carte orizzontali come quelle del gioco:
+  immagine dietro il nome, consumo e polarità, rank a pallini, cornice del colore della rarità.
+- **Statistiche delle armi** in Build e nel pianificatore: cadenza / velocità d'attacco, multicolpo, caricatore, ricarica,
+  probabilità e danno critico, status, ogni tipo di danno con gli elementi combinati nell'ordine delle mod (l'elemento
+  bonus Kuva / Tenet / Coda contato come proprio dell'arma), totale e un danno al secondo approssimato, *base ▸ con le mod*.
+- **Pianificatore: un simulatore.** Una libreria di mod sotto la build (ricerca, filtro per polarità, ordinamento, *Solo
+  le mod che possiedo* con le copie che hai); clicca uno slot e poi una mod, o trascina una mod su uno slot; le mod che il
+  gioco non lascia combinare vengono rifiutate. Clic destro su uno slot per rank, polarità (Forma) e rimozione.
+  Interruttori per Reattore / Catalizzatore Orokin, adattatori Exilus e Arcano (gli slot bloccati mostrano 🔒), elemento
+  bonus e percentuale Kuva / Tenet / Coda (Fusione di valenza), Incarnon Genesis e livello di evoluzione, con il perk di
+  ogni livello scelto sul percorso di evoluzione. Configurazioni A, B, C… per oggetto; *Azioni*: copia / rinomina /
+  elimina una configurazione, togli tutte le Forma, Forma ogni slot alla polarità della sua mod. Gli slot Exilus prendono
+  solo mod Exilus. Si possono pianificare anche le armi dei compagni (armi robotiche, artigli delle bestie con la loro
+  postura). I piani delle versioni precedenti si aprono com'erano.
+- **Simula nel pianificatore** (Build): apre l'oggetto mostrato, con tutte le sue configurazioni, nel pianificatore.
+- **Incarnon**: i livelli di evoluzione disegnati come un percorso (ogni perk, quelli scelti illuminati e uniti). I nomi
+  dei perk vengono letti dalla tabella delle evoluzioni della pagina wiki (prima la pagina renderizzata, poi il
+  wikitext), sia righe *EVO1…* sia righe *Evolution I…*, anche con l'etichetta del livello su più righe; il livello I
+  delle armi integrate (senza nome del perk sulla wiki) è mostrato come forma Incarnon. Le pagine lette dal vecchio
+  lettore vengono rilette da sole, così spariscono le "opzione 1 / 2" rimaste.
+- **Settimanali: controllo sullo schermo del vendor.** Mentre un vendor viene scansionato vengono lette anche le offerte
+  limitate che elenca: un'offerta esaurita sparisce dalla lista. Un'offerta ancora elencata viene esclusa per un acquisto
+  da identificare (e un acquisto attribuito a lei per errore viene chiesto di nuovo); una sparita rispetto a uno sguardo
+  precedente in questo periodo (non uno scorrimento: il resto della lista è rimasto fermo) identifica l'acquisto, o viene
+  mostrata acquistata **(OCR)** finché il file di gioco non si aggiorna.
+- **Attività: cosa puoi comprare entro il reset.** Lo standing che puoi ancora guadagnare oggi (limite giornaliero, mai
+  oltre quanto ne tiene il tuo rank) viene speso come quello che hai: *Entro il reset: compra 2× Martyr Symbiosis
+  (guadagnane altri 13.000)*, in azzurro, con il tempo che manca alle 00:00 UTC. Colore e attivazione nelle Impostazioni.
+- **Kuva** nella barra del giocatore, con la sua icona.
+
 ## 0.3.9
 - **Perk Incarnon letti di nuovo**: la tabella delle evoluzioni della wiki (righe *EVO1…EVO5*) ora viene capita, quindi
   Build mostra il perk scelto in ogni livello (Torid: Incarnon Form, Final Fusillade…); le pagine fallite prima vengono

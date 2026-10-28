@@ -3,6 +3,38 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.4.0
+- **Builds: laid out like the game's upgrade screen.** *UPGRADES / ITEM [rank]* with the Forma count, configuration
+  tabs (Config A, B, C…), the capacity bar (left / total, as the game shows it) and the stats on the left, Aura / Stance /
+  Exilus on top of the eight mods, the Arcanes (and the Exilus of guns) on the right, the *Unique trait* row of Kuva /
+  Tenet / Coda weapons. Cards are landscape like the game's: art behind the name, drain and polarity, rank pips, a frame
+  in the rarity's colour.
+- **Weapon stats** in Builds and in the planner: fire rate / attack speed, multishot, magazine, reload, critical chance
+  and damage, status, every damage type with the elements combined in mod order (the Kuva / Tenet / Coda bonus element
+  counted as the weapon's own), total and an approximate damage per second, *base ▸ modded*.
+- **Build planner: a simulator.** A mod library under the build (search, polarity filter, sort, *Only mods I own* with
+  the copies you have); click a slot then a mod, or drag a mod onto a slot; mods the game does not let you combine are
+  refused. Right-click a slot for rank, polarity (Forma) and removal. Switches for the Orokin Reactor / Catalyst,
+  Exilus and Arcane adapters (locked slots show 🔒), the Kuva / Tenet / Coda bonus element and percentage (Valence
+  Fusion), the Incarnon Genesis and its evolution tier, with the perk of each tier chosen on the evolution path.
+  Configurations A, B, C… per item; *Actions*: copy / rename / delete a configuration, remove every Forma, Forma every
+  slot to its mod's polarity. Exilus slots take only Exilus mods. Companion weapons (robotic weapons, beasts' claws with
+  their posture) can be planned too. Plans of older versions open as they were.
+- **Simulate in the planner** (Builds): opens the item shown, with all its configurations, in the planner.
+- **Incarnon**: the evolution tiers drawn as a path (every perk, the chosen ones lit and joined). Perk names are read
+  from the wiki page's evolution table itself (rendered page first, then the wikitext), *EVO1…* rows as well as
+  *Evolution I…* rows, a tier label spanning several rows included; tier I of built-in weapons (no perk name on the
+  wiki) is shown as the Incarnon form. Pages read by the old reader are read again by themselves, so the remaining
+  "option 1 / 2" go away.
+- **Weekly: check on the vendor screen.** While a vendor is scanned, the limited offers it lists are read too: an
+  offer you bought out disappears from the list. A still-listed offer is ruled out for a purchase being identified (and a
+  purchase wrongly taken for it is asked again); one that vanished since an earlier look this period (not a scroll: the
+  rest of the list stayed put) identifies the purchase, or shows as bought **(OCR)** until the game file catches up.
+- **Activities: what you can buy before the reset.** The standing you can still earn today (daily cap, never past what
+  your rank holds) is spent like the standing you have: *Before the reset: buy 2× Martyr Symbiosis (earn 13,000 more)*,
+  in light blue, with the time left to 00:00 UTC. Colour and on/off in Settings.
+- **Kuva** in the player strip, with its icon.
+
 ## 0.3.9
 - **Incarnon perks read again**: the wiki's evolution table (rows *EVO1…EVO5*) is now understood, so the Builds tab
   names the perk chosen in each tier (Torid: Incarnon Form, Final Fusillade…); pages that failed before are read again.

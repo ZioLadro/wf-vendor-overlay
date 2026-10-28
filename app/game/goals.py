@@ -90,6 +90,22 @@ def days_to(need: int, today, cap) -> int | None:
     return 1 + -(-rest // cap)
 
 
+def standing_room(tag: str, rank, standing) -> int | None:
+    """Standing a syndicate can still take before the rank is full (the game stops adding at the next rank's threshold
+    until you rank up); None when it is not known (top rank, or no thresholds in the data)."""
+    if rank is None or standing is None:
+        return None
+    from app.game.inventory import game_names
+    mins = game_names().get("rank_min", {}).get(str(tag)) or {}
+    try:
+        here, nxt = (mins.get(str(rank), 0) if rank > 0 else 0), mins.get(str(int(rank) + 1))
+    except (TypeError, ValueError):
+        return None
+    if nxt is None or int(rank) < 0:
+        return None
+    return max(0, int(nxt) - int(here) - max(0, int(standing)))
+
+
 def owned(inv, slug: str) -> int:
     e = (inv.items or {}).get(slug) or {}
     return int(e.get("n", 0)) + int(e.get("m", 0))
@@ -256,8 +272,28 @@ def build(plan: Plan, market, inv, store) -> dict:
             x["buy"] = left // x["cost"] if sellable is None else min(left // x["cost"], sellable)
             left -= x["buy"] * x["cost"]           # no more copies than the market takes in a day: the rest goes on
         g["left"] = left
+        # the standing still earnable before the daily reset (00:00 UTC) pays for more: the same order, the same market
+        # limit, never past the standing the rank can hold. reset_buy: copies more by the reset; reset_earn: standing to
+        # earn for them (counted from the first one: buying the second needs the first's standing too)
+        room = standing_room(g["tag"], g.get("rank"), g["standing"])
+        more = None if left is None or g.get("daily") is None else min(max(0, g["daily"]), room) if room is not None \
+            else max(0, g["daily"])
+        budget, spent = (left + more, 0) if more else (None, 0)
+        for x in sorted(g["items"], key=lambda x: (x.get("rank_ok") is False, -(x.get("ppk") or 0))):
+            x["reset_buy"], x["reset_earn"] = 0, 0
+            if budget is None or not x["cost"] or x.get("rank_ok") is False:
+                continue
+            sellable = max(1, int((x.get("vol") or 0) * 0.25)) if x.get("vol") is not None else None
+            n = budget // x["cost"] if sellable is None else min(budget // x["cost"], max(0, sellable - x["buy"]))
+            if n <= 0:
+                continue
+            budget -= n * x["cost"]
+            spent += n * x["cost"]
+            x["reset_buy"], x["reset_earn"] = n, max(0, spent - left)
+        g["reset_more"] = more
         # what you can buy now first, then what you can reach soonest with the standing still earnable
-        g["items"].sort(key=lambda x: (-(x.get("buy") or 0), x["days"] if x["days"] is not None else 99, -(x.get("ppk") or 0)))
+        g["items"].sort(key=lambda x: (-(x.get("buy") or 0), -(x.get("reset_buy") or 0),
+                                       x["days"] if x["days"] is not None else 99, -(x.get("ppk") or 0)))
         needs = [x["need"] for x in g["items"] if x["need"]]
         g["short"] = min(needs) if needs else 0
         if g["short"] or g["standing"] is None:

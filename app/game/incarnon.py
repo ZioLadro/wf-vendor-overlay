@@ -30,7 +30,14 @@ WIKI_API = "https://wiki.warframe.com/api.php"
 CACHE_FILE = APP_DIR / "incarnon_perks.json"
 TTL, RETRY = 14 * 86400, 86400
 ROMAN = ["I", "II", "III", "IV", "V"]
-_VARIANT = re.compile(r"\s+(Prime|Vandal|Wraith)$|^(Prisma|MK1-)\s*", re.I)
+_VARIANT = re.compile(r"\s+(Prime|Vandal|Wraith)$|^(Prisma|MK1-|Sancti|Telos|Synoid|Rakta|Secura)\s*", re.I)
+# weapons whose family has an Incarnon Genesis adapter, and weapons with Incarnon built in (Zariman, Entrati, Duviri).
+# The bundled data (tools/build_loadouts.py, key "incarnon") is used when it is there; these lists are the fallback.
+GENESIS = ("Ack & Brunt", "Angstrum", "Anku", "Atomos", "Ballistica", "Bo", "Boar", "Boltor", "Braton", "Bronco", "Burston",
+           "Ceramic Dagger", "Cestra", "Dera", "Despair", "Destreza", "Dread", "Dual Ichor", "Dual Toxocyst", "Furax", "Furis",
+           "Gammacor", "Gorgon", "Hate", "Kunai", "Lato", "Latron", "Lex", "Magistar", "Miter", "Nami Solo", "Obex", "Okina",
+           "Paris", "Sibear", "Sicarus", "Skana", "Soma", "Strun", "Stug", "Sybaris", "Torid", "Vasto", "Vectis", "Zylok")
+BUILTIN = ("Felarx", "Innodem", "Laetum", "Onos", "Phenmor", "Praedos", "Ruvox", "Thalys")
 
 _lock = threading.Lock()
 _cache = None
@@ -44,6 +51,29 @@ def family(name: str) -> str:
     for _ in range(2):
         n = _VARIANT.sub("", n).strip()
     return n
+
+
+def lists() -> tuple:
+    """(Genesis families, built-in Incarnon weapons) from the bundled data, else the lists above."""
+    try:
+        from app.game import loadouts as LO
+        d = LO.data().get("incarnon") or {}
+        if d.get("genesis"):
+            return tuple(d["genesis"]), tuple(d.get("builtin") or BUILTIN)
+    except Exception:
+        pass
+    return GENESIS, BUILTIN
+
+
+def available(name: str) -> dict | None:
+    """What a weapon can have, whoever owns it: {"kind": "genesis"|"builtin", "page"} or None (the build planner)."""
+    gen, built = lists()
+    fam = family(name)
+    if name in built or fam in built:
+        return {"kind": "builtin", "page": name if name in built else fam}
+    if fam in gen:
+        return {"kind": "genesis", "page": f"{fam} Incarnon Genesis"}
+    return None
 
 
 def info(item: dict, name: str, evo_by_family: dict, genesis_families: set) -> dict:
@@ -93,6 +123,177 @@ def _load():
         except Exception:
             _cache = {}
     return _cache
+
+
+# ---------- the evolution table, whatever page it is on ----------
+# Genesis pages write the tiers as "EVO1".."EVO5" (Torid Incarnon Genesis), built-in weapons as "Evolution I".."V"
+# (Laetum), sometimes in a cell of its own spanning the tier's rows (rowspan), sometimes once per row. Tier I of a
+# built-in weapon has no perk name (only a description of the Incarnon form). Every row of a tier names one perk: the
+# first short text after the tier's label, preferably the bold one. "Evolution Challenge" rows are skipped.
+_TIER = re.compile(r"^\s*(?:EVO\s*([1-5])|Evolution\s+(V|IV|III|II|I)|Tier\s+([1-5]|V|IV|III|II|I))\s*:?\s*$", re.I)
+_NOT_PERK = re.compile(r"^(notes?|perks?|names?|descriptions?|effects?|evolutions?|tiers?|challenges?|unlock\w*|"
+                       r"requirements?|icons?|image|-+|–|—|n/?a|none|overview)$", re.I)
+
+
+def _tier_no(text: str):
+    m = _TIER.match(text or "")
+    if not m:
+        return None
+    v = next(g for g in m.groups() if g)
+    return int(v) if v.isdigit() else ROMAN.index(v.upper()) + 1
+
+
+def _perk_name(text: str) -> str:
+    """A perk's name from a cell's text, or "" when the text is not one (a sentence, a dash, a column title)."""
+    n = re.sub(r"\s+", " ", (text or "")).strip(" :.;-–—\u00a0")
+    if not (2 <= len(n) <= 45) or len(n.split()) > 6 or _NOT_PERK.match(n) or re.fullmatch(r"[\d\s%+.,x×-]+", n):
+        return ""
+    if re.search(r"[.!?]\s|\d+\s*%|\bchallenge\b|\bevolution\b|\bincarnon genesis\b", n, re.I):
+        return ""
+    return n
+
+
+def _rows_to_tiers(rows: list) -> list:
+    """rows: [[(text, [bold texts]), ...cells]]. [[perks of tier 1], [tier 2], ...] or []."""
+    tiers, cur = {}, None
+    for cells in rows:
+        cells = [(c[0].strip(), c[1]) for c in cells if c and (c[0] or "").strip()]
+        if not cells:
+            continue
+        label_at = next((i for i, c in enumerate(cells) if _tier_no(c[0])), None)
+        if label_at is not None:
+            cur = _tier_no(cells[label_at][0])
+            rest = cells[label_at + 1:]
+            tiers.setdefault(cur, [])
+        elif cur is None:
+            continue
+        else:
+            rest = cells
+        if any(re.search(r"\bchallenge\b", c[0], re.I) for c in cells):
+            continue
+        name = ""
+        for text, bolds in rest[:2]:                 # the perk is the first column after the label (or the second)
+            name = next((_perk_name(b) for b in bolds if _perk_name(b)), "") or _perk_name(text)
+            if name:
+                break
+        if name and name not in tiers[cur]:
+            tiers[cur].append(name)
+    if not tiers or sum(len(v) for v in tiers.values()) < 2:
+        return []
+    return [tiers.get(k, []) for k in range(1, max(tiers) + 1)]
+
+
+def _best(tables: list) -> list:
+    best = []
+    for rows in tables:
+        tiers = _rows_to_tiers(rows)
+        if sum(len(x) for x in tiers) > sum(len(x) for x in best):
+            best = tiers
+    return best
+
+
+def parse_html_tables(html: str) -> list:
+    """The evolution table of the rendered page (MediaWiki's HTML): [[tier 1 perks], ...] or []."""
+    from html.parser import HTMLParser
+
+    class Reader(HTMLParser):
+        def __init__(self):
+            super().__init__(convert_charrefs=True)
+            self.tables, self.stack, self.cell, self.bold, self.skip = [], [], None, 0, 0
+
+        def handle_starttag(self, tag, attrs):
+            if tag in ("script", "style"):
+                self.skip += 1
+            elif tag == "table":
+                self.stack.append([])
+            elif tag == "tr" and self.stack:
+                self.stack[-1].append([])
+            elif tag in ("td", "th") and self.stack:
+                if not self.stack[-1]:
+                    self.stack[-1].append([])
+                self.cell = [[], []]                       # text pieces, bold texts
+                self.stack[-1][-1].append(self.cell)
+                if tag == "th":
+                    self.bold += 1
+                    self.cell[1].append("")
+            elif tag in ("b", "strong") and self.cell is not None:
+                self.bold += 1
+                self.cell[1].append("")
+            elif tag == "br" and self.cell is not None:
+                self.cell[0].append("\n")
+
+        def handle_endtag(self, tag):
+            if tag in ("script", "style"):
+                self.skip = max(0, self.skip - 1)
+            elif tag == "table" and self.stack:
+                self.tables.append(self.stack.pop())
+                self.cell = None
+            elif tag in ("td", "th"):
+                if tag == "th":
+                    self.bold = max(0, self.bold - 1)
+                self.cell = None
+            elif tag in ("b", "strong"):
+                self.bold = max(0, self.bold - 1)
+
+        def handle_data(self, data):
+            if self.skip or self.cell is None:
+                return
+            self.cell[0].append(data)
+            if self.bold and self.cell[1]:
+                self.cell[1][-1] += data
+
+    r = Reader()
+    try:
+        r.feed(html or "")
+    except Exception:
+        return []
+    tables = []
+    for t_ in r.tables:
+        rows = []
+        for row in t_:
+            cells = []
+            for text, bolds in row:
+                txt = re.sub(r"[ \t\u00a0]+", " ", "".join(text)).strip()
+                first = txt.split("\n", 1)[0].strip()      # a name with a line of description under it
+                cells.append((first if _perk_name(first) and not _perk_name(txt) else txt, [b.strip() for b in bolds if b.strip()]))
+            rows.append(cells)
+        tables.append(rows)
+    return _best(tables)
+
+
+def _wiki_plain(text: str) -> tuple:
+    """(plain text, [bold texts]) of a piece of wikitext."""
+    t_ = re.sub(r"\[\[(?:File|Image):[^\]]*\]\]", "", text or "", flags=re.I)
+    t_ = re.sub(r"\[\[(?:[^|\]]*\|)?([^\]]*)\]\]", r"\1", t_)
+    t_ = re.sub(r"\{\{[^{}|]*\|([^{}|]*)\}\}", r"\1", t_)          # {{Template|Text}} -> Text
+    t_ = re.sub(r"\{\{[^{}]*\}\}", "", t_)
+    t_ = re.sub(r"<[^>]+>", " ", t_)
+    bolds = [b.strip() for b in re.findall(BOLD + r"(.+?)" + BOLD, t_)]
+    return re.sub(r"'{2,}", "", t_).strip(), bolds
+
+
+def parse_wiki_tables(wikitext: str) -> list:
+    """The evolution table written as wikitext ({| ... |}): [[tier 1 perks], ...] or []."""
+    text = re.sub(r"<!--.*?-->", "", wikitext or "", flags=re.S)
+    tables = []
+    for block in re.findall(r"\{\|(.*?)\n\|\}", text, flags=re.S):
+        rows = []
+        for raw in re.split(r"\n\|-[^\n]*", block):
+            cells = []
+            for line in raw.split("\n"):
+                if not line.strip() or line.startswith("|+"):
+                    continue
+                if line[:1] in "|!":
+                    for part in re.split(r"\|\||!!", line[1:]):
+                        # a cell's attributes come before a single "|": rowspan="2" | EVO1
+                        m = re.match(r"^\s*(?:[a-z-]+\s*=\s*(?:\"[^\"]*\"|\S+)\s*)+\|(?!\|)(.*)$", part, re.I)
+                        cells.append(_wiki_plain(m.group(1) if m else part))
+                elif cells:                                   # the cell goes on on the next line
+                    txt, b = _wiki_plain(line)
+                    cells[-1] = ((cells[-1][0] + "\n" + txt).strip(), cells[-1][1] + b)
+            rows.append(cells)
+        tables.append(rows)
+    return _best(tables)
 
 
 def parse_evo_table(wikitext: str) -> list:
@@ -151,8 +352,10 @@ def perks(page: str):
         return None
     c = _load().get(page)
     now = time.time()
-    if c and c.get("v") != PARSER and not c.get("tiers"):
-        c = None                              # failed with an older parser: try again now
+    if c and c.get("v") != PARSER:            # read by an older reader (names missing or wrong): read again, and show
+        if CFG.get("item_previews", True):    # what it had meanwhile
+            _want(page)
+        return c.get("tiers") or None
     if c and now - c.get("t", 0) < (TTL if c.get("tiers") else RETRY):
         return c.get("tiers") or None
     if CFG.get("item_previews", True):
@@ -168,7 +371,7 @@ def _want(page):
     threading.Thread(target=_get, args=(page,), daemon=True, name="incarnon-wiki").start()
 
 
-PARSER = 3              # failed cache entries made by an older parser are read again
+PARSER = 4              # cache entries made by an older reader are read again (0.4.0: the evolution table itself)
 
 
 def html_to_marked(html: str) -> str:
@@ -184,40 +387,52 @@ def html_to_marked(html: str) -> str:
     return _html.unescape(h)
 
 
+def read_page(wikitext: str, html: str) -> tuple:
+    """(tiers, how): the evolution table from the rendered page, else from the wikitext, else the older readers."""
+    for how, fn, src in (("page table", parse_html_tables, html), ("wikitext table", parse_wiki_tables, wikitext),
+                         ("wikitext", parse_evo_table, wikitext), ("wikitext", parse_tiers, wikitext),
+                         ("page", lambda h: parse_tiers(html_to_marked(h)), html)):
+        if src:
+            tiers = fn(src)
+            if tiers:
+                return tiers, how
+    return [], ""
+
+
 def _get(page):
     global done_count
     from app.core import logbus
     from app.trade.market import HEADERS
-    tiers, how = [], ""
+    tiers, how, wt, html = [], "", "", ""
     try:
         h = {"User-Agent": HEADERS["User-Agent"]}
-        r = requests.get(WIKI_API, params={"action": "parse", "page": page, "prop": "wikitext", "format": "json",
-                                           "redirects": 1}, headers=h, timeout=15)
+        r = requests.get(WIKI_API, params={"action": "parse", "page": page, "prop": "text", "format": "json",
+                                           "redirects": 1, "disablelimitreport": 1}, headers=h, timeout=20)
         r.raise_for_status()
-        wt = ((r.json().get("parse") or {}).get("wikitext") or {}).get("*") or ""
-        tiers, how = parse_evo_table(wt), "wikitext"
-        if not tiers:
-            tiers = parse_tiers(wt)
-        if not tiers:                         # the perks come from a template: read the rendered page instead
+        html = ((r.json().get("parse") or {}).get("text") or {}).get("*") or ""
+        tiers, how = read_page("", html)
+        if not tiers:                         # the page's own wikitext, in case the table is written there
             time.sleep(0.5)
-            r = requests.get(WIKI_API, params={"action": "parse", "page": page, "prop": "text", "format": "json",
-                                               "redirects": 1, "disablelimitreport": 1}, headers=h, timeout=20)
+            r = requests.get(WIKI_API, params={"action": "parse", "page": page, "prop": "wikitext", "format": "json",
+                                               "redirects": 1}, headers=h, timeout=15)
             r.raise_for_status()
-            html = ((r.json().get("parse") or {}).get("text") or {}).get("*") or ""
-            marked = html_to_marked(html)
-            tiers, how = parse_tiers(marked), "page"
-            if not tiers:                     # kept so the page's layout can be looked at (and the reader fixed)
-                try:
-                    d = APP_DIR / "incarnon_debug"
-                    d.mkdir(exist_ok=True)
-                    (d / (re.sub(r"[^A-Za-z0-9]+", "_", page) + ".txt")).write_text(
-                        "=== wikitext ===\n" + wt + "\n\n=== page html ===\n" + html, encoding="utf-8")
-                except OSError:
-                    pass
+            wt = ((r.json().get("parse") or {}).get("wikitext") or {}).get("*") or ""
+            tiers, how = read_page(wt, html)
+        if not tiers:                         # kept so the page's layout can be looked at (and the reader fixed)
+            try:
+                d = APP_DIR / "incarnon_debug"
+                d.mkdir(exist_ok=True)
+                (d / (re.sub(r"[^A-Za-z0-9]+", "_", page) + ".txt")).write_text(
+                    "=== wikitext ===\n" + wt + "\n\n=== page html ===\n" + html, encoding="utf-8")
+            except OSError:
+                pass
         logbus.add("incarnon", f"{page}: {sum(len(x) for x in tiers)} perks in {len(tiers)} tiers read from the wiki"
                    + (f" ({how})" if tiers else " — page saved in the incarnon_debug folder"), "ok" if tiers else "warn")
     except Exception as e:
         logbus.error("incarnon", f"{page}: {type(e).__name__}: {e}")
+        old = (_load().get(page) or {}).get("tiers") or []
+        if old:                               # keep what an older reading had (and try again tomorrow)
+            tiers = old
     with _lock:
         _load()[page] = {"t": time.time(), "tiers": tiers, "v": PARSER}
         try:
@@ -240,10 +455,18 @@ def describe(inc: dict, t) -> tuple:
     total = len(tiers) if tiers else None
     head += " · " + t("inc.evo", n=ROMAN[unlocked - 1] if 0 < unlocked <= 5 else "–",
                       total=f"/{ROMAN[total - 1]}" if total and total <= 5 else "")
-    lines = []
-    for i, ch in enumerate(inc["skill"][:5]):
-        k = int(ch) if ch.isdigit() else 0
-        names = tiers[i] if tiers and i < len(tiers) else []
-        name = names[k] if k < len(names) else (names[0] if len(names) == 1 else t("inc.option", n=k + 1))
-        lines.append(f"{ROMAN[i]}: {name}")
+    lines = [f"{ROMAN[i]}: {perk_name(tiers, i, ch, t)}" for i, ch in enumerate(inc["skill"][:5])]
     return head, lines
+
+
+def perk_name(tiers, i: int, choice, t) -> str:
+    """The name of the perk chosen in tier i (0 = tier I) — choice: the SkillTree digit (or an int)."""
+    k = int(choice) if str(choice).isdigit() else 0
+    names = tiers[i] if tiers and i < len(tiers) else []
+    if k < len(names):
+        return names[k]
+    if len(names) == 1:
+        return names[0]
+    if i == 0 and not names:
+        return t("inc.form")                  # tier I unlocks the Incarnon form itself (no perk name on built-in pages)
+    return t("inc.option", n=k + 1)

@@ -1,24 +1,40 @@
-"""Build planner (Builds > Build planner): pick a Warframe or weapon, put mods in the slots, change slot polarities (Forma) and see
-capacity, drain and the stat recap. Plans are saved in build_plans.json; a plan can start as a copy of one of your own loadouts."""
+"""Build planner (Builds > Build planner): a simulator of the game's upgrade screen.
+
+Pick a Warframe, weapon, companion or companion weapon, then do what the game lets you do: put mods and Arcanes in the
+slots (click a card of the library at the bottom, or drag it onto a slot), change a slot's polarity (Forma: right-click a
+slot), set the rank, install an Orokin Reactor / Catalyst, an Exilus or Arcane adapter, an Incarnon Genesis (and choose
+the perk of every evolution tier), change the bonus element of a Kuva / Tenet / Coda weapon (Valence Fusion), keep several
+configurations (A, B, C…). Capacity, Forma count and the stats follow every change.
+
+A plan is a whole loadout (Warframe, weapons, companion…) saved in build_plans.json; it can start as a copy of one of your
+own in-game loadouts or items."""
 import json
+import re
 
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QAction, QIcon
 from PyQt6.QtWidgets import (
-    QMenu,
-    QCheckBox, QComboBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QListWidget,
-    QMessageBox, QPushButton, QScrollArea, QSpinBox, QVBoxLayout, QWidget,
+    QCheckBox, QComboBox, QDoubleSpinBox, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMenu, QMessageBox,
+    QPushButton, QScrollArea, QSizePolicy, QSpinBox, QVBoxLayout, QWidget,
 )
 
 from app.game import buildcalc as BC
+from app.game import incarnon as INC
 from app.game import loadouts as LO
-from app.ui.buildcards import Scaler, cards_widget, stats_panel
+from app.ui import icons
+from app.ui.buildcards import Scaler
+from app.ui.buildscreen import BuildScreen, ModLibrary, incarnon_model, land_width, wf_base_stats
 from app.core.config import APP_DIR
 from app.core.i18n import t
 from app.core.uiutil import role
 
 PLANS_FILE = APP_DIR / "build_plans.json"
-KINDS = ("warframe", "primary", "secondary", "melee", "companion", "archwing", "archgun", "archmelee")
+KINDS = ("warframe", "primary", "secondary", "melee", "companion", "compweapon", "archwing", "archgun", "archmelee")
+GUNS = ("primary", "secondary", "archgun")
+WEAPONS = ("primary", "secondary", "melee", "archgun", "archmelee", "compweapon")
 INNATE = "__innate__"                                 # slot polarity as the game has it (no Forma change)
+LETTERS = "ABCDEFGH"
+_PREFIX = re.compile(r"^(Primed|Amalgam|Umbral|Archon|Flawed|Galvanized)\s+", re.I)
 
 
 def arcane_max(name: str) -> int:
@@ -28,111 +44,47 @@ def arcane_max(name: str) -> int:
     return 5
 
 
-class SlotDialog(QDialog):
-    """Choose the mod (or Arcane), its rank and the slot polarity for one slot."""
+def mod_family(name: str) -> str:
+    """Mods the game does not let you equip together share this: Vitality, Primed Vitality, Umbral / Archon Vitality."""
+    return _PREFIX.sub("", name or "").strip().lower()
 
-    def __init__(self, parent, title, names, cur, can_pol, cur_pol, arcane=False):
-        super().__init__(parent)
-        self.setWindowTitle(title)
-        self.arcane = arcane
-        self.resize(380, 480)
-        lay = QVBoxLayout(self)
-        self.filter = QLineEdit()
-        self.filter.setPlaceholderText(t("plan.filter"))
-        self.list = QListWidget()
-        # a Riven copied from your loadout stays selectable (its stats belong to it: its rank cannot be changed here)
-        self.riven = cur[2] if cur and len(cur) > 2 and cur[2] else None
-        self.names = ([cur[0]] if self.riven and cur[0] not in names else []) + list(names)
-        lay.addWidget(self.filter)
-        lay.addWidget(self.list, 1)
-        form = QFormLayout()
-        self.rank = QSpinBox()
-        form.addRow(t("plan.rank"), self.rank)
-        self.pol = QComboBox()
-        if can_pol:
-            self.pol.addItem("—", INNATE)
-            self.pol.addItem(t("pol.none"), "")
-            for p in BC.POLARITIES:
-                self.pol.addItem(t("pol." + p), p)
-            i = self.pol.findData(cur_pol if cur_pol is not None else INNATE)
-            self.pol.setCurrentIndex(max(0, i))
-            form.addRow(t("plan.forma"), self.pol)
-        lay.addLayout(form)
-        bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        bb.accepted.connect(self.accept)
-        bb.rejected.connect(self.reject)
-        lay.addWidget(bb)
-        self._fill(cur[0] if cur else "")
-        self.filter.textChanged.connect(lambda _t: self._fill(self._current()))
-        self.list.currentRowChanged.connect(lambda _r: self._sync_rank())
-        self.list.itemDoubleClicked.connect(lambda _i: self.accept())
-        if cur and cur[0]:
-            self._sync_rank(cur[1])
-        else:
-            self._sync_rank()
 
-    def _current(self) -> str:
-        it = self.list.currentItem()
-        return it.data(Qt.ItemDataRole.UserRole) if it else ""
+def new_piece(kind: str, item: str) -> dict:
+    """A piece of the loadout as it comes out of the Foundry, with the usual upgrades installed."""
+    roles = BC.plan_roles(kind, item)
+    inc = INC.available(item) if kind in ("primary", "secondary", "melee") else None
+    return {"item": item, "configs": [{"mods": [None] * len(roles)}], "cfg": 0, "forma": {}, "reactor": True,
+            "level": LO.max_rank(item, kind), "exilus": True, "arcane": True,
+            "incarnon": {"on": bool(inc and inc["kind"] == "builtin"), "evo": 5, "perks": [0, 0, 0, 0, 0]},
+            "valence": {"element": "Toxin", "pct": 60.0} if BC.valence_capable(item) else None}
 
-    def _fill(self, keep=""):
-        text = self.filter.text().strip().lower()
-        self.list.blockSignals(True)
-        self.list.clear()
-        self.list.addItem(t("plan.empty"))
-        self.list.item(0).setData(Qt.ItemDataRole.UserRole, "")
-        sel = 0
-        for n in self.names:
-            if text and text not in n.lower():
-                continue
-            self.list.addItem(n)
-            self.list.item(self.list.count() - 1).setData(Qt.ItemDataRole.UserRole, n)
-            if n == keep:
-                sel = self.list.count() - 1
-        self.list.setCurrentRow(sel)
-        self.list.blockSignals(False)
-        self._sync_rank()
 
-    def _max(self, name):
-        if not name:
-            return 0
-        if self.riven and name == self.riven_name():
-            return 0
-        if self.arcane:
-            return arcane_max(name)
-        info = BC.mod_info(name)
-        return info[2] if info else 0
-
-    def _sync_rank(self, rank=None):
-        mx = self._max(self._current())
-        self.rank.setRange(0, mx)
-        self.rank.setEnabled(mx > 0)
-        self.rank.setValue(mx if rank is None else min(mx, rank))
-
-    def riven_name(self):
-        return self.names[0] if self.riven else None
-
-    def result_value(self):
-        name = self._current()
-        if self.riven and name == self.riven_name():
-            return (name, self.riven.get("rank", 0), self.riven)
-        return (name, self.rank.value()) if name else None
-
-    def polarity(self):
-        return self.pol.currentData() if self.pol.count() else INNATE
+def upgrade_piece(p: dict, kind: str) -> dict:
+    """A piece saved by an older version ({"item","mods","forma","reactor","level"}) in today's form."""
+    if "configs" in p:
+        p = dict(p)
+        p["forma"] = {int(k): v for k, v in (p.get("forma") or {}).items()}
+        p["configs"] = [dict(c, mods=[tuple(m) if m else None for m in c.get("mods") or []]) for c in p["configs"]]
+        return p
+    q = new_piece(kind, p.get("item", ""))
+    q["configs"] = [{"mods": [tuple(m) if m else None for m in p.get("mods") or []]}]
+    q["forma"] = {int(k): v for k, v in (p.get("forma") or {}).items()}
+    q["reactor"], q["level"] = bool(p.get("reactor", True)), int(p.get("level", q["level"]))
+    return q
 
 
 class PlannerView(QWidget):
-    def __init__(self, get_loadouts, get_presets=None):
+    def __init__(self, get_loadouts, get_presets=None, get_owned=None):
         super().__init__()
         self.get_loadouts, self.get_presets = get_loadouts, get_presets
+        self.get_owned = get_owned or (lambda: {})
         self.kind, self.item = "warframe", ""
-        self.pieces = {}               # a full loadout: kind -> {"item","mods","forma","reactor","level"} (see _store_piece)
-        self.mods, self.forma = [], {}
-        self.roles = []
-        self.reactor, self.level = True, 30
+        self.p = None                    # the piece shown (see new_piece)
+        self.pieces = {}                 # the whole loadout: kind -> piece
+        self.roles, self.selected = [], None
+        self._auto = False                 # the selected slot was chosen by the planner (after installing a mod)
         self.plans = self._read_plans()
-        self.scaler = Scaler(self, self._draw)
+        self.scaler = Scaler(self, self._draw, fn=land_width, start=200)
 
         self.kind_box = QComboBox()
         for k in KINDS:
@@ -143,58 +95,72 @@ class PlannerView(QWidget):
         self.item_box.setMinimumWidth(220)
         self.item_box.completer().setFilterMode(Qt.MatchFlag.MatchContains)          # type part of the name
         self.item_box.completer().setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        self.chk_reactor = QCheckBox(t("plan.reactor"))
-        self.chk_reactor.setChecked(True)
-        self.spin_level = QSpinBox()
-        self.spin_level.setRange(0, 30)
-        self.spin_level.setValue(30)
         self.btn_copy = QPushButton(t("plan.copy"))
         self.btn_clear = QPushButton(t("plan.new"))
         top = QHBoxLayout()
-        for w in (QLabel(t("plan.kind")), self.kind_box, QLabel(t("plan.item")), self.item_box, QLabel(t("plan.level")),
-                  self.spin_level, self.chk_reactor, self.btn_copy, self.btn_clear):
+        for w in (QLabel(t("plan.kind")), self.kind_box, QLabel(t("plan.item")), self.item_box, self.btn_copy, self.btn_clear):
             top.addWidget(w)
         top.addStretch(1)
-
         self.name = QLineEdit()
         self.name.setPlaceholderText(t("plan.name"))
         self.saved = QComboBox()
         self.saved.setMinimumWidth(180)
         self.btn_save = QPushButton(t("plan.save"))
         self.btn_del = QPushButton(t("plan.delete"))
-        bar = QHBoxLayout()
-        bar.addWidget(self.name, 1)
-        bar.addWidget(self.btn_save)
-        bar.addWidget(QLabel(t("plan.load")))
-        bar.addWidget(self.saved)
-        bar.addWidget(self.btn_del)
+        top.addWidget(self.name, 1)
+        top.addWidget(self.btn_save)
+        top.addWidget(QLabel(t("plan.load")))
+        top.addWidget(self.saved)
+        top.addWidget(self.btn_del)
 
+        self.strip = QHBoxLayout()                    # the pieces of the loadout being planned
         self.hint = QLabel(t("plan.pick"))
         role(self.hint, "hint")
-        self.body = QVBoxLayout()
-        self.body.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.hint.setWordWrap(True)
+        self.screen = BuildScreen(editable=True)
         host = QWidget()
-        host.setLayout(self.body)
+        hl = QVBoxLayout(host)
+        hl.setContentsMargins(0, 0, 0, 0)
+        hl.addWidget(self.screen)
+        hl.addStretch(1)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(host)
         self.scaler.area = scroll
+        self.library = ModLibrary()
+        self.actions = QHBoxLayout()                  # bottom bar, like the game's: ACTIONS · REMOVE ALL
+        self.btn_actions = QPushButton(t("bs.actions"))
+        self.btn_remove = QPushButton(t("bs.remove_all"))
+        self.status = QLabel("")
+        role(self.status, "muted")
+        self.actions.addWidget(self.status, 1)
+        self.actions.addWidget(self.btn_actions)
+        self.actions.addWidget(self.btn_remove)
         lay = QVBoxLayout(self)
         lay.addLayout(top)
-        lay.addLayout(bar)
+        lay.addLayout(self.strip)
         lay.addWidget(self.hint)
         lay.addWidget(scroll, 1)
+        lay.addWidget(self.library)
+        lay.addLayout(self.actions)
 
         self.kind_box.currentIndexChanged.connect(lambda _i: self._kind_changed())
         self.item_box.currentIndexChanged.connect(lambda _i: self._item_changed())
         self.item_box.lineEdit().editingFinished.connect(self._item_typed)
-        self.chk_reactor.toggled.connect(self._opts_changed)
-        self.spin_level.valueChanged.connect(self._opts_changed)
         self.btn_copy.clicked.connect(self._copy)
         self.btn_clear.clicked.connect(self._clear)
         self.btn_save.clicked.connect(self._save)
         self.btn_del.clicked.connect(self._delete)
         self.saved.activated.connect(lambda _i: self._load())
+        self.btn_remove.clicked.connect(self._remove_all)
+        self.btn_actions.clicked.connect(self._actions_menu)
+        self.screen.slot_clicked.connect(self._select)
+        self.screen.slot_menu.connect(self._slot_menu)
+        self.screen.slot_dropped.connect(lambda i, name: self._install(name, i))
+        self.screen.config_selected.connect(self._config)
+        self.screen.config_added.connect(self._config_add)
+        self.screen.perk_picked.connect(self._perk)
+        self.library.picked.connect(lambda name: self._install(name, None))
         self._fill_saved()
         self._kind_changed()
 
@@ -222,74 +188,64 @@ class PlannerView(QWidget):
         self.saved.addItem("—", "")
         for n in sorted(self.plans, key=str.lower):
             self.saved.addItem(n, n)
-        i = self.saved.findData(select)
-        self.saved.setCurrentIndex(max(0, i))
+        self.saved.setCurrentIndex(max(0, self.saved.findData(select)))
         self.saved.blockSignals(False)
 
-    # ---------- state ----------
-    # ---------- a full loadout: one piece per kind, kept while you switch between them ----------
+    # ---------- the piece shown ----------
+    @property
+    def mods(self) -> list:
+        return self.p["configs"][self.p["cfg"]]["mods"] if self.p else []
+
     def _store_piece(self):
-        if self.kind not in KINDS:
-            return
-        if self.item:
-            self.pieces[self.kind] = {"item": self.item, "mods": list(self.mods), "forma": dict(self.forma),
-                                      "reactor": self.reactor, "level": self.level}
-        else:
+        if self.p and self.p.get("item"):
+            self.pieces[self.kind] = self.p
+        elif self.kind in self.pieces and not (self.p and self.p.get("item")):
             self.pieces.pop(self.kind, None)
 
-    def _restore_piece(self, kind):
-        p = self.pieces.get(kind)
-        if not p:
-            return False
-        self._set_item(kind, p["item"])
-        mods = p.get("mods") or []
-        self.mods = [tuple(m) if m else None for m in mods[:len(self.roles)]] + [None] * max(0, len(self.roles) - len(mods))
-        self.forma = {int(k): v for k, v in (p.get("forma") or {}).items()}
-        self.reactor, self.level = bool(p.get("reactor", True)), int(p.get("level", 30))
-        self.chk_reactor.blockSignals(True)
-        self.spin_level.blockSignals(True)
-        self.chk_reactor.setChecked(self.reactor)
-        self.spin_level.setValue(self.level)
-        self.chk_reactor.blockSignals(False)
-        self.spin_level.blockSignals(False)
-        return True
+    def _show_piece(self, kind, piece):
+        """Shows a piece (its item in the boxes, its slots)."""
+        self._set_boxes(kind, piece["item"] if piece else "")
+        self.kind, self.p = kind, piece
+        self.item = piece["item"] if piece else ""
+        self.roles = BC.plan_roles(kind, self.item) if piece else []
+        if piece:
+            for c in piece["configs"]:                 # the slot count of an older plan
+                c["mods"] = (list(c["mods"]) + [None] * len(self.roles))[:len(self.roles)]
+        self.selected = None
+        self._draw()
 
     def switch_to(self, kind):
         """Shows another piece of the loadout (the current one is kept)."""
         self._store_piece()
+        self._show_piece(kind, self.pieces.get(kind))
+
+    def _set_boxes(self, kind, item):
         self.kind_box.blockSignals(True)
         self.kind_box.setCurrentIndex(max(0, self.kind_box.findData(kind)))
         self.kind_box.blockSignals(False)
-        if not self._restore_piece(kind):
-            self._kind_changed(store=False)
-            return
-        self._draw()
-
-    def _kind_changed(self, store=True):
-        if store and self.kind_box.currentData() != self.kind:
-            self._store_piece()
-            if self.pieces.get(self.kind_box.currentData()):
-                self.switch_to(self.kind_box.currentData())
-                return
-        self.kind = self.kind_box.currentData()
         self.item_box.blockSignals(True)
         self.item_box.clear()
-        for n in BC.items(self.kind):
+        for n in BC.items(kind):
             self.item_box.addItem(n)
-        self.item_box.setCurrentIndex(-1)
+        self.item_box.setCurrentIndex(self.item_box.findText(item) if item else -1)
+        self.item_box.setEditText(item)
         self.item_box.blockSignals(False)
-        self.item = ""
-        self._reset_slots()
-        self._draw()
+
+    def _kind_changed(self):
+        kind = self.kind_box.currentData()
+        if kind == self.kind and self.p is not None:
+            return
+        self.switch_to(kind)
 
     def _item_changed(self):
         name = self.item_box.currentText().strip()
-        if name == self.item:
-            return                                     # same item (e.g. Enter pressed again): keep the mods
-        if name not in BC.items(self.kind):
-            return                                     # half-typed or unknown name: nothing to plan for
+        if not name or name == self.item or name not in BC.items(self.kind):
+            return                                     # same item, half-typed or unknown name
+        self.p = new_piece(self.kind, name)
         self.item = name
-        self._reset_slots()
+        self.roles = BC.plan_roles(self.kind, name)
+        self.selected = None
+        self._store_piece()
         self._draw()
 
     def _item_typed(self):
@@ -305,49 +261,54 @@ class PlannerView(QWidget):
         else:
             self.item_box.setEditText(self.item)
 
-    def _reset_slots(self):
-        cap = LO.max_rank(self.item or "", self.kind)          # Kuva / Tenet / Coda weapons: rank 40
-        if self.spin_level.maximum() != cap:
-            self.spin_level.blockSignals(True)
-            self.spin_level.setRange(0, cap)
-            self.spin_level.setValue(cap)
-            self.spin_level.blockSignals(False)
-            self.level = cap
-        self.roles = BC.plan_roles(self.kind)
-        self.mods = [None] * len(self.roles)
-        self.forma = {}
-
-    def _opts_changed(self, *_a):
-        self.reactor, self.level = self.chk_reactor.isChecked(), self.spin_level.value()
-        self._draw()
-
     def _clear(self):
         """A new, empty loadout."""
         self.pieces = {}
-        self.item = ""
-        self.item_box.setCurrentIndex(-1)
-        self.item_box.setEditText("")
-        self._reset_slots()
+        self.p, self.item = None, ""
         self.name.clear()
-        self._draw()
+        self._show_piece(self.kind, None)
 
-    def _set_item(self, kind, item):
-        self.kind_box.blockSignals(True)
-        self.kind_box.setCurrentIndex(max(0, self.kind_box.findData(kind)))
-        self.kind_box.blockSignals(False)
-        self.kind = kind
-        self.item_box.blockSignals(True)
-        self.item_box.clear()
-        for n in BC.items(kind):
-            self.item_box.addItem(n)
-        self.item_box.setCurrentIndex(max(-1, self.item_box.findText(item)))
-        self.item_box.setEditText(item)                 # also an item the planner's data does not list
-        self.item_box.blockSignals(False)
-        self.item = item
-        self._reset_slots()
+    # ---------- copying from the game ----------
+    def piece_from_loadout(self, lo) -> dict:
+        """One of your items, with all its configurations, as a planned piece."""
+        kind, item = lo["kind"], lo["item"]
+        p = new_piece(kind, item)
+        roles = BC.plan_roles(kind, item)
+        sibs = [x for x in self.get_loadouts() if lo.get("oid") and x.get("oid") == lo.get("oid")] or [lo]
+        sibs.sort(key=lambda x: x.get("idx", 0))
+        p["configs"] = []
+        for x in sibs:
+            mods = []
+            for s in x["slots"][:len(roles)]:
+                if not s.get("name"):
+                    mods.append(None)
+                elif s.get("riven") and s["riven"].get("attributes"):
+                    mods.append((s["name"], s["rank"], s["riven"]))
+                else:
+                    mods.append((s["name"], s["rank"]))
+            mods += [None] * (len(roles) - len(mods))
+            p["configs"].append({"mods": mods, "name": x.get("cfg_name") or ""})
+        p["cfg"] = max(0, next((n for n, x in enumerate(sibs) if x.get("idx") == lo.get("idx")), 0))
+        base = BC.innate(kind, item, roles)
+        p["forma"] = {i: s["pol"] for i, s in enumerate(lo["slots"][:len(roles)])
+                      if s.get("pol") is not None and s.get("pol") != base[i]}
+        p["reactor"], p["level"] = bool(lo.get("reactor", True)), int(lo.get("level", p["level"]))
+        ex = lo.get("extras") or {}
+        if "exilus" in ex:
+            p["exilus"] = bool(ex["exilus"]) or kind == "warframe" and any(
+                s.get("name") for s in lo["slots"] if s["role"] == "exilus")
+        if kind in WEAPONS and "arcane_slot" in ex:
+            p["arcane"] = bool(ex["arcane_slot"]) or any(s.get("name") for s in lo["slots"] if s["role"] == "arcane")
+        if ex.get("valence"):
+            p["valence"] = {"element": ex["valence"]["element"], "pct": float(ex["valence"]["pct"])}
+        inc = lo.get("incarnon")
+        if inc:
+            p["incarnon"] = {"on": inc["kind"] in ("genesis", "builtin"), "evo": max(inc.get("evo") or 0, len(inc.get("skill") or "")) or 5,
+                             "perks": [int(c) if c.isdigit() else 0 for c in (inc.get("skill") or "")[:5]] + [0] * (5 - len((inc.get("skill") or "")[:5]))}
+        return p
 
     def _copy(self):
-        presets = [p for p in (self.get_presets() or {}).get("presets") or []] if self.get_presets else []
+        presets = list((self.get_presets() or {}).get("presets") or []) if self.get_presets else []
         if presets:
             choice, ok = QInputDialog.getItem(self, t("plan.copy.title"), t("plan.copy.what"),
                                               [t("plan.copy.loadout"), t("plan.copy.item")], 0, False)
@@ -361,24 +322,17 @@ class PlannerView(QWidget):
             return
         labels = [f"{lo['item']} · {lo.get('cfg_name') or lo['config']}" for lo in los]
         label, ok = QInputDialog.getItem(self, t("plan.copy.title"), t("plan.copy.prompt"), labels, 0, False)
-        if not ok:
-            return
-        lo = los[labels.index(label)]
-        self._set_item(lo["kind"], lo["item"])
-        for i, s in enumerate(lo["slots"][:len(self.mods)]):
-            self.mods[i] = ((s["name"], s["rank"], s["riven"]) if s.get("riven") and s["riven"].get("attributes")
-                            else (s["name"], s["rank"])) if s["name"] else None
-            if s.get("pol") is not None:
-                self.forma[i] = s["pol"]
-        self.reactor, self.level = bool(lo.get("reactor", True)), int(lo.get("level", 30))
-        self.chk_reactor.blockSignals(True)
-        self.spin_level.blockSignals(True)
-        self.chk_reactor.setChecked(self.reactor)
-        self.spin_level.setValue(self.level)
-        self.chk_reactor.blockSignals(False)
-        self.spin_level.blockSignals(False)
-        self.name.setText(label)
-        self._draw()
+        if ok:
+            self.copy_item(los[labels.index(label)], label)
+
+    def copy_item(self, lo, label=""):
+        """Plans one of your items (also used by the Builds tab's "Simulate in the planner")."""
+        self._store_piece()
+        piece = self.piece_from_loadout(lo)
+        self.pieces[lo["kind"]] = piece
+        if label:
+            self.name.setText(label)
+        self._show_piece(lo["kind"], piece)
 
     def _copy_loadout(self, presets):
         """A whole in-game loadout (Warframe, weapons, companion…) as a plan: every piece with its mods."""
@@ -390,38 +344,35 @@ class PlannerView(QWidget):
         los = self.get_loadouts()
         self.pieces = {}
         role_kind = {"warframe": "warframe", "primary": "primary", "secondary": "secondary", "melee": "melee",
-                     "companion": "companion", "archwing": "archwing", "archgun": "archgun", "archmelee": "archmelee"}
+                     "companion": "companion", "companion_weapon": "compweapon", "archwing": "archwing",
+                     "archgun": "archgun", "archmelee": "archmelee"}
         rows = list(p.get("warframe") or []) + list(p.get("companion") or [])
-        tenno = (self.get_presets() or {}).get("tenno") or {}
-        rows += list(tenno.get("archwing") or [])
+        rows += list(((self.get_presets() or {}).get("tenno") or {}).get("archwing") or [])
         for r in rows:
             kind = role_kind.get(r.get("role"))
             if not kind:
                 continue
-            lo = next((x for x in los if x.get("oid") == r.get("oid") and x.get("idx") == r.get("idx")), None) or \
-                next((x for x in los if x["item"] == r["item"] and x.get("idx") == r.get("idx")), None)
-            mods, forma = [], {}
-            for i, s in enumerate((lo or {}).get("slots") or []):
-                mods.append(((s["name"], s["rank"], s["riven"]) if s.get("riven") and s["riven"].get("attributes")
-                             else (s["name"], s["rank"])) if s.get("name") else None)
-                if s.get("pol") is not None:
-                    forma[i] = s["pol"]
-            self.pieces[kind] = {"item": r["item"], "mods": mods, "forma": forma,
-                                 "reactor": bool((lo or {}).get("reactor", True)), "level": int((lo or {}).get("level", 30))}
+            lo = next((x for x in los if x.get("oid") == r.get("oid") and x.get("idx") == r.get("idx")), None)
+            if lo and lo["kind"] in KINDS:
+                self.pieces[kind] = self.piece_from_loadout(dict(lo, kind=kind))
+            elif r["item"] in BC.items(kind):
+                self.pieces[kind] = new_piece(kind, r["item"])
         self.name.setText(label)
         first = next((k for k in KINDS if k in self.pieces), "warframe")
-        self.kind = None
-        self.switch_to(first)
+        self._show_piece(first, self.pieces.get(first))
 
+    # ---------- saving ----------
     def _save(self):
         name = self.name.text().strip()
         if not name:
             QMessageBox.information(self, t("tab.builds"), t("plan.noname"))
             return
         self._store_piece()
-        pieces = {k: dict(v, forma={str(i): p for i, p in v["forma"].items()}) for k, v in self.pieces.items()}
-        self.plans[name] = {"kind": self.kind, "item": self.item, "mods": self.mods, "forma": {str(k): v for k, v in self.forma.items()},
-                            "reactor": self.reactor, "level": self.level, "pieces": pieces}
+        pieces = {}
+        for k, v in self.pieces.items():
+            pieces[k] = dict(v, forma={str(i): p for i, p in v["forma"].items()},
+                             configs=[dict(c, mods=[list(m) if m else None for m in c["mods"]]) for c in v["configs"]])
+        self.plans[name] = {"v": 2, "kind": self.kind, "pieces": pieces}
         self._write_plans()
         self._fill_saved(name)
         QMessageBox.information(self, t("tab.builds"), t("plan.saved", name=name))
@@ -431,26 +382,14 @@ class PlannerView(QWidget):
         p = self.plans.get(name) if name else None
         if not p:
             return
-        if p.get("pieces"):                               # a full loadout
-            self.pieces = {k: v for k, v in p["pieces"].items() if k in KINDS and v.get("item")}
-            self.name.setText(name)
-            self.kind = None
-            self.switch_to(p.get("kind") if p.get("kind") in self.pieces else next(iter(self.pieces), "warframe"))
-            return
-        self.pieces = {}
-        self._set_item(p.get("kind", "warframe"), p.get("item", ""))
-        mods = p.get("mods") or []
-        self.mods = [tuple(m) if m else None for m in mods[:len(self.roles)]] + [None] * max(0, len(self.roles) - len(mods))
-        self.forma = {int(k): v for k, v in (p.get("forma") or {}).items()}
-        self.reactor, self.level = bool(p.get("reactor", True)), int(p.get("level", 30))
-        self.chk_reactor.blockSignals(True)
-        self.spin_level.blockSignals(True)
-        self.chk_reactor.setChecked(self.reactor)
-        self.spin_level.setValue(self.level)
-        self.chk_reactor.blockSignals(False)
-        self.spin_level.blockSignals(False)
+        if p.get("pieces"):
+            self.pieces = {k: upgrade_piece(v, k) for k, v in p["pieces"].items() if k in KINDS and v.get("item")}
+        else:                                           # a single item (0.3.7 and before)
+            kind = p.get("kind", "warframe")
+            self.pieces = {kind: upgrade_piece(p, kind)} if p.get("item") else {}
         self.name.setText(name)
-        self._draw()
+        first = p.get("kind") if p.get("kind") in self.pieces else next(iter(self.pieces), "warframe")
+        self._show_piece(first, self.pieces.get(first))
 
     def _delete(self):
         name = self.saved.currentData()
@@ -459,129 +398,358 @@ class PlannerView(QWidget):
             self._write_plans()
             self._fill_saved()
 
-    # ---------- showing ----------
-    def evaluate(self):
-        pols = BC.slot_polarities(self.kind, self.item, self.roles, self.forma)
-        return BC.evaluate(self.kind, self.item, self.roles, self.mods, pols, self.reactor, self.level), pols
+    # ---------- what the game lets you do ----------
+    def _candidates(self, i):
+        r = self.roles[i]
+        return BC.arcane_candidates(self.kind) if r == "arcane" else BC.candidates(self.kind, self.item, r)
 
-    def slots(self):
-        calc, pols = self.evaluate()
-        out = []
-        for i, r in enumerate(self.roles):
+    def _locked(self, i) -> bool:
+        r = self.roles[i]
+        return (r == "exilus" and not self.p.get("exilus", True)) or \
+               (r == "arcane" and self.kind in WEAPONS and not self.p.get("arcane", True))
+
+    def _install(self, name, slot=None):
+        """Puts a mod / Arcane in a slot: the one dropped on, else the selected one, else the first empty slot it fits."""
+        if not self.p:
+            return
+        fits = [i for i in range(len(self.roles)) if name in self._candidates(i) and not self._locked(i)]
+        if slot is None:                               # an Exilus mod goes to the free Exilus slot first
+            empty = sorted((i for i in fits if not self.mods[i]), key=lambda i: self.roles[i] != "exilus")
+            # a slot you picked yourself wins; one the planner moved to after the last mod does not, when the mod has a
+            # better place (an Exilus mod, the Exilus slot)
+            mine = self.selected in fits and not (self._auto and empty and self.roles[empty[0]] == "exilus")
+            slot = self.selected if mine else next(iter(empty), None)
+        if slot is None or slot not in fits:
+            self._say(t("bs.nofit", name=name))
+            return
+        fam = mod_family(name)
+        clash = next((i for i, m in enumerate(self.mods) if m and i != slot and mod_family(m[0]) == fam), None)
+        if clash is not None and self.roles[slot] != "arcane":
+            self._say(t("bs.clash", name=name, other=self.mods[clash][0]))
+            return
+        mx = arcane_max(name) if self.roles[slot] == "arcane" else (BC.mod_info(name) or [0, 0, 0])[2]
+        self.mods[slot] = (name, mx)
+        # the next empty slot of the same kind gets selected: clicking mods one after the other fills the build
+        same = [i for i in range(len(self.roles)) if self.roles[i] == self.roles[slot] and not self.mods[i] and not self._locked(i)]
+        self.selected = next((i for i in same if i > slot), same[0] if same else slot)
+        self._auto = True
+        self._say("")
+        self._draw()
+
+    def _select(self, i):
+        self.selected, self._auto = i, False
+        self._draw()
+
+    def _say(self, text):
+        self.status.setText(text)
+
+    def _slot_menu(self, i, pos):
+        m = QMenu(self)
+        cur = self.mods[i]
+        r = self.roles[i]
+        if cur:
+            name = cur[0]
+            riven = len(cur) > 2 and cur[2]
+            mx = 8 if riven else (arcane_max(name) if r == "arcane" else (BC.mod_info(name) or [0, 0, 0])[2])
+            if mx and not riven:
+                sub = m.addMenu(t("bs.menu.rank"))
+                for k in range(mx + 1):
+                    a = QAction(t("builds.rank", rank=k, max=mx), sub, checkable=True)
+                    a.setChecked(cur[1] == k)
+                    a.triggered.connect(lambda _c=False, k=k: self._set_rank(i, k))
+                    sub.addAction(a)
+            m.addAction(t("bs.menu.remove"), lambda: self._remove(i))
+        if r != "arcane":
+            sub = m.addMenu(t("bs.menu.polarity"))
+            base = BC.innate(self.kind, self.item, self.roles)[i]
+            here = self.p["forma"].get(i, INNATE)
+            opts = [(INNATE, t("bs.pol.innate", pol=t("pol." + base) if base else t("pol.none")), base),
+                    ("", t("pol.none"), "")] + [(p, t("pol." + p), p) for p in BC.POLARITIES]
+            for val, label, pol in opts:
+                a = QAction(label, sub, checkable=True)
+                a.setChecked(here == val)
+                pm = icons.polarity(pol, 16) if pol else None
+                if pm is not None:
+                    a.setIcon(QIcon(pm))
+                a.triggered.connect(lambda _c=False, v=val: self._set_pol(i, v))
+                sub.addAction(a)
+        if r == "exilus":
+            a = QAction(t("bs.opt.exilus"), m, checkable=True)
+            a.setChecked(self.p.get("exilus", True))
+            a.triggered.connect(lambda c: self._set_opt("exilus", bool(c)))
+            m.addAction(a)
+        if r == "arcane" and self.kind in WEAPONS:
+            a = QAction(t("bs.opt.arcane"), m, checkable=True)
+            a.setChecked(self.p.get("arcane", True))
+            a.triggered.connect(lambda c: self._set_opt("arcane", bool(c)))
+            m.addAction(a)
+        m.exec(pos)
+
+    def _set_rank(self, i, k):
+        if self.mods[i]:
+            self.mods[i] = (self.mods[i][0], k) + tuple(self.mods[i][2:])
+            self._draw()
+
+    def _remove(self, i):
+        self.mods[i] = None
+        self._draw()
+
+    def _remove_all(self):
+        if self.p:
+            self.p["configs"][self.p["cfg"]]["mods"] = [None] * len(self.roles)
+            self._draw()
+
+    def _set_pol(self, i, val):
+        if val == INNATE:
+            self.p["forma"].pop(i, None)
+        else:
+            self.p["forma"][i] = val
+        self._draw()
+
+    def _set_opt(self, key, value):
+        if self.p is not None:
+            self.p[key] = value
+            self._draw()
+
+    def _config(self, i):
+        self.p["cfg"] = i
+        self.selected = None
+        self._draw()
+
+    def _config_add(self):
+        if len(self.p["configs"]) >= len(LETTERS):
+            return
+        self.p["configs"].append({"mods": [None] * len(self.roles)})
+        self.p["cfg"] = len(self.p["configs"]) - 1
+        self._draw()
+
+    def _perk(self, tier, k):
+        inc = self.p["incarnon"]
+        if not inc.get("on"):
+            self._say(t("bs.inc.off"))
+            return
+        if tier >= inc.get("evo", 5):
+            inc["evo"] = tier + 1                       # choosing a perk of a later tier unlocks it
+        inc["perks"][tier] = k
+        self._draw()
+
+    def _actions_menu(self):
+        if not self.p:
+            return
+        m = QMenu(self)
+        m.addAction(t("bs.act.forma_reset"), lambda: (self.p.__setitem__("forma", {}), self._draw()))
+        m.addAction(t("bs.act.forma_fit"), self._forma_fit)
+        m.addAction(t("bs.act.copy_cfg"), self._copy_config)
+        if len(self.p["configs"]) > 1:
+            m.addAction(t("bs.act.del_cfg"), self._del_config)
+        m.addAction(t("bs.act.rename_cfg"), self._rename_config)
+        m.exec(self.btn_actions.mapToGlobal(self.btn_actions.rect().topLeft()))
+
+    def _forma_fit(self):
+        """Forma every mod's slot to the mod's own polarity (what players do to fit a build)."""
+        for i, m in enumerate(self.mods):
+            if m and self.roles[i] != "arcane":
+                info = BC.mod_info(m[0])
+                pol = (m[2] or {}).get("polarity") if len(m) > 2 and m[2] else (info[0] if info else "")
+                if pol:
+                    base = BC.innate(self.kind, self.item, self.roles)[i]
+                    if base == pol:
+                        self.p["forma"].pop(i, None)
+                    else:
+                        self.p["forma"][i] = pol
+        self._draw()
+
+    def _copy_config(self):
+        cur = self.p["configs"][self.p["cfg"]]
+        if len(self.p["configs"]) < len(LETTERS):
+            self.p["configs"].append({"mods": list(cur["mods"]), "name": ""})
+            self.p["cfg"] = len(self.p["configs"]) - 1
+            self._draw()
+
+    def _del_config(self):
+        self.p["configs"].pop(self.p["cfg"])
+        self.p["cfg"] = max(0, self.p["cfg"] - 1)
+        self._draw()
+
+    def _rename_config(self):
+        c = self.p["configs"][self.p["cfg"]]
+        name, ok = QInputDialog.getText(self, t("bs.act.rename_cfg"), t("bs.act.rename_cfg.prompt"), text=c.get("name") or "")
+        if ok:
+            c["name"] = name.strip()
+            self._draw()
+
+    # ---------- showing ----------
+    def model(self) -> dict:
+        """What the screen shows for the piece: slots, capacity, stats (see BuildScreen.show_model)."""
+        p, kind, item, roles = self.p, self.kind, self.item, self.roles
+        pols = BC.slot_polarities(kind, item, roles, p["forma"])
+        has_ex = "exilus" in roles
+        locked = {"exilus": has_ex and not p.get("exilus", True), "arcane": kind in WEAPONS and not p.get("arcane", True)}
+        calc = BC.evaluate(kind, item, roles, self.mods, pols, p.get("reactor", True), p.get("level", 30), locked=locked)
+        slots = []
+        for i, r in enumerate(roles):
             m = self.mods[i]
             name = m[0] if m else ""
             info = BC.mod_info(name) if name and r != "arcane" else None
             rv = m[2] if m and len(m) > 2 else None
             mx = 8 if rv else (info[2] if info else (arcane_max(name) if name else None))
             c = calc["slots"][i]
-            out.append({"role": r, "name": name, "rank": m[1] if m else None, "max": mx, "pol": pols[i], "mpol": c["mpol"],
-                        "drain": c["drain"], "state": c["state"], "riven": rv})
-        return out, calc
+            slots.append({"role": r, "name": name, "rank": m[1] if m else None, "max": mx, "pol": pols[i], "mpol": c["mpol"],
+                          "drain": c["drain"], "state": c["state"], "riven": rv})
+        valence = p.get("valence") if BC.valence_capable(item) else None
+        weapon = BC.weapon_stats(kind, item, calc["bonus"], calc.get("elements") or [], valence) if kind in WEAPONS else None
+        cfgs = [{"label": c.get("name") or t("bs.cfg", c=LETTERS[n]), "active": n == p["cfg"]} for n, c in enumerate(p["configs"])]
+        out = {"kind": kind, "item": item, "title": item, "rank": p.get("level"), "configs": cfgs, "slots": slots,
+               "capacity": {k: calc[k] for k in ("total", "used", "free")}, "level": p.get("level"),
+               "reactor": p.get("reactor"), "forma": BC.forma_count(kind, item, roles, p["forma"]),
+               "wf_stats": calc["stats"], "wf_base": wf_base_stats(item) if kind == "warframe" else {},
+               "weapon": weapon, "bonus": calc["bonus"], "valence": valence, "locked": locked, "selected": self.selected,
+               "unique": bool(valence)}
+        avail = INC.available(item) if kind in ("primary", "secondary", "melee") else None
+        if avail:
+            inc = p["incarnon"]
+            on = inc.get("on")
+            head = t("inc." + avail["kind"]) + ("" if on else " · " + t("bs.inc.notinstalled"))
+            out["incarnon"] = incarnon_model(avail["kind"], avail["page"], inc.get("perks") or [], inc.get("evo", 5) if on else 0,
+                                             head=head, note="" if on else t("bs.inc.install"))
+        return out
 
-    def _draw(self):
-        self.setUpdatesEnabled(False)                  # rebuilt in one go: no flashing
-        try:
-            self._draw_body()
-        finally:
-            self.setUpdatesEnabled(True)
-
-    def _draw_body(self):
-        while self.body.count():
-            it = self.body.takeAt(0)
-            w = it.widget()
-            if w:
-                w.hide()
-                w.deleteLater()
-            elif it.layout():
-                self._wipe(it.layout())
-        if not LO.data().get("mst"):
-            lab = QLabel(t("plan.nodata"))
-            lab.setWordWrap(True)
-            self.body.addWidget(lab)
-            return
-        self._draw_strip()
-        if not self.item:
-            return
-        slots, calc = self.slots()
-        row = QHBoxLayout()
-        row.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        row.addWidget(cards_widget(slots, on_click=self._edit, cw=self.scaler.cw))
-        col = QVBoxLayout()
-        col.setAlignment(Qt.AlignmentFlag.AlignTop)
-        col.addWidget(stats_panel({k: calc[k] for k in ("total", "used", "free")}, calc["stats"], self.level, self.reactor, calc.get("bonus")))
-        note = QLabel(t("plan.compat"))
-        note.setWordWrap(True)
-        role(note, "hint")
-        col.addWidget(note)
-        row.addSpacing(12)
-        row.addLayout(col)
-        wrap = QWidget()
-        wrap.setLayout(row)
-        self.body.addWidget(wrap)
+    def _options(self) -> QWidget:
+        """The planner's switches above the slots: rank, Reactor / Catalyst, adapters, Valence, Incarnon Genesis."""
+        p, kind = self.p, self.kind
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(10)
+        h.addWidget(QLabel(t("plan.level")))
+        lvl = QSpinBox()
+        lvl.setRange(0, LO.max_rank(self.item, kind))
+        lvl.setValue(int(p.get("level", 30)))
+        lvl.setKeyboardTracking(False)                 # typed numbers count once finished (every change redraws)
+        lvl.valueChanged.connect(lambda v: self._set_opt("level", int(v)))
+        h.addWidget(lvl)
+        what = t("builds.catalyst") if kind in WEAPONS else t("builds.reactor.name")
+        cb = QCheckBox(what)
+        cb.setChecked(bool(p.get("reactor", True)))
+        cb.setToolTip(t("bs.opt.reactor.tip"))
+        cb.toggled.connect(lambda c: self._set_opt("reactor", bool(c)))
+        h.addWidget(cb)
+        if "exilus" in self.roles:
+            cb = QCheckBox(t("bs.opt.exilus"))
+            cb.setChecked(bool(p.get("exilus", True)))
+            cb.toggled.connect(lambda c: self._set_opt("exilus", bool(c)))
+            h.addWidget(cb)
+        if "arcane" in self.roles and kind in WEAPONS:
+            cb = QCheckBox(t("bs.opt.arcane"))
+            cb.setChecked(bool(p.get("arcane", True)))
+            cb.toggled.connect(lambda c: self._set_opt("arcane", bool(c)))
+            h.addWidget(cb)
+        if BC.valence_capable(self.item):
+            v = p.get("valence") or {"element": "Toxin", "pct": 60.0}
+            p["valence"] = v
+            h.addWidget(QLabel(t("bs.opt.valence")))
+            el = QComboBox()
+            for e in BC.VALENCE:
+                el.addItem(t("dmg." + e.lower()), e)
+            el.setCurrentIndex(max(0, el.findData(v["element"])))
+            el.setToolTip(t("bs.opt.valence.tip"))
+            el.currentIndexChanged.connect(lambda _i, b=el: (v.__setitem__("element", b.currentData()), self._draw()))
+            h.addWidget(el)
+            pct = QDoubleSpinBox()
+            pct.setRange(25.0, 60.0)
+            pct.setDecimals(1)
+            pct.setSuffix("%")
+            pct.setValue(float(v.get("pct") or 60))
+            pct.setKeyboardTracking(False)
+            pct.valueChanged.connect(lambda x: (v.__setitem__("pct", float(x)), self._draw()))
+            h.addWidget(pct)
+        avail = INC.available(self.item) if kind in ("primary", "secondary", "melee") else None
+        if avail:
+            inc = p["incarnon"]
+            if avail["kind"] == "genesis":
+                cb = QCheckBox(t("bs.opt.genesis"))
+                cb.setChecked(bool(inc.get("on")))
+                cb.setToolTip(t("bs.opt.genesis.tip", page=avail["page"]))
+                cb.toggled.connect(lambda c: (inc.__setitem__("on", bool(c)), self._draw()))
+                h.addWidget(cb)
+            else:
+                inc["on"] = True
+            h.addWidget(QLabel(t("bs.opt.evo")))
+            evo = QSpinBox()
+            evo.setRange(1, 5)
+            evo.setValue(int(inc.get("evo", 5) or 5))
+            evo.setKeyboardTracking(False)
+            evo.setEnabled(bool(inc.get("on")))
+            evo.valueChanged.connect(lambda x: (inc.__setitem__("evo", int(x)), self._draw()))
+            h.addWidget(evo)
+        h.addStretch(1)
+        return w
 
     def _draw_strip(self):
         """The pieces of the loadout being planned: one button per kind (pressed = the one shown); a click switches to it."""
-        from PyQt6.QtWidgets import QGridLayout, QSizePolicy
+        from PyQt6.QtWidgets import QPushButton as B
+        while self.strip.count():
+            it = self.strip.takeAt(0)
+            if it.widget():
+                it.widget().hide()
+                it.widget().deleteLater()
         self._store_piece()
         if not any(self.pieces.values()):
             return
-        grid = QGridLayout()
-        grid.setHorizontalSpacing(6)
-        grid.setVerticalSpacing(4)
         lab = QLabel(t("plan.loadout"))
         role(lab, "muted")
-        grid.addWidget(lab, 0, 0)
-        n = 0
+        self.strip.addWidget(lab)
         for k in KINDS:
             p = self.pieces.get(k)
             if not p and k != self.kind:
                 continue
-            b = QPushButton(f"{t('builds.kind.' + k)}: {p['item'] if p else '—'}")
+            b = B(f"{t('builds.kind.' + k)}: {p['item'] if p else '—'}")
             b.setCheckable(True)
             b.setChecked(k == self.kind)
             if k == self.kind:
                 b.setStyleSheet("font-weight: bold; text-decoration: underline;")
             b.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
             b.clicked.connect(lambda _c=False, kk=k: self.switch_to(kk))
-            grid.addWidget(b, n // 4, 1 + n % 4)
-            n += 1
+            self.strip.addWidget(b)
         missing = [k for k in KINDS if k not in self.pieces and k != self.kind]
         if missing:
-            add = QPushButton("+ " + t("plan.loadout.addshort"))
+            add = B("+ " + t("plan.loadout.addshort"))
             add.setToolTip(t("plan.loadout.add"))
             menu = QMenu(add)
             for k in missing:
                 menu.addAction(t("builds.kind." + k), lambda kk=k: self.switch_to(kk))
             add.setMenu(menu)
-            grid.addWidget(add, n // 4, 1 + n % 4)
-        grid.setColumnStretch(5, 1)
-        wrap = QWidget()
-        wrap.setLayout(grid)
-        self.body.addWidget(wrap)
+            self.strip.addWidget(add)
+        self.strip.addStretch(1)
 
-    def _wipe(self, layout):
-        while layout.count():
-            it = layout.takeAt(0)
-            w = it.widget()
-            if w:
-                w.hide()
-                w.deleteLater()
-            elif it.layout():
-                self._wipe(it.layout())
-
-    def _edit(self, i):
-        r = self.roles[i]
-        arcane = r == "arcane"
-        names = BC.arcane_candidates(self.kind) if arcane else BC.candidates(self.kind, self.item, r)
-        dlg = SlotDialog(self, t("plan.slot.title", n=i + 1, role=t("builds.slot." + r) if r != "general" else t("builds.sec.mods")),
-                         names, self.mods[i], not arcane, self.forma.get(i), arcane=arcane)
-        if dlg.exec() != QDialog.DialogCode.Accepted:
-            return
-        self.mods[i] = dlg.result_value()
-        if not arcane:
-            pol = dlg.polarity()
-            if pol == INNATE:
-                self.forma.pop(i, None)
-            else:
-                self.forma[i] = pol
-        self._draw()
+    def _draw(self):
+        self.setUpdatesEnabled(False)                  # rebuilt in one go: no flashing
+        try:
+            self._draw_strip()
+            if not LO.data().get("mst"):
+                self.hint.setText(t("plan.nodata"))
+                self.hint.show()
+                self.screen.clear()
+                self.library.hide()
+                return
+            if not self.p:
+                self.hint.setText(t("plan.pick"))
+                self.hint.show()
+                self.screen.clear()
+                self.library.hide()
+                for w in (self.btn_actions, self.btn_remove):
+                    w.setEnabled(False)
+                return
+            for w in (self.btn_actions, self.btn_remove):
+                w.setEnabled(True)
+            self.hint.setText(t("plan.howto"))
+            cw = self.scaler.cw
+            self.screen.show_model(self.model(), cw, extra_top=self._options())
+            sel = self.selected if self.selected is not None and self.selected < len(self.roles) else None
+            r = self.roles[sel] if sel is not None else "general"
+            names = BC.arcane_candidates(self.kind) if r == "arcane" else BC.candidates(self.kind, self.item, r)
+            what = t("bs.lib.for", slot=t("builds.slot." + r)) if r != "general" else t("builds.sec.mods")
+            self.library.set_mods(names, self.get_owned() or {}, arcane=r == "arcane", what=what, cw=max(130, int(cw * 0.8)))
+            self.library.show()
+        finally:
+            self.setUpdatesEnabled(True)

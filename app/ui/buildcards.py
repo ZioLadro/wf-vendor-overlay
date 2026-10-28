@@ -29,9 +29,10 @@ def card_width(avail: int, height: int = 0) -> int:
 class Scaler(QObject):
     """Redraws a view with a new card width when the scroll area that holds it is resized (debounced, in steps of 6 px)."""
 
-    def __init__(self, view, redraw, area=None):
+    def __init__(self, view, redraw, area=None, fn=None, start=CARD_W):
         super().__init__(view)
-        self.view, self.redraw, self.cw, self.area = view, redraw, CARD_W, area
+        self.view, self.redraw, self.cw, self.area = view, redraw, start, area
+        self.fn = fn or card_width                     # the width rule (portrait cards here, landscape in buildscreen)
         self._viewport = None
         self._timer = QTimer(self, singleShot=True, interval=90, timeout=self._apply)
 
@@ -55,7 +56,7 @@ class Scaler(QObject):
     def _apply(self):
         if self._viewport is None:
             return
-        cw = card_width(self._viewport.width(), self._viewport.height())
+        cw = self.fn(self._viewport.width(), self._viewport.height())
         if abs(cw - self.cw) >= 6:
             self.cw = cw
             self.redraw()
@@ -97,7 +98,7 @@ class ModCard(QFrame):
     """One slot. slot: {"role","name","rank","max","pol","mpol","drain","state"}; role: general|aura|exilus|stance|arcane."""
     clicked = pyqtSignal()
 
-    def __init__(self, slot, clickable=False, cw=CARD_W):
+    def __init__(self, slot, clickable=False, cw=CARD_W, fetch=True):
         super().__init__()
         small = max(8, round(cw / 13))
         base = max(9, round(cw / 11))
@@ -146,7 +147,7 @@ class ModCard(QFrame):
         if name and kind_role == "arcane":
             pm = icons.arcane(name, int(cw * 0.5))
         elif name and not slot.get("riven"):              # pictures from the Warframe wiki only (Rivens have none)
-            f = previews.by_name(name, wiki_only=True)
+            f = previews.by_name(name, wiki_only=True, fetch=fetch)
             if f:
                 pm = _scaled(f, int(cw * 0.5))
         if pm is not None and not pm.isNull():
@@ -154,7 +155,7 @@ class ModCard(QFrame):
         mx0 = slot.get("max")
         rank_txt = (t("builds.rank", rank=mx0 if slot.get("rank") is None else slot["rank"], max=mx0)) if name and mx0 else ""
         if name and kind_role != "arcane" and not slot.get("riven"):
-            f = previews.by_name(name, wiki_only=True)
+            f = previews.by_name(name, wiki_only=True, fetch=fetch)
             if f:                                           # hover: the mod's picture, bigger
                 self.setToolTip(f"<b>{name}</b><br><img src='{f.as_posix()}' width='220'><br>{rank_txt}")
             else:

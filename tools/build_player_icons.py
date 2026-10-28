@@ -33,7 +33,7 @@ def main():
     # currencies: the ones the limited vendors ask for (data/weekly.json) and the ones the player strip tracks: their game
     # path (to count them in your inventory) and icon
     lang = fetch("dict.en", cache)
-    want = {"pathos clamp", "riven sliver", "live heartcell", "vitus essence", "steel essence"}
+    want = {"pathos clamp", "riven sliver", "live heartcell", "vitus essence", "steel essence", "kuva"}
     try:
         weekly = json.loads((Path(a.out).parent / "weekly.json").read_text(encoding="utf-8"))["vendors"]
         want |= {n.lower() for v in weekly.values() for i in v["items"] for _q, n in (i.get("cost") or [])}

@@ -11,9 +11,14 @@ Usage:  python tools/build_loadouts.py [--out data/loadout_data.json] [--cache d
   suits:     Warframe path -> [its 4 ability paths, in order]
   helminth:  generic Helminth ability path -> English name
 With --wfcd <folder of WFCD/warframe-items data/json> it also writes (used for polarity, drain, capacity and stats):
-  mst:       mod name -> [polarity, base drain, max rank, compatibility, type, {stat: value at max rank}] (Warframe mods: stat keys; weapon mods: labels)
+  mst:       mod name -> [polarity, base drain, max rank, compatibility, type, {stat: value at max rank}, Exilus (1/0)]
+             (Warframe mods: stat keys; weapon mods: labels)
   frames:    Warframe name -> [health, shield, armor, energy, sprint speed (rank 30), aura polarity, [innate polarities]]
   weapons:   weapon name -> [kind, type, [innate polarities], exilus polarity, stance polarity]
+             (kind "compweapon": Sentinel / MOA / Hound weapons, and "Claws" for the beasts)
+  wstats:    weapon name -> {"cc","cd","sc","fr","dmg": {type: value}, guns: "ms","mag","rl","acc","trig",
+             melee: "rng","cdur","ft","slam","slide","heavy"} (base stats at rank 30, the build planner's stat recap)
+  incarnon:  {"genesis": [weapon families with an Incarnon Genesis], "builtin": [weapons with Incarnon built in]}
   arc:       Arcane name -> type
 """
 import argparse
@@ -30,7 +35,8 @@ STAT_KEYS = {"Health": "health", "Shield Capacity": "shield", "Armor": "armor", 
              "Sprint Speed": "sprint", "Ability Duration": "duration", "Ability Efficiency": "efficiency",
              "Ability Range": "range", "Ability Strength": "strength"}
 MOD_TYPES = {"Warframe Mod": "W", "Primary Mod": "P", "Shotgun Mod": "G", "Secondary Mod": "S", "Melee Mod": "M",
-             "Stance Mod": "T", "Companion Mod": "C", "Archwing Mod": "A", "Arch-Gun Mod": "R", "Arch-Melee Mod": "X"}
+             "Stance Mod": "T", "Companion Mod": "C", "Archwing Mod": "A", "Arch-Gun Mod": "R", "Arch-Melee Mod": "X",
+             "Posture Mod": "Y"}
 
 
 def wfcd(folder: Path) -> dict:
@@ -60,7 +66,8 @@ def wfcd(folder: Path) -> dict:
                 if hit:
                     label = re.sub(r"\s*\(.*?\)", "", hit.group(3)).strip()
                     stats[label] = round(stats.get(label, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
-        mst[name] = [m.get("polarity") or "", int(m["baseDrain"]), lim, m.get("compatName") or "", kind, stats]
+        mst[name] = [m.get("polarity") or "", int(m["baseDrain"]), lim, m.get("compatName") or "", kind, stats,
+                     1 if m.get("isUtility") else 0]
     frames = {}
     for w in load("Warframes"):
         if w.get("type") == "Warframe" and w.get("name"):
@@ -82,8 +89,31 @@ def wfcd(folder: Path) -> dict:
             if w.get("name") and w.get("type") not in ("Zaw Component",):
                 weapons[w["name"]] = [kind, w.get("type") or "", w.get("polarities") or [], w.get("exilusPolarity") or "",
                                       w.get("stancePolarity") or ""]
+    for w in load("SentinelWeapons"):                 # companions' weapons: robotic ones by name, beasts' claws as one
+        if w.get("name"):
+            weapons[w["name"]] = ["compweapon", "Robotic", w.get("polarities") or [], "", ""]
+    weapons["Claws"] = ["compweapon", "Claws", [], "", ""]
+    r4 = lambda v: round(float(v), 4) if isinstance(v, (int, float)) else None
+    wstats = {}
+    for fn in ("Primary", "Secondary", "Melee", "Arch-Gun", "Arch-Melee", "SentinelWeapons"):
+        for w in load(fn):
+            if not w.get("name") or w["name"] not in weapons:
+                continue
+            dmg = {k: r4(v) for k, v in (w.get("damage") or {}).items() if k != "total" and isinstance(v, (int, float)) and v}
+            st = {"cc": r4(w.get("criticalChance")), "cd": r4(w.get("criticalMultiplier")), "sc": r4(w.get("procChance")),
+                  "fr": r4(w.get("fireRate")), "dmg": dmg}
+            if fn in ("Melee", "Arch-Melee"):
+                st.update(rng=r4(w.get("range")), cdur=r4(w.get("comboDuration")), ft=r4(w.get("followThrough")),
+                          slam=r4(w.get("slamAttack")), slide=r4(w.get("slideAttack")), heavy=r4(w.get("heavyAttackDamage")))
+            else:
+                st.update(ms=r4(w.get("multishot")), mag=w.get("magazineSize"), rl=r4(w.get("reloadTime")),
+                          acc=r4(w.get("accuracy")), trig=w.get("trigger") or "")
+            wstats[w["name"]] = {k: v for k, v in st.items() if v not in (None, "", {})}
+    builtin = sorted(w["name"] for fn in ("Primary", "Secondary", "Melee") for w in load(fn)
+                     if w.get("name") and "Incarnon" in (w.get("tags") or []))
     arc = {a["name"]: a.get("type", "") for a in load("Arcanes") if a.get("name")}
-    return {"mst": mst, "frames": frames, "weapons": weapons, "arc": arc, "companions": companions, "archwings": archwings}
+    return {"mst": mst, "frames": frames, "weapons": weapons, "arc": arc, "companions": companions, "archwings": archwings,
+            "wstats": wstats, "incarnon_builtin": builtin}
 
 
 def main():
@@ -126,9 +156,12 @@ def main():
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
            "source": "calamity-inc/warframe-public-export-plus", "mods": mods, "rarity": rarity, "arcrar": arcrar, "arcanes": arcanes,
            "abilities": abilities, "suits": suits, "helminth": helminth}
+    genesis = sorted({re.sub(r"\s+Incarnon Genesis$", "", nm(k)) for k in lang
+                      if re.fullmatch(r"[\w&' -]+ Incarnon Genesis", nm(k))})
     if a.wfcd:
         out.update(wfcd(Path(a.wfcd)))
         out["source"] += " + WFCD/warframe-items"
+        out["incarnon"] = {"genesis": genesis, "builtin": out.pop("incarnon_builtin")}
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{len(mods)} mods, {len(arcanes)} arcanes, {len(abilities)} abilities, {len(suits)} warframes -> {a.out}")
 

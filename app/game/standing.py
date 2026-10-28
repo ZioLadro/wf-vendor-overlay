@@ -87,7 +87,7 @@ def parse_profile(data) -> dict:
 
 TRACKED = {"steel": "/Lotus/Types/Items/MiscItems/SteelEssence", "pathos": "/Lotus/Types/Gameplay/Duviri/Resource/DuviriDragonDropItem",
            "sliver": "/Lotus/Types/Items/MiscItems/RivenFragment", "heartcell": "/Lotus/Types/Items/MiscItems/CodaWeaponBucks",
-           "vitus": "/Lotus/Types/Items/MiscItems/Elitium"}
+           "vitus": "/Lotus/Types/Items/MiscItems/Elitium", "kuva": "/Lotus/Types/Items/MiscItems/Kuva"}
 
 
 def wallet(res) -> dict:
@@ -110,7 +110,7 @@ def wallet(res) -> dict:
     for it in res.get("MiscItems") or []:
         if isinstance(it, dict):
             counts[str(it.get("ItemType", ""))] = counts.get(str(it.get("ItemType", "")), 0) + int(it.get("ItemCount") or 0)
-    for key, path in TRACKED.items():                 # Steel Essence, Pathos Clamps, Riven Slivers, Live Heartcells, Vitus Essence
+    for key, path in TRACKED.items():                 # Steel Essence, Pathos Clamps, Riven Slivers, Live Heartcells, Vitus Essence, Kuva
         out[key] = counts.get(path, 0)
     if num(res.get("PrimeTokens")) is not None:
         out["aya"] = num(res["PrimeTokens"])

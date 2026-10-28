@@ -135,8 +135,11 @@ class WeeklyTab(QWidget):
             cells = [Cell(vname, o["vendor_name"].lower(), center=False),
                      Cell(o["name"] + (f" ×{thousands(o['qty'])}" if o["qty"] > 1 else ""), o["name"].lower(), center=False),
                      Cell(cost_text(o["cost"]), cost_text(o["cost"]).lower(), center=False),
-                     Cell(f"{o['bought']}/{o['limit']}" + ("  ✔" if done else ""), o["bought"] / max(1, o["limit"])),
+                     Cell(f"{o['bought']}/{o['limit']}" + ("  ✔" if done else "") + ("  " + t("weekly.ocr") if o.get("ocr") else ""),
+                          o["bought"] / max(1, o["limit"])),
                      Cell(left(reset - now) if reset else "–", reset or 0)]
+            if o.get("ocr"):
+                cells[3].setToolTip(t("weekly.ocr.tip"))
             for c, cell in enumerate(cells):
                 tb.setItem(r, c, cell)
             tr = Cell("", 1 if o["tracked"] else 0)

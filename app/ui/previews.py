@@ -152,9 +152,10 @@ def pending() -> int:
     return len(_pending)
 
 
-def by_name(name, slug=None, wiki_only=False):
+def by_name(name, slug=None, wiki_only=False, fetch=True):
     """File of the picture of an item known by name (a mod or Arcane of a loadout, say); asks for it if missing.
-    wiki_only: the picture comes from the Warframe wiki only (the Builds tab), kept apart from the market's."""
+    wiki_only: the picture comes from the Warframe wiki only (the Builds tab), kept apart from the market's.
+    fetch=False: only a picture already downloaded (the planner's mod library: hundreds of cards)."""
     global _worker
     if not CFG.get("item_previews", True) or not name:
         return None
@@ -166,6 +167,8 @@ def by_name(name, slug=None, wiki_only=False):
     f = _file(key)
     if f.exists():
         return f
+    if not fetch:
+        return None
     if key in _pending or time.time() - _failed.get(key, 0) < 3600:
         return None
     _pending.add(key)

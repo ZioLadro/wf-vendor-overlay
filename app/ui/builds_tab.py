@@ -13,7 +13,8 @@ from PyQt6.QtWidgets import (
 from app.game import aleca
 from app.ui import icons
 from app.ui import previews
-from app.ui.buildcards import _scaled, Scaler, cards_widget, stats_panel
+from app.ui.buildcards import Scaler
+from app.ui.buildscreen import BuildScreen, land_width
 from app.ui.planner_tab import PlannerView
 from app.game import loadouts as LO
 from app.core.config import APP_DIR
@@ -68,32 +69,28 @@ def prefetch_names(loadouts, presets) -> list:
 
 
 class LoadoutView(QWidget):
-    """The selected loadout, laid out like in the game."""
+    """The selected loadout, laid out like the game's upgrade screen (buildscreen.py), with the Archon Shards and the
+    Helminth ability under it. "Simulate in the planner" opens the item in the build planner."""
 
     def __init__(self):
         super().__init__()
         self.lay = QVBoxLayout(self)
         self.lay.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.title = QLabel("")
-        self.title.setStyleSheet("font-size: 17px; font-weight: bold;")
-        self.pic = QLabel()
-        self.pic.setFixedSize(56, 56)
-        self.sub = QLabel("")
-        role(self.sub, "muted")
+        self.empty = QLabel(t("builds.pick"))
+        role(self.empty, "muted")
+        self.screen = BuildScreen(editable=False)
+        self.screen.config_selected.connect(self._config_clicked)
         self.body = QVBoxLayout()
-        self._group = None
-        self.lookup = {}                                 # (item id, config index) -> loadout, set by the owner (config buttons)
-        self._lo = None
-        self.scaler = Scaler(self, lambda: self.show_loadout(self._lo))
-        head = QHBoxLayout()
-        head.addWidget(self.pic)
-        names = QVBoxLayout()
-        names.addWidget(self.title)
-        names.addWidget(self.sub)
-        head.addLayout(names, 1)
-        self.lay.addLayout(head)
+        self.lay.addWidget(self.empty)
+        self.lay.addWidget(self.screen)
         self.lay.addLayout(self.body)
         self.lay.addStretch(1)
+        self.lookup = {}                                 # (item id, config index) -> loadout, set by the owner (config buttons)
+        self.on_simulate = None                          # set by the Builds tab: opens a loadout in the planner
+        self._lo = None
+        self.scaler = Scaler(self, lambda: self.show_loadout(self._lo), fn=land_width, start=200)
+        # kept for the callers that set a text when nothing is shown
+        self.sub = self.empty
 
     def _clear(self, layout):
         while layout.count():
@@ -106,32 +103,15 @@ class LoadoutView(QWidget):
                 self._clear(it.layout())
 
     def _section(self, text):
-        lab = QLabel(text)
-        role(lab, "muted")
-        lab.setStyleSheet("font-weight: bold; margin-top: 8px;")
+        lab = QLabel(text.upper())
+        lab.setStyleSheet("font-weight: bold; letter-spacing: 1px; margin-top: 10px;")
         self.body.addWidget(lab)
 
-    def _config_buttons(self, lo):
-        """The other loadouts (A, B, C…) of the same item, named like in the game; click to switch."""
-        row = QHBoxLayout()
-        row.setSpacing(4)
-        row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-        if self._group is not None:                     # one button group per drawing, not one more at every redraw
-            self._group.setParent(None)
-            self._group.deleteLater()
-        group = QButtonGroup(self)
-        group.setExclusive(True)
-        for c in lo.get("configs") or []:
-            btn = QPushButton(c.get("name") or t("builds.cfg.default", c=c["config"]))
-            btn.setCheckable(True)
-            btn.setChecked(c["idx"] == lo["idx"])
-            btn.setToolTip(t("builds.config", c=c["config"]))
-            btn.clicked.connect(lambda _c=False, idx=c["idx"]: self._switch(lo, idx))
-            group.addButton(btn)
-            row.addWidget(btn)
-        self._group = group
-        if len(lo.get("configs") or []) > 1:
-            self.body.addLayout(row)
+    def _config_clicked(self, i):
+        lo = self._lo
+        cfgs = (lo or {}).get("configs") or []
+        if lo and 0 <= i < len(cfgs):
+            self._switch(lo, cfgs[i]["idx"])
 
     def _switch(self, lo, idx):
         target = self.lookup.get((lo.get("oid"), idx))
@@ -149,22 +129,13 @@ class LoadoutView(QWidget):
         finally:
             self.setUpdatesEnabled(True)
 
-    def _show(self, lo):
-        self._lo = lo
-        self._clear(self.body)
-        if not lo:
-            self.title.setText("")
-            self.pic.clear()
-            self.sub.setText(t("builds.pick"))
-            return
-        pm = thumb(lo["item"], 56)
-        if pm is not None:
-            self.pic.setPixmap(pm)
-        else:
-            self.pic.clear()
-        label = lo.get("cfg_name") or t("builds.config", c=lo["config"])
+    @staticmethod
+    def model(lo) -> dict:
+        """A loadout read from the game file as the screen's model."""
+        from app.game import buildcalc as BC
+        from app.game import incarnon as INC
+        from app.ui.buildscreen import incarnon_model, wf_base_stats
         ex = lo.get("extras") or {}
-        self.title.setText(f"{lo['item']}" + (f"  “{ex['custom']}”" if ex.get("custom") else "") + f"  ·  {label}")
         what = t("builds.catalyst") if lo["kind"] in ("primary", "secondary", "melee", "archgun") else t("builds.reactor.name")
         if lo.get("reactor"):
             pot = t("builds.pot.yes" if lo.get("reactor_src") != "guess" else "builds.pot.guess", what=what)
@@ -172,47 +143,56 @@ class LoadoutView(QWidget):
             pot = t("builds.pot.unknown", what=what)
         else:
             pot = t("builds.pot.no", what=what)
-        self.sub.setToolTip(t("builds.pot.tip"))
         kind_txt = t("builds.kind." + lo["kind"]) + (f" ({lo['owner']})" if lo.get("owner") else "")
-        self.sub.setText(kind_txt + "  ·  " + t("builds.forma", n=lo["forma"])
-                         + ("" if lo["kind"] == "exalted" else "  ·  " + pot)
-                         + (("  ·  ✦ " + __import__("app.game.incarnon", fromlist=["x"]).describe(lo["incarnon"], t)[0])
-                            if lo.get("incarnon") else "")
-                         + (f"  ·  {t('builds.valence', el=ex['valence']['element'], pct=ex['valence']['pct'])}"
-                            if ex.get("valence") else "")
-                         + (f"  ·  ◈ {ex['lens']}" if ex.get("lens") else "")
-                         + ("  ·  " + t("builds.gilded") if ex.get("gilded") else ""))
+        sub = (kind_txt + ("" if lo["kind"] == "exalted" else "  ·  " + pot)
+               + (f"  ·  {t('builds.valence', el=ex['valence']['element'], pct=ex['valence']['pct'])}" if ex.get("valence") else "")
+               + (f"  ·  ◈ {ex['lens']}" if ex.get("lens") else "")
+               + ("  ·  " + t("builds.gilded") if ex.get("gilded") else ""))
         unlocked = [t(k) for k, on in (("builds.exilus_on", ex.get("exilus")), ("builds.arcane_on", ex.get("arcane_slot")),
                                        ("builds.valence_swap", ex.get("valence_swap"))) if on]
-        self.sub.setToolTip(t("builds.pot.tip") + ("\n" + ", ".join(unlocked) if unlocked else ""))
-        self._config_buttons(lo)
-        slots = lo["slots"]
-        row = QHBoxLayout()
-        row.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
-        row.addWidget(cards_widget(slots, cw=self.scaler.cw))
-        if lo.get("capacity") or lo.get("bonus"):
-            col = QVBoxLayout()
-            col.setAlignment(Qt.AlignmentFlag.AlignTop)
-            col.addWidget(stats_panel(lo.get("capacity"), lo.get("stats") or {}, lo.get("level", 30), lo.get("reactor", True), lo.get("bonus")))
-            row.addSpacing(12)
-            row.addLayout(col)
-        self.body.addLayout(row)
-        if lo.get("incarnon"):                           # Genesis installed / built in, evolution tier and perks chosen
-            from app.game import incarnon as INC
-            inc = lo["incarnon"]
-            head, lines = INC.describe(inc, t)
-            self._section(t("builds.sec.incarnon"))
+        cfgs = [{"label": c.get("name") or t("builds.cfg.default", c=c["config"]), "active": c["idx"] == lo["idx"],
+                 "tip": t("builds.config", c=c["config"])} for c in lo.get("configs") or []]
+        weapons = ("primary", "secondary", "melee", "archgun", "archmelee", "compweapon")
+        m = {"kind": lo["kind"], "item": lo["item"], "title": lo["item"] + (f"  “{ex['custom']}”" if ex.get("custom") else ""),
+             "rank": lo.get("level"), "forma": lo.get("forma"), "configs": cfgs if len(cfgs) > 1 else
+             [{"label": lo.get("cfg_name") or t("builds.cfg.default", c=lo["config"]), "active": True}],
+             "slots": lo["slots"], "capacity": lo.get("capacity"), "capacity_none": lo.get("capacity") is None,
+             "level": lo.get("level", 30), "reactor": lo.get("reactor", True), "wf_stats": lo.get("stats") or {},
+             "wf_base": wf_base_stats(lo["item"]) if lo["kind"] == "warframe" else {},
+             "weapon": BC.weapon_stats(lo["kind"], lo["item"], lo.get("bonus") or {}, lo.get("elements") or [], ex.get("valence"))
+             if lo["kind"] in weapons else None,
+             "bonus": lo.get("bonus") or {}, "valence": ex.get("valence"), "unique": bool(ex.get("valence")),
+             "subtitle": sub, "subtitle_tip": t("builds.pot.tip") + ("\n" + ", ".join(unlocked) if unlocked else ""),
+             "pic": thumb(lo["item"], 48)}
+        inc = lo.get("incarnon")
+        if inc:
+            head, _lines = INC.describe(inc, t)
+            if inc["kind"] == "available":
+                m["incarnon"] = {"head": head, "note": t("bs.inc.elsewhere"), "show_path": False}
+            else:
+                skill = inc.get("skill") or ""
+                m["incarnon"] = incarnon_model(inc["kind"], inc["page"], [int(c) if c.isdigit() else 0 for c in skill[:5]],
+                                               max(inc.get("evo") or 0, len(skill)), head=head)
+        return m
+
+    def _show(self, lo):
+        self._lo = lo
+        self._clear(self.body)
+        if not lo:
+            self.screen.clear()
+            self.empty.setText(t("builds.pick"))
+            self.empty.show()
+            return
+        self.empty.hide()
+        self.screen.show_model(self.model(lo), self.scaler.cw)
+        if self.on_simulate and lo["kind"] in ("warframe", "primary", "secondary", "melee", "companion", "archwing",
+                                               "archgun", "archmelee", "compweapon"):
             row = QHBoxLayout()
-            row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            f = previews.by_name(inc["page"], wiki_only=True)       # the Genesis adapter's / weapon's wiki picture
-            if f:
-                pic = QLabel()
-                pic.setPixmap(_scaled(f, 44))
-                row.addWidget(pic)
-            txt = QLabel(f"<b>{head}</b>" + ("<br>" + " &nbsp;·&nbsp; ".join(lines) if lines else ""))
-            txt.setWordWrap(True)
-            txt.setToolTip(t("inc.tip"))
-            row.addWidget(txt, 1)
+            b = QPushButton("⚙ " + t("bs.simulate"))
+            b.setToolTip(t("bs.simulate.tip"))
+            b.clicked.connect(lambda: self.on_simulate(lo))
+            row.addWidget(b)
+            row.addStretch(1)
             self.body.addLayout(row)
         if lo["kind"] == "warframe":
             self._section(t("builds.sec.shards"))
@@ -362,6 +342,7 @@ class BuildsTab(QWidget):
         super().__init__()
         self.market, self.refresher, self.inventory = market, refresher, inventory
         self.loadouts, self.presets, self.source, self.when = [], {"presets": [], "tenno": {}}, "", 0
+        self.owned = {}                               # mods and Arcanes you own (the planner's library)
         self._mtime = 0
         self._shown = None
         self._tried_auto = False
@@ -413,7 +394,9 @@ class BuildsTab(QWidget):
         self.stack = QStackedWidget()
         self.stack.addWidget(psplit)
         self.stack.addWidget(split)
-        self.planner = PlannerView(lambda: self.loadouts, lambda: self.presets)
+        self.planner = PlannerView(lambda: self.loadouts, lambda: self.presets, lambda: self.owned)
+        self.view.on_simulate = self.simulate
+        self.pview.detail.on_simulate = self.simulate
         self.stack.addWidget(self.planner)
         lay = QVBoxLayout(self)
         lay.addLayout(bar)
@@ -447,6 +430,11 @@ class BuildsTab(QWidget):
         self.kind.setVisible(mode == "items")
         self.btn_reload.setVisible(mode != "plan")
         self._summary()
+
+    def simulate(self, lo):
+        """Opens one of your items in the build planner (all its configurations), to try changes on it."""
+        self.planner.copy_item(lo, f"{lo['item']} · {lo.get('cfg_name') or lo['config']}")
+        self.mode.setCurrentIndex(self.mode.findData("plan"))
 
     def _startup_pictures(self):
         """At start: reads the game file if nothing is saved yet, then asks the wiki for the pictures still missing (the mods
@@ -538,6 +526,7 @@ class BuildsTab(QWidget):
             d = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
             if d.get("ver") == CACHE_VER and isinstance(d.get("loadouts"), list) and isinstance(d.get("presets"), dict):
                 self.loadouts, self.presets = d["loadouts"], d["presets"]
+                self.owned = d.get("owned") or {}
                 self.source, self.when = d.get("source", ""), d.get("time", 0)
         except Exception:
             pass
@@ -545,7 +534,7 @@ class BuildsTab(QWidget):
     def _save_cache(self):
         try:
             CACHE_FILE.write_text(json.dumps({"ver": CACHE_VER, "time": self.when, "source": self.source, "loadouts": self.loadouts,
-                                                         "presets": self.presets},
+                                                         "presets": self.presets, "owned": self.owned},
                                              ensure_ascii=False), encoding="utf-8")
         except OSError:
             pass
@@ -559,10 +548,11 @@ class BuildsTab(QWidget):
     @staticmethod
     def work_file(path, data):
         """Background thread: loadouts and presets from the parsed game file."""
-        return {"path": path, "loadouts": LO.read(data), "presets": LO.presets(data)}
+        return {"path": path, "loadouts": LO.read(data), "presets": LO.presets(data), "owned": LO.owned_mods(data)}
 
     def apply_file(self, d):
         self.loadouts, self.presets = d["loadouts"], d["presets"]
+        self.owned = d.get("owned") or self.owned
         self.source, self.when = d["path"], int(time.time())
         try:
             self._mtime = os.path.getmtime(d["path"])
@@ -594,6 +584,7 @@ class BuildsTab(QWidget):
                 QMessageBox.warning(self, t("tab.builds"), t("builds.fail", err=e))
             return False
         self.loadouts, self.presets = data["loadouts"], data["presets"]
+        self.owned = data.get("owned") or {}
         self.source, self.when = path, int(time.time())
         self._mtime = os.path.getmtime(path)
         self._save_cache()

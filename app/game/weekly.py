@@ -134,6 +134,7 @@ def purchases(inv: dict, now=None) -> list:
 class Weekly:
     def __init__(self):
         self.assign, self.tracked, self.snapshot, self.candidates = {}, set(), {}, {}
+        self.ocr = {}                     # what the vendor screens showed (weekly_ocr.py): {vendor: {"seen","gone","views"}}
         self.region = ""
         try:
             d = json.loads(STATE_FILE.read_text(encoding="utf-8"))
@@ -141,6 +142,7 @@ class Weekly:
             self.tracked = set(d.get("tracked") or [])
             self.snapshot = dict(d.get("snapshot") or {})
             self.candidates = dict(d.get("candidates") or {})
+            self.ocr = {k: v for k, v in (d.get("ocr") or {}).items() if isinstance(v, dict)}
         except Exception:
             pass
         self.current = []
@@ -149,7 +151,8 @@ class Weekly:
     def save(self):
         try:
             STATE_FILE.write_text(json.dumps({"assign": self.assign, "tracked": sorted(self.tracked),
-                                              "snapshot": self.snapshot, "candidates": self.candidates},
+                                              "snapshot": self.snapshot, "candidates": self.candidates,
+                                              "ocr": self.ocr},
                                              ensure_ascii=False), encoding="utf-8")
         except OSError:
             pass
@@ -216,6 +219,29 @@ class Weekly:
                 self.save()
             return self.unknown()
 
+    def ocr_scan(self, texts) -> bool:
+        """The text read on the screen by a vendor scan: checks the limited offers shown (weekly_ocr.py). True when
+        something changed."""
+        from app.core import logbus
+        from app.game import weekly_ocr as WO
+        seen = WO.read(texts)
+        if not seen:
+            return False
+        with _lock:
+            before = json.dumps([self.assign, self.candidates, {v: sorted(x.get("gone", {})) for v, x in self.ocr.items()}],
+                                sort_keys=True)
+            log = WO.apply(self, seen)
+            name = data()[seen["vendor"]]["name"]
+            for line in log:
+                logbus.add("weekly", f"{name}: {line}", "ok")
+            after = json.dumps([self.assign, self.candidates, {v: sorted(x.get("gone", {})) for v, x in self.ocr.items()}],
+                               sort_keys=True)
+            self.save()
+            if before != after:
+                self.version += 1
+                return True
+            return False
+
     def unknown(self) -> list:
         """Purchases to identify: [{"key","vendor","vendor_name","n","expiry","candidates": [store…], "items": [...]}]."""
         out = []
@@ -257,14 +283,20 @@ class Weekly:
         except Exception:
             ws = None
         active = {vend: vendor_active(vend, ws, self.current) for vend in data()}
+        now = time.time()
+        gone = {offer_key(v, oid) for v, st in self.ocr.items() for oid, e in (st.get("gone") or {}).items()
+                if e.get("until", 0) > now}
         out = []
         for vend, v in data().items():
             for i in v["items"]:
                 if weekly_only and i["hours"] < 168:
                     continue
                 k = offer_key(vend, i["id"])
-                out.append(dict(i, vendor=vend, vendor_name=v["name"], bought=bought.get(k, 0), expiry=expiry.get(k),
-                                tracked=k in self.tracked, key=k, active=active.get(vend)))
+                b = bought.get(k, 0)
+                # bought out according to the vendor screen, the game file not there yet: shown bought ("OCR")
+                ocr = k in gone and b < i["limit"]
+                out.append(dict(i, vendor=vend, vendor_name=v["name"], bought=i["limit"] if ocr else b, ocr=ocr,
+                                expiry=expiry.get(k), tracked=k in self.tracked, key=k, active=active.get(vend)))
         return out
 
 

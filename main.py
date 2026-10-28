@@ -109,6 +109,8 @@ def main():
     bridge.goals.connect(goals.toggle)
     bridge.results.connect(lambda items: goals.vendor_shown(bool(items)))     # a vendor recognised: the plan switches off
     QTimer.singleShot(1500, goals.start)
+    from app.game import weekly as WK
+    scanner.on_texts = lambda texts: WK.get().ocr_scan(texts)       # limited offers on the vendor screen (Weekly)
     scanner.exclude_provider = lambda: [r for r in (pricelist.screen_rect_px(), goals.screen_rect_px()) if r]
     pricelist.visibility.connect(lambda _v: scanner.list_changed())
     bridge.menu.connect(pricelist.toggle)

@@ -74,6 +74,9 @@ A small always-on-top window over the game, styled like a quest tracker, movable
   (16,000 + 500 × Mastery Rank), **where to buy it** (⌖ the NPC and place: *Hok, Cetus* for Zaw parts, *Rude Zuud,
   Fortuna* for kitgun parts, *any Relay* for the faction syndicates…) and the **activities that earn that standing**. An item is removed only when the game
   file shows you bought it;
+- **what you can buy before the daily reset** (light blue): the standing you can still earn today (daily cap, never past
+  what your rank holds) pays for more copies or the next item: *Before the reset: buy 2× Martyr Symbiosis (earn 13,000
+  more)*, with the time left to 00:00 UTC (setting *Activities: items buyable before the reset*);
 - the **weekly vendor offers you follow** (bought / limit, reset countdown; see the Weekly tab);
 - **Nightwave**: today's daily (☼) and this week's challenges (elite ones ★), with their standing, goal and progress
   (e.g. 14/15); completed ones are ticked ✔ (from the challenge counters in your game file, *ChallengeProgress*);
@@ -99,7 +102,7 @@ On top of every tab:
 - **Player strip**: your profile glyph and Mastery Rank emblem (pictures from browse.wf, downloaded once), name (from
   AlecaFrame's `lastUsername.txt`, or click to type it), mastery rank, trades left
   (⚠ when the last sync is before the daily reset), wallet under name and MR (platinum, Endo, ducats, Aya, Steel Essence, Pathos Clamps, Riven Slivers, Live Heartcells,
-  Vitus Essence, each with its game icon; compact, exact value in the tooltip) and a badge per syndicate with rank and standing (hover for the standing left today). Syndicate logos are
+  Kuva, Vitus Essence, each with its game icon; compact, exact value in the tooltip) and a badge per syndicate with rank and standing (hover for the standing left today). Syndicate logos are
   downloaded from the wiki once; without them the badges are drawn in the syndicate colours.
 - **World strip**: Steel Path Omnia fissures, Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer, Prime Resurgence and the
   current **Arbitration** with its tier from [arbi.guide](https://arbi.guide), all with live countdowns.
@@ -227,24 +230,46 @@ refreshed it).
 - **Game loadouts** (default view): your named loadouts with Warframe, weapons, Exalted weapon, companion, Archwing and
   Necramech; click a row for that item's build. **By item**: every item's configurations, grouped by kind, with
   thumbnails and a name/kind filter. Focus school and K-Drive are not shown.
-- **Cards** like the in-game build screen: Aura, Exilus and Stance slots, eight mod slots (slot polarity, mod polarity
-  and drain, rank), Arcanes, **Archon Shards** (colour, tauforged, effect), **Helminth** ability, forma count, Orokin
-  **Reactor / Catalyst** (from the file, *deduced* for older items whose loadouts only fit with one). Cards **scale with
-  the window** and show the mod's picture on hover.
+- **Laid out like the game's upgrade screen**: *UPGRADES / ITEM [rank]* with the Forma count, the configuration tabs
+  (Config A, B, C… or the names you gave them: click to switch), on the left the **capacity** (left / total, as the game
+  shows it) with its bar and the **stats**, in the middle Aura / Stance / Exilus on top and the eight mods in two rows,
+  on the right the Arcanes (and the Exilus of guns), the **Unique trait** row of Kuva / Tenet / Coda weapons. Cards are
+  landscape like the game's: the mod's art behind its name, drain and polarity (green: matches the slot, red: does
+  not), slot polarity, rank pips, a frame in the rarity's colour. **Archon Shards** (colour, tauforged, effect),
+  **Helminth** ability and Orokin **Reactor / Catalyst** (from the file, *deduced* for older items whose loadouts only
+  fit with one) are listed too. Cards **scale with the window** and show the mod's picture on hover.
+- **Weapon stats** like the game's panel: fire rate / attack speed, multishot, magazine, reload, critical chance and
+  damage, status, **every damage type** with the elements combined in mod order (Heat + Toxin = Gas…, the Kuva / Tenet /
+  Coda bonus element counted as the weapon's own), total and an approximate damage per second; *base ▸ modded* when a
+  mod changes them (green better, red worse). Warframes: health, shields, armor, energy, sprint and the ability stats.
 - **Capacity** = rank (40 for Kuva/Tenet/Coda weapons and Necramechs) × 2 with Reactor/Catalyst + aura; innate
   polarities are placed where they save the most drain (the file does not say where they are). An approximate **stat
   recap** counts mods only (not Arcanes, shards, Helminth, set bonuses or conditional effects).
 - **Incarnon**: whether the Genesis adapter is installed (or the Incarnon is built in, or the Genesis is on another
   variant of the weapon), the evolution tier reached (shared by all variants) and the perk chosen in each tier, from the
-  game file; perk names and the adapter's picture from the weapon's wiki page (read once, kept in `incarnon_perks.json`;
-  "option 2" when the page cannot be understood).
+  game file, drawn as the **evolution path** (every tier's perks, the chosen ones lit and joined); perk names from the
+  weapon's wiki page, read from its evolution table (*EVO1…* on Genesis pages, *Evolution I…* on built-in weapons; read
+  once, kept in `incarnon_perks.json`; "option 2" only when the page cannot be understood). Tier I of built-in weapons
+  is the Incarnon form itself.
+- **Simulate in the planner** opens the item shown (all its configurations, Forma, adapters, Incarnon, bonus element)
+  in the build planner.
 - **Rivens** show name, stats, polarity and drain and count in the recap; **spliced Rivens** are shown frozen (❄) with
   their spliced stat as "?".
-- **Build planner** (third view): plans single items or **whole loadouts** (Warframe, primary, secondary, melee,
-  companion, Archwing, Arch-gun, Arch-melee): pick a kind and an item, click a card to pick mod, rank and slot polarity
-  (Forma); capacity, drain and stats update. Every kind you fill is kept as a piece of the loadout (buttons on top switch
-  between them; *+ add* adds a piece). *Save* keeps plans in `build_plans.json`; *Copy from my loadout…* copies a whole
-  in-game loadout or a single item. *New* starts an empty loadout.
+- **Build planner** (third view): a **simulator of the upgrade screen**, for single items or **whole loadouts**
+  (Warframe, primary, secondary, melee, companion, companion weapon, Archwing, Arch-gun, Arch-melee). Under the build sits
+  the **mod library** like the game's: search, polarity filter, sort (rank, name, drain, polarity, owned first), *Only
+  mods I own* (from the game file, with how many you have), two rows of cards to scroll sideways. **Click a slot** to
+  select it (the library shows what fits it: mods, Exilus mods, stances / postures, Arcanes), then **click a mod** (or
+  **drag** it onto a slot); the next empty slot gets selected, so a build fills in a few clicks. Mods the game does not
+  let you equip together (Vitality and Umbral Vitality, the same mod twice…) are refused. **Right-click a slot**: rank,
+  **polarity (Forma)** with the item's own one, remove; adapters. The switches above the slots: rank (up to 40 for Kuva /
+  Tenet / Coda), **Orokin Reactor / Catalyst**, **Exilus adapter**, **Arcane adapter** (weapons; a locked slot shows a
+  🔒), **bonus element and percentage** of Kuva / Tenet / Coda weapons (Valence Fusion, 25-60 %), **Incarnon Genesis**
+  and the evolution tier (click a perk on the evolution path to choose it). **Configurations** A, B, C… (⊕ adds one;
+  *Actions*: copy, rename, delete a configuration, remove every Forma, Forma every slot to its mod's polarity). The Forma
+  count, capacity and stats follow every change. Every kind you fill is kept as a piece of the loadout (buttons on top
+  switch between them; *+ add* adds a piece). *Save* keeps plans in `build_plans.json` (plans of older versions open as
+  they were); *Copy from my loadout…* copies a whole in-game loadout or a single item. *Clear* starts an empty loadout.
 - Also shown: the name you gave an item, its Focus lens, the Kuva / Tenet / Coda bonus element and percentage, gilded,
   and (tooltip) Exilus / Arcane slots unlocked and Valence Fusion.
 
@@ -264,6 +289,11 @@ state; *Show ended events* shows them anyway). **Bought (Activities) → Quantfr
 confirmed from the game file (Martyr Symbiosis at the Entrati, Aerial Bond at Solaris United…), not sent yet, to
 Quantframe's stock (also in Activities' ⚙ menu). Above the list: how much of each currency the shown vendors take you
 hold (Steel Essence, Pathos Clamps, Riven Slivers, Vosfor…).
+**Check on the vendor screen**: while a vendor is scanned (automatically or F8), the limited offers listed on screen are
+read too. An offer whose limit you reached disappears from the vendor's list, so: an offer still listed was not the
+purchase being identified (and a purchase taken for it is asked again), and an offer seen earlier this period that is
+gone — not scrolled away: the rest of the list stayed where it was — identifies the purchase, or shows as bought
+**(OCR)** until the game file says so too (setting *Weekly: check the offers on the vendor screen*).
 
 ### Profile (a page of Settings)
 Your standing and rank per syndicate and your mastery rank, **read from `lastData.dat`** (re-read when it changes,
@@ -292,7 +322,8 @@ system notification sound, or a `.wav` of yours).
 | Prices, volumes, item catalog, sell orders, riven listings | [warframe.market](https://warframe.market) (v1 and v2 API, max 3 requests/s) |
 | Your standing, inventory, loadouts, purchases, challenges | AlecaFrame's `lastData.dat` / `deltas.dat` on your PC |
 | Vendors, standing costs, names, weekly offers, challenge names | public game data, bundled (`tools/build_*.py`) |
-| Pictures (builds, syndicate logos), Baro's list | [wiki.warframe.com](https://wiki.warframe.com) |
+| Pictures (builds, syndicate logos), Baro's list, Incarnon perk names | [wiki.warframe.com](https://wiki.warframe.com) |
+| Weapon base stats, mod polarity / drain / Exilus (build planner) | [WFCD/warframe-items](https://github.com/WFCD/warframe-items), bundled (`tools/build_loadouts.py`) |
 | World state (fissures, cycles, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave and 1999 Calendar | DE's public world state (`api.warframe.com`), every 10 min |
 | Profile glyph, Mastery Rank emblem | [browse.wf](https://browse.wf) (game icons by path), once |
@@ -301,7 +332,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.3.9)
+## Updates (current version 0.4.0)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.
@@ -386,9 +417,10 @@ app/
   trade/             warframe.market: market (catalog, prices, volumes), refresher, market_auth (sell orders),
                      recommend, advice, signals (trend, spikes, backtest), rivenmarket (riven listings), quantframe
   game/              game data and your account: vendors, standing, inventory, aleca (AlecaFrame file), loadouts,
-                     buildcalc, rivens, weekly, quests (Nightwave / Calendar), goals (Activities plan), world, arbi
+                     buildcalc, incarnon, rivens, weekly, weekly_ocr (offers read on the vendor screen), quests
+                     (Nightwave / Calendar), goals (Activities plan), world, arbi
   ui/                windows and tabs: menu (main window), *_tab, *_dialog, goals_overlay (Activities), buildcards,
-                     player_bar, world_strip, update_box, logos, icons, previews
+                     buildscreen (the upgrade screen of Builds and the planner), player_bar, world_strip, update_box, logos, icons, previews
 data/                bundled game data (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places, player_icons .json)
 assets/              icon.png, icon.ico
 tools/               builders of data/ (build_*.py: python tools/build_vendors.py …; build_places.py: where to buy), build_icon.py,

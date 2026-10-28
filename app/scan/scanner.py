@@ -52,6 +52,7 @@ class Scanner:
         self.vendor = None             # vendor recognised on the last scan
         self.best = None               # best purchase at that vendor (a recommend() pick), when known
         self.exclude_provider = None   # returns the price list's rectangle in screen pixels (or None): not read
+        self.on_texts = None           # called with all the text read on every scan (the Weekly check of limited offers)
         self.items = []          # items currently shown
         self.ref = None          # data used to detect a screen change
         self.version = 0         # grows at every label publication
@@ -273,6 +274,11 @@ class Scanner:
             ex = [ex]                                    # one rectangle, or a list of them (price list, plan overlay)
         hits, mon_w, patches = self.ocr.scan(exclude=list(ex) if ex else None)
         ox, oy = getattr(self.ocr, "origin", (0, 0))
+        if self.on_texts and CFG.get("weekly_ocr", True):     # the limited offers listed on screen (Weekly tab)
+            try:
+                self.on_texts(list(getattr(self.ocr, "texts", []) or []))
+            except Exception:
+                pass
         if self.gen != gen:
             return
         if not hits:

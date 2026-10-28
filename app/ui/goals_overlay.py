@@ -171,9 +171,10 @@ class GoalsOverlay(QWidget):
         fs = int(CFG.get("goals_font", 12))
         title, text = CFG.get("goals_title_color") or "#ffd100", CFG.get("goals_text_color") or "#ffffff"
         ready, hint = CFG.get("goals_ready_color") or "#40ff40", CFG.get("goals_hint_color") or "#a0a0a0"
+        soon = CFG.get("goals_soon_color") or "#7fd7ff"
         fam = CFG.get("goals_font_family") or ""
         family = f"font-family: '{fam}';" if fam else ""
-        self._style_sig = (fs, title, text, ready, hint, fam)
+        self._style_sig = (fs, title, text, ready, hint, fam, soon)
         self.setStyleSheet(f"""
             QWidget {{ color: {text}; font-size: {fs}px; background: transparent; {family} }}
             #goalshead {{ background: transparent; border-bottom: 1px solid rgba(255, 209, 0, 90); }}
@@ -186,6 +187,7 @@ class GoalsOverlay(QWidget):
             QLabel[g="obj"] {{ color: {text}; }}
             QLabel[g="ready"] {{ color: {ready}; }}
             QLabel[g="wait"] {{ color: {title}; }}
+            QLabel[g="soon"] {{ color: {soon}; }}
             QLabel[g="act"] {{ color: {hint}; font-size: {max(9, fs - 1)}px; font-style: italic; }}
             QLabel[g="done"] {{ color: {title}; font-weight: bold; }}
             QCheckBox {{ spacing: 5px; color: {text}; }}
@@ -293,7 +295,7 @@ class GoalsOverlay(QWidget):
                            ("goals_only_short", "goals.opt.onlyshort"),
                            ("goals_click_only_cursor", "goals.opt.cursor"), ("goals_weekly", "goals.opt.weekly"),
                            ("goals_quests", "goals.opt.quests"), ("goals_where", "goals.opt.where"), ("goals_routine", "goals.opt.routine"),
-                           ("goals_repeat", "goals.opt.repeat")):
+                           ("goals_repeat", "goals.opt.repeat"), ("goals_by_reset", "goals.opt.byreset")):
             a = QAction(t(label), m, checkable=True)
             a.setChecked(bool(CFG.get(key)))
             a.triggered.connect(lambda c, k=key: self._set(k, bool(c)))
@@ -413,7 +415,8 @@ class GoalsOverlay(QWidget):
 
     def _style_changed(self) -> bool:
         sig = (int(CFG.get("goals_font", 12)), CFG.get("goals_title_color") or "#ffd100", CFG.get("goals_text_color") or "#ffffff",
-               CFG.get("goals_ready_color") or "#40ff40", CFG.get("goals_hint_color") or "#a0a0a0", CFG.get("goals_font_family") or "")
+               CFG.get("goals_ready_color") or "#40ff40", CFG.get("goals_hint_color") or "#a0a0a0", CFG.get("goals_font_family") or "",
+               CFG.get("goals_soon_color") or "#7fd7ff")
         return sig != getattr(self, "_style_sig", None)
 
     def refresh(self, force=False):
@@ -481,7 +484,9 @@ class GoalsOverlay(QWidget):
                 sub.append(t("goals.q.rank", r=g["rank"]))
             sub.append(t("goals.q.standing", n=_n(g["standing"])) if g.get("standing") is not None else t("goals.q.unknown"))
             if g.get("daily") is not None:
-                sub.append(t("goals.daily", n=_n(g["daily"])) + (f"/{_n(g['cap'])}" if g.get("cap") else ""))
+                sub.append(t("goals.daily", n=_n(g["daily"])) + (f"/{_n(g['cap'])}" if g.get("cap") else "")
+                           + ("  " + t("goals.reset.in", left=_left(86400 - time.time() % 86400))
+                              if CFG.get("goals_by_reset", True) else ""))
             self.rows.addWidget(self._label("   " + " · ".join(sub), "sub"))
             for it in g["items"]:
                 self.rows.addWidget(self._item_row(it))
@@ -540,6 +545,11 @@ class GoalsOverlay(QWidget):
             text, kind = t("goals.q.wait", name=it["name"]), "wait"
         elif it.get("buy"):
             text, kind = t("goals.q.ready", name=it["name"], n=it["buy"], cost=_n(it["cost"] * it["buy"])), "ready"
+            if it.get("reset_buy") and CFG.get("goals_by_reset", True):       # and more copies with today's standing
+                text += "  " + t("goals.q.reset.more", n=it["reset_buy"], earn=_n(it["reset_earn"]))
+        elif it.get("reset_buy") and CFG.get("goals_by_reset", True):
+            text, kind = t("goals.q.reset", name=it["name"], n=it["reset_buy"], cost=_n(it["cost"] * it["reset_buy"]),
+                           earn=_n(it["reset_earn"])), "soon"
         else:
             text, kind = t("goals.q.buy", name=it["name"], cost=_n(it["cost"])), "obj"
         if it.get("rank_ok") is False:
@@ -582,7 +592,8 @@ class GoalsOverlay(QWidget):
         for o in sorted(tracked, key=lambda o: (o["bought"] >= o["limit"], o["vendor_name"], o["name"])):
             qty = f" ×{thousands(o['qty'])}" if o["qty"] > 1 else ""
             done = o["bought"] >= o["limit"]
-            lab = self._label(f"   - {o['vendor_name']}: {o['name']}{qty} ({o['bought']}/{o['limit']})", "ready" if done else "obj")
+            lab = self._label(f"   - {o['vendor_name']}: {o['name']}{qty} ({o['bought']}/{o['limit']})"
+                              + (" " + t("weekly.ocr") if o.get("ocr") else ""), "ready" if done else "obj")
             lab.setToolTip(t("goals.weekly.tip", cost=", ".join(f"{thousands(n)} {c}" for n, c in o["cost"]) or "–"))
             self._menu_on(lab, lambda pos, wd=lab, o=o: self._weekly_menu(wd, pos, o))
             self.rows.addWidget(lab)
