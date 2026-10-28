@@ -1112,6 +1112,9 @@ EN = {
     "bs.copydata": "Copy data for a capacity check",
     "bs.copydata.tip": "Copies to the clipboard what the game file says about this item (polarities, mods and ranks) and how the program read it: paste it in a bug report when the capacity differs from the game's",
     "bs.copydata.done": "Copied to the clipboard.",
+    # ---- 0.4.0 ----
+    "bs.up.on": "installed",
+    "bs.up.off": "not installed",
 }
 
 IT = {
@@ -2211,6 +2214,9 @@ IT = {
     "bs.copydata": "Copia i dati per un controllo della capacità",
     "bs.copydata.tip": "Copia negli appunti cosa dice il file di gioco su questo oggetto (polarità, mod e rank) e come l'ha letto il programma: incollalo in una segnalazione quando la capacità è diversa da quella del gioco",
     "bs.copydata.done": "Copiato negli appunti.",
+    # ---- 0.4.0 ----
+    "bs.up.on": "installato",
+    "bs.up.off": "non installato",
 }
 
 STRINGS = {"en": EN, "it": IT}

@@ -3,6 +3,15 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.4
+- **Le icone di AlecaFrame nella schermata build** (cartella icone, `img/builds` e `img/damageTypes`): un'icona per
+  ogni statistica (salute, scudi, armatura, energia, scatto, statistiche delle abilità, cadenza, multicolpo, caricatore,
+  ricarica, critico, status) e ogni tipo di danno, l'icona dell'elemento bonus; le immagini di Forma, Reattore /
+  Catalizzatore Orokin, adattatori Exilus e Arcano accanto al titolo (sbiadite se non installati) e sugli interruttori
+  del pianificatore; gli slot Aura / Exilus / Postura vuoti mostrano la loro immagine e uno slot Arcano vuoto il
+  contorno di AlecaFrame; titoli Frammenti Arconte ed Helminth con la loro icona. Icone di Steel Essence e Pathos Clamp
+  nella barra del giocatore. Senza la cartella tutto resta com'era.
+
 ## 0.4.3
 - **Aya contati come fa AlecaFrame**: l'oggetto Aya tra le tue risorse (`SchismKey`); quello che prima appariva come
   Aya (il campo `PrimeTokens`) sono gli Aya Regali, ora mostrati come tali. *Aya (scritti a mano)* serve solo quando il

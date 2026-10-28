@@ -113,7 +113,50 @@ def shard(color: str, tauforged: bool, size: int = 36):
 
 ARCANE_PICTURE = {"C": "bronze", "U": "silver", "R": "gold", "L": "primed"}
 WALLET_FILES = {"endo": "endo.png", "plat": "platinum.png", "ducats": "ducats.png", "aya": "aya.webp",
-                "regal": "regalAya.webp", "credits": "credits.png"}
+                "regal": "regalAya.webp", "credits": "credits.png", "steel": "SteelEssence.webp",
+                "pathos": "PathosClamp.webp"}
+# AlecaFrame's img/builds pictures for the build screen: stats (left panel), upgrades, empty special slots
+STAT_FILES = {"health": "heart.png", "shield": "shield.png", "armor": "armor.png", "energy": "energy.png",
+              "sprint": "boot.png", "duration": "duration.png", "efficiency": "efficiency.png", "range": "distance.png",
+              "strength": "muscle.png", "fire_rate": "bullet.png", "multishot": "multishot.png", "magazine": "magazine.png",
+              "reload": "reload.png", "attack_speed": "attackSpeed.webp", "crit_chance": "critDamage.png",
+              "crit_damage": "critDamage.png", "status": "statusChanceAlt.png", "slam": "explosion.png",
+              "slide": "sword.png", "combo": "statusTime.png", "follow": "sword.png", "total": "sword.png"}
+UPGRADE_FILES = {"forma": "Forma.webp", "reactor": "OrokinReactor.webp", "catalyst": "OrokinCatalyst.webp",
+                 "exilus_adapter": "ExilusWarframeAdapter.webp", "primary_arcane": "PrimaryArcaneAdapter.webp",
+                 "secondary_arcane": "SecondaryArcaneAdapter.webp", "aura_forma": "AuraForma.webp",
+                 "stance_forma": "StanceForma.webp", "aura": "aura.webp", "exilus": "exilus.webp",
+                 "stance": "stance.webp", "arcane_empty": "arcaneEmpty.webp", "helminth": "../helminth.png",
+                 "shards": "../archonShards/ArchonShard.webp"}
+
+
+def path(rel: str):
+    """The file img/<rel> of the icons folder, or None (for pictures inside rich text)."""
+    root = _root()
+    if not root:
+        return None
+    for base in (root / "img", root / "assets" / "img", root):
+        f = base / rel
+        if f.is_file():
+            return str(f.resolve())
+    return None
+
+
+def build(kind: str, size: int = 18):
+    """An upgrade / slot picture of the build screen (Forma, Orokin Reactor, Exilus slot…), or None."""
+    f = UPGRADE_FILES.get(kind)
+    return pixmap("builds/" + f, size) if f else None
+
+
+def stat_path(key: str):
+    f = STAT_FILES.get(key)
+    return path("builds/" + f) if f else None
+
+
+def damage_path(element: str):
+    """The coloured damage type icon (Heat, Viral…) of the icons folder, or None."""
+    e = element.lower()
+    return path(f"damageTypes/dt_{e}_color.webp") or path(f"damageTypes/{e}.webp")
 
 
 def arcane(name: str, height: int = 52):

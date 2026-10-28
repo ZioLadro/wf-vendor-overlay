@@ -3,6 +3,14 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.4.4
+- **AlecaFrame's icons in the build screen** (icons folder, `img/builds` and `img/damageTypes`): an icon for every stat
+  (health, shields, armor, energy, sprint, ability stats, fire rate, multishot, magazine, reload, critical, status) and
+  every damage type, the bonus element's icon; Forma, Orokin Reactor / Catalyst, Exilus and Arcane adapter pictures by
+  the title (faded when not installed) and on the planner's switches; empty Aura / Exilus / Stance slots show their
+  picture and an empty Arcane slot AlecaFrame's empty-Arcane outline; Archon Shards and Helminth headings with their
+  icon. Steel Essence and Pathos Clamp icons in the player strip. Without the folder everything looks as before.
+
 ## 0.4.3
 - **Aya counted like AlecaFrame does**: the Aya item among your resources (`SchismKey`); what was shown as Aya before
   (the `PrimeTokens` field) is Regal Aya and is now shown as such. *Aya (typed by hand)* is used only when the file has

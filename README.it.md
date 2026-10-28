@@ -308,7 +308,11 @@ Le immagini di questa scheda vengono **solo dalla wiki di Warframe** (API MediaW
 mancanti vengono scaricate in background all'avvio e tenute nella cartella dei dati. Nomi e statistiche vengono dal
 `loadout_data.json` incluso (dati pubblici del gioco e WFCD/warframe-items, ricostruito con `tools/build_loadouts.py`). Una
 **cartella delle icone** facoltativa (Impostazioni > Inventario; gli `assets` estratti di AlecaFrame vengono trovati da
-soli) aggiunge le immagini dei Frammenti Arconte e del portafoglio; quei file vengono solo letti dove sono, mai copiati.
+soli) aggiunge le immagini dei Frammenti Arconte e del portafoglio; quei file vengono solo letti dove sono, mai copiati. Dalle sue cartelle `img/builds` e `img/damageTypes` la
+schermata build prende anche: un'icona per ogni statistica e tipo di danno, le immagini di Forma, Reattore /
+Catalizzatore Orokin e adattatori (accanto al titolo, accese quando installati, e sugli interruttori del
+pianificatore), gli slot Aura / Exilus / Postura / Arcano vuoti, i titoli Frammenti Arconte ed Helminth; le immagini di
+Steel Essence e Pathos Clamp vanno nella barra del giocatore.
 
 ### Settimanali
 Le offerte dei vendor con un limite di acquisto (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…), quanto hai
@@ -366,7 +370,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.4.3)
+## Aggiornamenti (versione attuale 0.4.4)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

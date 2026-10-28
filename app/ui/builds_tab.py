@@ -102,10 +102,21 @@ class LoadoutView(QWidget):
             elif it.layout():
                 self._clear(it.layout())
 
-    def _section(self, text):
+    def _section(self, text, icon=None):
         lab = QLabel(text.upper())
         lab.setStyleSheet("font-weight: bold; letter-spacing: 1px; margin-top: 10px;")
-        self.body.addWidget(lab)
+        pm = icons.build(icon, 22) if icon else None
+        if pm is None:
+            self.body.addWidget(lab)
+            return
+        row = QHBoxLayout()                              # AlecaFrame's picture of the section (shards, Helminth)
+        pic = QLabel()
+        pic.setPixmap(pm)
+        pic.setStyleSheet("margin-top: 10px;")
+        row.addWidget(pic)
+        row.addWidget(lab)
+        row.addStretch(1)
+        self.body.addLayout(row)
 
     def _copy_data(self, lo):
         """The item as the game file has it and as the program reads it, to the clipboard (to report a capacity that
@@ -176,6 +187,12 @@ class LoadoutView(QWidget):
              "bonus": lo.get("bonus") or {}, "valence": ex.get("valence"), "unique": bool(ex.get("valence")),
              "subtitle": sub, "subtitle_tip": t("builds.pot.tip") + ("\n" + ", ".join(unlocked) if unlocked else ""),
              "pic": thumb(lo["item"], 48),
+             "upgrades": __import__("app.ui.planner_tab", fromlist=["x"]).upgrade_icons(
+                 lo["kind"], lo.get("reactor"),
+                 bool(ex.get("exilus")) or any(s_.get("name") for s_ in lo["slots"] if s_["role"] == "exilus")
+                 if any(s_["role"] == "exilus" for s_ in lo["slots"]) and "exilus" in ex else None,
+                 bool(ex.get("arcane_slot")) or any(s_.get("name") for s_ in lo["slots"] if s_["role"] == "arcane")
+                 if any(s_["role"] == "arcane" for s_ in lo["slots"]) and "arcane_slot" in ex else None),
              # an empty Arcane slot of a weapon without its Arcane adapter (game file) is drawn locked
              "locked": {"arcane": lo["kind"] in weapons and "arcane_slot" in ex and not ex["arcane_slot"]
                         and not any(s_.get("name") for s_ in lo["slots"] if s_["role"] == "arcane")}}
@@ -214,7 +231,7 @@ class LoadoutView(QWidget):
             row.addStretch(1)
             self.body.addLayout(row)
         if lo["kind"] == "warframe":
-            self._section(t("builds.sec.shards"))
+            self._section(t("builds.sec.shards"), "shards")
             row = QHBoxLayout()
             if lo["shards"]:
                 for s in lo["shards"]:
@@ -239,7 +256,7 @@ class LoadoutView(QWidget):
                 role(none, "hint")
                 row.addWidget(none)
             self.body.addLayout(row)
-            self._section(t("builds.sec.helminth"))
+            self._section(t("builds.sec.helminth"), "helminth")
             h = lo["helminth"]
             lab = QLabel(t("builds.helminth", slot=h["slot"], replaced=h["replaced"] or "?", ability=h["ability"])
                          if h else t("builds.none"))

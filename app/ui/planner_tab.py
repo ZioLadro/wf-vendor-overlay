@@ -44,6 +44,26 @@ def arcane_max(name: str) -> int:
     return 5
 
 
+def _icon(widget, key):
+    """AlecaFrame's picture of an upgrade on a switch, when the icons folder is there."""
+    pm = icons.build(key, 20)
+    if pm is not None:
+        widget.setIcon(QIcon(pm))
+
+
+def upgrade_icons(kind, reactor, exilus=None, arcane=None) -> list:
+    """The upgrades shown by the title (AlecaFrame's pictures), lit when installed: [(picture key, on, tooltip)].
+    exilus / arcane None: the item has no such slot."""
+    weapon = kind in WEAPONS
+    out = [("catalyst" if weapon else "reactor", bool(reactor),
+            t("builds.catalyst") if weapon else t("builds.reactor.name"))]
+    if exilus is not None:
+        out.append(("exilus_adapter", bool(exilus), t("bs.opt.exilus")))
+    if arcane is not None and kind in ("primary", "secondary"):
+        out.append(("primary_arcane" if kind == "primary" else "secondary_arcane", bool(arcane), t("bs.opt.arcane")))
+    return [(k, on, tip + " · " + t("bs.up.on" if on else "bs.up.off")) for k, on, tip in out]
+
+
 def mod_family(name: str) -> str:
     """Mods the game does not let you equip together share this: Vitality, Primed Vitality, Umbral / Archon Vitality."""
     return _PREFIX.sub("", name or "").strip().lower()
@@ -604,7 +624,9 @@ class PlannerView(QWidget):
                "reactor": p.get("reactor"), "forma": BC.forma_count(kind, item, roles, p["forma"]),
                "wf_stats": calc["stats"], "wf_base": wf_base_stats(item) if kind == "warframe" else {},
                "weapon": weapon, "bonus": calc["bonus"], "valence": valence, "locked": locked, "selected": self.selected,
-               "unique": bool(valence)}
+               "unique": bool(valence), "upgrades": upgrade_icons(kind, p.get("reactor", True), p.get("exilus", True)
+                                                                  if "exilus" in roles else None,
+                                                                  p.get("arcane", True) if "arcane" in roles else None)}
         avail = INC.available(item) if kind in ("primary", "secondary", "melee") else None
         if avail:
             inc = p["incarnon"]
@@ -630,17 +652,20 @@ class PlannerView(QWidget):
         h.addWidget(lvl)
         what = t("builds.catalyst") if kind in WEAPONS else t("builds.reactor.name")
         cb = QCheckBox(what)
+        _icon(cb, "catalyst" if kind in WEAPONS else "reactor")
         cb.setChecked(bool(p.get("reactor", True)))
         cb.setToolTip(t("bs.opt.reactor.tip"))
         cb.toggled.connect(lambda c: self._set_opt("reactor", bool(c)))
         h.addWidget(cb)
         if "exilus" in self.roles:
             cb = QCheckBox(t("bs.opt.exilus"))
+            _icon(cb, "exilus_adapter")
             cb.setChecked(bool(p.get("exilus", True)))
             cb.toggled.connect(lambda c: self._set_opt("exilus", bool(c)))
             h.addWidget(cb)
         if "arcane" in self.roles and kind in WEAPONS:
             cb = QCheckBox(t("bs.opt.arcane"))
+            _icon(cb, "secondary_arcane" if kind == "secondary" else "primary_arcane")
             cb.setChecked(bool(p.get("arcane", True)))
             cb.toggled.connect(lambda c: self._set_opt("arcane", bool(c)))
             h.addWidget(cb)

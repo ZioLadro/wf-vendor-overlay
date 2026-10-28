@@ -287,7 +287,10 @@ Pictures in this tab come **only from the Warframe wiki** (MediaWiki API, one re
 fetched in the background at start and kept in the data folder. Names and stats come from the bundled
 `loadout_data.json` (public game data and WFCD/warframe-items, rebuilt with `tools/build_loadouts.py`). An optional **icons
 folder** (Settings > Inventory; AlecaFrame's unpacked `assets` is found by itself) adds Archon Shard and wallet pictures;
-those files are only read where they are, never copied.
+those files are only read where they are, never copied. From its `img/builds` and `img/damageTypes` folders the build
+screen also takes: an icon per stat and per damage type, the Forma, Orokin Reactor / Catalyst and adapter pictures (by
+the title, lit when installed, and on the planner's switches), the empty Aura / Exilus / Stance / Arcane slots, the
+Archon Shard and Helminth headings; Steel Essence and Pathos Clamp pictures go to the player strip.
 
 ### Weekly
 The vendor offers with a purchase limit (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…), what you bought this
@@ -342,7 +345,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.4.3)
+## Updates (current version 0.4.4)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

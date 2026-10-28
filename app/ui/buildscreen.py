@@ -19,6 +19,8 @@ from app.game import loadouts as LO
 from app.ui import icons
 from app.ui import previews
 from app.ui.buildcards import _scaled, pips
+from html import escape as escape_html
+from PyQt6.QtCore import QUrl
 from app.core.i18n import t
 from app.core.uiutil import role
 
@@ -264,7 +266,13 @@ class Card(QWidget):
             p.setPen(QColor("#4b5260"))
             f.setPixelSize(big)
             p.setFont(f)
-            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "—")
+            spm = icons.build(role_, int(H * 0.42)) if role_ in ("aura", "exilus", "stance") else None
+            if spm is not None:                         # an empty Aura / Exilus / Stance slot: its own picture, faint
+                p.setOpacity(0.35)
+                p.drawPixmap(int((W - spm.width()) / 2), int((H - spm.height()) / 2), spm)
+                p.setOpacity(1.0)
+            else:
+                p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "—")
         if self.locked:
             f.setPixelSize(max(14, int(H * 0.3)))
             p.setFont(f)
@@ -297,7 +305,7 @@ class Card(QWidget):
             p.setPen(Qt.PenStyle.NoPen)
             p.setBrush(QBrush(g))
             p.drawEllipse(QPointF(W / 2, top + icon_h / 2), icon_h * 0.9, icon_h * 0.9)
-        pm = icons.arcane(name, icon_h) if name else None
+        pm = icons.arcane(name, icon_h) if name else icons.build("arcane_empty", icon_h)
         if pm is not None and not pm.isNull():
             p.drawPixmap(int((W - pm.width()) / 2), top, pm)
         else:                                          # no icons folder (or an empty slot): a drawn Arcane frame
@@ -434,8 +442,13 @@ def _fmt(key, v):
     return f"{v:.2f}".rstrip("0").rstrip(".") if abs(v) < 100 else f"{v:.1f}"
 
 
-def _row(grid, r, label, base, val, key="", better_high=True, bold=False):
-    lab = QLabel(label)
+def _icon_html(f, size=14) -> str:
+    return f"<img src='{QUrl.fromLocalFile(f).toString()}' width='{size}' height='{size}'>&nbsp;" if f else ""
+
+
+def _row(grid, r, label, base, val, key="", better_high=True, bold=False, icon=None):
+    """A stat line: [icon] label … base ▸ value. icon: a picture file (AlecaFrame's icons folder) or None."""
+    lab = QLabel(_icon_html(icon) + escape_html(label) if icon else label)
     lab.setStyleSheet("color: #c9ced8;" + (" font-weight: bold;" if bold else ""))
     grid.addWidget(lab, r, 0)
     same = isinstance(base, str) or base is None or abs(float(base) - float(val)) < 1e-6
@@ -523,7 +536,8 @@ def stats_panel(m: dict) -> QFrame:
     if m.get("valence"):
         lay.addWidget(_head(t("bs.valence")))
         g = QGridLayout()
-        _row(g, 0, m["valence"]["element"], None, f"{m['valence']['pct']:.1f}%".replace(".0%", "%"))
+        _row(g, 0, t("dmg." + m["valence"]["element"].lower()), None, f"{m['valence']['pct']:.1f}%".replace(".0%", "%"),
+             icon=icons.damage_path(m["valence"]["element"]))
         lay.addLayout(g)
     wf = m.get("wf_stats") or {}
     if wf:
@@ -535,7 +549,8 @@ def stats_panel(m: dict) -> QFrame:
         r = 0
         for key in BC.STAT_ORDER[:5]:
             if key in wf:
-                _row(g, r, t("builds.stat." + key), base.get(key), wf[key], "sprint" if key == "sprint" else "")
+                _row(g, r, t("builds.stat." + key), base.get(key), wf[key], "sprint" if key == "sprint" else "",
+                     icon=icons.stat_path(key))
                 r += 1
         lay.addLayout(g)
         lay.addWidget(_head(t("bs.ability")))
@@ -544,7 +559,8 @@ def stats_panel(m: dict) -> QFrame:
         r = 0
         for key in BC.STAT_ORDER[5:]:
             if key in wf:
-                lab = QLabel(t("builds.stat." + key))
+                f = icons.stat_path(key)
+                lab = QLabel(_icon_html(f) + escape_html(t("builds.stat." + key)) if f else t("builds.stat." + key))
                 lab.setStyleSheet("color: #c9ced8;")
                 g.addWidget(lab, r, 0)
                 v = QLabel(f"{wf[key]:g}%")
@@ -560,17 +576,17 @@ def stats_panel(m: dict) -> QFrame:
         g = QGridLayout()
         g.setVerticalSpacing(1)
         for r, (key, b0, b1) in enumerate(ws["rows"]):
-            _row(g, r, t("bs.stat." + key), b0, b1, key, better_high=key != "reload")
+            _row(g, r, t("bs.stat." + key), b0, b1, key, better_high=key != "reload", icon=icons.stat_path(key))
         lay.addLayout(g)
         lay.addWidget(_head(t("bs.sec.damage")))
         g = QGridLayout()
         g.setVerticalSpacing(1)
         r = 0
         for key, b0, b1 in ws["crit"]:
-            _row(g, r, t("bs.stat." + key), b0, b1, key)
+            _row(g, r, t("bs.stat." + key), b0, b1, key, icon=icons.stat_path(key))
             r += 1
         for el, b0, b1 in ws["damage"]:
-            _row(g, r, t("dmg." + el.lower()), b0, b1)
+            _row(g, r, t("dmg." + el.lower()), b0, b1, icon=icons.damage_path(el))
             r += 1
         _row(g, r, t("bs.stat.total"), ws["total"][0], ws["total"][1], bold=True)
         _row(g, r + 1, t("bs.stat.dps"), ws["dps"][0], ws["dps"][1], bold=True)
@@ -908,10 +924,33 @@ class BuildScreen(QWidget):
         title.setStyleSheet("font-size: 22px; font-weight: 300; letter-spacing: 3px;")
         row.addWidget(title)
         if m.get("forma") is not None:
-            fm = QLabel(f"✦ {m['forma']}")
+            pm = icons.build("forma", 26)
+            if pm is not None:                          # AlecaFrame's Forma picture, else a star
+                ic = QLabel()
+                ic.setPixmap(pm)
+                ic.setToolTip(t("bs.forma.tip", n=m["forma"]))
+                row.addWidget(ic)
+            fm = QLabel(f"{'' if pm is not None else '✦ '}{m['forma']}")
             fm.setToolTip(t("bs.forma.tip", n=m["forma"]))
-            fm.setStyleSheet("font-size: 18px; color: #e0c46c; margin-left: 6px;")
+            fm.setStyleSheet("font-size: 18px; color: #e0c46c;" + ("" if pm is not None else " margin-left: 6px;"))
             row.addWidget(fm)
+        for key, on, tip in m.get("upgrades") or []:      # Orokin Reactor / Catalyst, adapters: lit when installed
+            pm = icons.build(key, 26)
+            if pm is None:
+                continue
+            ic = QLabel()
+            if not on:
+                from PyQt6.QtGui import QPixmap as _QP
+                faded = _QP(pm.size())
+                faded.fill(Qt.GlobalColor.transparent)
+                pp = QPainter(faded)
+                pp.setOpacity(0.25)
+                pp.drawPixmap(0, 0, pm)
+                pp.end()
+                pm = faded
+            ic.setPixmap(pm)
+            ic.setToolTip(tip)
+            row.addWidget(ic)
         row.addStretch(1)
         self.lay.addLayout(row)
         if m.get("subtitle"):
