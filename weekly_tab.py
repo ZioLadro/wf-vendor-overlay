@@ -87,9 +87,10 @@ class WeeklyTab(QWidget):
             return
         try:
             inv = WK.raw_inventory(path)
-            if inv is not None and id(inv) != getattr(self, "_synced", None):
-                self._synced = id(inv)
-                self.w.sync(inv)
+            WK.read_deltas(path)
+            if inv is not None and (id(inv), WK._deltas_cache["key"]) != getattr(self, "_synced", None):
+                self._synced = (id(inv), WK._deltas_cache["key"])
+                self.w.sync(inv, WK.read_deltas(path))
         except Exception as e:
             import logbus
             logbus.error("weekly", f"{type(e).__name__}: {e}")

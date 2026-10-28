@@ -21,9 +21,10 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 - **Scheda Settimanali: offerte limitate dei vendor** (offerte Steel Path di Teshin, Ironwake, Nightcap, Archimedean,
   Acrithis, vendor degli eventi…; dai dati del gioco, `weekly.json` creato da `build_weekly.py`): costo, limite, quanti
   ne hai comprati in questo periodo e quando si azzera, con filtro per vendor, solo settimanali, solo seguite. Gli
-  acquisti vengono da lastData.dat; siccome il file non dice quale offerta è stata comprata, il programma confronta
-  l'inventario con la sync precedente (quello che ti hanno dato l'ultima missione o visita) e la assegna quando una sola
-  offerta torna; altrimenti te lo chiede, con prima le offerte il cui oggetto è aumentato (★) e l'ultimo luogo in cui sei
+  acquisti vengono da lastData.dat; siccome il file non dice quale offerta è stata comprata, il programma guarda cosa
+  AlecaFrame ha registrato come guadagnato in **deltas.dat** (l'ultima missione o visita, oggetto per oggetto: vince
+  l'offerta il cui oggetto è arrivato esattamente nella sua quantità, es. Kuva +10.000 = l'offerta ×10.000) e l'inventario
+  rispetto alla sync precedente, e la assegna quando una sola offerta torna; altrimenti te lo chiede, con prima le offerte il cui oggetto è aumentato (★) e l'ultimo luogo in cui sei
   stato come indizio. Le risposte valgono fino al reset del limite.
 - **Piano standing: sezione settimanale** con le offerte che segui (acquistate/limite, conto alla rovescia del reset) e
   gli acquisti da identificare (clic per scegliere). **Segui / non seguire** dall'overlay: clic destro su un'attività,

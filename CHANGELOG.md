@@ -21,8 +21,9 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Weekly tab: limited vendor offers** (Teshin's Steel Path offers, Ironwake, Nightcap, Archimedean, Acrithis, event
   vendors…; from the game data, `weekly.json` made by `build_weekly.py`): cost, limit, how many you bought this period and
   when it resets, with a filter by vendor, weekly only, tracked only. Purchases come from lastData.dat; since the file does
-  not say which offer was bought, the program compares your inventory with the previous sync (what the last mission or
-  visit gave you) and assigns it when only one offer fits; otherwise it asks you, with the offers whose item went up
+  not say which offer was bought, the program looks at what AlecaFrame recorded as gained in **deltas.dat** (the last
+  mission or visit, item by item: an offer whose item came in exactly in its amount wins, e.g. Kuva +10,000 = the ×10,000
+  offer) and at your inventory against the previous sync, and assigns it when only one offer fits; otherwise it asks you, with the offers whose item went up
   first (★) and the last place you were in as a hint. Answers last until the limit resets.
 - **Standing plan: weekly section** with the offers you track (bought/limit, reset countdown) and the purchases to
   identify (click to choose). **Track / untrack** from the overlay: right-click an activity, a syndicate title or a

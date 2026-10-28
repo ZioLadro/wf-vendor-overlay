@@ -3,9 +3,9 @@ Acrithis…): what each one offers (weekly.json, made by build_weekly.py from th
 
 What you bought comes from AlecaFrame's lastData.dat ("RecentVendorPurchases": per vendor, each limited purchase with the
 number bought and when its limit resets). The file does not say WHICH offer it was (only an id the game servers make up when
-the vendor's stock rotates), so the program works it out: when a new purchase appears, it compares your inventory with the
-previous sync (AlecaFrame rewrites the file each time you extract or leave a relay, with what the last mission or visit
-gave you) and keeps the vendor's limited offers whose item went up. One candidate left: assigned. Several (or none): you
+the vendor's stock rotates), so the program works it out: when a new purchase appears, it looks at what AlecaFrame recorded
+as gained in deltas.dat (the last mission / visit, item by item) and at your inventory against the previous sync, and keeps
+the vendor's limited offers whose item came in (see Weekly.guess). One candidate left: assigned. Several (or none): you
 are asked to pick it, with the last place you were in (LastRegionPlayed) as a hint, since many of these vendors are on one
 planet or hub only. Your answers and the tracked offers are kept in weekly_state.json."""
 import json
@@ -59,6 +59,30 @@ def raw_inventory(path: str):
         text = I.decrypt_last_data(raw) if path.lower().endswith(".dat") else I.unwrap_inventory(raw.decode("utf-8-sig"))
         _raw_cache["key"], _raw_cache["inv"] = key, json.loads(text)
     return _raw_cache["inv"]
+
+
+_deltas_cache = {"key": None, "d": None}
+
+
+def read_deltas(last_data_path: str) -> dict:
+    """AlecaFrame's deltas.dat next to lastData.dat: {item path: amount gained since its previous state} ({} if absent)."""
+    import os
+    import inventory as I
+    p = Path(last_data_path).with_name("deltas.dat")
+    try:
+        st = os.stat(p)
+    except OSError:
+        return {}
+    key = (str(p), st.st_mtime_ns, st.st_size)
+    if _deltas_cache["key"] != key:
+        try:
+            d = json.loads(I.decrypt_last_data(p.read_bytes()))
+            cd = d.get("currentDeltas") if isinstance(d, dict) else None
+            _deltas_cache["d"] = {k: int(v) for k, v in (cd or {}).items() if isinstance(v, (int, float))}
+        except Exception:
+            _deltas_cache["d"] = {}
+        _deltas_cache["key"] = key
+    return _deltas_cache["d"]
 
 
 def counts(inv: dict) -> dict:
@@ -118,8 +142,32 @@ class Weekly:
         except OSError:
             pass
 
-    def sync(self, inv: dict) -> list:
-        """Reads the purchases of the game file; works out the new ones. Returns the purchases needing your answer."""
+    @staticmethod
+    def guess(items, cur, snapshot, deltas, n):
+        """(offer or None, candidates, how). Evidence, most precise first:
+        1. deltas.dat: what AlecaFrame recorded as gained since its previous state (the last mission / visit), item by
+           item. An offer whose item was gained in an exact multiple of the offer's amount × purchases is the best match
+           (Kuva ×10,000 bought once = +10,000 exactly); then any offer whose item was gained at least once.
+        2. the inventory compared with the previous sync (this program's own copy): items that went up.
+        The two are combined: when the deltas leave several offers, the ones that also went up in the inventory win."""
+        items = list({i["id"]: i for i in items}.values())     # the same offer listed twice (Teshin's Kuva) is one
+        d_any = [i for i in items if deltas.get(i["path"], 0) >= i["qty"]] if deltas else []
+        d_exact = [i for i in d_any if deltas[i["path"]] % i["qty"] == 0 and deltas[i["path"]] >= i["qty"] * max(1, n)]
+        d_equal = [i for i in d_exact if deltas[i["path"]] == i["qty"] * max(1, n)]     # exactly what was bought
+        s_up = [i for i in items if cur.get(i["path"], 0) > snapshot.get(i["path"], 0)] if snapshot else []
+        s_ids = {i["id"] for i in s_up}
+        for pool, how in ((d_equal, "deltas"), (d_exact, "deltas"), ([i for i in d_exact if i["id"] in s_ids], "deltas+inventory"),
+                          (d_any, "deltas"), ([i for i in d_any if i["id"] in s_ids], "deltas+inventory")):
+            if len(pool) == 1:
+                return pool[0], [pool[0]["id"]], how
+        if not deltas and len(s_up) == 1:
+            return s_up[0], [s_up[0]["id"]], "inventory"
+        cands = d_exact or d_any or s_up
+        return None, [i["id"] for i in cands], ""
+
+    def sync(self, inv: dict, deltas: dict | None = None) -> list:
+        """Reads the purchases of the game file (and AlecaFrame's deltas.dat, when there); works out the new ones.
+        Returns the purchases needing your answer."""
         import logbus
         with _lock:
             now = time.time()
@@ -132,19 +180,16 @@ class Weekly:
                 if k in self.assign:
                     continue
                 items = data()[p["vendor"]]["items"]
-                if self.snapshot:
-                    went_up = [i for i in items if cur.get(i["path"], 0) > self.snapshot.get(i["path"], 0)]
-                else:
-                    went_up = []
-                if len(went_up) == 1:
-                    self.assign[k] = went_up[0]["id"]
-                    logbus.add("weekly", f"{data()[p['vendor']]['name']}: purchase recognised as {went_up[0]['name']} "
-                               f"(it went up in your inventory)", "ok")
+                offer, cands, how = self.guess(items, cur, self.snapshot, deltas or {}, p["n"])
+                if offer:
+                    self.assign[k] = offer["id"]
+                    logbus.add("weekly", f"{data()[p['vendor']]['name']}: purchase recognised as {offer['name']} "
+                               f"(from {how})", "ok")
                 else:
                     self.assign[k] = UNKNOWN
-                    self.candidates[k] = [i["id"] for i in went_up]
+                    self.candidates[k] = cands
                     logbus.add("weekly", f"{data()[p['vendor']]['name']}: new limited purchase to identify "
-                               f"({len(went_up)} candidates from the inventory)", "warn")
+                               f"({len(cands)} candidates from deltas.dat and the inventory)", "warn")
                 changed = True
             live = {f"{p['vendor']}|{p['id']}" for p in self.current}
             for k in [k for k in self.assign if k not in live]:        # reset: the purchase no longer counts
