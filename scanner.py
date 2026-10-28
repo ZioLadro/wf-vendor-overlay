@@ -260,7 +260,9 @@ class Scanner:
             ex = self.exclude_provider() if self.exclude_provider else None
         except Exception:
             ex = None
-        hits, mon_w, patches = self.ocr.scan(exclude=[ex] if ex else None)
+        if ex and not isinstance(ex[0], (tuple, list)):
+            ex = [ex]                                    # one rectangle, or a list of them (price list, plan overlay)
+        hits, mon_w, patches = self.ocr.scan(exclude=list(ex) if ex else None)
         ox, oy = getattr(self.ocr, "origin", (0, 0))
         if self.gen != gen:
             return

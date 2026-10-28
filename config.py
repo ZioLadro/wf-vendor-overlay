@@ -24,6 +24,7 @@ DEFAULTS = {
     "key_scan": "<f8>",          # scan now (and resume if paused)
     "key_clear": "<f9>",         # pause: hides prices and stops automatic detection
     "key_quit": "<f10>",         # quit
+    "key_goals": "<f6>",         # shows/hides the in-game standing plan
     # startup and automatic vendor detection
     "start_active": True,        # True = starts already active (no need to press F8)
     "auto_detect": True,         # detect a vendor being opened / the list changing by itself
@@ -69,6 +70,15 @@ DEFAULTS = {
     "backdrop_image": "",            # your own picture for backdrop_style "image"
     "backdrop": True,                # themed background pattern behind the tabs (tables and inputs keep solid colours)
     "backdrop_strength": 45,         # how visible the pattern is (0-100)
+    "goals_visible": False,          # standing plan overlay: shown (remembered between sessions)
+    "goals_geom": [],                # its position and size [x, y, width, height]
+    "goals_collapsed": False,
+    "goals_opacity": 82,             # background opacity (%)
+    "goals_font": 12,                # text size (px)
+    "goals_items": 8,                # how many recommended purchases it tracks
+    "goals_per_vendor": True,        # at most one item per vendor (the best one)
+    "goals_activities": True,        # what to do to earn the standing that is missing
+    "goals_only_short": False,       # only the syndicates you still lack standing for
     "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)
     "inv_min_volume": 0,             # Inventory: hide items traded fewer times than this in 24 h (0 = off)
     "hide_negative_ranks": False,    # player strip / Profile: hide syndicates with a negative rank

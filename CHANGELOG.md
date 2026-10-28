@@ -3,6 +3,20 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.3.0
+- **Standing plan overlay** (in game, F6 shows/hides it; setting *Standing plan key*): a small always-on-top window
+  listing the purchases the Recommendations suggest, grouped by syndicate, with your standing, rank and what is left of
+  today's cap; for each item how many you can buy now or how much standing is missing (and the rank needed); for the
+  syndicates you lack standing for, what earns it (bounties, sigil missions, Medallions, tokens…).
+  - **Interactive and movable**: drag the title bar, resize from the corner, fold it (double-click the title), close it;
+    ⚙ sets opacity, text size, how many purchases, one per vendor, show the activities, only the syndicates you lack
+    standing for. Position, size and options are remembered. Right-click an item to hide it or open it on warframe.market.
+  - **Updated with the game file**: it is read again every time AlecaFrame rewrites lastData.dat (standing and inventory).
+  - **Purchases are verified before an item leaves the list**: the program remembers how many copies you owned when the
+    item entered the list and removes it only when the game file shows a new copy (*Bought lately* keeps the last ones).
+    Ticking an item only marks it "bought? waiting for the game file". *Show again hidden and bought items* resets it.
+  - Its area is never read by the OCR, and showing it does not take the focus from the game.
+
 ## 0.2.9
 - **Spliced Rivens** (a stat fused from two others with a Riven Splicer) are recognised and shown "frozen" in Builds:
   icy card, ❄ *Spliced* label, the spliced stat highlighted. The game data has no figures for spliced stats yet, so their

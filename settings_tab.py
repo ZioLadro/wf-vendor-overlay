@@ -43,6 +43,7 @@ GROUPS = [
         ("key_scan", "text", None, True),
         ("key_clear", "text", None, True),
         ("key_quit", "text", None, True),
+        ("key_goals", "text", None, True),
     ]),
     ("detection", [
         ("watch_interval", "float", (0.1, 10, 2), False),
@@ -309,9 +310,9 @@ class SettingsTab(QWidget):
 
     def save(self, restart: bool):
         new = {k: self._get(k) for k in self.widgets}
-        for k in ("key_menu", "key_scan", "key_clear", "key_quit"):
+        for k in ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals"):
             new[k] = new[k].lower()
-        for k in ("key_menu", "key_scan", "key_clear", "key_quit"):
+        for k in ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals"):
             if not _valid_hotkey(new[k]):
                 self.msg.setText(t("settings.bad_key", key=new[k] or "∅"))
                 return

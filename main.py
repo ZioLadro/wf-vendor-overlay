@@ -57,6 +57,7 @@ def main():
         results = pyqtSignal(list)
         update_found = pyqtSignal(object)
         status = pyqtSignal(str)
+        goals = pyqtSignal()
 
     if sys.platform == "win32":                  # own taskbar identity: the taskbar shows our icon, not python's
         try:
@@ -101,7 +102,14 @@ def main():
     # price list: stays usable while it is open; its own area is blanked before the OCR (it must not read its own names)
     pricelist = PriceList(market)
     pricelist.setWindowIcon(icon)
-    scanner.exclude_provider = pricelist.screen_rect_px
+    # in-game standing plan (hotkey key_goals): what to buy with standing and how to earn it
+    from goals_overlay import GoalsOverlay
+    from standing import get_store
+    goals = GoalsOverlay(market, pricelist.inventory, get_store())
+    bridge.goals.connect(goals.toggle)
+    if CFG.get("goals_visible"):
+        QTimer.singleShot(1500, goals.show)
+    scanner.exclude_provider = lambda: [r for r in (pricelist.screen_rect_px(), goals.screen_rect_px()) if r]
     pricelist.visibility.connect(lambda _v: scanner.list_changed())
     bridge.menu.connect(pricelist.toggle)
     bridge.update_found.connect(pricelist.offer_update)
@@ -152,6 +160,7 @@ def main():
         tray_menu = QMenu()
         for text, fn in (
             (t("tray.pricelist", key=_k(CFG["key_menu"])), pricelist.toggle),
+            (t("tray.goals", key=_k(CFG["key_goals"])), goals.toggle),
             (t("tray.scan", key=_k(CFG["key_scan"])), scanner.scan_now),
             (t("tray.pause", key=_k(CFG["key_clear"])), scanner.stop),
             (t("tray.quit", key=_k(CFG["key_quit"])), app.quit),
@@ -169,6 +178,7 @@ def main():
         CFG["key_scan"]: scanner.scan_now,
         CFG["key_clear"]: scanner.stop,
         CFG["key_quit"]: bridge.quit.emit,
+        CFG["key_goals"]: bridge.goals.emit,
     })
     hotkeys.start()
     wheel = WheelListener(scanner.on_scroll)

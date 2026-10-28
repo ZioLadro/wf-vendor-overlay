@@ -20,7 +20,7 @@ vendor) and **max-rank** price. The volume is the total of the trades of all ran
   If the list changes in another way (dragged scrollbar, keyboard, vendor closed) the change is detected
   by comparing the pixels under the names.
 - **Leaving the vendor**: the labels disappear as soon as you close the vendor or change page.
-- **F7** opens/closes the **price list** · **F8** scan now (and resume if paused) · **F9** pause ·
+- **F6** shows/hides the **standing plan** · **F7** opens/closes the **price list** · **F8** scan now (and resume if paused) · **F9** pause ·
   **F10** quit. The same actions are in the tray icon menu (click on the icon = price list).
 - Warframe must run in **Borderless** windowed mode.
 
@@ -36,6 +36,8 @@ Every tab shows a **player strip**: name (click to set it, the game files do not
 The window **opens by itself when the program starts** (setting *Open the price list at start*). It is a normal window: it comes in front when you open it (hotkey or tray) and does not stay above the game (setting *Window always on top* to keep it there). The overlay keeps working while the window is open; when it is on top of the game its area is blanked before the OCR, so it never reads its own names.
 
 Under the player strip, the **world strip** shows the Steel Path Omnia fissures, the Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer and the Prime Resurgence with live countdowns. The current **Arbitration** is shown with its tier from [arbi.guide](https://arbi.guide) (Arbitration Goons; read from the guide's `tierlist.json` API, cached 15 minutes); which node it is comes from browse.wf's hourly schedule (`arbys.txt`). The **Console** tab lists what runs in the background and every error.
+
+**Standing plan** (in game, F6): an always-on-top, movable and resizable window with the purchases the Recommendations suggest, the standing each still needs and what earns it; it follows lastData.dat and removes an item only when the game file shows you bought it. ⚙ for opacity, text size and what it lists.
 
 The **price list** and the **recommendations** share the first tab (*Prices and recommendations*): the list on top, the recommendations below; drag the divider to change their heights (remembered).
 
@@ -195,7 +197,7 @@ the rest apply immediately. **Restore defaults** loads the default values (press
 
 Settings has one sub-tab per category. **Theme and font** offers colour themes inspired by Warframe's factions, allies (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) and enemies (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), plus the original *Classic*, and a font family and size. The choice is previewed at once in every window and kept only when you press Save (leaving the tab restores the saved look). The in-game overlay keeps its own colours. All themes are dark.
 
-## Updates (current version 0.2.9)
+## Updates (current version 0.3.0)
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version (from 0.2.1 on; the release page shows the same notes).
 
@@ -238,7 +240,7 @@ Everything lives in `%LOCALAPPDATA%\WFVendorOverlay`:
 | key | meaning (default) |
 |---|---|
 | `language` | `en` or `it` |
-| `key_menu` / `key_scan` / `key_clear` / `key_quit` | hotkeys (`<f7>` `<f8>` `<f9>` `<f10>`) |
+| `key_goals` / `key_menu` / `key_scan` / `key_clear` / `key_quit` | hotkeys (`<f6>` `<f7>` `<f8>` `<f9>` `<f10>`) |
 | `start_active` / `auto_detect` | start scanning at once / detect vendors by itself (true) |
 | `refresh_interval` | seconds between automatic refreshes (180) |
 | `open_max_age` | when a vendor opens, refresh data older than N s (30) |

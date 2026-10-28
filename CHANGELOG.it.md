@@ -3,6 +3,24 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.3.0
+- **Overlay piano standing** (in gioco, F6 lo mostra/nasconde; impostazione *Tasto piano standing*): una piccola
+  finestra sempre in primo piano con gli acquisti suggeriti dai Consigli, divisi per sindacato, con il tuo standing, il
+  rank e quanto resta del limite di oggi; per ogni oggetto quanti puoi comprarne adesso o quanto standing manca (e il
+  rank richiesto); per i sindacati in cui manca standing, cosa lo fa guadagnare (taglie, missioni col sigillo,
+  Medaglioni, gettoni…).
+  - **Interattivo e spostabile**: trascina la barra del titolo, ridimensiona dall'angolo, comprimilo (doppio clic sul
+    titolo), chiudilo; ⚙ imposta opacità, dimensione del testo, quanti acquisti, uno per vendor, mostra le attività,
+    solo i sindacati in cui manca standing. Posizione, dimensione e opzioni vengono ricordate. Clic destro su un oggetto
+    per nasconderlo o aprirlo su warframe.market.
+  - **Si aggiorna col file di gioco**: viene riletto ogni volta che AlecaFrame riscrive lastData.dat (standing e
+    inventario).
+  - **Gli acquisti vengono verificati prima di togliere un oggetto dalla lista**: il programma ricorda quante copie
+    avevi quando l'oggetto è entrato in lista e lo toglie solo quando il file di gioco mostra una copia nuova
+    (*Acquistati di recente* tiene gli ultimi). Spuntare un oggetto lo segna solo come "comprato? in attesa del file di
+    gioco". *Mostra di nuovo nascosti e acquistati* azzera.
+  - La sua area non viene mai letta dall'OCR, e mostrarlo non toglie il focus al gioco.
+
 ## 0.2.9
 - **Riven spliced** (una statistica fusa da altre due con un Riven Splicer) riconosciute e mostrate "ghiacciate" in
   Build: card azzurra, etichetta ❄ *Spliced*, la statistica spliced evidenziata. I dati del gioco non hanno ancora i

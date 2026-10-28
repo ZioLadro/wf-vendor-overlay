@@ -20,7 +20,7 @@ nel vendor) e prezzo a **rank massimo**. Il volume resta il totale degli scambi 
   Se la lista cambia in altro modo (barra trascinata, tastiera, chiusura del vendor) il cambiamento
   viene rilevato confrontando i pixel sotto i nomi.
 - **Uscita dal vendor**: appena chiudi il vendor o cambi pagina le etichette spariscono.
-- **F7** apre/chiude il **listino prezzi** · **F8** scansiona subito (e riprende se in pausa) ·
+- **F6** mostra/nasconde il **piano standing** · **F7** apre/chiude il **listino prezzi** · **F8** scansiona subito (e riprende se in pausa) ·
   **F9** pausa · **F10** esci. Le stesse azioni sono nel menu dell'icona vicino all'orologio
   (clic sull'icona = listino).
 - Warframe deve essere in finestra senza bordi (**Borderless**).
@@ -37,6 +37,8 @@ Ogni scheda mostra una **barra del giocatore**: nome (clicca per impostarlo, i f
 La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). È una finestra normale: viene davanti quando la apri (tasto rapido o icona) e non resta sopra il gioco (impostazione *Finestra sempre in primo piano* per tenercela). L'overlay continua a funzionare con la finestra aperta; quando è sopra il gioco la sua area viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 
 Sotto la barra del giocatore, la **barra del mondo** mostra le fessure Omnia Steel Path, i cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer e la Prime Resurgence con conto alla rovescia. L'**Arbitrato** attuale è mostrato con il suo tier di [arbi.guide](https://arbi.guide) (Arbitration Goons; letto dall'API `tierlist.json` della guida, in cache 15 minuti); quale nodo sia viene dal calendario orario di browse.wf (`arbys.txt`). La scheda **Console** elenca cosa gira in background e ogni errore.
+
+**Piano standing** (in gioco, F6): una finestra sempre in primo piano, spostabile e ridimensionabile, con gli acquisti suggeriti dai Consigli, lo standing che manca e come guadagnarlo; segue lastData.dat e toglie un oggetto solo quando il file di gioco mostra che l'hai comprato. ⚙ per opacità, dimensione del testo e cosa elencare.
 
 Il **listino prezzi** e i **consigli** condividono la prima scheda (*Prezzi e consigli*): il listino sopra, i consigli sotto; trascina il divisore per cambiarne le altezze (viene ricordato).
 
@@ -202,7 +204,7 @@ valgono subito. **Ripristina predefiniti** carica i valori di default (premi Sal
 
 Le Impostazioni hanno una sotto-scheda per categoria. **Tema e carattere** offre temi di colori ispirati alle fazioni di Warframe, alleate (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) e nemiche (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), più il *Classic* originale, oltre a famiglia e dimensione del carattere. La scelta si vede subito in anteprima in tutte le finestre e resta solo se premi Salva (uscendo dalla scheda torna l'aspetto salvato). L'overlay in gioco mantiene i suoi colori. Tutti i temi sono scuri.
 
-## Aggiornamenti (versione attuale 0.2.9)
+## Aggiornamenti (versione attuale 0.3.0)
 
 Vedi [CHANGELOG.it.md](CHANGELOG.it.md) per cosa cambia in ogni versione (dalla 0.2.1; la pagina della release mostra le stesse note).
 
