@@ -75,7 +75,9 @@ Una piccola finestra sempre in primo piano sopra il gioco, in stile quest tracke
 ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elencare. Mostra, per sindacato:
 
 - gli **acquisti suggeriti dai Consigli**, lo standing che manca, i giorni che servono al tuo limite giornaliero
-  (16.000 + 500 × grado di maestria) e le **attività che fanno guadagnare quello standing**. Un oggetto sparisce solo
+  (16.000 + 500 × grado di maestria), **dove comprarlo** (⌖ il personaggio e il luogo: *Hok, Cetus* per i pezzi Zaw,
+  *Rude Zuud, Fortuna* per i pezzi dei kitgun, *qualsiasi Relay* per i sindacati delle fazioni…) e le **attività che fanno
+  guadagnare quello standing**. Un oggetto sparisce solo
   quando il file di gioco mostra che l'hai comprato;
 - le **offerte settimanali dei vendor che segui** (acquistate / limite, conto alla rovescia del reset; vedi la scheda
   Settimanali);
@@ -88,7 +90,7 @@ ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elen
 per smettere di seguirla (*Segui di nuovo tutte le attività* in ⚙). Con *Attività: cliccabile solo col cursore* (attiva
 di default) la finestra lascia passare i clic quando Warframe nasconde il cursore (in missione), così non dà mai
 fastidio. Quando viene riconosciuta la schermata di un vendor, Attività si spegne (subentrano le etichette dei prezzi)
-finché non premi F6. Impostazioni: *Tasto attività*, *Attività: Nightwave e Calendario 1999*, *Nascondi Operational
+finché non premi F6. Impostazioni: *Tasto attività*, *Attività: Nightwave e Calendario 1999*, *Attività: dove comprare*, *Nascondi Operational
 Supply* (il sindacato degli eventi è escluso finché non c'è un evento).
 
 ## Finestra del listino (F7)
@@ -368,9 +370,9 @@ app/
                      world, arbi
   ui/                finestre e schede: menu (finestra principale), *_tab, *_dialog, goals_overlay (Attività),
                      buildcards, player_bar, world_strip, update_box, logos, icons, previews
-data/                dati di gioco inclusi (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges .json)
+data/                dati di gioco inclusi (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places .json)
 assets/              icon.png, icon.ico
-tools/               generatori di data/ (build_*.py: python tools/build_vendors.py …), build_icon.py,
+tools/               generatori di data/ (build_*.py: python tools/build_vendors.py …; build_places.py: dove comprare), build_icon.py,
                      prepare_models.py (modelli OCR)
 docs/                screenshot
 build.ps1            build per Windows (PyInstaller)

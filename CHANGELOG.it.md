@@ -13,6 +13,13 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
   (✔, tooltip con le due cifre e quanto restano in vendita i riven di quell'arma).
 - **Riven flip: scansioni programmate** ogni N ore mentre il programma è aperto (impostazione *Scansiona da solo ogni
   (ore)*, 0 = spento; la scheda mostra quando tocca alla prossima).
+- **Attività: dove comprare.** Sotto ogni oggetto da comprare, il personaggio e il luogo che lo vendono (⌖ *Hok, Cetus*
+  per i pezzi Zaw e gli arcani Exodia, *Rude Zuud, Fortuna* per i pezzi dei kitgun e gli arcani Pax, *Father,
+  Necralisk* per le armi Entrati, *qualsiasi Relay* per i sindacati delle fazioni…). Impostazione *Attività: dove
+  comprare* e opzione in ⚙.
+- **Attività: obiettivi di Nightwave e Calendario a colpo d'occhio.** Ogni sfida mostra il suo obiettivo su una riga
+  breve sotto il nome (*Uccidi 1.000 Nemici ne Il Percorso d'Acciaio*), nella lingua del programma (nomi e descrizioni
+  italiani presi dai testi italiani del gioco).
 
 ## 0.3.2
 - **Attività: cliccabile con il cursore del gioco.** In molti menu Warframe nasconde il cursore di Windows e disegna il

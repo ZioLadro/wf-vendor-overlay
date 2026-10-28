@@ -81,6 +81,7 @@ DEFAULTS = {
     "goals_only_short": False,       # only the syndicates you still lack standing for
     "goals_quests": True,            # Nightwave weekly challenges and the 1999 Calendar (DE's world state)
     "goals_cal_rows": 4,             # how many Calendar challenges still to do are listed
+    "goals_where": True,             # Activities: where to buy each item (the NPC and place) under it
     "goals_weekly": True,            # show the weekly vendor offers you track (Weekly tab)
     "goals_track_interact": True,    # right-click lines of the plan to track / untrack them
     "goals_untracked": [],           # activities left out of the plan: "<syndicate tag>|<n>" or "<tag>|*"

@@ -69,7 +69,8 @@ A small always-on-top window over the game, styled like a quest tracker, movable
 (corner). ⚙ sets opacity, text size and what it lists. It shows, per syndicate:
 
 - the **purchases the Recommendations suggest**, the standing each still needs, the days it takes at your daily cap
-  (16,000 + 500 × Mastery Rank) and the **activities that earn that standing**. An item is removed only when the game
+  (16,000 + 500 × Mastery Rank), **where to buy it** (⌖ the NPC and place: *Hok, Cetus* for Zaw parts, *Rude Zuud,
+  Fortuna* for kitgun parts, *any Relay* for the faction syndicates…) and the **activities that earn that standing**. An item is removed only when the game
   file shows you bought it;
 - the **weekly vendor offers you follow** (bought / limit, reset countdown; see the Weekly tab);
 - **Nightwave**: this week's challenges (elite ones ★, with their standing) and how many dailies are still open;
@@ -81,7 +82,7 @@ A small always-on-top window over the game, styled like a quest tracker, movable
 it (*Track again every activity* in ⚙). With *Activities: clickable only
 with the cursor* (on by default) the window lets clicks through while Warframe hides the cursor (in missions), so it never gets in
 the way. When a vendor screen is recognised, Activities switches off (the price labels take over) until you press F6.
-Settings: *Activities key*, *Activities: Nightwave and 1999 Calendar*, *Hide Operational Supply* (the event syndicate
+Settings: *Activities key*, *Activities: Nightwave and 1999 Calendar*, *Activities: where to buy*, *Hide Operational Supply* (the event syndicate
 is left out while no event runs).
 
 ## Price list window (F7)
@@ -349,9 +350,9 @@ app/
                      buildcalc, rivens, weekly, quests (Nightwave / Calendar), goals (Activities plan), world, arbi
   ui/                windows and tabs: menu (main window), *_tab, *_dialog, goals_overlay (Activities), buildcards,
                      player_bar, world_strip, update_box, logos, icons, previews
-data/                bundled game data (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges .json)
+data/                bundled game data (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places .json)
 assets/              icon.png, icon.ico
-tools/               builders of data/ (build_*.py: python tools/build_vendors.py …), build_icon.py,
+tools/               builders of data/ (build_*.py: python tools/build_vendors.py …; build_places.py: where to buy), build_icon.py,
                      prepare_models.py (OCR models)
 docs/                screenshots
 build.ps1            Windows build (PyInstaller)

@@ -869,6 +869,10 @@ EN = {
     "rflip.tip.falling": "Prices of this weapon are falling: fair price lowered by {pct} %",
     "rflip.tip.trend": "Median asking price {med}p · 7 days {t7} · 30 days {t30} (history: {days} days)",
     "rflip.tip.selldays": "{n} likely sold in 30 days, listed for {d} days on average (median)",
+    "goals.opt.where": "Show where to buy each item",
+    "goals.where.tip": "Where to buy it: {place}",
+    "set.goals_where": "Activities: where to buy",
+    "set.goals_where.tip": "Under every item to buy, the NPC and place that sell it (e.g. Hok, Cetus for Zaw parts; any Relay for the faction syndicates)",
 }
 
 IT = {
@@ -1725,6 +1729,10 @@ IT = {
     "rflip.tip.falling": "I prezzi di quest'arma stanno scendendo: prezzo equo abbassato del {pct} %",
     "rflip.tip.trend": "Prezzo mediano richiesto {med}p · 7 giorni {t7} · 30 giorni {t30} (storico: {days} giorni)",
     "rflip.tip.selldays": "{n} probabilmente venduti in 30 giorni, in vendita per {d} giorni (mediana)",
+    "goals.opt.where": "Mostra dove comprare ogni oggetto",
+    "goals.where.tip": "Dove comprarlo: {place}",
+    "set.goals_where": "Attività: dove comprare",
+    "set.goals_where.tip": "Sotto ogni oggetto da comprare, il personaggio e il luogo che lo vendono (es. Hok, Cetus per i pezzi Zaw; qualsiasi Relay per i sindacati delle fazioni)",
 }
 
 STRINGS = {"en": EN, "it": IT}

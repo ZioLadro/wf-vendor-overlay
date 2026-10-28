@@ -287,7 +287,7 @@ class GoalsOverlay(QWidget):
         for key, label in (("goals_per_vendor", "goals.opt.pervendor"), ("goals_activities", "goals.opt.activities"),
                            ("goals_only_short", "goals.opt.onlyshort"),
                            ("goals_click_only_cursor", "goals.opt.cursor"), ("goals_weekly", "goals.opt.weekly"),
-                           ("goals_quests", "goals.opt.quests")):
+                           ("goals_quests", "goals.opt.quests"), ("goals_where", "goals.opt.where")):
             a = QAction(t(label), m, checkable=True)
             a.setChecked(bool(CFG.get(key)))
             a.triggered.connect(lambda c, k=key: self._set(k, bool(c)))
@@ -404,7 +404,7 @@ class GoalsOverlay(QWidget):
             self.status.setText(t("goals.confirmed", name=c["name"]))
         shown = repr((data["groups"], [d["name"] for d in data["done"][-3:]], CFG.get("goals_activities"),
                       WK.get().version, CFG.get("goals_untracked"), CFG.get("goals_weekly"), int(time.time() // 60),
-                      Q._state["fetched"], CFG.get("goals_quests"), self.inv.imported,
+                      Q._state["fetched"], CFG.get("goals_quests"), CFG.get("goals_where"), self.inv.imported,
                       CFG.get("goals_only_short")))
         if shown == self._shown_sig and not force:
             return
@@ -446,6 +446,9 @@ class GoalsOverlay(QWidget):
             self.rows.addWidget(self._label("   " + " · ".join(sub), "sub"))
             for it in g["items"]:
                 self.rows.addWidget(self._item_row(it))
+                place = self._place_label(it)
+                if place:
+                    self.rows.addWidget(place)
             if g["short"] and g.get("standing") is not None:
                 best = min((x for x in g["items"] if x.get("need")), key=lambda x: x["need"], default=None)
                 if best:
@@ -507,6 +510,18 @@ class GoalsOverlay(QWidget):
             w.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             w.customContextMenuRequested.connect(lambda pos, w=w, i=it: self._item_menu(w, pos, i))
         return row
+
+    def _place_label(self, it):
+        """Where to buy the item (⌖ NPC, place), on its own line under it; None when off or unknown."""
+        if not CFG.get("goals_where", True):
+            return None
+        from app.game import places
+        place = places.where(it.get("tag"), it.get("vendor"), it.get("name"))
+        if not place:
+            return None
+        pl = self._label("          ⌖ " + place, "act")
+        pl.setToolTip(t("goals.where.tip", place=place))
+        return pl
 
     # ---------- weekly offers ----------
     def _draw_weekly(self):
@@ -580,11 +595,16 @@ class GoalsOverlay(QWidget):
                     if c["done"]:
                         text, kind = f"   ✔ {c['name']}{elite}", "ready"
                     else:
-                        text, kind = f"   - {c['name']}{elite}: {c['desc']} ({_n(c['standing'])})" + (" (?)" if c["maybe"] else ""), "obj"
+                        text, kind = f"   - {c['name']}{elite} ({_n(c['standing'])})" + (" (?)" if c["maybe"] else ""), "obj"
+                    tip = (f"{c['name']}{elite}\n{c['desc']}\n{_n(c['standing'])} standing"
+                           + ("\n" + t("quests.unknown") if c["done"] is None else ""))
                     lab = self._label(text, kind)
-                    lab.setToolTip(f"{c['name']}{elite}\n{c['desc']}\n{_n(c['standing'])} standing"
-                                   + ("\n" + t("quests.unknown") if c["done"] is None else ""))
+                    lab.setToolTip(tip)
                     self.rows.addWidget(lab)
+                    if c["desc"] and not c["done"]:          # the goal in a few words, under the name
+                        d = self._label("      " + c["desc"], "act")
+                        d.setToolTip(tip)
+                        self.rows.addWidget(d)
         cal = Q.calendar(ws, inv)
         if cal and cal["challenges"]:
             done = [c for c in cal["challenges"] if c["done"]]
@@ -597,7 +617,9 @@ class GoalsOverlay(QWidget):
                 for c in todo[:int(CFG.get("goals_cal_rows", 4))]:
                     kind = "wait" if c["active"] else "obj"
                     act = "  " + t("quests.cal.active") if c["active"] else ""
-                    self.rows.addWidget(self._label(f"   - {c['name']}: {c['desc']}{act}", kind))
+                    self.rows.addWidget(self._label(f"   - {c['name']}{act}", kind))
+                    if c["desc"]:
+                        self.rows.addWidget(self._label("      " + c["desc"], "act"))
 
     def _weekly_menu(self, w, pos, o):
         from app.game import weekly as WK

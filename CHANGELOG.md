@@ -12,6 +12,12 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
   figures and how long rivens of that weapon stay listed).
 - **Riven flip: scheduled scans** every N hours while the program runs (setting *Scan by itself every (hours)*, 0 = off;
   the tab shows when the next one is due).
+- **Activities: where to buy.** Under every item to buy, the NPC and place that sell it (⌖ *Hok, Cetus* for Zaw parts
+  and Exodia arcanes, *Rude Zuud, Fortuna* for kitgun parts and Pax arcanes, *Father, Necralisk* for Entrati weapons,
+  *any Relay* for the faction syndicates…). Setting *Activities: where to buy* and ⚙ option.
+- **Activities: Nightwave and Calendar goals at a glance.** Each challenge shows its goal on a short line under its
+  name (*Kill 1,000 Enemies on The Steel Path*), in the program's language (Italian names and descriptions from the game's
+  own Italian text).
 
 ## 0.3.2
 - **Activities: clickable with the game's cursor.** In many menus Warframe hides the Windows cursor and draws its own,

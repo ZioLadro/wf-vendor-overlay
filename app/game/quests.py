@@ -42,6 +42,20 @@ def names() -> dict:
     return _names
 
 
+def _humanize(path: str) -> str:
+    """A readable name from a challenge path the data does not know yet (SeasonWeeklyCompleteSortie -> Complete Sortie)."""
+    import re
+    n = path.rsplit("/", 1)[-1]
+    n = re.sub(r"^(SeasonWeeklyHard|SeasonWeekly|SeasonDaily|Calendar)", "", n)
+    n = re.sub(r"(Easy|Medium|Hard|Base)$", "", n)
+    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", n).strip() or path
+
+
+def _lang_it() -> bool:
+    from app.core.config import CFG
+    return CFG.get("language") == "it"
+
+
 def _date(v):
     try:
         return int(v["$date"]["$numberLong"]) / 1000
@@ -126,7 +140,9 @@ def nightwave(ws, inv) -> dict:
             continue
         path = str(c.get("Challenge") or "")
         oid = str((c.get("_id") or {}).get("$oid") or "")
-        n = names()["nightwave"].get(path) or [path.rsplit("/", 1)[-1], "", 0, "weekly"]
+        n = names()["nightwave"].get(path) or [_humanize(path), "", 0, "weekly"]
+        if _lang_it() and len(n) >= 6 and n[4]:
+            n = [n[4], n[5] or n[1], n[2], n[3]]
         done = oid in done_ids if oid else None
         if c.get("Daily") or n[3] == "daily":
             daily_open += 0 if done else 1
@@ -154,8 +170,13 @@ def calendar(ws, inv) -> dict:
         for e in d.get("events") or []:
             if isinstance(e, dict) and e.get("type") == "CET_CHALLENGE" and e.get("challenge"):
                 path = e["challenge"]
-                n = names()["calendar"].get(path) or [path.rsplit("/", 1)[-1], ""]
+                n = names()["calendar"].get(path) or [_humanize(path), ""]
+                if _lang_it() and len(n) >= 4 and n[2]:
+                    n = [n[2], n[3] or n[1]]
                 out.append({"name": n[0], "desc": n[1], "day": d.get("day", idx + 1), "done": idx <= last_day if same else None,
                             "active": path.rsplit("/", 1)[-1] in active})
-    return {"season": str(cur.get("Season") or "").replace("CST_", "").title(), "expiry": _date(cur.get("Expiry")),
+    season = str(cur.get("Season") or "").replace("CST_", "").title()
+    if _lang_it():
+        season = {"Winter": "Inverno", "Spring": "Primavera", "Summer": "Estate", "Autumn": "Autunno"}.get(season, season)
+    return {"season": season, "expiry": _date(cur.get("Expiry")),
             "challenges": out, "known": same}
