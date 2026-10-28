@@ -3,6 +3,17 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.3.3
+- **Riven flip: storico e andamento dei prezzi.** Ogni scansione registra, per arma e per giorno, il prezzo mediano
+  richiesto, il più basso e il numero di inserzioni (180 giorni), mostrati nella nuova colonna *Andamento* (7 / 30
+  giorni). Un'arma i cui prezzi scendono ha il prezzo equo abbassato della discesa (⚠), così le armi in calo non
+  sembrano affari.
+- **Riven flip: prezzo equo dalle probabili vendite.** Le inserzioni che spariscono entro 5 giorni dalla pubblicazione
+  vengono tenute con prezzo e statistiche (30 giorni); con almeno 3 confrontabili il prezzo equo si basa su di esse
+  (✔, tooltip con le due cifre e quanto restano in vendita i riven di quell'arma).
+- **Riven flip: scansioni programmate** ogni N ore mentre il programma è aperto (impostazione *Scansiona da solo ogni
+  (ore)*, 0 = spento; la scheda mostra quando tocca alla prossima).
+
 ## 0.3.2
 - **Attività: cliccabile con il cursore del gioco.** In molti menu Warframe nasconde il cursore di Windows e disegna il
   suo, quindi l'overlay credeva che fossi in missione e lasciava passare ogni clic. Ora diventa cliccabile anche quando il

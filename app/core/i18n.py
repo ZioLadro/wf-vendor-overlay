@@ -857,6 +857,18 @@ EN = {
     "update.ask.q": "Download, verify and install it now? The program will restart. Your settings and data are kept.",
     "update.manual.q": "This copy runs from source or is not the packaged Windows build, so it cannot update itself (use git pull or download the release).",
     "update.openpage": "Open the releases page",
+    "set.riven_auto_hours": "Scan by itself every (hours)",
+    "set.riven_auto_hours.tip": "While the program runs, the Riven flip scans the next weapons by itself every this many hours (as many as 'Weapons per scan', same request limit). 0 = only when you click Scan. More scans = a better price history and sales estimate",
+    "rflip.col.trend": "Trend",
+    "rflip.auto.off": "Automatic scans: off (Settings > Riven flip > Scan by itself every).",
+    "rflip.auto.next": "Automatic scan every {h} h: next in {left}.",
+    "rflip.tip.ask": "Asking prices of comparable rivens: {p}p (median × expected resale)",
+    "rflip.tip.noask": "Too few comparable listings right now",
+    "rflip.tip.sold": "Likely sold (gone within 5 days, last 30 days): {p}p from {n} rivens of this weapon; the fair price leans on it (✔)",
+    "rflip.tip.nosold": "Likely sold: not enough comparable ones yet ({n} for this weapon); keep scanning",
+    "rflip.tip.falling": "Prices of this weapon are falling: fair price lowered by {pct} %",
+    "rflip.tip.trend": "Median asking price {med}p · 7 days {t7} · 30 days {t30} (history: {days} days)",
+    "rflip.tip.selldays": "{n} likely sold in 30 days, listed for {d} days on average (median)",
 }
 
 IT = {
@@ -1701,6 +1713,18 @@ IT = {
     "update.ask.q": "Scaricarla, verificarla e installarla ora? Il programma si riavvia. Impostazioni e dati vengono mantenuti.",
     "update.manual.q": "Questa copia è eseguita dai sorgenti o non è la versione Windows pacchettizzata, quindi non può aggiornarsi da sola (usa git pull o scarica la release).",
     "update.openpage": "Apri la pagina delle release",
+    "set.riven_auto_hours": "Scansiona da solo ogni (ore)",
+    "set.riven_auto_hours.tip": "Mentre il programma è aperto, il Riven flip scansiona da solo le armi successive ogni tot ore (quante 'Armi per scansione', stesso limite di richieste). 0 = solo quando premi Scansiona. Più scansioni = storico dei prezzi e stima delle vendite migliori",
+    "rflip.col.trend": "Andamento",
+    "rflip.auto.off": "Scansioni automatiche: spente (Impostazioni > Riven flip > Scansiona da solo ogni).",
+    "rflip.auto.next": "Scansione automatica ogni {h} h: prossima tra {left}.",
+    "rflip.tip.ask": "Prezzi richiesti per riven confrontabili: {p}p (mediana × rivendita attesa)",
+    "rflip.tip.noask": "Troppe poche inserzioni confrontabili in questo momento",
+    "rflip.tip.sold": "Probabilmente venduti (spariti entro 5 giorni, ultimi 30 giorni): {p}p da {n} riven di quest'arma; il prezzo equo si basa su questo (✔)",
+    "rflip.tip.nosold": "Probabilmente venduti: non ancora abbastanza confrontabili ({n} per quest'arma); continua a scansionare",
+    "rflip.tip.falling": "I prezzi di quest'arma stanno scendendo: prezzo equo abbassato del {pct} %",
+    "rflip.tip.trend": "Prezzo mediano richiesto {med}p · 7 giorni {t7} · 30 giorni {t30} (storico: {days} giorni)",
+    "rflip.tip.selldays": "{n} probabilmente venduti in 30 giorni, in vendita per {d} giorni (mediana)",
 }
 
 STRINGS = {"en": EN, "it": IT}

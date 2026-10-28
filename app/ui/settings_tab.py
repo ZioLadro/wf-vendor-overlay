@@ -106,6 +106,7 @@ GROUPS = [
     ("riven", [
         ("riven_rpm", "int", (1, 20), False),
         ("riven_scan_weapons", "int", (1, 500), False),
+        ("riven_auto_hours", "int", (0, 168), False),
         ("riven_weapon_filter", "text", None, False),
         ("riven_sell_factor", "int", (30, 100), False),
         ("riven_online_only", "bool", None, False),

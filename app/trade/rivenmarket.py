@@ -9,6 +9,15 @@ Three criteria, as asked:
   Stats      0-100 score: how useful the stats are (weights below, editable in riven_weights.json) and how well
              they rolled (0 = worst roll, 1 = best roll, computed with the formula in rivens.py).
 
+The database (riven_market.json) grows with every scan and refines the search:
+  history    per weapon and per day: median asking price, cheapest price and number of listings (kept 180 days), so the
+             tab shows the 7 / 30-day trend; a weapon whose prices are falling gets its fair price lowered by the fall
+             (a riven that looks cheap only because its weapon is crashing is no deal).
+  gone       the listings that disappeared between two scans, with their price, stats and how long they were listed
+             (kept 30 days). Those gone within FAST_DAYS are most likely sold: their prices, for rivens with similar
+             stats, are a better guide than asking prices, so the fair price leans on them when there are enough.
+  schedule   the tab can scan by itself every N hours (setting riven_auto_hours) while the program runs.
+
 Requests: ONE dedicated limiter for the riven endpoints. warframe.market asks that contract (auction) searches stay
 around 10-20 per minute, so the default is 12 per minute and the limit can never be set above 20; a 429 answer
 makes it wait (Retry-After or growing pauses) and the scan stops after repeated 429s.
@@ -43,6 +52,12 @@ WINDOW = 7 * 24 * 3600                    # sales estimate: listings gone in the
 MAX_GAP = 3 * 24 * 3600                   # two scans further apart than this say nothing about what disappeared
 SEARCH_MAX = 100                          # a search returns at most this many listings
 KEEP_LISTINGS = 80                        # listings stored per weapon (the cheapest ones)
+HIST_DAYS = 180                           # daily price points kept per weapon
+GONE_DAYS = 30                            # disappeared listings kept per weapon (for the "likely sold" prices)
+GONE_KEEP = 40                            # at most this many per weapon (the most recent)
+FAST_DAYS = 5                             # gone within this many days of being listed = most likely sold
+SOLD_FACTOR = 0.95                        # a few of those were withdrawn, not sold
+SOLD_WEIGHT = 0.6                         # weight of the "likely sold" median against the asking one when both exist
 TYPE_OF = {"rifle": "LotusRifle", "pistol": "LotusPistol", "shotgun": "LotusShotgun", "melee": "PlayerMeleeWeapon",
            "archgun": "LotusArchgun", "kitgun": "LotusModularPistol", "zaw": "LotusModularMelee"}
 
@@ -331,15 +346,32 @@ class Store:
         with self.lock:
             w = self.d["weapons"].setdefault(url_name, {"name": name, "t": 0, "ids": {}, "gone": [], "first": now})
             prev, gap = w.get("ids") if isinstance(w.get("ids"), dict) else {}, now - int(w.get("t") or 0)
+            seen = w.get("seen") if isinstance(w.get("seen"), dict) else {}
+            prev_listings = {l["id"]: l for l in w.get("listings") or []}
             if prev and gap <= MAX_GAP:
                 full = len(all_ids) >= SEARCH_MAX
                 top = max(all_ids.values(), default=0)
-                gone = sum(1 for i, p in prev.items() if i not in all_ids and (not full or p < top))
-                if gone:
-                    w["gone"] = (w.get("gone") or []) + [[now, gone]]
+                gone_ids = [i for i, p in prev.items() if i not in all_ids and (not full or p < top)]
+                if gone_ids:
+                    w["gone"] = (w.get("gone") or []) + [[now, len(gone_ids)]]
+                    log_ = w.setdefault("sold", [])
+                    for i in gone_ids:                 # what disappeared, for the "likely sold" prices
+                        l = prev_listings.get(i)
+                        if l:
+                            log_.append({"t": now, "price": l["price"], "rank": l["rank"], "rerolls": l["rerolls"],
+                                         "attrs": [[a["url"], a["positive"], a["value"]] for a in l["attrs"]],
+                                         "age": max(0, now - int(seen.get(i) or w.get("t") or now))})
             elif prev:
                 w["first"] = now                           # too long since the last scan: restart the observation
             w["gone"] = [g for g in w.get("gone", []) if now - g[0] <= WINDOW]
+            w["sold"] = [g for g in w.get("sold", []) if now - g["t"] <= GONE_DAYS * 86400][-GONE_KEEP:]
+            w["seen"] = {i: int(seen.get(i) or now) for i in all_ids}
+            prices = sorted(p for p in all_ids.values() if p > 0)
+            if prices:                                     # one history point per day (the day's last scan)
+                day = now // 86400
+                pt = [day, int(statistics.median(prices)), prices[0], len(prices)]
+                h = [x for x in w.get("hist", []) if x[0] != day and day - x[0] <= HIST_DAYS]
+                w["hist"] = h + [pt]
             w.update(name=name, t=now, ids=dict(all_ids), n=len(all_ids))
             w["listings"] = sorted(listings, key=lambda x: x["price"])[:KEEP_LISTINGS]
             self.version += 1
@@ -353,6 +385,30 @@ class Store:
             return 0, 0.0
         n = sum(g[1] for g in w.get("gone", []) if now - g[0] <= WINDOW)
         return n, min(WINDOW, max(0, now - int(w.get("first") or now))) / 86400.0
+
+    def trend(self, url_name, days):
+        """Change of the median asking price over about `days` days (0.12 = +12 %), or None without enough history."""
+        h = (self.d["weapons"].get(url_name) or {}).get("hist") or []
+        if len(h) < 2:
+            return None
+        last = h[-1]
+        old = [x for x in h[:-1] if last[0] - x[0] >= days * 0.7]
+        if not old:
+            return None
+        ref = min(old, key=lambda x: abs(last[0] - x[0] - days))
+        return (last[1] - ref[1]) / ref[1] if ref[1] else None
+
+    def likely_sold(self, url_name, now=None):
+        """Listings gone within FAST_DAYS of being listed, in the last GONE_DAYS days (most likely sold), parsed like
+        search results."""
+        now = int(now or time.time())
+        out = []
+        for g in (self.d["weapons"].get(url_name) or {}).get("sold") or []:
+            if now - g["t"] <= GONE_DAYS * 86400 and g.get("age", 0) <= FAST_DAYS * 86400:
+                out.append({"id": f"sold-{g['t']}-{g['price']}", "price": g["price"], "rank": g.get("rank", 0),
+                            "rerolls": g.get("rerolls", 0), "age": g.get("age", 0),
+                            "attrs": [{"url": a[0], "positive": a[1], "value": a[2]} for a in g.get("attrs") or []]})
+        return out
 
     def stale_order(self, urls, now=None):
         """Weapon URLs, the ones never scanned first, then by how overdue they are. A weapon whose listings keep selling is
@@ -421,6 +477,7 @@ def scan(limiter, store, progress=None, cancel=None, wanted=None, limit=None):
             if str(e) == "cancelled":
                 break
             err = f"{wp['name']}: {e}"
+    store.d["last_scan"] = int(time.time())
     store.save()
     if progress:
         progress(done, len(todo), "")
@@ -448,19 +505,31 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
             s, tags = stats_score(l, info["type"], dispo, index, w)
             scored.append((s, l, tags))
         sales, days = store.sales(url, now)
+        sold = store.likely_sold(url, now)
+        sold_scored = [(stats_score(x, info["type"], dispo, index, w)[0], x["price"]) for x in sold]
+        t7, t30 = store.trend(url, 7), store.trend(url, 30)
+        sell_days = statistics.median([x["age"] for x in sold]) / 86400 if sold else None
         for s, l, tags in scored:
             if s < min_score or (max_price and l["price"] > max_price):
                 continue
-            fair = fair_price(s, [(o[0], o[1]["price"]) for o in scored if o[1]["id"] != l["id"]], factor)
-            if fair is None:
+            ask = fair_price(s, [(o[0], o[1]["price"]) for o in scored if o[1]["id"] != l["id"]], factor)
+            got = fair_price(s, sold_scored, SOLD_FACTOR)
+            if ask is None and got is None:
                 continue
+            fair = ask if got is None else got if ask is None else int(SOLD_WEIGHT * got + (1 - SOLD_WEIGHT) * ask)
+            basis = "ask" if got is None else "sold" if ask is None else "both"
+            if t7 is not None and t7 < -0.05:      # falling prices: the fair price follows the fall (up to 30 %)
+                fair = int(fair * (1 + max(-0.3, t7)))
             margin = fair - l["price"]
             if margin < min_margin:
                 continue
             if days >= 1.0 and sales < min_sales:
                 continue
+            hist = wd.get("hist") or []
             rows.append({"weapon": info["name"], "url": url, "listing": l, "score": s, "tags": tags, "fair": fair,
-                         "margin": margin, "sales": sales, "days": days, "n": wd.get("n", len(scored))})
+                         "margin": margin, "sales": sales, "days": days, "n": wd.get("n", len(scored)),
+                         "ask": ask, "got": got, "basis": basis, "t7": t7, "t30": t30, "n_sold": len(sold),
+                         "sell_days": sell_days, "median": hist[-1][1] if hist else None, "hist_days": len(hist)})
     rows.sort(key=lambda r: -r["margin"])
     return rows
 

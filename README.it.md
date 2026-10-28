@@ -18,7 +18,7 @@ AlecaFrame l'overlay dei prezzi e le funzioni di mercato funzionano comunque.
 
 **Indice:** [Per iniziare](#per-iniziare) · [Overlay dei prezzi](#overlay-dei-prezzi-in-gioco) ·
 [Attività](#attività-in-gioco-f6) · [Finestra del listino](#finestra-del-listino-f7) · [Fonti dei dati](#fonti-dei-dati) ·
-[Aggiornamenti](#aggiornamenti-versione-attuale-032) · [File e impostazioni](#file-e-impostazioni) ·
+[Aggiornamenti](#aggiornamenti-versione-attuale-033) · [File e impostazioni](#file-e-impostazioni) ·
 [Prestazioni](#prestazioni) · [Per sviluppatori](#per-sviluppatori) · [Note e limiti](#note-e-limiti)
 
 ## Per iniziare
@@ -194,6 +194,19 @@ il valore di quelli comparabili**, dal profitto migliore:
 - **Statistiche**: un punteggio 0–100 da quanto è utile ogni statistica e da quanto bene è uscita. Pesi personalizzati in
   `riven_weights.json` nella cartella dei dati, es. `{"WeaponFireRateMod": 0.9}` (da 0 a 1; chiavi di `rivens.json`).
 
+**Il database del programma** (`riven_market.json`) cresce a ogni scansione e affina la ricerca:
+- **storico dei prezzi**: per arma e per giorno, il prezzo mediano richiesto, il più basso e il numero di inserzioni
+  (180 giorni). La colonna *Andamento* mostra la variazione a 7 giorni (a 30 se non c'è ancora una settimana); quando i
+  prezzi di un'arma scendono (⚠) il suo prezzo equo viene abbassato della discesa (fino al 30 %), così un riven che
+  sembra economico solo perché la sua arma sta crollando non viene mostrato come affare;
+- **probabilmente venduti**: le inserzioni sparite entro 5 giorni dalla pubblicazione (ultimi 30 giorni), con prezzo e
+  statistiche. Quando ce ne sono almeno 3 confrontabili, il prezzo equo si basa su quanto erano in vendita (60 %) invece
+  che solo sui prezzi richiesti di oggi (✔ accanto al prezzo equo; il tooltip mostra entrambi).
+
+**Scansioni programmate**: *Scansiona da solo ogni (ore)* (Impostazioni > Riven flip; 0 = spento) scansiona le armi
+successive ogni N ore mentre il programma è aperto, con lo stesso limite di richieste; la scheda mostra quando tocca
+alla prossima. Più scansioni rendono migliori lo storico e la stima delle vendite.
+
 Le richieste di riven hanno un loro limitatore (*Richieste riven al minuto*, default 12, mai sopra 20, come chiede
 warframe.market); a un "troppe richieste" aspetta e si ferma dopo tre di fila. La scheda legge soltanto: non pubblica
 nulla. *Apri l'asta* e *Copia whisper* aiutano a contattare il venditore. Profitto e prezzo equo sono stime.
@@ -265,7 +278,7 @@ colori.
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.3.2)
+## Aggiornamenti (versione attuale 0.3.3)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

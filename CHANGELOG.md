@@ -3,6 +3,16 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.3.3
+- **Riven flip: price history and trend.** Every scan now records, per weapon and per day, the median asking price,
+  the cheapest one and the number of listings (180 days), shown in the new *Trend* column (7 / 30 days). A weapon whose
+  prices are falling gets its fair price lowered by the fall (⚠), so crashing weapons are not shown as deals.
+- **Riven flip: fair price from likely sales.** Listings that disappear within 5 days of being listed are kept with
+  their price and stats (30 days); with at least 3 comparable ones the fair price leans on them (✔, tooltip with both
+  figures and how long rivens of that weapon stay listed).
+- **Riven flip: scheduled scans** every N hours while the program runs (setting *Scan by itself every (hours)*, 0 = off;
+  the tab shows when the next one is due).
+
 ## 0.3.2
 - **Activities: clickable with the game's cursor.** In many menus Warframe hides the Windows cursor and draws its own,
   so the overlay thought you were in a mission and let every click through. Now it also becomes clickable when the cursor

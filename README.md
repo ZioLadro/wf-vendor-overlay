@@ -17,7 +17,7 @@ without AlecaFrame the price overlay and the market features still work.
 
 **Contents:** [Getting started](#getting-started) · [Price overlay](#price-overlay-in-game) ·
 [Activities](#activities-in-game-f6) · [Price list window](#price-list-window-f7) · [Data sources](#data-sources) ·
-[Updates](#updates-current-version-032) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
+[Updates](#updates-current-version-033) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
 [For developers](#for-developers) · [Notes and limits](#notes-and-limits)
 
 ## Getting started
@@ -181,6 +181,19 @@ worth**, best profit first:
 - **Stats**: a 0–100 score from how useful each stat is and how well it rolled. Custom weights in `riven_weights.json`
   in the data folder, e.g. `{"WeaponFireRateMod": 0.9}` (0 to 1; keys of `rivens.json`).
 
+**The program's own database** (`riven_market.json`) grows with every scan and refines the search:
+- **price history**: per weapon and per day, the median asking price, the cheapest one and the number of listings
+  (180 days). The *Trend* column shows the 7-day change (30-day when there is no week yet); when a weapon's prices
+  are falling (⚠) its fair price is lowered by the fall (up to 30 %), so a riven that looks cheap only because its
+  weapon is crashing is not shown as a deal;
+- **likely sold**: the listings that disappeared within 5 days of being listed (last 30 days), with price and stats.
+  When there are at least 3 comparable ones, the fair price leans on what those were listed at (60 %) rather than only
+  on today's asking prices (✔ next to the fair price; the tooltip shows both).
+
+**Scheduled scans**: *Scan by itself every (hours)* (Settings > Riven flip; 0 = off) scans the next weapons every N
+hours while the program runs, with the same request limit; the tab shows when the next one is due. More scans make the
+history and the sales estimate better.
+
 Riven requests have their own limiter (*Riven requests per minute*, default 12, never above 20, as warframe.market
 asks); on "too many requests" it waits and stops after three in a row. The tab only reads: nothing is posted.
 *Open the auction* and *Copy whisper* help you contact the seller. Profit and fair price are estimates.
@@ -248,7 +261,7 @@ only when you press Save. The in-game overlays keep their own colours.
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.3.2)
+## Updates (current version 0.3.3)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.
