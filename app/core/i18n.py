@@ -884,6 +884,15 @@ EN = {
     "set.goals_routine": "Activities: Sortie, Archon Hunt, Archimedea, Descendia",
     "set.goals_routine.tip": "The daily Sortie, the weekly Archon Hunt, Elite Deep / Temporal Archimedea and Descendia, ticked when the game file shows them done (missions done / floors reached). What the file cannot tell can be ticked with a right-click",
     "quests.nw.sub2": "weekly reset in {left} · {done}/{n} done (☼ daily, ★ elite)",
+    "set.pmax_min_volume": "Max-rank price: smallest trades a day",
+    "set.pmax_min_volume.tip": "The max-rank price of a mod or arcane is shown and counted (price list, overlay, inventory value, advice) only if that rank trades at least this often a day (average of the last 7 days); 0 = always. Mods with only 3 ranks whose max rank sells for at most 3p more than rank 0 never show it",
+    "set.stale_refresh_h": "Refresh data older than (hours)",
+    "set.stale_refresh_h.tip": "Items of the price list (the rows shown) and of the recommendations whose price is older than this are updated by themselves, the recommended ones and the oldest first, 150 at a time while no other update runs. 0 = only by hand",
+    "weekly.qf": "Bought → Quantframe…",
+    "weekly.qf.tip": "Sends what you bought at the limited vendors this period to Quantframe's stock (a check window comes first; items that are not on warframe.market are left out)",
+    "weekly.qf.empty": "Nothing bought this period that can be traded on warframe.market.",
+    "weekly.qf.skipped": "Not tradable, left out: {names}",
+    "bar.avatar.tip": "Your in-game profile glyph (from AlecaFrame's file; picture from browse.wf)",
 }
 
 IT = {
@@ -1755,6 +1764,15 @@ IT = {
     "set.goals_routine": "Attività: Sortie, Caccia all'Arconte, Archimedea, Descendia",
     "set.goals_routine.tip": "La Sortie giornaliera, la Caccia all'Arconte settimanale, Elite Deep / Temporal Archimedea e Descendia, spuntate quando il file di gioco le mostra fatte (missioni fatte / piani raggiunti). Ciò che il file non dice si spunta con il clic destro",
     "quests.nw.sub2": "reset settimanale tra {left} · {done}/{n} fatte (☼ giornaliere, ★ elite)",
+    "set.pmax_min_volume": "Prezzo a rank massimo: scambi minimi al giorno",
+    "set.pmax_min_volume.tip": "Il prezzo a rank massimo di una mod o di un arcane viene mostrato e contato (listino, overlay, valore dell'inventario, consigli) solo se quel rank viene scambiato almeno così spesso al giorno (media degli ultimi 7 giorni); 0 = sempre. Le mod con solo 3 rank il cui rank massimo vale al massimo 3p più del rank 0 non lo mostrano mai",
+    "set.stale_refresh_h": "Aggiorna i dati più vecchi di (ore)",
+    "set.stale_refresh_h.tip": "Gli oggetti del listino (le righe mostrate) e dei consigli con un prezzo più vecchio di così vengono aggiornati da soli, prima i consigliati e i più vecchi, 150 alla volta mentre non è in corso un altro aggiornamento. 0 = solo a mano",
+    "weekly.qf": "Acquistati → Quantframe…",
+    "weekly.qf.tip": "Invia allo stock di Quantframe ciò che hai comprato dai vendor a limite in questo periodo (prima compare una finestra di controllo; gli oggetti che non sono su warframe.market vengono esclusi)",
+    "weekly.qf.empty": "Niente di acquistato in questo periodo che si possa scambiare su warframe.market.",
+    "weekly.qf.skipped": "Non scambiabili, esclusi: {names}",
+    "bar.avatar.tip": "Il glifo del tuo profilo nel gioco (dal file di AlecaFrame; immagine da browse.wf)",
 }
 
 STRINGS = {"en": EN, "it": IT}

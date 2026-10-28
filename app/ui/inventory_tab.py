@@ -503,6 +503,24 @@ class InventoryTab(QWidget):
             return
         self._apply_import(res, confirm=False)
 
+    # ---------- the shared game-file reader (app/game/gamefile.py) ----------
+    def work_file(self, path, data):
+        """Background thread: the parsed game file -> an ImportResult (names matched to the market catalog)."""
+        from app.game.inventory import ImportResult, parse_json
+        res = ImportResult(source=os.path.basename(path))
+        res.path = path
+        return parse_json(data, self.market, res)
+
+    def apply_file(self, res):
+        """Window thread: the new inventory replaces the old one (only cheap work here)."""
+        if not res.matched:
+            return
+        self.inv.replace_with(res, res.path)
+        from app.core import logbus
+        logbus.add("inventory", f"{os.path.basename(res.path)} changed: inventory read again ({res.matched} items)", "ok")
+        if self.isVisible():
+            self.refresh(force=True)
+
     def auto_reload(self):
         """Silently re-reads the imported file when it changed on disk (AlecaFrame rewrites it every time you enter
         or leave a mission). Only the modification time is checked each time."""

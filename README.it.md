@@ -18,7 +18,7 @@ AlecaFrame l'overlay dei prezzi e le funzioni di mercato funzionano comunque.
 
 **Indice:** [Per iniziare](#per-iniziare) · [Overlay dei prezzi](#overlay-dei-prezzi-in-gioco) ·
 [Attività](#attività-in-gioco-f6) · [Finestra del listino](#finestra-del-listino-f7) · [Fonti dei dati](#fonti-dei-dati) ·
-[Aggiornamenti](#aggiornamenti-versione-attuale-035) · [File e impostazioni](#file-e-impostazioni) ·
+[Aggiornamenti](#aggiornamenti-versione-attuale-036) · [File e impostazioni](#file-e-impostazioni) ·
 [Prestazioni](#prestazioni) · [Per sviluppatori](#per-sviluppatori) · [Note e limiti](#note-e-limiti)
 
 ## Per iniziare
@@ -85,7 +85,7 @@ ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elen
   (es. 14/15); quelle completate sono spuntate ✔ (dai contatori delle sfide nel file di gioco, *ChallengeProgress*);
 - **Calendario 1999**: le sfide della stagione corrente, quella in corso e quante sono fatte (fatte = i giorni fino
   all'ultimo giorno completato nel file di gioco);
-- **Giornaliere e settimanali**: la Sortie e la Caccia all'Arconte (missioni fatte su 3, dalle missioni completate nel
+- **Giornaliere e settimanali**: gli scambi che ti restano oggi, la Sortie e la Caccia all'Arconte (missioni fatte su 3, dalle missioni completate nel
   file di gioco), Elite Deep / Temporal Archimedea (iniziata, punteggio), Netracells (su 5 a settimana) e Descendia (piani raggiunti su 21, normale e
   Percorso d'Acciaio). Ciò che il file non dice (se un'Archimedea è finita) è segnato (?): clic destro per spuntarlo a
   mano fino al reset.
@@ -103,7 +103,8 @@ apri e non resta sopra il gioco (impostazione *Finestra sempre in primo piano* p
 sua area viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 
 In cima a ogni scheda:
-- **Barra del giocatore**: nome (dal `lastUsername.txt` di AlecaFrame, oppure clicca per scriverlo), grado di maestria,
+- **Barra del giocatore**: il glifo del tuo profilo e l'emblema del grado di maestria (immagini da browse.wf, scaricate
+  una volta), nome (dal `lastUsername.txt` di AlecaFrame, oppure clicca per scriverlo), grado di maestria,
   scambi rimasti (⚠ quando l'ultima sync è precedente al reset giornaliero), portafoglio (Endo, platino, ducati, Aya;
   compatti, valore esatto nel tooltip) e un badge per sindacato con rank e standing (mouse sopra: standing rimasto oggi).
   I logo dei sindacati vengono scaricati una volta dalla wiki; senza, i badge sono disegnati con i colori del sindacato.
@@ -250,6 +251,8 @@ comprato in questo periodo e quando si azzera. Il file di gioco registra ogni ac
 fosse, quindi il programma lo ricava da ciò che il `deltas.dat` di AlecaFrame ha registrato come guadagnato e
 dall'inventario rispetto alla sync precedente; quando è ambiguo ti chiede di sceglierla (★ = candidate probabili).
 Spunta *Segui* per seguire un'offerta in Attività.
+**Acquistati → Quantframe…** invia allo stock di Quantframe ciò che hai comprato in questo periodo (solo oggetti
+scambiabili, prima una finestra di controllo).
 
 ### Profilo
 Standing e rank per sindacato e grado di maestria, **letti da `lastData.dat`** (riletto quando cambia, impostazione
@@ -279,12 +282,13 @@ colori.
 | Immagini (build, logo dei sindacati), lista di Baro | [wiki.warframe.com](https://wiki.warframe.com) |
 | Stato del mondo (fessure, cicli, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave e Calendario 1999 | world state pubblico di DE (`api.warframe.com`), ogni 10 min |
+| Glifo del profilo, emblema del grado di maestria | [browse.wf](https://browse.wf) (icone del gioco per percorso), una volta |
 | Tier / calendario degli Arbitrati | [arbi.guide](https://arbi.guide) / browse.wf |
 | Aggiornamenti | release GitHub di questo repository |
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.3.5)
+## Aggiornamenti (versione attuale 0.3.6)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche
@@ -374,7 +378,7 @@ app/
                      world, arbi
   ui/                finestre e schede: menu (finestra principale), *_tab, *_dialog, goals_overlay (Attività),
                      buildcards, player_bar, world_strip, update_box, logos, icons, previews
-data/                dati di gioco inclusi (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places .json)
+data/                dati di gioco inclusi (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places, player_icons .json)
 assets/              icon.png, icon.ico
 tools/               generatori di data/ (build_*.py: python tools/build_vendors.py …; build_places.py: dove comprare), build_icon.py,
                      prepare_models.py (modelli OCR)
@@ -386,7 +390,14 @@ build.ps1            build per Windows (PyInstaller)
 - I volumi usano l'endpoint statistiche v1 di warframe.market (deprecato ma attivo); se smette di funzionare viene
   mostrato solo il prezzo.
 - Prezzo a rank massimo = mediana dei 3 ordini di vendita più bassi di utenti online con quel rank; `–` se nessuno vende
-  a quel rank.
+  a quel rank. Non viene mostrato né contato (overlay, listino, valore dell'inventario, consigli) per le mod con solo 3
+  rank il cui rank massimo vale al massimo 3p più del rank 0, né quando quel rank viene scambiato meno di *Prezzo a rank
+  massimo: scambi minimi al giorno* (media di 7 giorni, default 0,5).
+- I prezzi più vecchi di *Aggiorna i dati più vecchi di (ore)* (default 2) nelle righe mostrate del listino e nei
+  consigli vengono aggiornati da soli, 150 alla volta, prima i consigliati e i più vecchi.
+- Il `lastData.dat` di AlecaFrame viene letto una volta per modifica, in background, per tutte le schede (decifrato e
+  analizzato una volta, poi il lavoro di ogni scheda fuori dal thread della finestra): la finestra non si blocca più
+  quando AlecaFrame lo riscrive.
 - L'elenco dei vendor viene dai dati pubblici del gioco: i vendor che mancano (es. Varzia) non sono inclusi. Si rigenera
   con `python tools/build_vendors.py` (una copia nella cartella dei dati ha la precedenza).
 - AlecaFrame aggiorna `lastData.dat` solo quando sincronizza (entrando o uscendo da una missione, al login): ciò che hai

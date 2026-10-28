@@ -82,7 +82,7 @@ def parse_profile(data) -> dict:
     tr = res.get("TradesRemaining")
     return {"mr": int(mr) if isinstance(mr, (int, float)) else None, "factions": factions,
             "trades": int(tr) if isinstance(tr, (int, float)) else None, "synced": sync_time(res),
-            "wallet": wallet(res)}
+            "wallet": wallet(res), "avatar": str(res.get("ActiveAvatarImageType") or "")}
 
 
 def wallet(res) -> dict:
@@ -178,6 +178,7 @@ class StandingStore:
         self.sig = ""          # fingerprint of the last file read (the modification time is unreliable while another
         self.trades = None     # program keeps the file open)
         self.wallet = {}       # Endo, platinum, ducats, Aya... (see wallet)
+        self.avatar = ""       # the profile glyph chosen in the game (item path)
         self.synced = None     # when the game last synced the inventory (see sync_time)
         self.mr = None
         self.fetched = None
@@ -195,11 +196,12 @@ class StandingStore:
         self.factions = {k: v for k, v in (d.get("factions") or {}).items() if isinstance(v, dict) and not is_nightwave(k)}
         self.trades, self.synced = d.get("trades"), d.get("synced")
         self.wallet = d.get("wallet") or {}
+        self.avatar = d.get("avatar") or ""
 
     def save(self):
         tmp = STANDING_FILE.with_suffix(".tmp")
         try:
-            tmp.write_text(json.dumps({"name": self.name, "trades": self.trades, "synced": self.synced, "wallet": self.wallet, "path": self.path, "mr": self.mr, "fetched": self.fetched,
+            tmp.write_text(json.dumps({"name": self.name, "trades": self.trades, "synced": self.synced, "wallet": self.wallet, "avatar": self.avatar, "path": self.path, "mr": self.mr, "fetched": self.fetched,
                                        "factions": self.factions}, ensure_ascii=False), encoding="utf-8")
             os.replace(tmp, STANDING_FILE)
         except OSError:
@@ -213,6 +215,7 @@ class StandingStore:
         self.path, self.mr, self.fetched = path, profile["mr"], int(time.time())
         self.trades, self.synced = profile.get("trades"), profile.get("synced")
         self.wallet = profile.get("wallet") or {}
+        self.avatar = profile.get("avatar") or self.avatar
         self.factions = {k: v for k, v in self.factions.items() if not is_nightwave(k)}
         for tag, f in profile["factions"].items():
             self.factions[tag] = {"standing": f["standing"], "rank": f["rank"], "manual": False,

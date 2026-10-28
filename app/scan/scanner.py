@@ -29,7 +29,10 @@ def fmt_price(it: dict) -> str:
         return t("price.na")                      # network error / data unavailable
     text = f"{it['price']}p" if it["price"] is not None else "–"   # "–" = no seller online
     if it.get("ranked"):                                          # mods / arcanes: also show the max-rank price
-        text += f" · max {it['pmax']}p" if it.get("pmax") is not None else " · max –"
+        if it.get("pmax") is not None:
+            text += f" · max {it['pmax']}p"
+        elif it.get("pmax_raw") is None:                          # no max-rank seller (a hidden, not worth it max: nothing)
+            text += " · max –"
     return text
 
 
@@ -213,6 +216,7 @@ class Scanner:
         now, lim = time.time(), CFG["show_cached_max_age"]
         if e.get("pt") and now - e["pt"] < lim:
             it["price"], it["pmax"], it["price_done"] = e.get("price"), e.get("pmax"), True
+            it["pmax_raw"] = e.get("pmax_raw")
         if e.get("vt") and now - e["vt"] < lim:
             it["vol"] = e.get("vol")
 
@@ -224,6 +228,7 @@ class Scanner:
             before = (it["label"], it["vol"])
             try:
                 it["price"], it["pmax"] = self.market.prices(it["slug"], max_age)
+                it["pmax_raw"] = (self.market.cached(it["slug"]) or {}).get("pmax_raw")
                 it["price_err"], it["price_done"] = False, True
             except Exception:
                 if not it["price_done"]:

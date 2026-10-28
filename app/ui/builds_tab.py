@@ -529,6 +529,28 @@ class BuildsTab(QWidget):
             path = aleca.find_data_file()
         return path if path and os.path.exists(path) else ""
 
+    @staticmethod
+    def work_file(path, data):
+        """Background thread: loadouts and presets from the parsed game file."""
+        return {"path": path, "loadouts": LO.read(data), "presets": LO.presets(data)}
+
+    def apply_file(self, d):
+        self.loadouts, self.presets = d["loadouts"], d["presets"]
+        self.source, self.when = d["path"], int(time.time())
+        try:
+            self._mtime = os.path.getmtime(d["path"])
+        except OSError:
+            pass
+        self._tried_auto = True
+        self._save_cache()
+        from app.core import logbus
+        logbus.add("builds", f"{len(self.loadouts)} loadouts read from {os.path.basename(d['path'])}", "ok")
+        if self.isVisible():
+            self._fill(keep=True)
+        else:
+            self._stale = True
+        previews.prefetch(prefetch_names(self.loadouts, self.presets))
+
     def reload_file(self, silent=False):
         path = self._find_file()
         if not path:
@@ -604,17 +626,8 @@ class BuildsTab(QWidget):
 
     def refresh(self, force=False, select=None):
         """Called by the window's timer: first time, loads the game file by itself; later, only when it changed."""
-        if not self._tried_auto and not (self.loadouts and self.presets.get("presets")):
-            self._tried_auto = True
-            self.reload_file(silent=True)
-            return
-        path = self.source if self.source and os.path.exists(self.source) else ""
-        if path:
-            try:
-                m = os.path.getmtime(path)
-            except OSError:
-                return
-            if (self._mtime and m > self._mtime + 1) or (not self._mtime and m > self.when + 1):
-                self.reload_file(silent=True)           # the game file changed (now, or since the saved copy was made)
-            elif not self._mtime:
-                self._mtime = m
+        # the game file is watched and read in the background (app/game/gamefile.py -> apply_file); here only what was
+        # read while the tab was hidden is shown
+        if getattr(self, "_stale", False):
+            self._stale = False
+            self._fill(keep=True)

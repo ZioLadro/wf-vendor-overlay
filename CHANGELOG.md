@@ -3,6 +3,21 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.3.6
+- **AlecaFrame's file read once, in the background**: every tab used to watch, decrypt and parse `lastData.dat` on its
+  own on the window's thread each time AlecaFrame rewrote it. Now one watcher waits until the file has finished
+  changing, a background thread decrypts and parses it once (skipped when the content is identical) and does each tab's
+  work (inventory matching, standing, loadouts, weekly purchases) there; the window only shows the results. The Console
+  says how long it took.
+- **Weekly: Bought → Quantframe…** sends what you bought at the limited vendors this period to Quantframe's stock.
+- **Player strip: profile glyph and Mastery Rank emblem** (pictures from browse.wf, downloaded once).
+- **Activities: trades left today** in the daily and weekly section.
+- **Max-rank prices that mean nothing are dropped**: mods with only 3 ranks whose max rank sells for at most 3p more
+  than rank 0, and max ranks traded less than *Max-rank price: smallest trades a day* (7-day average, default 0.5): the
+  max-rank price is not shown nor counted (overlay, price list, inventory value, rank-up and sell advice).
+- **Old prices refreshed by themselves**: rows of the price list and recommendations older than 2 hours (setting
+  *Refresh data older than (hours)*) are updated automatically, 150 at a time, recommended and oldest first.
+
 ## 0.3.5
 - **Nightwave completion read from the right place**: the game file's *SeasonChallengeHistory* lists every challenge you
   are given (this week's elite ones are there before you do them), so it marked everything done. Completion now comes

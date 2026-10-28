@@ -639,6 +639,15 @@ class GoalsOverlay(QWidget):
         n_done = sum(1 for r in rows if r["done"] or r["key"] in manual)
         if not self._section("routine", "⚔", t("quests.rt"), t("quests.rt.sub", done=n_done, n=len(rows))):
             return
+        s = self.store
+        if s.trades is not None:                       # trades left today (from the same game file)
+            from app.game.standing import trades_stale
+            stale = trades_stale(s.synced)
+            tr = self._label(f"   ⇄ {t('bar.trades', n=s.trades)}" + (f"/{s.mr}" if s.mr else "") + (" ⚠" if stale else ""),
+                             "ready" if s.trades and not stale else "obj")
+            tr.setToolTip(t("bar.trades.tip", when=time.strftime("%d/%m %H:%M", time.localtime(s.synced)) if s.synced else "–")
+                          + (" " + t("bar.trades.stale") if stale else ""))
+            self.rows.addWidget(tr)
         for r in rows:
             done = bool(r["done"]) or r["key"] in manual
             left = ("  · " + t("quests.rt.reset", left=_left(r["expiry"] - now))) if r.get("expiry") and not done else ""

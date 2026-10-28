@@ -17,7 +17,7 @@ without AlecaFrame the price overlay and the market features still work.
 
 **Contents:** [Getting started](#getting-started) · [Price overlay](#price-overlay-in-game) ·
 [Activities](#activities-in-game-f6) · [Price list window](#price-list-window-f7) · [Data sources](#data-sources) ·
-[Updates](#updates-current-version-035) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
+[Updates](#updates-current-version-036) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
 [For developers](#for-developers) · [Notes and limits](#notes-and-limits)
 
 ## Getting started
@@ -77,7 +77,7 @@ A small always-on-top window over the game, styled like a quest tracker, movable
   (e.g. 14/15); completed ones are ticked ✔ (from the challenge counters in your game file, *ChallengeProgress*);
 - **1999 Calendar**: the current season's challenges, the one in progress and how many are done (done = days up to the
   last completed day in your game file);
-- **Daily and weekly**: the Sortie and the Archon Hunt (missions done of 3, from the game file's completed missions),
+- **Daily and weekly**: the trades you have left today, the Sortie and the Archon Hunt (missions done of 3, from the game file's completed missions),
   Elite Deep / Temporal Archimedea (started, score), Netracells (of 5 a week) and Descendia (floors reached of 21, normal and Steel Path). What
   the file cannot tell (whether an Archimedea is finished) is marked (?): right-click to tick it by hand until the reset.
 
@@ -94,7 +94,8 @@ open it and does not stay above the game (setting *Window always on top* to keep
 game its area is blanked before the OCR, so it never reads its own names.
 
 On top of every tab:
-- **Player strip**: name (from AlecaFrame's `lastUsername.txt`, or click to type it), mastery rank, trades left
+- **Player strip**: your profile glyph and Mastery Rank emblem (pictures from browse.wf, downloaded once), name (from
+  AlecaFrame's `lastUsername.txt`, or click to type it), mastery rank, trades left
   (⚠ when the last sync is before the daily reset), wallet (Endo, platinum, ducats, Aya; compact, exact value in the
   tooltip) and a badge per syndicate with rank and standing (hover for the standing left today). Syndicate logos are
   downloaded from the wiki once; without them the badges are drawn in the syndicate colours.
@@ -232,6 +233,7 @@ The vendor offers with a purchase limit (Teshin, Ironwake, Nightcap, Archimedean
 period and when it resets. The game file records each limited purchase but not which offer it was, so the program works
 it out from what AlecaFrame's `deltas.dat` recorded as gained and from your inventory against the previous sync; when it
 is ambiguous you are asked to pick it (★ = likely candidates). Tick *Track* to follow an offer in Activities.
+**Bought → Quantframe…** sends what you bought this period to Quantframe's stock (tradable items only, check window first).
 
 ### Profile
 Your standing and rank per syndicate and your mastery rank, **read from `lastData.dat`** (re-read when it changes,
@@ -260,12 +262,13 @@ only when you press Save. The in-game overlays keep their own colours.
 | Pictures (builds, syndicate logos), Baro's list | [wiki.warframe.com](https://wiki.warframe.com) |
 | World state (fissures, cycles, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave and 1999 Calendar | DE's public world state (`api.warframe.com`), every 10 min |
+| Profile glyph, Mastery Rank emblem | [browse.wf](https://browse.wf) (game icons by path), once |
 | Arbitration tier / schedule | [arbi.guide](https://arbi.guide) / browse.wf |
 | Updates | GitHub releases of this repository |
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.3.5)
+## Updates (current version 0.3.6)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.
@@ -353,7 +356,7 @@ app/
                      buildcalc, rivens, weekly, quests (Nightwave / Calendar), goals (Activities plan), world, arbi
   ui/                windows and tabs: menu (main window), *_tab, *_dialog, goals_overlay (Activities), buildcards,
                      player_bar, world_strip, update_box, logos, icons, previews
-data/                bundled game data (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places .json)
+data/                bundled game data (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places, player_icons .json)
 assets/              icon.png, icon.ico
 tools/               builders of data/ (build_*.py: python tools/build_vendors.py …; build_places.py: where to buy), build_icon.py,
                      prepare_models.py (OCR models)
@@ -365,6 +368,13 @@ build.ps1            Windows build (PyInstaller)
 - Volumes use the warframe.market v1 statistics endpoint (deprecated but alive); if it stops working only the price is
   shown.
 - Max-rank price = median of the 3 lowest sell orders from online users at that rank; `–` if nobody sells at that rank.
+  It is not shown nor counted (overlay, price list, inventory value, advice) for mods with only 3 ranks whose max rank
+  sells for at most 3p more than rank 0, nor when that rank trades less than *Max-rank price: smallest trades a day*
+  (7-day average, default 0.5).
+- Prices older than *Refresh data older than (hours)* (default 2) in the price list rows shown and in the
+  recommendations are refreshed by themselves, 150 at a time, recommended and oldest first.
+- AlecaFrame's `lastData.dat` is read once per change, in the background, for every tab (decrypted and parsed once, then
+  each tab's work done off the window's thread): the window no longer freezes when AlecaFrame rewrites it.
 - The vendor list comes from the public game data: vendors missing from it (e.g. Varzia) are not included. Regenerate
   with `python tools/build_vendors.py` (a copy in the data folder takes precedence).
 - AlecaFrame updates `lastData.dat` only when it syncs (entering or leaving a mission, logging in): what you did since

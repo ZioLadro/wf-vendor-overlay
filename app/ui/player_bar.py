@@ -17,6 +17,7 @@ from app.core.uiutil import role
 from app.core.uiutil import MUTED_STYLE, thousands
 
 ICON_DIR = APP_DIR / "icons"
+AVATAR, EMBLEM = 52, 36
 SIZE = 28
 PER_COL = 4
 _cache = {}
@@ -82,6 +83,13 @@ class PlayerBar(QFrame):
         self.wallet_g.setContentsMargins(0, 0, 0, 0)
         self.wallet_g.setHorizontalSpacing(14)
         self.wallet_g.setVerticalSpacing(2)
+        self.avatar = QLabel()                       # the profile glyph chosen in the game
+        self.avatar.setFixedSize(AVATAR, AVATAR)
+        self.avatar.setToolTip(t("bar.avatar.tip"))
+        self.emblem = QLabel()                       # the Mastery Rank emblem
+        self.emblem.setFixedSize(EMBLEM, EMBLEM)
+        lay.addWidget(self.avatar, 0, Qt.AlignmentFlag.AlignTop)
+        lay.addWidget(self.emblem, 0, Qt.AlignmentFlag.AlignTop)
         lay.addWidget(self.info, 0, Qt.AlignmentFlag.AlignTop)
         lay.addWidget(self.wallet_w, 0, Qt.AlignmentFlag.AlignTop)
         lay.addWidget(self.grid_w, 1)
@@ -133,11 +141,32 @@ class PlayerBar(QFrame):
             self.wallet_g.addWidget(cell, n % 2, n // 2)
         self.wallet_w.setVisible(bool(shown))
 
+    def _pictures(self):
+        """The profile glyph and the Mastery Rank emblem (hidden until their picture is there)."""
+        from app.ui import playericons as P
+        s = self.store
+        for lab, icon, size, tip in ((self.avatar, P.avatar_icon(getattr(s, "avatar", "")), AVATAR, None),
+                                     (self.emblem, P.mastery_icon(s.mr), EMBLEM, f"MR {s.mr}" if s.mr is not None else None)):
+            f = P.path_for(icon)
+            pm = QPixmap(f) if f else QPixmap()
+            if pm.isNull():
+                lab.clear()
+                lab.setVisible(False)
+                continue
+            lab.setPixmap(pm.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+            lab.setVisible(True)
+            if tip:
+                lab.setToolTip(tip)
+
     def refresh(self, force=False):
         from app.ui import logos
         if logos.done_count != getattr(self, "_logos_seen", 0):     # new logos arrived from the wiki: redraw the badges
             self._logos_seen = logos.done_count
             _cache.clear()
+            force = True
+        from app.ui import playericons
+        if playericons.done_count != getattr(self, "_pics_seen", 0):  # the glyph / emblem arrived: draw them
+            self._pics_seen = playericons.done_count
             force = True
         key = (CFG.get("assets_dir"), CFG.get("assets_auto"), CFG.get("aya_manual"), repr(self.store.wallet), self.store.version, int(time.time() // 600), CFG["player_name"], self.store.fetched, CFG["hide_negative_ranks"])
         if not force and key == self._shown:
@@ -149,6 +178,7 @@ class PlayerBar(QFrame):
                  t("bar.trades", n=s.trades if s.trades is not None else "–")
                  + (" ⚠" if trades_stale(s.synced) else "")]
         self.info.setText("<br>".join(parts))
+        self._pictures()
         self._wallet()
         self.info.setToolTip(t("bar.trades.tip", when=time.strftime("%d/%m %H:%M", time.localtime(s.synced)) if s.synced else "–")
                              + (" " + t("bar.trades.stale") if trades_stale(s.synced) else ""))

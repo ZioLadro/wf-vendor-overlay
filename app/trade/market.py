@@ -69,6 +69,57 @@ def average_prices(rows, max_rank=0):
     return out(acc["low"]), (top if top and any(v is not None for v in top) else None)
 
 
+def max_rank_volumes(rows, max_rank, now=None):
+    """(trades at max rank in the last 24 h, average trades per day at max rank over the last 7 days) from the statistics
+    rows (48hours / 90days lists); None where nothing could be counted."""
+    if not max_rank:
+        return None, None
+    now = now or datetime.now(timezone.utc)
+    d1 = d7 = 0
+    seen = False
+    for r in rows:
+        try:
+            if r.get("mod_rank") != max_rank:
+                continue
+            when = datetime.fromisoformat(str(r["datetime"]).replace("Z", "+00:00"))
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            vol = int(r.get("volume") or 0)
+        except (KeyError, ValueError, TypeError):
+            continue
+        seen = True
+        age = (now - when).total_seconds()
+        if age <= 86400:
+            d1 += vol
+        if age <= 7 * 86400:
+            d7 += vol
+    return (d1, round(d7 / 7.0, 2)) if seen else (0, 0.0)
+
+
+SMALL_GAIN = 3          # platinum: a 3-rank mod whose max rank sells for at most this much more is priced at rank 0 only
+
+
+def effective_pmax(price, pmax, max_rank, volm7=None, min_volume=None):
+    """The max-rank price worth showing and counting, or None:
+      - mods with only 3 ranks whose max rank sells for at most SMALL_GAIN platinum more than rank 0 (ranking it up is not
+        worth it: the rank 0 price is what counts);
+      - max rank traded less than `min_volume` times a day over the last week (setting pmax_min_volume; the price of a
+        rank nobody buys is not a price). Unknown volume: kept."""
+    if pmax is None:
+        return None
+    if max_rank == 3 and price is not None and pmax - price <= SMALL_GAIN:
+        return None
+    if min_volume is None:
+        try:
+            from app.core.config import CFG
+            min_volume = float(CFG.get("pmax_min_volume", 0.5))
+        except Exception:
+            min_volume = 0.5
+    if volm7 is not None and min_volume and volm7 < min_volume:
+        return None
+    return pmax
+
+
 class Market:
     def __init__(self):
         self._lock = threading.Lock()
@@ -239,7 +290,12 @@ class Market:
         """Last known data (even if old): {"price","pmax","pt","vol","vt"} or None."""
         with self._store_lock:
             e = self._data.get(slug)
-            return {k: e.get(k) for k in ("price", "pmax", "pt", "vol", "vt", "avg", "avgm")} if e else None
+            if not e:
+                return None
+            out = {k: e.get(k) for k in ("price", "pmax", "pt", "vol", "vt", "avg", "avgm", "volm", "volm7")}
+        out["pmax_raw"] = out["pmax"]
+        out["pmax"] = effective_pmax(out["price"], out["pmax"], self._info.get(slug, {}).get("max_rank", 0), out["volm7"])
+        return out
 
     def snapshot(self, only=None) -> list:
         """The price-list items: those with a standing cost, plus Baro Ki'Teer's (even without market data).
@@ -263,7 +319,8 @@ class Market:
                     "kind": info.get("kind", "other"),
                     "ranked": info.get("max_rank", 0) > 0,
                     "max_rank": info.get("max_rank", 0),
-                    "price": e.get("price"), "pmax": e.get("pmax"), "vol": e.get("vol"),
+                    "price": e.get("price"), "vol": e.get("vol"), "pmax_raw": e.get("pmax"),
+                    "pmax": effective_pmax(e.get("price"), e.get("pmax"), info.get("max_rank", 0), e.get("volm7")),
                     "updated": max(times) if times else None,
                     "vendors": [v for v in by_slug.get(slug, []) if v not in hidden_vendors],
                     "standing": entries, "avg": e.get("avg"),
@@ -334,7 +391,7 @@ class Market:
             with self._store_lock:
                 e = self._data[slug]
                 if mr == 0 or "pmax" in e:
-                    return e.get("price"), e.get("pmax")
+                    return e.get("price"), effective_pmax(e.get("price"), e.get("pmax"), mr, e.get("volm7"))
         orders = self._get(f"/orders/item/{slug}")
         sells = [o for o in orders
                  if o.get("type") == "sell"
@@ -345,7 +402,9 @@ class Market:
         else:
             base, top = self._low3(o["platinum"] for o in sells), None
         self._store(slug, price=base, pmax=top)
-        return base, top
+        with self._store_lock:
+            volm7 = self._data.get(slug, {}).get("volm7")
+        return base, effective_pmax(base, top, mr, volm7)
 
     def price(self, slug: str, max_age=None):
         return self.prices(slug, max_age)[0]
@@ -353,7 +412,8 @@ class Market:
     # ---------- volumes ----------
     def volume_24h(self, slug: str, max_age=None):
         """Number of trades closed in the last 24 hours."""
-        if self._fresh(slug, "vt", max_age) and "avg" in self._data[slug]:
+        if self._fresh(slug, "vt", max_age) and "avg" in self._data[slug] and (
+                not self._info.get(slug, {}).get("max_rank") or "volm7" in self._data[slug]):
             return self._data[slug]["vol"]
         data = self._request(f"{V1}/items/{slug}/statistics")
         closed = data["payload"]["statistics_closed"]
@@ -371,10 +431,18 @@ class Market:
             if t >= cutoff:
                 total += int(r.get("volume") or 0)
         self._store(slug, vol=total)
+        mr = self._info.get(slug, {}).get("max_rank", 0)
+        try:                                                         # trades at max rank (is that price real?)
+            volm, _ = max_rank_volumes(rows, mr)
+            _, volm7 = max_rank_volumes(closed.get("90days") or [], mr)
+        except Exception:
+            volm = volm7 = None
         with self._store_lock:                                       # price averages from the same answer (no extra request)
             if avg:
                 self._data[slug]["avg"] = avg
             if avgm:
                 self._data[slug]["avgm"] = avgm
+            if mr and volm is not None:
+                self._data[slug]["volm"], self._data[slug]["volm7"] = volm, volm7
             self._dirty = True
         return total

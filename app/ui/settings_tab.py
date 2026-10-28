@@ -119,6 +119,8 @@ GROUPS = [
     ]),
     ("recommendations", [
         ("rec_min_volume", "int", (0, 100000), False),
+        ("pmax_min_volume", "float", (0, 50, 1), False),
+        ("stale_refresh_h", "float", (0, 48, 1), False),
         ("rec_min_price", "int", (0, 100000), False),
         ("rec_top", "int", (10, 2000), False),
         ("ducat_min_ratio", "int", (1, 500), False),

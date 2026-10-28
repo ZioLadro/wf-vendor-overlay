@@ -47,7 +47,18 @@ def offer_key(vendor: str, offer: str) -> str:
 
 
 def raw_inventory(path: str):
-    """The decrypted lastData.dat (re-read only when the file changed)."""
+    """The decrypted lastData.dat (re-read only when the file changed). In the program it comes from the shared background
+    reader (app/game/gamefile.py), so nothing is decrypted on the window's thread."""
+    import os
+    try:
+        from app.game import gamefile
+        gf = gamefile._gf
+        if gf is not None and gf.timer.isActive():
+            d = gf.data(path)
+            if d is not None or os.path.normcase(gf.path() or "") == os.path.normcase(path):
+                return d                        # still being read: the next look will have it
+    except Exception:
+        pass
     import os
     from app.game import inventory as I
     try:

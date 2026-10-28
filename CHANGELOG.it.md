@@ -3,6 +3,23 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.3.6
+- **File di AlecaFrame letto una volta, in background**: ogni scheda controllava, decifrava e analizzava `lastData.dat`
+  per conto suo sul thread della finestra ogni volta che AlecaFrame lo riscriveva. Ora un solo controllore aspetta che il
+  file abbia finito di cambiare, un thread in background lo decifra e analizza una volta (niente se il contenuto è
+  identico) e fa lì il lavoro di ogni scheda (abbinamento dell'inventario, standing, loadout, acquisti settimanali); la
+  finestra mostra solo i risultati. La Console dice quanto ci ha messo.
+- **Settimanali: Acquistati → Quantframe…** invia allo stock di Quantframe ciò che hai comprato dai vendor a limite in
+  questo periodo.
+- **Barra del giocatore: glifo del profilo ed emblema del grado di maestria** (immagini da browse.wf, scaricate una volta).
+- **Attività: scambi rimasti oggi** nella sezione giornaliere e settimanali.
+- **Via i prezzi a rank massimo che non significano nulla**: mod con solo 3 rank il cui rank massimo vale al massimo 3p
+  più del rank 0, e rank massimi scambiati meno di *Prezzo a rank massimo: scambi minimi al giorno* (media di 7 giorni,
+  default 0,5): il prezzo a rank massimo non viene mostrato né contato (overlay, listino, valore dell'inventario,
+  consigli di rank up e vendita).
+- **Prezzi vecchi aggiornati da soli**: le righe di listino e consigli più vecchie di 2 ore (impostazione *Aggiorna i dati
+  più vecchi di (ore)*) vengono aggiornate automaticamente, 150 alla volta, prima i consigliati e i più vecchi.
+
 ## 0.3.5
 - **Completamento di Nightwave letto dal posto giusto**: *SeasonChallengeHistory* nel file di gioco elenca tutte le sfide
   che ti vengono assegnate (le elite della settimana ci sono prima che tu le faccia), quindi segnava tutto come fatto. Ora

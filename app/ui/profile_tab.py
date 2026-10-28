@@ -53,11 +53,31 @@ class ProfileTab(QWidget):
         self._shown = -1
         self.refresh()
         # re-read the file by itself when it changed (cheap check: only the modification time)
-        self._timer = QTimer(self, timeout=self.auto_reload)
-        every = int(CFG["profile_reload_s"])
-        if every > 0:
-            self._timer.start(every * 1000)
-            QTimer.singleShot(1500, self.auto_reload)
+        # the file is watched and read in the background by app/game/gamefile.py (see work_file / apply_file)
+
+    @staticmethod
+    def work_file(path, data):
+        """Background thread: standing and mastery from the parsed game file."""
+        from app.game.standing import parse_profile
+        prof = parse_profile(data)
+        if not prof["factions"]:
+            raise ProfileError("no syndicate standing found in the file")
+        return path, prof
+
+    def apply_file(self, result):
+        path, prof = result
+        from app.game import gamefile
+        self.store.apply_profile(path, prof)
+        self.store.sig = gamefile.get()._last["sig"]
+        try:
+            aleca.sync_player_name(path)
+        except Exception:
+            pass
+        from app.core import logbus
+        logbus.add("profile", "standing and mastery read again from the AlecaFrame file", "ok")
+        self.check.setText(t("profile.check.updated", time=time.strftime("%H:%M:%S")))
+        if self.isVisible():
+            self.refresh(force=True)
 
     def auto_reload(self):
         """Looks at the imported file; re-reads it only if its content changed. The result is shown below."""

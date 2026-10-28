@@ -26,15 +26,16 @@ class Refresher(QObject):
     def cancel(self):
         self._cancel.set()
 
-    def start(self, slugs, max_age) -> bool:
-        """Starts the update. Asks for confirmation first when the batch is large."""
+    def start(self, slugs, max_age, confirm=True) -> bool:
+        """Starts the update. Asks for confirmation first when the batch is large (unless confirm=False: the automatic
+        refresh of old data, which sends small batches)."""
         slugs = list(dict.fromkeys(slugs))
         if self.busy:
             return False
         if not slugs:
             self.finished.emit(t("job.nothing"))
             return False
-        if len(slugs) > int(CFG["refresh_confirm_over"]):
+        if confirm and len(slugs) > int(CFG["refresh_confirm_over"]):
             eta = int(len(slugs) * 2 * 0.35)           # 2 requests per item, ~3 per second
             ans = QMessageBox.question(
                 self.parent_widget, t("job.confirm.title"),

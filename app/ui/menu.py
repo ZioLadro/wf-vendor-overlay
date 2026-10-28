@@ -1,4 +1,5 @@
 """Price-list window: tabs "Price list", "Recommendations" and "Settings"."""
+import os
 import sys
 import threading
 import time
@@ -272,7 +273,7 @@ class PriceList(QWidget):
         from app.ui.console_tab import ConsoleTab
         self.console = ConsoleTab()
         from app.ui.weekly_tab import WeeklyTab
-        self.weekly = WeeklyTab(self.inventory)
+        self.weekly = WeeklyTab(self.inventory, market)
         self.tabs = QTabWidget()
         # price list and recommendations share one tab: the list on top, the recommendations below (splitter remembered)
         self.market_tab = QSplitter(Qt.Orientation.Vertical)
@@ -312,16 +313,49 @@ class PriceList(QWidget):
         lay.addWidget(self.tabs, 1)
         lay.addLayout(bottom)
 
-        self._file_timer = QTimer(self, timeout=self.inv_tab.auto_reload)
-        if int(CFG["profile_reload_s"]) > 0:
-            self._file_timer.start(int(CFG["profile_reload_s"]) * 1000)
+        # AlecaFrame's lastData.dat: watched, read and processed ONCE per change in the background for every tab
+        from app.game import gamefile, weekly as WK
+        gf = gamefile.get()
+        gf.preferred = lambda: self.inventory.path if self.inventory.path and os.path.exists(self.inventory.path) else ""
+        gf.register("inventory", self.inv_tab.work_file, self.inv_tab.apply_file)
+        gf.register("profile", self.profile.work_file, self.profile.apply_file)
+        gf.register("builds", self.builds.work_file, self.builds.apply_file)
+        gf.register("weekly", lambda p, d: WK.read_deltas(p), lambda _r: self.weekly.sync())
+        gf.start(int(CFG["profile_reload_s"]))
         self._timer = QTimer(self, timeout=self._tick)
+        # data older than stale_refresh_h hours in the price list and recommendations: refreshed by itself, in batches
+        self._stale_timer = QTimer(self, interval=60_000, timeout=self.refresh_stale)
+        self._stale_timer.start()
+        QTimer.singleShot(20_000, self.refresh_stale)
         self.tabs.currentChanged.connect(lambda _: self._tick(force=True))
         self.btn_stop.clicked.connect(self.refresher.cancel)
         self.refresher.started.connect(self._on_started)
         self.refresher.progress.connect(self._on_progress)
         self.refresher.finished.connect(self._on_finished)
         self.prices.message.connect(self.status.setText)
+
+    STALE_BATCH = 150          # items per automatic batch (~2 minutes of requests)
+
+    def refresh_stale(self):
+        """Price list (rows shown) and recommendations: items never updated or updated more than stale_refresh_h hours ago
+        are refreshed by themselves, the recommended ones and the oldest first, in batches, while no other update runs."""
+        hours = float(CFG.get("stale_refresh_h", 2) or 0)
+        if hours <= 0 or self.refresher.busy:
+            return
+        rec = [p["slug"] for p in getattr(self.recommend, "_picks", [])] + list(getattr(self.recommend, "_missing", []))
+        shown = self.prices._slugs(False)
+        want = list(dict.fromkeys(rec + shown))
+        snap = {r["slug"]: r for r in self.market.snapshot(only=set(want))}
+        cut = time.time() - hours * 3600
+        rec_set = set(rec)
+        stale = [s for s in want if s in snap and (snap[s]["updated"] or 0) < cut]
+        if not stale:
+            return
+        stale.sort(key=lambda s: (s not in rec_set, snap[s]["updated"] or 0))
+        batch = stale[:self.STALE_BATCH]
+        from app.core import logbus
+        logbus.add("prices", f"{len(stale)} items older than {hours:g} h: updating {len(batch)} by themselves")
+        self.refresher.start(batch, int(hours * 3600), confirm=False)
 
     def _tick(self, force=False):
         self.player_bar.refresh(force=force)

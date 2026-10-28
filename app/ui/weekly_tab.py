@@ -29,9 +29,9 @@ def cost_text(cost) -> str:
 class WeeklyTab(QWidget):
     COLS = ("vendor", "item", "cost", "bought", "resets", "track")
 
-    def __init__(self, inventory):
+    def __init__(self, inventory, market=None):
         super().__init__()
-        self.inventory = inventory
+        self.inventory, self.market = inventory, market
         self.w = WK.get()
         self._shown = None
         self.unknown_box = QFrame()
@@ -49,6 +49,10 @@ class WeeklyTab(QWidget):
         bar.addWidget(self.vendor, 1)
         bar.addWidget(self.weekly_only)
         bar.addWidget(self.only_tracked)
+        self.btn_qf = QPushButton(t("weekly.qf"))
+        self.btn_qf.setToolTip(t("weekly.qf.tip"))
+        self.btn_qf.clicked.connect(self.send_to_quantframe)
+        bar.addWidget(self.btn_qf)
         self.table = QTableWidget(0, len(self.COLS))
         self.table.setHorizontalHeaderLabels([t("weekly.col." + c) for c in self.COLS])
         self.table.verticalHeader().setVisible(False)
@@ -137,6 +141,37 @@ class WeeklyTab(QWidget):
         n_b = sum(1 for o in rows if o["bought"])
         self.summary.setText(t("weekly.summary", n=len(rows), b=n_b, reset=left(WK.next_reset(now) - now),
                                region=self.w.region or "–"))
+
+    def qf_entries(self):
+        """What you bought this period, as Quantframe entries ([{"slug","name","rank","qty"}]) plus the names that are not
+        on warframe.market (not tradable: Kuva, Steel Essence…), which are left out."""
+        entries, skipped = {}, []
+        for o in self.w.offers(False):
+            if o["bought"] <= 0:
+                continue
+            slug = self.market.slug_for_name(o["name"]) if self.market else None
+            if not slug:
+                skipped.append(o["name"])
+                continue
+            info = self.market.info(slug) or {}
+            rank = 0 if info.get("max_rank", 0) > 0 else None
+            e = entries.setdefault((slug, rank), {"slug": slug, "name": info.get("name") or o["name"], "rank": rank, "qty": 0})
+            e["qty"] += o["bought"] * max(1, int(o["qty"]))
+        return list(entries.values()), sorted(set(skipped))
+
+    def send_to_quantframe(self):
+        """The items bought at the limited vendors this period -> Quantframe's stock, after the usual check window."""
+        from PyQt6.QtWidgets import QMessageBox
+        from app.ui.quantframe_dialog import SendDialog
+        entries, skipped = self.qf_entries()
+        if not entries:
+            QMessageBox.information(self, t("weekly.qf"), t("weekly.qf.empty") + (
+                "\n\n" + t("weekly.qf.skipped", names=", ".join(skipped)) if skipped else ""))
+            return
+        if skipped:
+            from app.core import logbus
+            logbus.add("weekly", "not sent to Quantframe (not tradable): " + ", ".join(skipped))
+        SendDialog("stock", entries, self).exec()
 
     def _track_changed(self, item):
         if item.column() != 5 or item.data(Qt.ItemDataRole.UserRole) is None:

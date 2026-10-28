@@ -125,6 +125,7 @@ class RecommendTab(QWidget):
             rows, vendor=self.vendor.currentData(), kind=self.kind.currentData(),
             min_volume=self.min_vol.value(), min_price=self.min_price.value(),
             per_vendor=1 if self.best_only.isChecked() and self.vendor.currentData() is None else None)
+        self._picks = picks
         tb = self.table
         hdr = tb.horizontalHeader()
         sec, order = hdr.sortIndicatorSection(), hdr.sortIndicatorOrder()

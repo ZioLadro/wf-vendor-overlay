@@ -130,6 +130,8 @@ DEFAULTS = {
     "inv_exclude_maxed": False,  # inventory: leave out mods/arcanes that are at max rank
     "sell_price_offset": 0,      # added to the market price when suggesting a sell price (e.g. -1)
     # recommendations
+    "stale_refresh_h": 2,          # price list / recommendations: data older than this many hours is refreshed by itself (0 = off)
+    "pmax_min_volume": 0.5,       # max-rank price shown/counted only if that rank trades at least this often a day (7-day average)
     "rec_min_volume": 10,        # ignore items traded less than this in 24 h
     "rec_min_price": 5,          # ignore items cheaper than this (platinum)
     "rec_top": 200,              # maximum rows in the recommendations table
