@@ -35,8 +35,8 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
     item entered the list and removes it only when the game file shows a new copy (*Bought lately* keeps the last ones).
     Ticking an item only marks it "bought? waiting for the game file". *Show again hidden and bought items* resets it.
   - Its area is never read by the OCR, and showing it does not take the focus from the game.
-  - **It steps aside on vendor screens**: hidden as soon as the overlay shows prices on a vendor, back a moment after the
-    vendor closes (a rescan while scrolling does not make it flash).
+  - **It switches off on vendor screens**: as soon as the OCR recognises a vendor the plan turns itself off, and stays
+    off until you turn it on again with the hotkey (F6).
   - **Standing you can still earn** is counted: each syndicate shows what is earnable today out of the daily cap
     (16,000 + 500 × Mastery Rank; the whole cap again after the 00:00 UTC reset), and each item says whether the missing
     standing is reachable today or how many days it takes at the daily cap. Items and syndicates are ordered by what you

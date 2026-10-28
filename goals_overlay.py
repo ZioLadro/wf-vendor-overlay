@@ -133,8 +133,6 @@ class GoalsOverlay(QWidget):
         self._timer = QTimer(self, interval=3000, timeout=self.refresh)
         # shown when you want it (hotkey / ✕) and no vendor is on screen: over a vendor it steps aside
         self._wanted = bool(CFG.get("goals_visible", False))
-        self._vendor = False
-        self._restore = QTimer(self, singleShot=True, interval=1500, timeout=self._vendor_gone)
         # clickable only while the cursor is visible (menus, consoles): in a mission clicks go through to the game
         self._clickable = True
         self._cursor_timer = QTimer(self, interval=250, timeout=self._check_cursor)
@@ -300,22 +298,17 @@ class GoalsOverlay(QWidget):
         self._apply_visibility()
 
     def vendor_shown(self, on: bool):
-        """The overlay found a vendor (prices shown on the game): the plan hides at once, and comes back a moment after
-        the vendor screen is gone (a rescan while scrolling does not make it flash)."""
-        if on:
-            self._restore.stop()
-            if not self._vendor:
-                self._vendor = True
-                self._apply_visibility()
-        elif self._vendor and not self._restore.isActive():
-            self._restore.start()
-
-    def _vendor_gone(self):
-        self._vendor = False
-        self._apply_visibility()
+        """The OCR recognised a vendor (prices shown on the game): the plan switches itself off and stays off until you
+        turn it on again with the hotkey (F6). Nothing happens when the vendor closes."""
+        if on and self._wanted:
+            self._wanted = False
+            save_config({"goals_visible": False})
+            self._apply_visibility()
+            import logbus
+            logbus.add("plan", "vendor recognised: standing plan switched off (the hotkey turns it on again)")
 
     def _apply_visibility(self):
-        want = self._wanted and not self._vendor
+        want = self._wanted
         if want and not self.isVisible():
             self.show()
             self.raise_()

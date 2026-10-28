@@ -39,8 +39,8 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
     (*Acquistati di recente* tiene gli ultimi). Spuntare un oggetto lo segna solo come "comprato? in attesa del file di
     gioco". *Mostra di nuovo nascosti e acquistati* azzera.
   - La sua area non viene mai letta dall'OCR, e mostrarlo non toglie il focus al gioco.
-  - **Si fa da parte sui vendor**: si nasconde appena l'overlay mostra i prezzi su un vendor e torna poco dopo che il
-    vendor si chiude (una nuova scansione mentre scorri non lo fa lampeggiare).
+  - **Si spegne sui vendor**: appena l'OCR riconosce un vendor il piano si spegne, e resta spento finché non lo
+    riaccendi col tasto rapido (F6).
   - **Conta lo standing che puoi ancora guadagnare**: ogni sindacato mostra quanto è guadagnabile oggi sul limite
     giornaliero (16.000 + 500 × Mastery Rank; di nuovo tutto il limite dopo il reset delle 00:00 UTC), e ogni oggetto dice
     se lo standing che manca è raggiungibile oggi o quanti giorni servono al limite giornaliero. Oggetti e sindacati sono
