@@ -17,6 +17,15 @@ class ProfileError(Exception):
     pass
 
 
+HIDDEN_EVENT = "EventSyndicate"          # Operational Supply (Plague Star and other events): not running most of the time
+
+
+def is_hidden(tag) -> bool:
+    """Syndicates left out everywhere: Nightwave (its own system), and Operational Supply when the setting says so."""
+    from config import CFG
+    return bool(tag) and (is_nightwave(tag) or (tag == HIDDEN_EVENT and bool(CFG.get("hide_operational_supply", True))))
+
+
 def is_nightwave(tag: str) -> bool:
     """Nightwave series and the like: not real syndicates, left out everywhere."""
     return str(tag).startswith(("RadioLegion", "Nightcap"))

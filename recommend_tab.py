@@ -55,7 +55,7 @@ class RecommendTab(QWidget):
         bar.addWidget(self.btn_fetch)
 
         self.headers = [t("col.rank"), t("col.item"), t("col.vendor"), t("col.cost"), t("col.reqrank"),
-                        t("col.price"), t("col.volume"), t("col.ppk"), t("col.score")]
+                        t("col.price"), t("col.volume"), t("col.ppk"), t("col.pday")]
         self.table = QTableWidget(0, len(self.headers))
         self.table.setHorizontalHeaderLabels(self.headers)
         self.table.verticalHeader().hide()
@@ -139,12 +139,15 @@ class RecommendTab(QWidget):
                 Cell(p["name"], p["name"].lower(), center=False),
                 Cell(p["vendor"], p["vendor"].lower(), center=False),
                 Cell(thousands(p["cost"]), p["cost"], STANDING_COLOR),
-                Cell(str(p["rank"]) if p["rank"] else "–", p["rank"]),
+                Cell((str(p["rank"]) if p["rank"] else "–") + (" ⚠" if p.get("rank_short") else ""), p["rank"]),
                 Cell(f"{p['price']}p", p["price"], PRICE_COLOR),
                 Cell(str(p["vol"]), p["vol"], volume_color(p["vol"])),
                 Cell(f"{p['ppk']:.1f}", p["ppk"], MAXRANK_COLOR),
-                Cell(f"{p['score']:.1f}", p["score"]),
+                Cell(f"{p['pday']:.0f}p", p["score"]),
             ]
+            cells[8].setToolTip(t("rec.pday.tip", copies=f"{p['copies']:.1f}", price=p["price"]))
+            if p.get("rank_short"):
+                cells[4].setToolTip(t("rec.rank_short"))
             cells[1].setToolTip(kind_label(p["kind"]) + "\n\n" + afford_text(
                 [{"v": p["vendor"], "s": p["cost"], "r": p["rank"], "t": p.get("tag")}]))
             cells[1].setData(Qt.ItemDataRole.UserRole, p["slug"])

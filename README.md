@@ -26,7 +26,7 @@ vendor) and **max-rank** price. The volume is the total of the trades of all ran
 
 The OCR reads **only the Warframe window**, and only while it is the active window (Windows; setting *Read only the Warframe window*, turn it off if the game is not detected, e.g. cloud gaming). Labels are hidden when you switch to another window.
 
-On the game screen, the **best items of the vendor you are looking at** (ranked among that vendor's own stock by platinum per standing, discounted by how rarely they trade; from the saved prices) get a small yellow *★ Recommended ★* tag above their name, and the very best one *★ Best here ★* (settings *Stars on recommended items* / *Recommended items marked*). The status line also names it: *Best buy at …*. The Recommendations tab has a *Best per vendor* box (one row per vendor).
+On the game screen, *★ Best here ★* marks the best purchase among **all the items of the vendor you are looking at** (even the ones scrolled out of view: the status line names it), and *★ Recommended ★* marks the items that are among the best purchases **across all vendors** (the Recommendations ranking; from the saved prices) (settings *Stars on recommended items* / *Recommended items marked*). The status line also names it: *Best buy at …*. The Recommendations tab has a *Best per vendor* box (one row per vendor).
 
 Every tab shows a **player strip**: name (click to set it, the game files do not contain it), mastery rank, trades left, and a badge per syndicate with your rank and standing (hover for the daily standing left). Badges are drawn with the syndicate colours; to use the real logos put `<SyndicateTag>.png` files (e.g. `CetusSyndicate.png`) in the `icons` folder of the data folder. Nightwave series are not shown.
 
@@ -142,9 +142,12 @@ What is worth buying with standing, for every (item, vendor) pair that has a sta
 
 ```
 plat per 1000 standing = price / standing cost × 1000
-score                  = plat per 1000 standing × min(1, volume / high-volume setting)
+copies per day         = min(daily standing cap / standing cost, max(1, volume × 0.25))
+~plat per day (score)  = price × copies per day        (daily cap = 16,000 + 500 × Mastery Rank)
 ```
-The score discounts items that rarely sell: a high price is worthless if nobody buys. Items traded less
+The score is what one day of standing can realistically bring: as many copies as your daily standing buys, but no more
+than the market absorbs (about a quarter of the 24 h volume). A price above its 30-day average is pulled towards it (as in
+the inventory advice), and an item that needs a higher syndicate rank than yours counts half (⚠). Items traded less
 than the **minimum volume** or cheaper than the **minimum price** (both editable in the tab) are left out.
 Prices are the rank 0 ones (what the vendor actually sells). Filter by vendor or type. Items that have no
 market data yet cannot be rated: **Fetch missing data** downloads them (pick one vendor first to keep it quick).
@@ -197,7 +200,7 @@ the rest apply immediately. **Restore defaults** loads the default values (press
 
 Settings has one sub-tab per category. **Theme and font** offers colour themes inspired by Warframe's factions, allies (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) and enemies (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), plus the original *Classic*, and a font family and size. The choice is previewed at once in every window and kept only when you press Save (leaving the tab restores the saved look). The in-game overlay keeps its own colours. All themes are dark.
 
-## Updates (current version 0.3.0)
+## Updates (current version 0.3.1)
 
 See [CHANGELOG.md](CHANGELOG.md) for what changed in each version (from 0.2.1 on; the release page shows the same notes).
 

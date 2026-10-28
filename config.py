@@ -73,12 +73,13 @@ DEFAULTS = {
     "goals_visible": False,          # standing plan overlay: shown (remembered between sessions)
     "goals_geom": [],                # its position and size [x, y, width, height]
     "goals_collapsed": False,
-    "goals_opacity": 82,             # background opacity (%)
+    "goals_opacity": 45,             # background opacity (%): a faint band, like a quest tracker
     "goals_font": 12,                # text size (px)
     "goals_items": 8,                # how many recommended purchases it tracks
     "goals_per_vendor": True,        # at most one item per vendor (the best one)
     "goals_activities": True,        # what to do to earn the standing that is missing
     "goals_only_short": False,       # only the syndicates you still lack standing for
+    "hide_operational_supply": True, # leave out the event syndicate (Plague Star…) while no event runs
     "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)
     "inv_min_volume": 0,             # Inventory: hide items traded fewer times than this in 24 h (0 = off)
     "hide_negative_ranks": False,    # player strip / Profile: hide syndicates with a negative rank

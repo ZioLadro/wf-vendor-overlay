@@ -13,7 +13,7 @@ pulled towards it by advice_trend_weight percent, so a short spike does not make
 Selling (items that are not better as ducats):
     sellable    = min(copies, max(1, round(volume * 0.25)))     how many you can expect to sell in a day or so
     liquidity   = min(1, volume / volume_high)
-    score       = price * sellable * liquidity                  expected platinum, discounted by how rarely it trades
+    score       = price * sellable                              expected platinum (sellable already follows the volume)
     -> items under the minimum price or the minimum volume are left out.
 Ranking up (mods you own that are not at max rank, to sell them at max rank):
     endo/credits to rank a copy from rank r to max M:  base * (2^M - 2^r)   (Endo base 10/20/30/40, Credits 483/966/1449/1932
@@ -21,7 +21,7 @@ Ranking up (mods you own that are not at max rank, to sell them at max rank):
     gain        = max-rank price - current price         platinum gained per copy
     sellable    = min(copies, max(1, round(volume * 0.25)))
     gain/price  = the current prices, but a price above its 30-day average is pulled towards it (advice_trend_weight %)
-    score       = gain * liquidity per 1000 Endo spent    "how well the Endo is paid", discounted by how rarely it trades
+    score       = gain * sellable per 1000 Endo spent      "how well the Endo is paid" (sellable follows the volume)
     -> mods whose gain is under the minimum, or that trade less than the minimum volume, are left out.
 Rows without a price or a volume cannot be rated; their slugs are returned so the prices can be fetched.
 """
@@ -88,7 +88,7 @@ def sell_advice(rows):
             continue
         sellable = min(n, max(1, round(vol * 0.25)))
         pe = eff_price(p, r.get("avg"))
-        score = pe * sellable * _liquidity(vol, high)
+        score = pe * sellable                    # expected platinum: `sellable` already follows the volume
         out.append({"slug": r["slug"], "name": r["name"], "n": n, "price": p, "vol": vol, "sellable": sellable,
                     "expected": p * sellable, "score": score, "ranked": r["ranked"],
                     "trend": trend(p, r.get("avg")), "avg": r.get("avg")})
@@ -129,9 +129,8 @@ def rankup_advice(rows):
         endo, credits = ENDO_BASE[rar] * steps, CREDIT_BASE[rar] * steps
         if endo <= 0:
             continue
-        liq = _liquidity(vol, high)
         out.append({"slug": r["slug"], "name": r["name"], "n": r["n"], "rarity": rar, "price": p, "pmax": pm, "vol": vol,
                     "gain": round(gain, 1), "sellable": sellable, "trend": trend(pm, r.get("avgm")), "avg": r.get("avgm"), "endo": endo, "credits": credits, "total_gain": gain * sellable,
-                    "score": gain * sellable * liq / endo * 1000})
+                    "score": gain * sellable / endo * 1000})        # platinum per 1000 Endo (sellable follows the volume)
     out.sort(key=lambda x: (-x["score"], -x["total_gain"], x["name"].lower()))
     return out, list(dict.fromkeys(missing))

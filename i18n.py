@@ -271,10 +271,7 @@ EN = {
     "rec.summary": "{n} suggestions, best first.",
     "rec.empty": "Nothing to suggest with these filters.",
     "rec.missing": "{n} items have no market data yet and cannot be rated: use \"Fetch missing data\".",
-    "rec.hint": "Plat / 1k standing = price ÷ standing cost × 1000. Score = that value × min(1, volume ÷ "
-                "\"high volume\" setting): items that rarely sell are discounted, even if their price is "
-                "high. Items below the minimum volume or price are left out. Prices are rank 0 (what the "
-                "vendor sells). It does not know how much standing you have: check the rank requirement.",
+    "rec.hint": "Plat / 1k standing = price ÷ standing cost × 1000. ~Plat/day = what one day of standing can bring: price × min(copies the daily cap buys, copies the market absorbs ≈ ¼ of the 24 h volume); a price above its 30-day average is pulled towards it. Items needing a higher syndicate rank than yours count half (⚠). Items below the minimum volume or price are left out. Prices are rank 0 (what the vendor sells).",
     # ---- settings tab ----
     "settings.save": "Save",
     "settings.save_restart": "Save and restart",
@@ -792,6 +789,18 @@ EN = {
     "goals.today": "reachable today",
     "goals.days": "~{n} days",
     "goals.need.tip": "Standing still missing. \"Reachable today\": it is within what you can still earn today (daily cap, from the game file); otherwise the days needed at the full daily cap (16,000 + 500 × Mastery Rank).",
+    "col.pday": "~Plat/day",
+    "rec.pday.tip": "About {copies} copies a day (daily standing cap vs what the market absorbs) × {price}p",
+    "rec.rank_short": "Your rank with this syndicate is lower than the one this item needs: it counts half until you rank up.",
+    "set.hide_operational_supply": "Hide Operational Supply",
+    "set.hide_operational_supply.tip": "Leaves out the event syndicate (Plague Star and other events) from the price list, the recommendations, the overlay stars, the standing plan and the player strip while no event is running",
+    "goals.q.rank": "Rank {r}",
+    "goals.q.standing": "{n} standing",
+    "goals.q.earn": "Earn {n} standing",
+    "goals.q.buy": "- Buy {name} ({cost})",
+    "goals.q.ready": "- {name}: ready, {n}× ({cost})",
+    "goals.q.wait": "- {name}: bought? waiting for the game file",
+    "goals.q.unknown": "standing unknown (needs the AlecaFrame file)",
 }
 
 IT = {
@@ -1050,10 +1059,7 @@ IT = {
     "rec.summary": "{n} consigli, i migliori in alto.",
     "rec.empty": "Nessun consiglio con questi filtri.",
     "rec.missing": "{n} oggetti non hanno ancora dati di mercato e non si possono valutare: usa «Scarica i dati mancanti».",
-    "rec.hint": "Plat / 1k standing = prezzo ÷ costo in standing × 1000. Punteggio = quel valore × min(1, volume ÷ "
-                "impostazione «volume alto»): gli oggetti che si vendono poco vengono penalizzati, anche se "
-                "costano molto. Gli oggetti sotto il volume o il prezzo minimo sono esclusi. I prezzi sono a "
-                "rank 0 (ciò che vende il vendor). Non conosce il tuo standing: controlla il rank richiesto.",
+    "rec.hint": "Plat / 1k standing = prezzo ÷ costo in standing × 1000. ~Plat/giorno = quanto può rendere un giorno di standing: prezzo × min(copie che compra il limite giornaliero, copie che il mercato assorbe ≈ ¼ del volume 24 h); un prezzo sopra la media a 30 giorni viene avvicinato a essa. Gli oggetti che richiedono un rank del sindacato più alto del tuo contano la metà (⚠). Gli oggetti sotto il volume o il prezzo minimo sono esclusi. I prezzi sono a rank 0 (ciò che vende il vendor).",
     "settings.save": "Salva",
     "settings.save_restart": "Salva e riavvia",
     "settings.defaults": "Ripristina predefiniti",
@@ -1571,6 +1577,18 @@ IT = {
     "goals.today": "raggiungibile oggi",
     "goals.days": "~{n} giorni",
     "goals.need.tip": "Standing che manca. \"Raggiungibile oggi\": rientra in quanto puoi ancora guadagnare oggi (limite giornaliero, dal file di gioco); altrimenti i giorni necessari al limite giornaliero pieno (16.000 + 500 × Mastery Rank).",
+    "col.pday": "~Plat/giorno",
+    "rec.pday.tip": "Circa {copies} copie al giorno (limite giornaliero di standing contro quanto assorbe il mercato) × {price}p",
+    "rec.rank_short": "Il tuo rank con questo sindacato è più basso di quello richiesto: conta la metà finché non sali di rank.",
+    "set.hide_operational_supply": "Nascondi Operational Supply",
+    "set.hide_operational_supply.tip": "Esclude il sindacato degli eventi (Plague Star e altri eventi) da listino, consigli, stelle dell'overlay, piano standing e barra del giocatore finché non c'è un evento in corso",
+    "goals.q.rank": "Rank {r}",
+    "goals.q.standing": "{n} standing",
+    "goals.q.earn": "Guadagna {n} standing",
+    "goals.q.buy": "- Compra {name} ({cost})",
+    "goals.q.ready": "- {name}: pronto, {n}× ({cost})",
+    "goals.q.wait": "- {name}: comprato? in attesa del file di gioco",
+    "goals.q.unknown": "standing sconosciuto (serve il file di AlecaFrame)",
 }
 
 STRINGS = {"en": EN, "it": IT}

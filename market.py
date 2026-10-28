@@ -244,12 +244,15 @@ class Market:
     def snapshot(self, only=None) -> list:
         """The price-list items: those with a standing cost, plus Baro Ki'Teer's (even without market data).
         `only`: a collection of slugs to restrict the result to (much cheaper than the whole list)."""
+        from standing import is_hidden
         rows = []
         by_slug = self.vendors.by_slug if self.vendors else {}
         standing = self.vendors.standing if self.vendors else {}
+        hidden_vendors = {e["v"] for es in standing.values() for e in es if is_hidden(e.get("t"))}
         with self._store_lock:
             for slug in (set(by_slug) if only is None else set(only) & set(by_slug)):
-                if slug not in standing and BARO not in by_slug[slug]:
+                entries = [e for e in standing.get(slug, []) if not is_hidden(e.get("t"))]   # e.g. Operational Supply
+                if not entries and BARO not in by_slug[slug]:
                     continue                    # no standing cost and not Baro's: not listed
                 e = self._data.get(slug, {})
                 info = self._info.get(slug, {})
@@ -262,8 +265,8 @@ class Market:
                     "max_rank": info.get("max_rank", 0),
                     "price": e.get("price"), "pmax": e.get("pmax"), "vol": e.get("vol"),
                     "updated": max(times) if times else None,
-                    "vendors": by_slug.get(slug, []),
-                    "standing": standing.get(slug, []),
+                    "vendors": [v for v in by_slug.get(slug, []) if v not in hidden_vendors],
+                    "standing": entries, "avg": e.get("avg"),
                 })
         rows.sort(key=lambda r: r["name"].lower())
         return rows
@@ -272,9 +275,11 @@ class Market:
         """Vendors that still have items in the list (those paying in other currencies drop out)."""
         if not self.vendors:
             return []
+        from standing import is_hidden
         return sorted({v for slug, vs in self.vendors.by_slug.items()
                        if slug in self.vendors.standing or BARO in vs for v in vs
-                       if v == BARO or any(e["v"] == v for e in self.vendors.standing.get(slug, []))})
+                       if v == BARO or any(e["v"] == v and not is_hidden(e.get("t"))
+                                           for e in self.vendors.standing.get(slug, []))})
 
     def refresh_many(self, slugs, cancel, progress=None, max_age=0):
         """Updates price and volume of the given items one after the other (3 requests/s limit).

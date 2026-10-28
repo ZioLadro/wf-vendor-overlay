@@ -3,6 +3,22 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.3.1
+- **Overlay stars**: *★ Best here ★* is now the best purchase among **all** the items of the vendor you are looking at
+  (not only the rows on screen; the status line names it if it is scrolled away), and *★ Recommended ★* marks the
+  items among the best purchases **across all vendors** (the Recommendations ranking).
+- **Recommendations reviewed**: the score is now *~plat per day*: price × the copies one day of standing buys (daily cap
+  16,000 + 500 × Mastery Rank), but no more than the market absorbs (≈ ¼ of the 24 h volume); a price above its 30-day
+  average is pulled towards it, as in the inventory advice; items needing a higher syndicate rank than yours count half
+  (⚠). The standing plan uses the same ranking.
+- **Inventory advice**: *Sell* and *Rank up* no longer discount rarely traded items twice (the copies you can sell
+  already follow the volume).
+- **Hide Operational Supply** (setting, on by default): the event syndicate (Plague Star and other events) is left out of
+  the price list, recommendations, overlay stars, standing plan and player strip while no event runs.
+- **Standing plan restyled like a quest tracker**: no heavy panel (a faint band fading to the right), gold syndicate
+  titles with **?** (something to buy now) or **!** (standing still to earn), objectives in white, ready ones in green,
+  how to earn the standing in grey, every text outlined to read over the game.
+
 ## 0.3.0
 - **Standing plan overlay** (in game, F6 shows/hides it; setting *Standing plan key*): a small always-on-top window
   listing the purchases the Recommendations suggest, grouped by syndicate, with your standing, rank and what is left of

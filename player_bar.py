@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QInputDialog, QLab
 from config import APP_DIR, CFG, save_config
 from i18n import t
 from inventory import game_names
-from standing import get_store, is_nightwave, syndicate_name, trades_stale
+from standing import get_store, is_hidden, is_nightwave, syndicate_name, trades_stale
 from uiutil import role
 from uiutil import MUTED_STYLE, thousands
 
@@ -94,8 +94,8 @@ class PlayerBar(QFrame):
             self.refresh(force=True)
 
     def _tags(self):
-        tags = {k for k in self.store.factions if not is_nightwave(k)}
-        tags.update(e["t"] for r in self.market.snapshot() for e in r["standing"] if e.get("t") and not is_nightwave(e["t"]))
+        tags = {k for k in self.store.factions if not is_hidden(k)}
+        tags.update(e["t"] for r in self.market.snapshot() for e in r["standing"] if e.get("t") and not is_hidden(e["t"]))
         return sorted(tags, key=lambda x: syndicate_name(x).lower())
 
     WALLET = (("endo", "bar.endo"), ("plat", "bar.plat"), ("ducats", "bar.ducats"), ("aya", "bar.aya"), ("regal", "bar.regal"))

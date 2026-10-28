@@ -3,6 +3,22 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.3.1
+- **Stelle dell'overlay**: *★ Migliore qui ★* ora è il miglior acquisto tra **tutti** gli oggetti del vendor che stai
+  guardando (non solo le righe a schermo; se è fuori vista lo nomina la riga di stato), e *★ Consigliato ★* segna gli
+  oggetti tra i migliori acquisti **di tutti i vendor** (la classifica dei Consigli).
+- **Consigli rivisti**: il punteggio ora è *~plat al giorno*: prezzo × le copie che compra un giorno di standing (limite
+  16.000 + 500 × Mastery Rank), ma non più di quante ne assorbe il mercato (≈ ¼ del volume 24 h); un prezzo sopra la
+  media a 30 giorni viene avvicinato a essa, come nei consigli dell'inventario; gli oggetti che richiedono un rank del
+  sindacato più alto del tuo contano la metà (⚠). Il piano standing usa la stessa classifica.
+- **Consigli dell'inventario**: *Vendi* e *Rank up* non penalizzano più due volte gli oggetti poco scambiati (le copie
+  vendibili seguono già il volume).
+- **Nascondi Operational Supply** (impostazione, attiva di default): il sindacato degli eventi (Plague Star e altri) è
+  escluso da listino, consigli, stelle dell'overlay, piano standing e barra del giocatore finché non c'è un evento.
+- **Piano standing in stile quest tracker**: niente pannello pesante (una banda leggera che sfuma a destra), titoli dei
+  sindacati in oro con **?** (qualcosa da comprare ora) o **!** (standing ancora da guadagnare), obiettivi in bianco,
+  quelli pronti in verde, come guadagnare lo standing in grigio, ogni testo con contorno per leggerlo sopra il gioco.
+
 ## 0.3.0
 - **Overlay piano standing** (in gioco, F6 lo mostra/nasconde; impostazione *Tasto piano standing*): una piccola
   finestra sempre in primo piano con gli acquisti suggeriti dai Consigli, divisi per sindacato, con il tuo standing, il

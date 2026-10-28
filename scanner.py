@@ -162,23 +162,27 @@ class Scanner:
         self.bridge.results.emit([dict(i) for i in items])
 
     def _mark_recommended(self, items):
-        """Ranks the items on screen by what is worth buying AT THIS VENDOR (plat per standing, discounted by how
-        rarely the item trades) and flags the best ones: it["rec"] = 1 for the best, 2.. for the next ones, 0 else.
-        Without a recognised vendor the whole market is ranked instead."""
+        """Stars on the overlay. it["rec"] = 1 ("Best here"): the best purchase among ALL the items this vendor sells (not
+        only the rows on screen), shown when that item is on screen. it["rec"] = 2.. ("Recommended"): the item is among
+        the best purchases across ALL vendors (the Recommendations ranking, top rec_overlay_top), at this vendor's
+        price. 0 = neither. Without a recognised vendor only the "Recommended" stars are shown."""
         if not CFG["rec_overlay"]:
             return
         try:
-            vendor, slugs = self.vendor, [it["slug"] for it in items]
-            rows = self.market.snapshot(only=slugs if vendor else None)
-            picks, _ = recommend(rows, vendor=vendor, top=int(CFG["rec_overlay_top"]))
+            vendor = self.vendor
+            rows = self.market.snapshot()
+            overall, _ = recommend(rows, top=int(CFG["rec_overlay_top"]))
+            best = recommend(rows, vendor=vendor, top=1)[0] if vendor else []
         except Exception:
             return
         rank = {}
-        for i, p in enumerate(picks, start=1):
-            rank.setdefault(p["slug"], i)
+        for i, p in enumerate(overall, start=2):
+            if vendor is None or p["vendor"] == vendor:
+                rank.setdefault(p["slug"], i)
+        top = best[0]["slug"] if best else None
         for it in items:
-            it["rec"] = rank.get(it["slug"], 0)
-        self.best = picks[0] if picks and vendor else None
+            it["rec"] = 1 if it["slug"] == top else rank.get(it["slug"], 0)
+        self.best = best[0] if best else None
 
     def _top_texts(self):
         """Text read in the top part of the captured image (where the vendor's name is): other syndicates' names

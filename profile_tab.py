@@ -96,10 +96,11 @@ class ProfileTab(QWidget):
 
     # ---------- table ----------
     def _tags(self):
-        tags = {k for k in self.store.factions if not is_nightwave(k)}
+        from standing import is_hidden
+        tags = {k for k in self.store.factions if not is_hidden(k)}
         if CFG["hide_negative_ranks"]:
             tags = {k for k in tags if (self.store.get(k) or {}).get("rank") is None or self.store.get(k)["rank"] >= 0}
-        tags.update(e["t"] for r in self.market.snapshot() for e in r["standing"] if e.get("t"))
+        tags.update(e["t"] for r in self.market.snapshot() for e in r["standing"] if e.get("t") and not is_hidden(e["t"]))
         return sorted(tags, key=lambda x: syndicate_name(x).lower())
 
     def refresh(self, force=False):

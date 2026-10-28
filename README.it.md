@@ -27,7 +27,7 @@ nel vendor) e prezzo a **rank massimo**. Il volume resta il totale degli scambi 
 
 L'OCR legge **solo la finestra di Warframe**, e solo quando è la finestra attiva (Windows; impostazione *Leggi solo la finestra di Warframe*, disattivala se il gioco non viene rilevato, es. cloud gaming). Le etichette si nascondono quando passi a un'altra finestra.
 
-Sullo schermo di gioco, i **migliori oggetti del vendor che stai guardando** (classificati tra le merci di quel vendor per platino per standing, scontati se si vendono di rado; dai prezzi salvati) ricevono una piccola etichetta gialla *★ Consigliato ★* sopra il nome, e il migliore in assoluto *★ Migliore qui ★* (impostazioni *Stelle sugli oggetti consigliati* / *Oggetti consigliati segnati*). La riga di stato lo nomina: *Miglior acquisto da …*. La scheda Consigli ha la casella *Migliore per vendor* (una riga per vendor).
+Sullo schermo di gioco, *★ Migliore qui ★* segna il miglior acquisto tra **tutti gli oggetti del vendor che stai guardando** (anche quelli fuori vista: la riga di stato lo nomina), e *★ Consigliato ★* segna gli oggetti che sono tra i migliori acquisti **di tutti i vendor** (la classifica dei Consigli; dai prezzi salvati) (impostazioni *Stelle sugli oggetti consigliati* / *Oggetti consigliati segnati*). La riga di stato lo nomina: *Miglior acquisto da …*. La scheda Consigli ha la casella *Migliore per vendor* (una riga per vendor).
 
 Ogni scheda mostra una **barra del giocatore**: nome (clicca per impostarlo, i file del gioco non lo contengono), grado di maestria, scambi rimasti e un badge per fazione con rank e standing (mouse sopra: standing giornaliero rimasto). I badge sono disegnati con i colori delle fazioni; per i logo veri metti file `<TagFazione>.png` (es. `CetusSyndicate.png`) nella cartella `icons` della cartella dei dati. Le serie Nightwave non sono mostrate.
 
@@ -147,9 +147,13 @@ Cosa conviene comprare con lo standing, per ogni coppia (oggetto, vendor) con un
 
 ```
 plat per 1000 standing = prezzo / costo in standing × 1000
-punteggio              = plat per 1000 standing × min(1, volume / impostazione «volume alto»)
+copie al giorno        = min(limite giornaliero di standing / costo, max(1, volume × 0,25))
+~plat al giorno        = prezzo × copie al giorno      (limite giornaliero = 16.000 + 500 × Mastery Rank)
 ```
-Il punteggio penalizza gli oggetti che si vendono poco: un prezzo alto non serve se nessuno compra.
+Il punteggio è quanto può rendere davvero un giorno di standing: tante copie quante ne compra lo standing del giorno, ma
+non più di quante ne assorbe il mercato (circa un quarto del volume 24 h). Un prezzo sopra la media a 30 giorni viene
+avvicinato a essa (come nei consigli dell'inventario), e un oggetto che richiede un rank del sindacato più alto del tuo
+conta la metà (⚠).
 Gli oggetti scambiati meno del **volume minimo** o che costano meno del **prezzo minimo** (modificabili
 nella scheda) sono esclusi. I prezzi sono a rank 0 (ciò che vende davvero il vendor). Filtra per vendor
 o tipo. Gli oggetti senza dati di mercato non si possono valutare: **Scarica i dati mancanti** li scarica
@@ -204,7 +208,7 @@ valgono subito. **Ripristina predefiniti** carica i valori di default (premi Sal
 
 Le Impostazioni hanno una sotto-scheda per categoria. **Tema e carattere** offre temi di colori ispirati alle fazioni di Warframe, alleate (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) e nemiche (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), più il *Classic* originale, oltre a famiglia e dimensione del carattere. La scelta si vede subito in anteprima in tutte le finestre e resta solo se premi Salva (uscendo dalla scheda torna l'aspetto salvato). L'overlay in gioco mantiene i suoi colori. Tutti i temi sono scuri.
 
-## Aggiornamenti (versione attuale 0.3.0)
+## Aggiornamenti (versione attuale 0.3.1)
 
 Vedi [CHANGELOG.it.md](CHANGELOG.it.md) per cosa cambia in ogni versione (dalla 0.2.1; la pagina della release mostra le stesse note).
 

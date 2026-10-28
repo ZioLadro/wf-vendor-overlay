@@ -40,7 +40,7 @@ class GoalsOverlay(QWidget):
         self.head = QWidget()
         self.head.setObjectName("goalshead")
         self.head.setCursor(Qt.CursorShape.SizeAllCursor)
-        self.title = QLabel(t("goals.title"))
+        self.title = QLabel(t("goals.title").upper())
         self.title.setObjectName("goalstitle")
         h = QHBoxLayout(self.head)
         h.setContentsMargins(10, 4, 4, 4)
@@ -105,34 +105,63 @@ class GoalsOverlay(QWidget):
         return b
 
     def _style(self):
+        """Look of a quest tracker: almost no panel, gold quest titles, white objectives with their progress, completed
+        ones in green, small grey hints, every text with a dark outline so it reads over the game."""
         fs = int(CFG.get("goals_font", 12))
         self.setStyleSheet(f"""
-            QWidget {{ color: #e8eaed; font-size: {fs}px; background: transparent; }}
-            #goalshead {{ background: rgba(20, 26, 36, 200); border-top-left-radius: 8px; border-top-right-radius: 8px; }}
-            #goalstitle {{ font-weight: bold; color: #c9a227; }}
-            #goalsbtn {{ background: rgba(255,255,255,18); border: none; border-radius: 4px; padding: 0; font-size: {fs}px; }}
-            #goalsbtn:hover {{ background: rgba(255,255,255,50); }}
-            #goalsfoot {{ color: #8c96a8; font-size: {max(9, fs - 2)}px; }}
-            QLabel[g="group"] {{ color: #9fd3ff; font-weight: bold; margin-top: 6px; }}
-            QLabel[g="act"] {{ color: #a8b0bf; font-size: {max(9, fs - 1)}px; }}
-            QLabel[g="ok"] {{ color: #4fbf6a; }} QLabel[g="need"] {{ color: #e0b83a; }} QLabel[g="done"] {{ color: #4fbf6a; }}
-            QCheckBox {{ spacing: 6px; }}
-            QCheckBox::indicator {{ width: 12px; height: 12px; border: 1px solid #8c96a8; border-radius: 3px;
-                                    background: rgba(0, 0, 0, 90); }}
-            QCheckBox::indicator:checked {{ background: #4fbf6a; border-color: #4fbf6a; }}
-            QScrollBar:vertical {{ background: transparent; width: 8px; }}
-            QScrollBar::handle:vertical {{ background: rgba(255,255,255,60); border-radius: 4px; min-height: 20px; }}
+            QWidget {{ color: #ffffff; font-size: {fs}px; background: transparent; }}
+            #goalshead {{ background: transparent; border-bottom: 1px solid rgba(255, 209, 0, 90); }}
+            #goalstitle {{ font-weight: bold; color: #ffd100; letter-spacing: 1px; font-size: {fs + 1}px; }}
+            #goalsbtn {{ background: transparent; border: none; color: #c8b37a; padding: 0; font-size: {fs}px; }}
+            #goalsbtn:hover {{ color: #ffd100; }}
+            #goalsfoot {{ color: #9a9a9a; font-size: {max(9, fs - 2)}px; }}
+            QLabel[g="quest"] {{ color: #ffd100; font-weight: bold; font-size: {fs + 1}px; }}
+            QLabel[g="sub"] {{ color: #b8b8b8; font-size: {max(9, fs - 1)}px; }}
+            QLabel[g="obj"] {{ color: #ffffff; }}
+            QLabel[g="ready"] {{ color: #40ff40; }}
+            QLabel[g="wait"] {{ color: #ffd100; }}
+            QLabel[g="act"] {{ color: #a0a0a0; font-size: {max(9, fs - 1)}px; font-style: italic; }}
+            QLabel[g="done"] {{ color: #ffd100; font-weight: bold; }}
+            QCheckBox {{ spacing: 5px; color: #ffffff; }}
+            QCheckBox::indicator {{ width: 10px; height: 10px; border: 1px solid #c8b37a; background: rgba(0, 0, 0, 120); }}
+            QCheckBox::indicator:checked {{ background: #40ff40; border-color: #40ff40; }}
+            QScrollBar:vertical {{ background: transparent; width: 6px; }}
+            QScrollBar::handle:vertical {{ background: rgba(255, 209, 0, 70); border-radius: 3px; min-height: 20px; }}
             QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
-            QMenu {{ background: #1b2027; border: 1px solid #3a4250; }} QMenu::item:selected {{ background: #2d3650; }}
+            QMenu {{ background: #1b1b1b; border: 1px solid #6e5a1e; color: #ffffff; }}
+            QMenu::item:selected {{ background: #3a3216; }}
         """)
 
     def paintEvent(self, _e):
+        """A soft dark band that fades out to the right, like a quest tracker over the game (opacity in ⚙)."""
+        from PyQt6.QtGui import QLinearGradient
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        alpha = int(255 * max(20, min(100, int(CFG.get("goals_opacity", 82)))) / 100)
-        p.setBrush(QColor(16, 20, 28, alpha))
-        p.setPen(QPen(QColor(201, 162, 39, 150), 1))
-        p.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 8, 8)
+        alpha = int(255 * max(0, min(100, int(CFG.get("goals_opacity", 45)))) / 100)
+        grad = QLinearGradient(0, 0, self.width(), 0)
+        grad.setColorAt(0.0, QColor(0, 0, 0, alpha))
+        grad.setColorAt(0.75, QColor(0, 0, 0, int(alpha * 0.7)))
+        grad.setColorAt(1.0, QColor(0, 0, 0, int(alpha * 0.15)))
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(grad)
+        p.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 6, 6)
+
+    @staticmethod
+    def _shadow(w):
+        """Dark outline around the text, so it stays readable on any part of the game."""
+        from PyQt6.QtWidgets import QGraphicsDropShadowEffect
+        eff = QGraphicsDropShadowEffect(w)
+        eff.setBlurRadius(2)
+        eff.setOffset(1, 1)
+        eff.setColor(QColor(0, 0, 0, 255))
+        w.setGraphicsEffect(eff)
+        return w
+
+    def _label(self, text, kind, wrap=True):
+        lab = QLabel(text)
+        lab.setProperty("g", kind)
+        lab.setWordWrap(wrap)
+        return self._shadow(lab)
 
     # ---------- moving, resizing, folding ----------
     def eventFilter(self, obj, ev):
@@ -289,82 +318,83 @@ class GoalsOverlay(QWidget):
             w = it.widget()
             if w:
                 w.setParent(None)
-                w.deleteLater()
+                w.deleteLater()                        # spacers (addSpacing) need nothing more
 
     def _draw(self, data):
+        """One "quest" per syndicate: gold title with ? (something to buy now) or ! (standing still to earn), a grey line
+        with rank, standing and what is earnable today, then the objectives (each purchase, the standing to earn) and,
+        in grey, how to earn it. Confirmed purchases close the list like completed quests."""
         self.body.setUpdatesEnabled(False)
         self._clear()
         groups = data["groups"]
         if CFG.get("goals_only_short"):
             groups = [g for g in groups if g["short"]]
         if not groups:
-            lab = QLabel(t("goals.empty"))
-            lab.setWordWrap(True)
-            lab.setProperty("g", "act")
-            self.rows.addWidget(lab)
+            self.rows.addWidget(self._label(t("goals.empty"), "act"))
         for g in groups:
-            daily = f" · {t('goals.daily', n=_n(g['daily']))}" if g.get("daily") is not None else ""
-            if g.get("cap") and g.get("daily") is not None:
-                daily += f"/{_n(g['cap'])}"
-            rank = f" · R{g['rank']}" if g.get("rank") is not None else ""
-            head = QLabel(f"{g['name']}  {_n(g['standing'])}{rank}{daily}")
-            head.setProperty("g", "group")
-            head.setWordWrap(True)
-            self.rows.addWidget(head)
+            ready = any(it.get("can") for it in g["items"])
+            icon = "?" if ready else "!"
+            self.rows.addSpacing(6)
+            self.rows.addWidget(self._label(f"{icon}  {g['name']}", "quest"))
+            sub = []
+            if g.get("rank") is not None:
+                sub.append(t("goals.q.rank", r=g["rank"]))
+            sub.append(t("goals.q.standing", n=_n(g["standing"])) if g.get("standing") is not None else t("goals.q.unknown"))
+            if g.get("daily") is not None:
+                sub.append(t("goals.daily", n=_n(g["daily"])) + (f"/{_n(g['cap'])}" if g.get("cap") else ""))
+            self.rows.addWidget(self._label("   " + " · ".join(sub), "sub"))
             for it in g["items"]:
                 self.rows.addWidget(self._item_row(it))
+            if g["short"] and g.get("standing") is not None:
+                best = min((x for x in g["items"] if x.get("need")), key=lambda x: x["need"], default=None)
+                if best:
+                    d = best.get("days")
+                    when = t("goals.today") if d == 1 else (t("goals.days", n=d) if d else "")
+                    have = max(0, g["standing"])
+                    self.rows.addWidget(self._label(
+                        f"   - {t('goals.q.earn', n=_n(best['need']))}: {_n(have)}/{_n(have + best['need'])}"
+                        + (f"  ({when})" if when else ""), "obj"))
             if CFG.get("goals_activities", True) and g["activities"]:
                 for a in g["activities"]:
-                    lab = QLabel("• " + a)
-                    lab.setProperty("g", "act")
-                    lab.setWordWrap(True)
-                    self.rows.addWidget(lab)
+                    self.rows.addWidget(self._label("      ◦ " + a, "act"))
         recent = [d for d in data["done"] if time.time() - d.get("t", 0) < 86400][-3:]
         if recent:
-            head = QLabel(t("goals.recent"))
-            head.setProperty("g", "group")
-            self.rows.addWidget(head)
+            self.rows.addSpacing(6)
+            self.rows.addWidget(self._label(t("goals.recent"), "quest"))
             for d in reversed(recent):
-                lab = QLabel(f"✔ {d['name']} ({d['vendor']}) · {time.strftime('%H:%M', time.localtime(d['t']))}")
-                lab.setProperty("g", "done")
-                self.rows.addWidget(lab)
+                self.rows.addWidget(self._label(
+                    f"   ✔ {d['name']} ({d['vendor']}) · {time.strftime('%H:%M', time.localtime(d['t']))}", "done"))
         n = sum(len(g["items"]) for g in data["groups"])
         if not any(c for c in data["confirmed"]):
             self.status.setText(t("goals.foot", n=n))
         self.body.setUpdatesEnabled(True)
 
     def _item_row(self, it):
+        """An objective: "- Buy <item> (0/1)", white; green when it can be bought now; the tick box marks it bought."""
         row = QWidget()
         h = QHBoxLayout(row)
-        h.setContentsMargins(0, 0, 0, 0)
-        h.setSpacing(6)
-        cb = QCheckBox(f"{it['name']}")
+        h.setContentsMargins(12, 0, 0, 0)
+        h.setSpacing(4)
+        cb = QCheckBox()
         cb.setChecked(bool(it.get("ticked")))
         cb.setToolTip(t("goals.item.tip", vendor=it["vendor"], cost=_n(it["cost"]), price=it.get("price") or "–",
                         vol=it.get("vol") or "–", rank=it.get("rank") or 0))
         cb.toggled.connect(lambda on, k=it["key"]: (self.plan.tick(k, on), self.refresh(force=True)))
-        h.addWidget(cb, 1)
+        h.addWidget(cb)
         if it.get("ticked"):
-            st = QLabel(t("goals.waiting"))
-            st.setProperty("g", "need")
+            text, kind = t("goals.q.wait", name=it["name"]), "wait"
         elif it["can"]:
-            st = QLabel(t("goals.can", n=it["can"], cost=_n(it["cost"])))
-            st.setProperty("g", "ok")
-        elif it["need"] is not None:
-            d = it.get("days")
-            when = t("goals.today") if d == 1 else (t("goals.days", n=d) if d else "")
-            st = QLabel(t("goals.need", n=_n(it["need"])) + (f" · {when}" if when else ""))
-            st.setProperty("g", "need")
-            st.setToolTip(t("goals.need.tip"))
+            text, kind = t("goals.q.ready", name=it["name"], n=it["can"], cost=_n(it["cost"])), "ready"
         else:
-            st = QLabel(_n(it["cost"]))
+            text, kind = t("goals.q.buy", name=it["name"], cost=_n(it["cost"])), "obj"
         if it.get("rank_ok") is False:
-            st.setText(st.text() + "  " + t("goals.rank", r=it.get("rank")))
-        h.addWidget(st)
-        row.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        row.customContextMenuRequested.connect(lambda pos, w=row, i=it: self._item_menu(w, pos, i))
-        cb.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        cb.customContextMenuRequested.connect(lambda pos, w=cb, i=it: self._item_menu(w, pos, i))
+            text += "  " + t("goals.rank", r=it.get("rank"))
+        lab = self._label(text, kind)
+        lab.setToolTip(cb.toolTip())
+        h.addWidget(lab, 1)
+        for w in (row, cb, lab):
+            w.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            w.customContextMenuRequested.connect(lambda pos, w=w, i=it: self._item_menu(w, pos, i))
         return row
 
     def _item_menu(self, w, pos, it):

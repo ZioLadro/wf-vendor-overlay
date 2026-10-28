@@ -32,6 +32,7 @@ GROUPS = [
         ("auto_detect", "bool", None, False),
         ("show_volume", "bool", None, False),
         ("hide_zero_volume", "bool", None, False),
+        ("hide_operational_supply", "bool", None, False),
         ("open_list_on_start", "bool", None, False),
         ("window_on_top", "bool", None, True),
         ("world_strip", "bool", None, True),
