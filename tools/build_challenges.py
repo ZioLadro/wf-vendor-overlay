@@ -4,8 +4,9 @@ Activities overlay (the world state only gives their game paths).
 
 Source: https://github.com/calamity-inc/warframe-public-export-plus (ExportNightwave, ExportChallenges, dict.en, dict.it).
 Usage:  python tools/build_challenges.py [--out data/challenges.json] [--cache download_folder]
-  nightwave: path -> [name, description, standing, kind (daily / weekly / elite), Italian name, Italian description]
-  calendar:  path -> [name, description, Italian name, Italian description]"""
+  nightwave: path -> [name, description, standing, kind (daily / weekly / elite), Italian name, Italian description,
+             amount required]
+  calendar:  path -> [name, description, Italian name, Italian description, amount required]"""
 import argparse
 import json
 import re
@@ -35,13 +36,13 @@ def main():
         kind = {"Daily": "daily", "Weekly": "weekly", "WeeklyHard": "elite"}.get(path.split("/")[-2], "weekly")
         req = c.get("required", 1)
         nw[path] = [text(c.get("name"), req), text(c.get("description"), req), int(c.get("standing") or 0), kind,
-                    text(c.get("name"), req, "it"), text(c.get("description"), req, "it")]
+                    text(c.get("name"), req, "it"), text(c.get("description"), req, "it"), int(req or 1)]
     cal = {}
     for path, c in fetch("ExportChallenges", cache).items():
         if "/Calendar1999/" in path and isinstance(c, dict):
             req = c.get("requiredCount", 1)
             cal[path] = [text(c.get("name"), req), text(c.get("description"), req),
-                         text(c.get("name"), req, "it"), text(c.get("description"), req, "it")]
+                         text(c.get("name"), req, "it"), text(c.get("description"), req, "it"), int(req or 1)]
     Path(a.out).write_text(json.dumps({"nightwave": nw, "calendar": cal}, ensure_ascii=False, separators=(",", ":")),
                            encoding="utf-8")
     print(f"{len(nw)} Nightwave challenges, {len(cal)} calendar challenges -> {a.out}")

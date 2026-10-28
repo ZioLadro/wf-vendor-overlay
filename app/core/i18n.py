@@ -883,6 +883,7 @@ EN = {
     "goals.opt.routine": "Show Sortie, Archon Hunt, Archimedea, Descendia",
     "set.goals_routine": "Activities: Sortie, Archon Hunt, Archimedea, Descendia",
     "set.goals_routine.tip": "The daily Sortie, the weekly Archon Hunt, Elite Deep / Temporal Archimedea and Descendia, ticked when the game file shows them done (missions done / floors reached). What the file cannot tell can be ticked with a right-click",
+    "quests.nw.sub2": "weekly reset in {left} · {done}/{n} done (☼ daily, ★ elite)",
 }
 
 IT = {
@@ -1753,6 +1754,7 @@ IT = {
     "goals.opt.routine": "Mostra Sortie, Caccia all'Arconte, Archimedea, Descendia",
     "set.goals_routine": "Attività: Sortie, Caccia all'Arconte, Archimedea, Descendia",
     "set.goals_routine.tip": "La Sortie giornaliera, la Caccia all'Arconte settimanale, Elite Deep / Temporal Archimedea e Descendia, spuntate quando il file di gioco le mostra fatte (missioni fatte / piani raggiunti). Ciò che il file non dice si spunta con il clic destro",
+    "quests.nw.sub2": "reset settimanale tra {left} · {done}/{n} fatte (☼ giornaliere, ★ elite)",
 }
 
 STRINGS = {"en": EN, "it": IT}

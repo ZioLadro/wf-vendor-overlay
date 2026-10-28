@@ -3,6 +3,15 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.3.5
+- **Nightwave completion read from the right place**: the game file's *SeasonChallengeHistory* lists every challenge you
+  are given (this week's elite ones are there before you do them), so it marked everything done. Completion now comes
+  from the challenge counters (*ChallengeProgress*) against the amount each challenge requires; unfinished ones show
+  their progress (14/15). The Console lists what was read.
+- **Nightwave daily challenges** (☼) are listed too, with the time left; the Calendar's active challenge shows its
+  progress.
+- **Netracells** in the daily and weekly section (done of 5 this week, from the game file).
+
 ## 0.3.4
 - **Nightwave completion fixed**: a challenge counts as done when its id is in the game file's history, or when the same
   challenge is there with an id of the same season and week (the world state and the file can write ids differently;

@@ -18,7 +18,7 @@ AlecaFrame l'overlay dei prezzi e le funzioni di mercato funzionano comunque.
 
 **Indice:** [Per iniziare](#per-iniziare) · [Overlay dei prezzi](#overlay-dei-prezzi-in-gioco) ·
 [Attività](#attività-in-gioco-f6) · [Finestra del listino](#finestra-del-listino-f7) · [Fonti dei dati](#fonti-dei-dati) ·
-[Aggiornamenti](#aggiornamenti-versione-attuale-034) · [File e impostazioni](#file-e-impostazioni) ·
+[Aggiornamenti](#aggiornamenti-versione-attuale-035) · [File e impostazioni](#file-e-impostazioni) ·
 [Prestazioni](#prestazioni) · [Per sviluppatori](#per-sviluppatori) · [Note e limiti](#note-e-limiti)
 
 ## Per iniziare
@@ -81,12 +81,12 @@ ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elen
   quando il file di gioco mostra che l'hai comprato;
 - le **offerte settimanali dei vendor che segui** (acquistate / limite, conto alla rovescia del reset; vedi la scheda
   Settimanali);
-- **Nightwave**: le sfide della settimana (elite ★, con il loro standing) e quante giornaliere sono ancora aperte; quelle
-  completate sono spuntate ✔ (esatto: abbinate tramite l'id della sfida nel file di gioco);
+- **Nightwave**: le giornaliere di oggi (☼) e le sfide della settimana (elite ★), con standing, obiettivo e avanzamento
+  (es. 14/15); quelle completate sono spuntate ✔ (dai contatori delle sfide nel file di gioco, *ChallengeProgress*);
 - **Calendario 1999**: le sfide della stagione corrente, quella in corso e quante sono fatte (fatte = i giorni fino
   all'ultimo giorno completato nel file di gioco);
 - **Giornaliere e settimanali**: la Sortie e la Caccia all'Arconte (missioni fatte su 3, dalle missioni completate nel
-  file di gioco), Elite Deep / Temporal Archimedea (iniziata, punteggio) e Descendia (piani raggiunti su 21, normale e
+  file di gioco), Elite Deep / Temporal Archimedea (iniziata, punteggio), Netracells (su 5 a settimana) e Descendia (piani raggiunti su 21, normale e
   Percorso d'Acciaio). Ciò che il file non dice (se un'Archimedea è finita) è segnato (?): clic destro per spuntarlo a
   mano fino al reset.
 
@@ -284,7 +284,7 @@ colori.
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.3.4)
+## Aggiornamenti (versione attuale 0.3.5)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

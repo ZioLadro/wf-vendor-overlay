@@ -141,26 +141,32 @@ def _oid_time(oid: str):
 _nw_logged = {"sig": None}
 
 
-def nightwave(ws, inv) -> dict:
-    """{"expiry", "weekly": [{"name","desc","standing","kind","done","expiry","maybe"}], "daily_open": n} or None.
+def progress_map(inv) -> dict:
+    """{challenge name: progress} from the game file's ChallengeProgress (Nightwave and Calendar challenges count up there;
+    a challenge's count starts again from 0 when a new instance of it is given)."""
+    out = {}
+    for c in (inv or {}).get("ChallengeProgress") or []:
+        if isinstance(c, dict) and c.get("Name"):
+            try:
+                out[str(c["Name"])] = int(c.get("Progress") or 0)
+            except (TypeError, ValueError):
+                pass
+    return out
 
-    Done, in order of certainty:
-      1. the active challenge's id is in SeasonChallengeHistory (the game records each completed one with its id);
-      2. the same challenge name is in the history with an id of the same season and week (Nightwave ids start with the
-         season and the week: 0019 0013 …), in case the id is written differently;
-      3. otherwise not done. With no id at all, a challenge of the same name done in the latest week of the history is
-         shown as "maybe" (?)."""
+
+def nightwave(ws, inv) -> dict:
+    """{"expiry", "weekly": [...], "daily": [...], "daily_open": n} or None; each challenge
+    {"name","desc","standing","kind","done","expiry","progress","required","maybe"}.
+
+    Done = its count in the game file's ChallengeProgress has reached the amount required (ExportNightwave "required").
+    SeasonChallengeHistory is NOT a list of completed challenges: the game adds every challenge you are GIVEN to it (this
+    week's elite ones are there before you do them), so it cannot tell completion."""
     si = (ws or {}).get("SeasonInfo")
     if not isinstance(si, dict):
         return None
-    hist = [h for h in (inv or {}).get("SeasonChallengeHistory") or [] if isinstance(h, dict)]
-    done_ids = {str(h.get("id")) for h in hist}
-    by_name = {}
-    for h in hist:
-        by_name.setdefault(str(h.get("challenge")), set()).add(str(h.get("id"))[:8])
-    last_week = max((str(h.get("id"))[:8] for h in hist), default="")
+    prog = progress_map(inv)
     now = time.time()
-    out, daily_open, matched, how = [], 0, 0, []
+    weekly, daily, how = [], [], []
     for c in si.get("ActiveChallenges") or []:
         if not isinstance(c, dict):
             continue
@@ -169,34 +175,30 @@ def nightwave(ws, inv) -> dict:
             continue
         path = str(c.get("Challenge") or "")
         short = path.rsplit("/", 1)[-1]
-        oid = _oid(c.get("_id") or c.get("id"))
         n = names()["nightwave"].get(path) or [_humanize(path), "", 0, "weekly"]
+        required = int(n[6]) if len(n) >= 7 and n[6] else 1
         if _lang_it() and len(n) >= 6 and n[4]:
             n = [n[4], n[5] or n[1], n[2], n[3]]
-        if oid:
-            done = oid in done_ids or (len(oid) >= 8 and oid[:8] in by_name.get(short, set()))
-            maybe = False
-        else:
-            done, maybe = False, bool(last_week) and last_week in by_name.get(short, set())
-        matched += bool(done)
-        how.append(oid[:12] or "no id")
-        if c.get("Daily") or n[3] == "daily":
-            daily_open += 0 if done else 1
-            continue
-        out.append({"name": n[0], "desc": n[1], "standing": n[2], "kind": n[3], "done": done, "expiry": exp,
-                    "maybe": maybe})
-    sig = (tuple(how), matched, len(hist))
-    if sig != _nw_logged["sig"]:                        # what was compared, in the Console (once per change)
+        got = prog.get(short)
+        done = got is not None and got >= required
+        kind = "daily" if (c.get("Daily") or n[3] == "daily") else n[3]
+        how.append(f"{short}={got if got is not None else '–'}/{required}")
+        row = {"name": n[0], "desc": n[1], "standing": n[2], "kind": kind, "done": done, "expiry": exp,
+               "progress": got or 0, "required": required, "maybe": False}
+        (daily if kind == "daily" else weekly).append(row)
+    sig = tuple(how)
+    if sig != _nw_logged["sig"]:                        # what was read, in the Console (once per change)
         _nw_logged["sig"] = sig
         try:
             from app.core import logbus
-            logbus.add("quests", f"Nightwave: {len(how)} active challenges (ids {', '.join(how[:3])}…), "
-                                 f"{matched} found completed in the game file ({len(hist)} entries, latest week "
-                                 f"{last_week or '–'})")
+            logbus.add("quests", "Nightwave progress from the game file: " + ", ".join(how))
         except Exception:
             pass
-    out.sort(key=lambda x: (x["done"] is True, x["kind"] != "elite", x["name"]))
-    return {"expiry": _date(si.get("Expiry")), "weekly": out, "daily_open": daily_open}
+    key = lambda x: (x["done"], x["kind"] != "elite", x["name"])
+    weekly.sort(key=key)
+    daily.sort(key=key)
+    return {"expiry": _date(si.get("Expiry")), "weekly": weekly, "daily": daily,
+            "daily_open": sum(1 for d in daily if not d["done"])}
 
 
 # ---------- daily and weekly routine: Sortie, Archon Hunt, Deep / Temporal Archimedea, Descendia ----------
@@ -258,6 +260,13 @@ def routine(ws, inv, now=None) -> list:
         score = int((inv or {}).get(f"{prefix}ConquestCacheScoreMission") or 0) if fresh else 0
         prog = (t_started(it) + (f" · {score}" if score else "")) if started else ""
         rows.append({"key": key, "name": name, "done": None if started else False, "progress": prog, "expiry": week_end})
+    if "EntratiVaultCountLastPeriod" in (inv or {}):     # Netracells: 5 a week (reset date in the file)
+        reset = _date((inv or {}).get("EntratiVaultCountResetDate")) or week_end
+        n = int((inv or {}).get("EntratiVaultCountLastPeriod") or 0) if reset > now else 0
+        if reset <= now:
+            reset = week_end
+        rows.append({"key": "netracells", "name": "Netracells", "done": n >= 5, "progress": f"{min(n, 5)}/5",
+                     "expiry": reset})
     for d in (inv or {}).get("DescentRewards") or []:
         if not isinstance(d, dict):
             continue
@@ -290,15 +299,18 @@ def calendar(ws, inv) -> dict:
     last_day = int(prog.get("LastCompletedDayIdx", -1)) if same else -1
     active = set(prog.get("ActivatedChallenges") or []) if same else set()
     out = []
+    prog_ = progress_map(inv)
     for idx, d in enumerate(cur.get("Days") or []):
         for e in d.get("events") or []:
             if isinstance(e, dict) and e.get("type") == "CET_CHALLENGE" and e.get("challenge"):
                 path = e["challenge"]
                 n = names()["calendar"].get(path) or [_humanize(path), ""]
+                req = int(n[4]) if len(n) >= 5 and n[4] else None
                 if _lang_it() and len(n) >= 4 and n[2]:
                     n = [n[2], n[3] or n[1]]
+                short = path.rsplit("/", 1)[-1]
                 out.append({"name": n[0], "desc": n[1], "day": d.get("day", idx + 1), "done": idx <= last_day if same else None,
-                            "active": path.rsplit("/", 1)[-1] in active})
+                            "active": short in active, "required": req, "progress": prog_.get(short, 0)})
     season = str(cur.get("Season") or "").replace("CST_", "").title()
     if _lang_it():
         season = {"Winter": "Inverno", "Spring": "Primavera", "Summer": "Estate", "Autumn": "Autunno"}.get(season, season)

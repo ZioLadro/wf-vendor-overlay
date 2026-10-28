@@ -589,18 +589,20 @@ class GoalsOverlay(QWidget):
         inv = self._raw_inv()
         now = time.time()
         nw = Q.nightwave(ws, inv)
-        if nw and nw["weekly"]:
-            left = _left(min([c["expiry"] for c in nw["weekly"] if c["expiry"]] or [now]) - now)
-            sub = t("quests.nw.sub", left=left, n=nw["daily_open"])
+        if nw and (nw["weekly"] or nw["daily"]):
+            left = _left(min([c["expiry"] for c in nw["weekly"] if c["expiry"]] or [nw["expiry"] or now]) - now)
+            done_n = sum(1 for c in nw["weekly"] + nw["daily"] if c["done"])
+            sub = t("quests.nw.sub2", left=left, done=done_n, n=len(nw["weekly"]) + len(nw["daily"]))
             if self._section("nightwave", "☾", t("quests.nw"), sub):
-                for c in nw["weekly"]:
-                    elite = " ★" if c["kind"] == "elite" else ""
+                for c in nw["daily"] + nw["weekly"]:
+                    tag = {"elite": " ★", "daily": " ☼"}.get(c["kind"], "")
                     if c["done"]:
-                        text, kind = f"   ✔ {c['name']}{elite}", "ready"
+                        text, kind = f"   ✔ {c['name']}{tag}", "ready"
                     else:
-                        text, kind = f"   - {c['name']}{elite} ({_n(c['standing'])})" + (" (?)" if c["maybe"] else ""), "obj"
-                    tip = (f"{c['name']}{elite}\n{c['desc']}\n{_n(c['standing'])} standing"
-                           + ("\n" + t("quests.unknown") if c["done"] is None else ""))
+                        count = f" {_n(c['progress'])}/{_n(c['required'])}" if c["required"] > 1 else ""
+                        dl = ("  · " + _left(c["expiry"] - now)) if c["kind"] == "daily" and c["expiry"] else ""
+                        text, kind = f"   - {c['name']}{tag}{count} ({_n(c['standing'])}){dl}", "obj"
+                    tip = f"{c['name']}{tag}\n{c['desc']}\n{_n(c['standing'])} standing · {_n(c['progress'])}/{_n(c['required'])}"
                     lab = self._label(text, kind)
                     lab.setToolTip(tip)
                     self.rows.addWidget(lab)
@@ -619,7 +621,8 @@ class GoalsOverlay(QWidget):
                     self.rows.addWidget(self._label("   " + t("quests.cal.unknown"), "act"))
                 for c in todo[:int(CFG.get("goals_cal_rows", 4))]:
                     kind = "wait" if c["active"] else "obj"
-                    act = "  " + t("quests.cal.active") if c["active"] else ""
+                    act = ("  " + t("quests.cal.active") + (f" {_n(c['progress'])}/{_n(c['required'])}" if c.get("required") else "")
+                           if c["active"] else "")
                     self.rows.addWidget(self._label(f"   - {c['name']}{act}", kind))
                     if c["desc"]:
                         self.rows.addWidget(self._label("      " + c["desc"], "act"))

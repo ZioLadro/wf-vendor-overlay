@@ -3,6 +3,15 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.3.5
+- **Completamento di Nightwave letto dal posto giusto**: *SeasonChallengeHistory* nel file di gioco elenca tutte le sfide
+  che ti vengono assegnate (le elite della settimana ci sono prima che tu le faccia), quindi segnava tutto come fatto. Ora
+  il completamento viene dai contatori delle sfide (*ChallengeProgress*) confrontati con quanto richiede ogni sfida;
+  quelle non finite mostrano l'avanzamento (14/15). La Console elenca cosa è stato letto.
+- **Sfide giornaliere di Nightwave** (☼) elencate anche loro, con il tempo rimasto; la sfida attiva del Calendario mostra
+  l'avanzamento.
+- **Netracells** nella sezione giornaliere e settimanali (fatte su 5 questa settimana, dal file di gioco).
+
 ## 0.3.4
 - **Completamento di Nightwave corretto**: una sfida conta come fatta quando il suo id è nella cronologia del file di
   gioco, oppure quando c'è la stessa sfida con un id della stessa stagione e settimana (world state e file possono
