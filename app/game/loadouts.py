@@ -232,7 +232,7 @@ def read(inv: dict, market=None) -> list:
                 for i, (s, c) in enumerate(zip(slots, calc["slots"])):
                     # where the slot's polarity comes from (the capacity details): the file's Forma, or the item's own
                     s.update(pol=c["pol"], mpol=c["mpol"], drain=c["drain"], state=c["state"],
-                             pol_src="forma" if i in formaed else ("innate" if c["pol"] else ""))
+                             pol_src=("forma" if i in formaed else "innate") if c["pol"] else "")
                 cname = str(cfg.get("Name") or "").strip()
                 out.append({"item": item_name, "kind": kind, "path": path, "config": LETTERS[n] if n < 8 else str(n + 1),
                             "cfg_name": cname, "owner": owner, "reactor": reactor, "level": level,

@@ -3,6 +3,11 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.5
+- **Capacità corretta per gli slot segnati `AP_UNIVERSAL`**: il file di gioco lo scrive sugli slot senza polarità (uno
+  slot Exilus mai formato), ed era contato come polarità universale che dimezza il consumo di ogni mod. Universale è
+  solo `AP_ANY` (la Forma Aura). Cyte-09 con Sure Footed rank 3 nell'Exilus: 6 / 74 come nel gioco (diceva 10).
+
 ## 0.4.4
 - **Le icone di AlecaFrame nella schermata build** (cartella icone, `img/builds` e `img/damageTypes`): un'icona per
   ogni statistica (salute, scudi, armatura, energia, scatto, statistiche delle abilità, cadenza, multicolpo, caricatore,

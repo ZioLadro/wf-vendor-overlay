@@ -8,11 +8,12 @@ import math
 from app.game import loadouts as LO
 
 AP = {"AP_ATTACK": "madurai", "AP_DEFENSE": "vazarin", "AP_TACTIC": "naramon", "AP_POWER": "zenurik", "AP_WARD": "unairu",
-      "AP_UMBRA": "umbra", "AP_PRECEPT": "penjaga", "AP_ANY": "universal", "AP_UNIVERSAL": "universal"}
+      "AP_UMBRA": "umbra", "AP_PRECEPT": "penjaga", "AP_ANY": "universal", "AP_UNIVERSAL": ""}
 POLARITIES = ["madurai", "vazarin", "naramon", "zenurik", "unairu", "penjaga", "umbra", "universal"]
 # capacity = the item's rank (30 at rank 30), doubled by an Orokin Reactor / Catalyst; an Aura adds its own.
-# A "universal" slot (AP_ANY / AP_UNIVERSAL in the game file, e.g. after an Aura Forma) matches every mod polarity: checked on a
-# real build, the game's total (60 + Aura 7 doubled = 74) only comes out that way.
+# A "universal" slot (AP_ANY in the game file: an Aura Forma) matches every mod polarity: checked on a real build, the game's
+# total (60 + Aura 7 doubled = 74) only comes out that way. AP_UNIVERSAL is NOT that: the game writes it on slots without
+# a polarity (an Exilus slot of a Cyte-09: Sure Footed rank 3 costs 9 there in the game, not 5), so it counts as none.
 STAT_ORDER = ("health", "shield", "armor", "energy", "sprint", "duration", "efficiency", "range", "strength")
 
 

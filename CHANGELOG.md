@@ -3,6 +3,11 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.4.5
+- **Capacity fixed for slots marked `AP_UNIVERSAL`**: the game file writes it on slots without a polarity (an Exilus
+  slot never Forma'd), and it was counted as a universal polarity that halves every mod's drain. Only `AP_ANY` (the Aura
+  Forma) is universal. Cyte-09 with Sure Footed rank 3 in the Exilus: 6 / 74 as in the game (it said 10).
+
 ## 0.4.4
 - **AlecaFrame's icons in the build screen** (icons folder, `img/builds` and `img/damageTypes`): an icon for every stat
   (health, shields, armor, energy, sprint, ability stats, fire rate, multishot, magazine, reload, critical, status) and
