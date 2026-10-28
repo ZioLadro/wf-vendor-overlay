@@ -2,301 +2,367 @@
 
 [🇬🇧 English](README.md) · 🇮🇹 Italiano
 
-Mostra accanto agli oggetti dei vendor di Warframe il **prezzo in platino** (a destra del nome) e il
-**volume di scambio delle ultime 24 ore** (sotto il nome, al centro; rosso = poco scambiato,
-verde = molto scambiato), con dati di warframe.market letti tramite OCR dello schermo.
-Usa solo screenshot: non tocca memoria o file del gioco.
+Un compagno per Warframe su Windows. Il cuore: quando apri un vendor, mostra accanto a ogni oggetto il **prezzo in
+platino** (a destra del nome) e il **volume di scambio delle ultime 24 ore** (sotto il nome; rosso = poco scambiato,
+verde = molto scambiato), da warframe.market, leggendo lo schermo con l'OCR. Intorno:
 
-Etichetta prezzo: `12p` = platino · `–` = nessun venditore online · `n/d` = errore/dati non disponibili.
-Per **mod e arcane** l'etichetta mostra due prezzi: `12p · max 45p` = prezzo a rank 0 (quello che compri
-nel vendor) e prezzo a **rank massimo**. Il volume resta il totale degli scambi di tutti i rank.
+- **Attività** (in gioco, F6): cosa comprare con lo standing e come guadagnarlo, le offerte settimanali dei vendor che
+  segui, le sfide Nightwave della settimana e il Calendario 1999, spuntate man mano che le completi.
+- **Finestra del listino** (F7): tutti gli oggetti scambiabili che costano standing, i consigli, il tuo inventario con
+  consigli di vendita e ordini di vendita, il flip dei Riven, le tue build di gioco, i limiti settimanali dei vendor, lo
+  standing, lo stato del mondo.
 
-## Come funziona
+Il programma non legge mai memoria, traffico di rete o file del gioco. Ciò che sa del tuo account (standing, inventario,
+loadout, acquisti, sfide) viene dal `lastData.dat` di **AlecaFrame**, letto quando AlecaFrame lo aggiorna; senza
+AlecaFrame l'overlay dei prezzi e le funzioni di mercato funzionano comunque.
+
+**Indice:** [Per iniziare](#per-iniziare) · [Overlay dei prezzi](#overlay-dei-prezzi-in-gioco) ·
+[Attività](#attività-in-gioco-f6) · [Finestra del listino](#finestra-del-listino-f7) · [Fonti dei dati](#fonti-dei-dati) ·
+[Aggiornamenti](#aggiornamenti-versione-attuale-031) · [File e impostazioni](#file-e-impostazioni) ·
+[Prestazioni](#prestazioni) · [Per sviluppatori](#per-sviluppatori) · [Note e limiti](#note-e-limiti)
+
+## Per iniziare
+1. Scarica `WFVendorOverlay-windows.zip` dall'[ultima release](https://github.com/ZioLadro/wf-vendor-overlay/releases/latest),
+   estrailo dove vuoi e avvia `WFVendorOverlay.exe` (l'exe non è firmato, quindi Windows SmartScreen può avvisare).
+2. Avvia Warframe in finestra senza bordi (**Borderless**). Se Warframe gira come amministratore, avvia anche l'overlay
+   come amministratore.
+3. Facoltativo: tieni aperto **AlecaFrame**; il suo file viene trovato da solo (`%LOCALAPPDATA%\AlecaFrame`).
+4. Lingua: inglese di default; Impostazioni → Generale → Lingua (English / Italiano), poi riavvia.
+
+| Tasto | Azione |
+|---|---|
+| **F6** | mostra/nasconde **Attività** |
+| **F7** | apre/chiude la finestra del **listino** |
+| **F8** | scansiona subito (e riprende se in pausa) |
+| **F9** | pausa |
+| **F10** | esci |
+
+Le stesse azioni sono nel menu dell'icona vicino all'orologio (clic sull'icona = listino). I tasti si cambiano nelle
+Impostazioni.
+
+## Overlay dei prezzi (in gioco)
+Etichetta prezzo: `12p` = platino · `–` = nessun venditore online · `n/d` = errore / dati non disponibili.
+Per **mod e arcane** mostra due prezzi: `12p · max 45p` = prezzo a rank 0 (quello che vende il vendor) e prezzo a
+**rank massimo**. Il volume è il totale degli scambi di tutti i rank.
+
 - **Parte già attivo**: apri un vendor e, quando lo schermo si ferma, l'overlay scansiona da solo.
-- **Dati salvati** in `prices.json`: alla scansione compaiono subito gli ultimi valori noti, poi
-  vengono aggiornati in background. All'apertura di un vendor si aggiornano i dati più vecchi di 30 s.
-- **Ogni 180 secondi** prezzi e volumi dei vendor mostrati si aggiornano da soli.
-- **Scroll** con la rotellina: le etichette spariscono subito e tornano ~0,5 s dopo la fine dello scroll.
-  Se la lista cambia in altro modo (barra trascinata, tastiera, chiusura del vendor) il cambiamento
-  viene rilevato confrontando i pixel sotto i nomi.
+- **Dati salvati** in `prices.json`: compaiono subito gli ultimi valori noti, poi si aggiornano in background.
+  All'apertura di un vendor si aggiornano i dati più vecchi di 30 s; i prezzi dei vendor mostrati ogni 180 s.
+- **Scroll** con la rotellina: le etichette spariscono subito e tornano ~0,5 s dopo la fine dello scroll. Altri
+  cambiamenti della lista (barra trascinata, tastiera) vengono rilevati confrontando i pixel sotto i nomi.
 - **Uscita dal vendor**: appena chiudi il vendor o cambi pagina le etichette spariscono.
-- **F6** mostra/nasconde l'overlay **Attività** · **F7** apre/chiude il **listino prezzi** · **F8** scansiona subito (e riprende se in pausa) ·
-  **F9** pausa · **F10** esci. Le stesse azioni sono nel menu dell'icona vicino all'orologio
-  (clic sull'icona = listino).
-- Warframe deve essere in finestra senza bordi (**Borderless**).
+- L'OCR legge **solo la finestra di Warframe**, e solo quando è la finestra attiva (impostazione *Leggi solo la finestra
+  di Warframe*; disattivala se il gioco non viene rilevato, es. cloud gaming). Nelle altre finestre le etichette si
+  nascondono.
+- **Stelle**: *★ Migliore qui ★* segna il miglior acquisto tra **tutti gli oggetti del vendor che stai guardando**
+  (anche quelli fuori vista: la riga di stato lo nomina, *Miglior acquisto da …*); *★ Consigliato ★* segna gli oggetti
+  tra i migliori acquisti **di tutti i vendor** (la classifica dei Consigli). Impostazioni *Stelle sugli oggetti
+  consigliati* / *Oggetti consigliati segnati*.
 
-L'OCR legge **solo la finestra di Warframe**, e solo quando è la finestra attiva (Windows; impostazione *Leggi solo la finestra di Warframe*, disattivala se il gioco non viene rilevato, es. cloud gaming). Le etichette si nascondono quando passi a un'altra finestra.
+**Riconoscere la schermata del vendor.** Dopo aver letto i nomi, il programma controlla a quale catalogo di vendor
+appartengono (da `vendors.json` e dalla lista di Baro). Le etichette compaiono solo se almeno 3 oggetti riconosciuti
+(impostazione *Oggetti per riconoscere un vendor*) e il 60 % di tutto ciò che è stato riconosciuto appartengono **allo
+stesso vendor**; i nomi fuori dal suo catalogo vengono scartati. Così non appaiono etichette su inventario, chat o codex
+che mostrano solo alcuni nomi. Il programma **legge anche il nome del vendor** nel 20 % in alto della finestra di gioco
+(impostazione *Zona del nome vendor*; es. *Cephalon Simaris*, *Red Veil*): se c'è e almeno un oggetto è di quel vendor,
+le etichette compaiono anche con pochi oggetti. *Richiedi il nome del vendor* lo rende obbligatorio (più rigido, ma i
+vendor la cui intestazione non è il loro nome non corrisponderebbero mai). F8 scrive tutto ciò che ha letto in
+`last_scan.txt` nella cartella dei dati, per capire perché un vendor è stato o non è stato riconosciuto. Si disattiva
+con *Riconosci la schermata del vendor*.
 
-Sullo schermo di gioco, *★ Migliore qui ★* segna il miglior acquisto tra **tutti gli oggetti del vendor che stai guardando** (anche quelli fuori vista: la riga di stato lo nomina), e *★ Consigliato ★* segna gli oggetti che sono tra i migliori acquisti **di tutti i vendor** (la classifica dei Consigli; dai prezzi salvati) (impostazioni *Stelle sugli oggetti consigliati* / *Oggetti consigliati segnati*). La riga di stato lo nomina: *Miglior acquisto da …*. La scheda Consigli ha la casella *Migliore per vendor* (una riga per vendor).
+## Attività (in gioco, F6)
+Una piccola finestra sempre in primo piano sopra il gioco, in stile quest tracker, spostabile (trascina il titolo) e
+ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elencare. Mostra, per sindacato:
 
-Ogni scheda mostra una **barra del giocatore**: nome (clicca per impostarlo, i file del gioco non lo contengono), grado di maestria, scambi rimasti e un badge per fazione con rank e standing (mouse sopra: standing giornaliero rimasto). I badge sono disegnati con i colori delle fazioni; per i logo veri metti file `<TagFazione>.png` (es. `CetusSyndicate.png`) nella cartella `icons` della cartella dei dati. Le serie Nightwave non sono mostrate.
+- gli **acquisti suggeriti dai Consigli**, lo standing che manca, i giorni che servono al tuo limite giornaliero
+  (16.000 + 500 × grado di maestria) e le **attività che fanno guadagnare quello standing**. Un oggetto sparisce solo
+  quando il file di gioco mostra che l'hai comprato;
+- le **offerte settimanali dei vendor che segui** (acquistate / limite, conto alla rovescia del reset; vedi la scheda
+  Settimanali);
+- **Nightwave**: le sfide della settimana (elite ★, con il loro standing) e quante giornaliere sono ancora aperte; quelle
+  completate sono spuntate ✔ (esatto: abbinate tramite l'id della sfida nel file di gioco);
+- **Calendario 1999**: le sfide della stagione corrente, quella in corso e quante sono fatte (fatte = i giorni fino
+  all'ultimo giorno completato nel file di gioco).
 
-**Riconoscere la schermata del vendor.** Dopo aver letto i nomi, il programma controlla a quale catalogo di vendor appartengono (da `vendors.json` e dalla lista di Baro). Le etichette compaiono solo se almeno 3 oggetti riconosciuti (impostazione) e il 60 % di tutto ciò che è stato riconosciuto appartengono **allo stesso vendor**; i nomi che non sono nel catalogo di quel vendor vengono scartati. Così non appaiono etichette su inventario, chat o codex che mostrano solo alcuni nomi, e l'overlay dice quale vendor ha riconosciuto. Il programma **legge anche il nome del vendor** a schermo (solo nel 20 % in alto della finestra di gioco, impostazione *Zona del nome vendor*; con più nomi vince il testo più alto; una riga uguale al nome del vendor, es. *Cephalon Simaris*, *Red Veil*): se c'è e almeno un oggetto è di quel vendor, le etichette compaiono anche con pochi oggetti. *Richiedi il nome del vendor* lo rende obbligatorio (più rigido, ma i vendor la cui intestazione non è il loro nome non corrisponderebbero mai). F8 scrive tutto ciò che ha letto in `last_scan.txt` nella cartella dei dati, per capire perché un vendor è stato o non è stato riconosciuto. Si disattiva con *Riconosci la schermata del vendor*, oppure abbassa *Oggetti per riconoscere un vendor* per vendor con pochissimi oggetti scambiabili.
+**Clic destro** su un oggetto per nasconderlo o aprirlo su warframe.market, sul titolo di un sindacato o su un'attività
+per smettere di seguirla (*Segui di nuovo tutte le attività* in ⚙). Con *Attività: cliccabile solo col cursore* (attiva
+di default) la finestra lascia passare i clic quando Warframe nasconde il cursore (in missione), così non dà mai
+fastidio. Quando viene riconosciuta la schermata di un vendor, Attività si spegne (subentrano le etichette dei prezzi)
+finché non premi F6. Impostazioni: *Tasto attività*, *Attività: Nightwave e Calendario 1999*, *Nascondi Operational
+Supply* (il sindacato degli eventi è escluso finché non c'è un evento).
 
 ## Finestra del listino (F7)
-La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il listino all'avvio*). È una finestra normale: viene davanti quando la apri (tasto rapido o icona) e non resta sopra il gioco (impostazione *Finestra sempre in primo piano* per tenercela). L'overlay continua a funzionare con la finestra aperta; quando è sopra il gioco la sua area viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
+**Si apre da sola all'avvio** (impostazione *Apri il listino all'avvio*). È una finestra normale: viene davanti quando la
+apri e non resta sopra il gioco (impostazione *Finestra sempre in primo piano* per tenercela). Quando è sopra il gioco la
+sua area viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 
-Sotto la barra del giocatore, la **barra del mondo** mostra le fessure Omnia Steel Path, i cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer e la Prime Resurgence con conto alla rovescia. L'**Arbitrato** attuale è mostrato con il suo tier di [arbi.guide](https://arbi.guide) (Arbitration Goons; letto dall'API `tierlist.json` della guida, in cache 15 minuti); quale nodo sia viene dal calendario orario di browse.wf (`arbys.txt`). La scheda **Console** elenca cosa gira in background e ogni errore.
+In cima a ogni scheda:
+- **Barra del giocatore**: nome (dal `lastUsername.txt` di AlecaFrame, oppure clicca per scriverlo), grado di maestria,
+  scambi rimasti (⚠ quando l'ultima sync è precedente al reset giornaliero), portafoglio (Endo, platino, ducati, Aya;
+  compatti, valore esatto nel tooltip) e un badge per sindacato con rank e standing (mouse sopra: standing rimasto oggi).
+  I logo dei sindacati vengono scaricati una volta dalla wiki; senza, i badge sono disegnati con i colori del sindacato.
+- **Barra del mondo**: fessure Omnia Steel Path, cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer, Prime Resurgence e
+  l'**Arbitrato** attuale con il suo tier di [arbi.guide](https://arbi.guide), tutti con conto alla rovescia.
 
-**Attività** (in gioco, F6): una finestra sempre in primo piano, spostabile e ridimensionabile, con gli acquisti suggeriti dai Consigli, lo standing che manca e come guadagnarlo, più le sfide settimanali di Nightwave e quelle del Calendario 1999 (quelle fatte sono spuntate quando il file di gioco lo indica); segue lastData.dat e toglie un oggetto solo quando il file di gioco mostra che l'hai comprato. ⚙ per opacità, dimensione del testo e cosa elencare.
+### Prezzi e consigli
+La prima scheda: listino sopra, consigli sotto (trascina il divisore; viene ricordato).
 
-La scheda **Settimanali** elenca le offerte dei vendor con un limite di acquisto (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…) con quanto hai comprato in questo periodo e quando si azzera; l'acquisto viene letto da lastData.dat e abbinato all'offerta confrontando l'inventario con la sync precedente (ti viene chiesto quando è ambiguo). Le offerte seguite compaiono anche in Attività.
+**Listino.** Tutti gli **oggetti scambiabili che costano standing** (da `vendors.json`: vendor e sindacati) più tutto ciò
+che vende **Baro Ki'Teer**, elencati fin dall'inizio anche senza dati (prezzo `–`, aggiornato `mai`). Colonne: nome,
+vendor, **costo in standing**, tipo (Mod / Arcane / Altro), prezzo, prezzo a rank massimo, volume 24 h (colorato come
+nell'overlay), ultimo aggiornamento. Clic sulle intestazioni per ordinare; ricerca e filtri per vendor e tipo.
 
-Il **listino prezzi** e i **consigli** condividono la prima scheda (*Prezzi e consigli*): il listino sopra, i consigli sotto; trascina il divisore per cambiarne le altezze (viene ricordato).
+- Il costo in standing è quello base dei dati di gioco (senza sconti di rank); `min – max` se lo vendono più vendor, il
+  tooltip mostra vendor, costo e rank richiesto.
+- **Passando il mouse** sul nome: quanti ne puoi comprare con il tuo standing, per sindacato, e se il tuo rank basta.
+- **Nascondi volume zero** nasconde gli oggetti senza scambi nelle 24 h (quelli senza dati restano).
+- **Clic destro** sul nome (qui e nei Consigli): aprilo su warframe.market o sulla wiki, o copia il nome.
+- **Aggiorna elenco mostrato** aggiorna tutte le righe visibili (saltando i dati più recenti di `refresh_skip_age`);
+  **Aggiorna selezionati** aggiorna le righe selezionate; **Stop** interrompe. Il limite è 3 richieste/s (2 per
+  oggetto): circa 2 minuti ogni 100 oggetti, ~20 per tutto il catalogo; oltre `refresh_confirm_over` oggetti chiede prima.
+- **Aggiorna elenco Baro**: Baro non è nei dati del gioco; la sua lista viene letta dalla wiki (e dal suo inventario
+  attuale) e si ricarica da sola ogni `baro_refresh_days` giorni.
 
-### Listino prezzi
-Tutti gli **oggetti scambiabili che costano standing** (da `vendors.json`: vendor e sindacati), più tutto
-ciò che vende **Baro Ki'Teer**: ci sono già tutti fin dall'inizio, anche senza dati (prezzo `–`,
-aggiornato `mai`). Gli oggetti che non costano standing (e non sono di Baro) non sono elencati. Colonne: nome, vendor che lo vendono, **costo in standing**, tipo (Mod / Arcane / Altro),
-prezzo, prezzo a rank massimo (mod e arcane), volume 24 h (colorato come nell'overlay), ultimo
-aggiornamento. Clic sulle intestazioni per ordinare; ricerca e filtri per vendor e tipo.
-
-- Il costo in standing viene dai dati del gioco. È il costo base, senza sconti di rank. Se un oggetto
-  costa standing a più vendor vedi `min – max`; il tooltip mostra vendor, costo e rank richiesto.
-- **Passando il mouse** sul nome (o sul costo in standing): quanti ne puoi comprare con il tuo standing, per
-  fazione (`floor(standing / costo)`), e se il tuo rank basta. Usa i numeri della scheda Profilo.
-- **Nascondi volume zero** nasconde gli oggetti senza scambi nelle ultime 24 ore (quelli senza dati restano visibili).
-- **Clic destro** sul nome di un oggetto (qui e in Consigli): aprilo su warframe.market, apri la sua pagina
-  sulla wiki di Warframe (una ricerca che va dritta alla pagina se il titolo esiste) o copia il nome.
-- Sono elencati solo gli oggetti **scambiabili**: i nomi vengono associati al catalogo di warframe.market,
-  quindi tutto ciò che non si può scambiare resta fuori.
-- **Aggiorna elenco mostrato** aggiorna prezzo e volume di tutte le righe visibili (filtri compresi;
-  salta i dati più recenti di `refresh_skip_age` secondi). Filtra per un vendor per aggiornare solo i suoi oggetti.
-- **Aggiorna selezionati** aggiorna sempre le righe selezionate (Ctrl/Maiusc per più righe).
-- **Ferma** interrompe; una barra mostra l'avanzamento. Il limite è 3 richieste/s (2 per oggetto):
-  ~2 minuti per 100 oggetti, ~20 per tutto il catalogo dei vendor. Sopra `refresh_confirm_over` oggetti
-  chiede conferma. Chiudere la finestra ferma l'aggiornamento. I dati restano salvati in `prices.json`.
-- **Aggiorna elenco Baro**: Baro non è nei dati del gioco; il suo elenco storico si legge dalla wiki
-  (e dal suo inventario attuale) e si ricarica da solo all'avvio ogni `baro_refresh_days` giorni.
-
-### Inventario
-I tuoi oggetti con i prezzi di mercato e gli ordini di vendita con un clic (ispirato alla scheda Inventory di AlecaFrame).
-
-- **Da dove vengono gli oggetti.** Warframe tiene il tuo inventario sui server di DE, non in un file locale,
-  quindi non si può leggere da disco (e questo programma non legge mai la memoria o il traffico di rete del
-  gioco). Lo costruisci con **Importa file…** (sostituisce l'inventario), **Incolla lista…**, oppure
-  **Aggiungi oggetto…** / **Modifica** a mano. File accettati: un **`lastData.dat`** (il file di inventario cifrato in stile AlecaFrame; decifrato in locale con il
-  pacchetto `cryptography`; la finestra di importazione si apre in `%LOCALAPPDATA%\AlecaFrame` se la cartella esiste),
-  un JSON di *inventario grezzo in stile Warframe*
-  (`MiscItems`, `RawUpgrades`, `Upgrades`, `Recipes`… con percorsi `ItemType`, risolti con `gamenames.json`
-  incluso), qualunque JSON che abbini nomi e quantità (liste `{"name": …, "count": …}` o `{"Serration": 2}`),
-  e righe CSV/TXT come `Serration, 2, 10` (nome, quantità, rank facoltativo), `3x Mirage Prime Set` oppure
-  `Ash Prime Blueprint x2`. **Ricarica file** rilegge l'ultimo file importato, comodo quando un altro tuo strumento lo aggiorna.
-  I nomi vengono associati al catalogo del market (piccoli errori sono tollerati);
-  quelli non riconosciuti vengono elencati dopo l'importazione. Non provato con vere esportazioni del gioco,
-  solo con file di queste forme.
-- **Categorie**: Set, Parti di Warframe, Parti di armi, Mod, Arcane, Reliquie, Altro (ricavate dai tag di
-  warframe.market). **Filtri** come quelli di AlecaFrame: platino minimo (5 / 10 / 15), più di uno posseduto,
-  tipo di parte (prime / normale), vaulted (quando lo dicono i dati del market), in vendita da qui, più
-  **Escludi mod/arcane a rank massimo** (escono dalla lista e dal totale).
-- **Prezzi**: valore = copie × prezzo a rank 0 + copie a rank massimo × prezzo a rank massimo;
-  **Aggiorna prezzi** aggiorna gli oggetti mostrati. Clic destro sul nome per la pagina del market / wiki.
-- **Sali di rank…** indica quali mod conviene portare a rank massimo per venderle. Per ogni mod sotto il rank massimo
-  calcola il platino guadagnato per copia (prezzo a rank max − prezzo attuale), per tante copie quante se ne vendono in
-  circa un giorno (un quarto del volume 24 h), e gli Endo e i Crediti per finirle (`base × (2^max − 2^rank)`; base Endo
-  10/20/30/40 e base Crediti 483/966/1449/1932 per comune/non comune/rara/leggendaria, dalla
-  [wiki](https://wiki.warframe.com/w/Fusion)). Il punteggio è il platino guadagnato ogni 1000 Endo, penalizzato per le
-  mod che si vendono poco; scrivi gli Endo che hai e vengono selezionate le righe migliori che ci stanno. Impostazioni >
-  Inventario: *Sali di rank: guadagno minimo*. Gli Arcani non si salgono con l'Endo, quindi non compaiono.
-- **Escludi installate** esclude le mod e gli Arcani che sono in uno dei tuoi loadout (letti dal `lastData.dat`
-  all'importazione, quindi reimporta o usa *Ricarica file* dopo aver cambiato un loadout). Non contano nel valore né nei
-  consigli, così non ti viene mai detto di vendere ciò che stai usando.
-- **Immagini degli oggetti.** Passando il mouse sul nome di un oggetto appare la sua immagine, quella pubblicata da
-  warframe.market (scaricata una volta, una alla volta, tenuta nella cartella dei dati; si disattiva nelle Impostazioni). I
-  file immagine di AlecaFrame non vengono letti: appartengono a quel programma e stanno sul tuo PC in un formato su cui
-  questo programma non si basa.
-- **Scambi rimasti** (barra in alto) viene dal `lastData.dat`, che il gioco aggiorna solo quando AlecaFrame si
-  sincronizza (entrando o uscendo da una missione, rifacendo il login): gli scambi fatti dopo non sono ancora contati. Compare
-  un ⚠ quando l'ultima sincronizzazione è precedente al reset giornaliero (00:00 UTC), quando il numero reale è probabilmente
-  più alto; il suggerimento mostra l'ora della sincronizzazione.
-- **Andamento del prezzo nei consigli.** Oltre al volume 24 h, il programma tiene il prezzo medio ponderato sul volume
-  delle vendite a 7, 30 e 90 giorni (preso dalla stessa risposta delle statistiche: nessuna richiesta in più; per le mod,
-  separatamente a rank 0 e a rank massimo). Le tre finestre dei consigli mostrano una colonna *vs 30 g* (prezzo attuale
-  rispetto alla media a 30 giorni; il suggerimento ha le medie a 7/30/90 giorni) e un prezzo sopra la media a 30 giorni
-  viene avvicinato ad essa dal *Peso del trend* (predefinito 50%, 0 = ignora il trend), così un picco breve non porta un
-  oggetto in cima. Le medie di un oggetto si aggiornano al prossimo *Aggiorna prezzi*.
-- **Portafoglio nella barra in alto.** Accanto al tuo nome la barra mostra Endo, platino, ducat e Aya che possiedi (letti dal `lastData.dat`, quindi aggiornati all'ultima sincronizzazione di AlecaFrame), in forma compatta (3k, 30k, 1.2M) con il valore esatto nel suggerimento. Con la cartella icone impostata usa le sue immagini; la stessa cartella dà alle schede degli Arcani l'immagine generica della rarità (nessun download) e alle Archon Shard le loro immagini (senza il nome del colore).
-- **Cartella icone (facoltativa).** Impostazioni > Inventario > *Cartella icone*: indica una cartella di icone tue (per
-  esempio gli `assets` decompressi di AlecaFrame) e la scheda Build mostra le immagini delle Archon Shard. I file sono
-  solo letti da dove stanno; non vengono copiati né distribuiti con il programma.
-- **Vendi…** piazza un **ordine di vendita** su warframe.market per ogni oggetto selezionato. Prima accedi
-  (email e password, inviate solo a warframe.market; **si salva solo il token di sessione** in
-  `market_session.json`; *Esci* lo cancella). Per ogni ordine una finestra mostra quantità, rank
-  (mod/arcane), prezzo (prezzo di mercato + `sell_price_offset`) e **la richiesta esatta che verrà inviata**;
-  non parte nulla finché non premi *Piazza ordine*. Il programma ricorda gli ordini che ha piazzato
-  (colonna *In vendita*); non legge gli altri tuoi ordini.
-  **Attenzione:** accesso e creazione degli ordini usano le API REST v1 come documentate dalle librerie
-  della community e non si sono potuti provare sul sito vero durante lo sviluppo: controlla il primo ordine
-  su warframe.market. Gli account che accedono con Discord/Google potrebbero non funzionare.
-
-**Ducat e consigli.** La colonna *Ducat* mostra quanto dà ogni parte prime se scambiata (dai dati del gioco). *Consiglio: ducat* elenca le tue parti prime per ducat guadagnati per ogni platino a cui rinunci (`ducat / max(prezzo × liquidità, 0,5)`, con `liquidità = min(1, volume / volume liquido)`); da un rapporto minimo (default 10) in su dice *Ducat*, altrimenti *Vendi*. I totali usano tutte le tue copie. *Consiglio: vendita* ordina il resto per `prezzo × copie che puoi sperare di vendere (≈ ¼ del volume giornaliero) × liquidità`, escludendo gli oggetti sotto il prezzo minimo o con poco volume. Entrambi possono selezionare le righe scelte nella tabella, pronte per *Vendi*. Qui c'è anche *Nascondi volume zero*, e *Vol. min* nasconde gli oggetti scambiati meno di così in 24 h (quelli senza dati di volume restano). Le soglie sono nelle Impostazioni (gruppo Consigli).
-
-### Quantframe
-Il programma può passare oggetti a [Quantframe](https://github.com/Kenya-DK/quantframe-react), così non devi aggiungerli lì a mano. Attiva il server HTTP locale di Quantframe (Settings > Advanced > HTTP Server; predefinito `127.0.0.1:4808`, impostazione *Indirizzo di Quantframe* qui). **Inventario > Invia a Quantframe…** manda le righe selezionate (tutte quelle mostrate se non ne selezioni nessuna) allo **stock** di Quantframe; le mod con rank vanno per rank (copie a rank 0 e a rank massimo). **Build > Mancanti → Quantframe** manda alla **wish list** le mod che ti mancano per la build selezionata. Prima compare una finestra di controllo (cosa e quante); gli oggetti già inviati restano senza spunta perché le quantità si sommano. Non viene inviato alcun prezzo d'acquisto, quindi non si registra nessuna transazione. Attenzione: il Live Scraper di Quantframe può poi mettere in vendita gli oggetti dello stock e piazzare ordini di acquisto per quelli della wish list, secondo le sue impostazioni. Sono accettati solo indirizzi di questo computer. **Inventario > Riven → Quantframe…** invia solo i riven **svelati** (già assegnati a un'arma; quelli non svelati vengono ignorati) allo stock riven di Quantframe. Arma, nome, rank, re-roll, polarità e statistiche si leggono dal file di AlecaFrame e i valori sono ricalcolati dai dati pubblici del gioco (`rivens.json`, rigenerabile con `build_rivens.py`); possono differire di un decimale dal gioco, e due vecchi tipi di statistica non coperti dai dati vengono saltati e segnalati. I nomi degli attributi di warframe.market si scaricano una volta e restano in cache. Controlla il risultato in Quantframe.
-
-### Riven flip
-
-**Riven flip > Scansiona il mercato** legge le inserzioni riven delle prossime armi su warframe.market (prima quelle scansionate meno di recente; *Armi per scansione* e *Solo queste armi* in Impostazioni > Riven flip) ed elenca i riven in vendita **a meno di quanto valgono quelli confrontabili**, dal profitto maggiore. Tre criteri:
-
-- **Prezzo**: il prezzo di acquisto diretto contro un *prezzo equo* = mediana dei prezzi delle inserzioni confrontabili della stessa arma (punteggio statistiche entro ±15) × *Rivendita attesa* (predefinito 85 %, perché i prezzi richiesti sono più alti di quelli pagati). Servono almeno 3 inserzioni confrontabili. warframe.market restituisce al massimo le **100 inserzioni più economiche** per arma (gli elenchi di armi e statistiche vengono dalla sua API v2, le inserzioni dall'unica API aste rimasta, la v1), quindi per le armi molto diffuse il confronto avviene tra le più economiche, il che tiene prudente il prezzo equo.
-- **Vendite**: warframe.market non pubblica le vendite dei riven, quindi è una **stima**: a ogni scansione il programma ricorda le inserzioni viste, e quelle che c'erano e alla scansione dopo non ci sono più (vendute, ritirate o scadute) vengono contate negli ultimi 7 giorni. Servono scansioni ripetute (un intervallo oltre 3 giorni azzera il conteggio); la colonna mostra "–" finché un'arma non è osservata da un giorno. *Vendite stimate minime* nasconde le armi lente.
-- **Statistiche**: un punteggio 0–100 da quanto è utile ogni statistica (pesi: critico, danno e multishot al massimo; zoom e rinculo valgono zero; un malus su una statistica inutile è un bonus) e da quanto è ben uscita (calcolata con la stessa formula della funzione Riven → Quantframe). Per cambiare i pesi crea `riven_weights.json` nella cartella dati del programma, es. `{"WeaponFireRateMod": 0.9, "WeaponStunChanceMod": 0.2}` (da 0 a 1; i nomi sono le chiavi di `rivens.json`).
-
-**Frequenza delle richieste**: le regole di warframe.market chiedono che le ricerche delle aste (contratti) restino intorno a 10–20 al minuto. Solo le richieste dei riven hanno un limitatore proprio (*Richieste riven al minuto*, predefinito 12, mai oltre 20), quindi una scansione di 20 armi richiede circa 2 minuti; gli elenchi di armi e statistiche si scaricano una volta a settimana. Se arriva "too many requests" aspetta (il `Retry-After` del server, oppure 20 s, 40 s) e ferma la scansione dopo tre di fila; quanto già letto resta salvato. La scheda legge soltanto: non pubblica nulla su warframe.market. riven.market non viene usato (non ho trovato una API pubblica). Seguendo le regole di warframe.market, il programma si identifica con un `User-Agent` proprio (nome, versione, repository) e mette in cache ciò che può. *Apri l'asta* apre l'inserzione; *Copia whisper* copia il messaggio da incollare in gioco per il venditore. Profitto e prezzo equo sono stime, non garanzie.
-
-### Consigli
-Cosa conviene comprare con lo standing, per ogni coppia (oggetto, vendor) con un costo in standing:
+**Consigli.** Cosa conviene comprare con lo standing, per ogni coppia (oggetto, vendor) con un costo in standing:
 
 ```
 plat per 1000 standing = prezzo / costo in standing × 1000
-copie al giorno        = min(limite giornaliero di standing / costo, max(1, volume × 0,25))
-~plat al giorno        = prezzo × copie al giorno      (limite giornaliero = 16.000 + 500 × Mastery Rank)
+copie al giorno        = min(limite giornaliero / costo in standing, max(1, volume × 0,25))
+~plat al giorno (punteggio) = prezzo × copie al giorno   (limite giornaliero = 16.000 + 500 × grado di maestria)
 ```
-Il punteggio è quanto può rendere davvero un giorno di standing: tante copie quante ne compra lo standing del giorno, ma
-non più di quante ne assorbe il mercato (circa un quarto del volume 24 h). Un prezzo sopra la media a 30 giorni viene
-avvicinato a essa (come nei consigli dell'inventario), e un oggetto che richiede un rank del sindacato più alto del tuo
-conta la metà (⚠).
-Gli oggetti scambiati meno del **volume minimo** o che costano meno del **prezzo minimo** (modificabili
-nella scheda) sono esclusi. I prezzi sono a rank 0 (ciò che vende davvero il vendor). Filtra per vendor
-o tipo. Gli oggetti senza dati di mercato non si possono valutare: **Scarica i dati mancanti** li scarica
-(scegli prima un vendor per fare in fretta).
+Quante copie compra un giorno di standing, ma non più di quante ne assorbe il mercato (circa un quarto del volume
+24 h). Un prezzo sopra la media a 30 giorni viene avvicinato a essa, e un oggetto che richiede un rank del sindacato più
+alto del tuo conta la metà (⚠). Gli oggetti sotto il **volume minimo** o il **prezzo minimo** (modificabili nella
+scheda) sono esclusi; i prezzi sono a rank 0. *Migliore per vendor* mostra una riga per vendor. Gli oggetti ancora senza
+dati di mercato non si possono valutare: **Scarica i dati mancanti** li scarica (scegli prima un vendor per fare prima).
 
-Passando il mouse su una riga vedi quanti ne puoi permettere con il tuo standing (scheda Profilo).
+### Inventario
+I tuoi oggetti con i prezzi di mercato, consigli di vendita e ordini di vendita in un clic (ispirato alla scheda
+Inventario di AlecaFrame).
+
+- **Origine**: il `lastData.dat` di AlecaFrame, trovato e riletto da solo (decifrato in locale). Puoi anche **Importa
+  file…** (sostituisce l'inventario), **Incolla lista…**, oppure **Aggiungi oggetto…** / **Modifica** a mano. Oltre a
+  `lastData.dat` sono accettati: un JSON di inventario in stile Warframe (`MiscItems`, `RawUpgrades`… con percorsi
+  `ItemType`), qualunque JSON che abbini nomi e quantità (`{"Serration": 2}`), e righe CSV/TXT come `Serration, 2, 10`,
+  `3x Mirage Prime Set` o `Ash Prime Blueprint x2`. I nomi vengono abbinati al catalogo del mercato (piccoli errori
+  tollerati); quelli non abbinati vengono elencati.
+- **Categorie** (Set, Parti Warframe, Parti armi, Mod, Arcane, Reliquie, Altro) e **filtri** come quelli di AlecaFrame:
+  platino minimo, più di una copia, prime / normale, vaulted, messi in vendita da qui, *Escludi mod/arcane a rank
+  massimo*, *Escludi installate* (mod e Arcane in uno dei tuoi loadout: mai suggerite per la vendita), *Vol. min*
+- **Valore** = copie × prezzo a rank 0 + copie a rank massimo × prezzo a rank massimo. **Aggiorna prezzi** aggiorna gli
+  oggetti mostrati. Il programma tiene anche il prezzo medio a 7/30/90 giorni (colonna *vs 30 g*); un picco sopra la
+  media a 30 giorni viene avvicinato a essa secondo *Consigli: peso del trend* (default 50 %).
+- **Consiglio: ducat** elenca le parti prime per ducati ottenuti per platino a cui rinunci
+  (`ducati / max(prezzo × liquidità, 0,5)`, con `liquidità = min(1, volume / volume liquido)`): *Ducati* dal rapporto
+  minimo in su (default 10), altrimenti *Vendi*. **Consiglio: vendita** ordina il resto per
+  `prezzo × copie che puoi aspettarti di vendere (≈ ¼ del volume giornaliero)`. Entrambi possono selezionare le righe,
+  pronte per *Vendi*.
+- **Sali di rank…**: quali mod conviene portare a rank massimo per venderle: platino guadagnato per copia (prezzo a rank
+  massimo − prezzo attuale) ogni 1000 Endo, con Endo e Crediti necessari (`base × (2^max − 2^rank)`, secondo la
+  [wiki](https://wiki.warframe.com/w/Fusion)). Scrivi l'Endo che hai e vengono selezionate le righe migliori che ci stanno.
+- **Vendi…** piazza un **ordine di vendita** su warframe.market per ogni oggetto selezionato. Prima accedi (email e
+  password, inviate solo a warframe.market; **viene salvato solo il token di sessione**, *Esci* lo cancella). Una
+  finestra mostra quantità, rank, prezzo (prezzo di mercato + `sell_price_offset`) e **la richiesta esatta**; non viene
+  inviato nulla finché non premi *Piazza ordine*. Attenzione: usa l'API REST v1 come documentata dalle librerie della
+  community; controlla il primo ordine sul sito. Gli account che accedono con Discord/Google potrebbero non funzionare.
+- **Immagini degli oggetti** passando il mouse sul nome (immagini di warframe.market, scaricate una volta; si disattiva
+  nelle Impostazioni).
+
+**Quantframe.** Gli oggetti si possono passare a [Quantframe](https://github.com/Kenya-DK/quantframe-react) tramite il
+suo server HTTP locale (in Quantframe: Settings > Advanced > HTTP Server; qui: *Indirizzo di Quantframe*, default
+`127.0.0.1:4808`, solo indirizzi di questo computer):
+- **Inventario > Invia a Quantframe…**: le righe selezionate (tutte quelle mostrate se nessuna) nel suo **stock**, le
+  mod con rank divise per rank;
+- **Build > Mancanti → Quantframe**: le mod che ti mancano per una build nella sua **wish list**;
+- **Inventario > Riven → Quantframe…**: i tuoi riven **rivelati** (arma, nome, rank, re-roll, polarità, statistiche
+  ricalcolate da `rivens.json`; i valori possono differire di un decimale dal gioco) nel suo stock di riven.
+
+Prima compare una finestra di controllo; gli oggetti già inviati partono non spuntati perché le quantità si sommano. Non
+viene inviato alcun prezzo d'acquisto. Il Live Scraper di Quantframe potrebbe poi mettere in vendita gli oggetti dello
+stock o piazzare ordini d'acquisto, secondo le sue impostazioni.
+
+### Riven flip
+**Scansiona il mercato** legge gli annunci di riven delle armi successive su warframe.market (prima quelle scansionate
+meno di recente; *Armi per scansione* e *Solo queste armi* nelle Impostazioni) ed elenca i riven messi in vendita **sotto
+il valore di quelli comparabili**, dal profitto migliore:
+
+- **Prezzo**: il prezzo di acquisto diretto contro un *prezzo equo* = mediana degli annunci comparabili della stessa arma
+  (punteggio statistiche entro ±15, almeno 3) × *Rivendita attesa* (default 85 %). warframe.market restituisce al massimo
+  i 100 annunci più economici per arma, il che tiene il prezzo equo sul prudente per le armi popolari.
+- **Vendite**: una **stima** (warframe.market non pubblica le vendite di riven): gli annunci che spariscono tra una
+  scansione e l'altra negli ultimi 7 giorni. Servono scansioni ripetute; "–" finché un'arma non è osservata da un giorno.
+- **Statistiche**: un punteggio 0–100 da quanto è utile ogni statistica e da quanto bene è uscita. Pesi personalizzati in
+  `riven_weights.json` nella cartella dei dati, es. `{"WeaponFireRateMod": 0.9}` (da 0 a 1; chiavi di `rivens.json`).
+
+Le richieste di riven hanno un loro limitatore (*Richieste riven al minuto*, default 12, mai sopra 20, come chiede
+warframe.market); a un "troppe richieste" aspetta e si ferma dopo tre di fila. La scheda legge soltanto: non pubblica
+nulla. *Apri l'asta* e *Copia whisper* aiutano a contattare il venditore. Profitto e prezzo equo sono stime.
 
 ### Build
-I tuoi loadout in gioco, mostrati come la schermata dei loadout del gioco: slot Aura, Exilus e Postura, gli otto slot mod con il rank di ogni mod (n/max), gli Arcani equipaggiati, il numero di forma, le **Archon Shard** installate su un Warframe (colore, tauforgiata o no, ed effetto) e l'abilità **Helminth** che ha sostituito una delle sue ("Abilità 4: Miasma → Roar"). Warframe, armi, Archwing, Necramech e compagni sono elencati a sinistra, con filtro per nome e per tipo.
+I tuoi loadout di gioco, mostrati come nella schermata dei loadout, da `lastData.dat` (*Ricarica dal file* dopo che
+AlecaFrame l'ha aggiornato).
 
-I **Loadout di gioco** (vista predefinita) seguono la schermata dei loadout del gioco: i tuoi loadout con nome, con Warframe, primaria, secondaria, mischia e arma esaltata, il compagno, l'Archwing e il Necramech, ognuno con il suo rank (*Rank massimo* dal 30) e la configurazione di mod che il loadout usa. Clicca una riga per vedere mod, Arcani, Archon Shard e Helminth di quell'oggetto. *Per oggetto* è l'elenco semplice delle configurazioni di ogni oggetto. Scuola di Focus e K-Drive non sono mostrati.
+- **Loadout di gioco** (vista predefinita): i tuoi loadout con Warframe, armi, arma exalted, compagno, Archwing e
+  Necramech; clicca una riga per la build di quell'oggetto. **Per oggetto**: le configurazioni di ogni oggetto,
+  raggruppate per tipo, con miniature e filtro per nome/tipo. Scuola Focus e K-Drive non sono mostrati.
+- **Carte** come nella schermata build del gioco: slot Aura, Exilus e Stance, otto slot mod (polarità dello slot,
+  polarità e consumo della mod, rank), Arcane, **Frammenti Arconte** (colore, tauforgiato, effetto), abilità
+  **Helminth**, numero di forma, **Reattore / Catalizzatore** Orokin (dal file, *dedotto* per gli oggetti vecchi i cui
+  loadout ci stanno solo con uno). Le carte **si adattano alla finestra** e mostrano l'immagine della mod al passaggio
+  del mouse.
+- **Capacità** = rank (40 per armi Kuva/Tenet/Coda e Necramech) × 2 con Reattore/Catalizzatore + aura; le polarità
+  innate sono messe dove fanno risparmiare più consumo (il file non dice dove sono). Un **riepilogo statistiche**
+  approssimato conta solo le mod (non Arcane, frammenti, Helminth, bonus dei set o effetti condizionali).
+- I **Riven** mostrano nome, statistiche, polarità e consumo e contano nel riepilogo; i **Riven spliced** sono mostrati
+  congelati (❄) con la statistica spliced come "?".
+- **Pianificatore build** (terza vista): scegli un Warframe o un'arma, clicca una carta per scegliere mod, rank e
+  polarità dello slot (Forma); capacità, consumo e statistiche si aggiornano. *Salva* tiene i piani in
+  `build_plans.json`; *Copia da un mio loadout…* parte da uno dei tuoi.
 
-Le **immagini** di mod e Arcani compaiono sulle schede: vengono prese al bisogno da warframe.market (immagini degli oggetti) e, se lì mancano, dalla wiki di Warframe (wiki.warframe.com, API MediaWiki standard, una richiesta alla volta con lo User-Agent del programma), tenute nella cartella dei dati e mai scaricate due volte; appaiono qualche secondo dopo l'apertura del loadout. Si disattivano con *Immagini degli oggetti nei suggerimenti* nelle Impostazioni.
+Le immagini di questa scheda vengono **solo dalla wiki di Warframe** (API MediaWiki, una richiesta alla volta); quelle
+mancanti vengono scaricate in background all'avvio e tenute nella cartella dei dati. Nomi e statistiche vengono dal
+`loadout_data.json` incluso (dati pubblici del gioco e WFCD/warframe-items, ricostruito con `build_loadouts.py`). Una
+**cartella delle icone** facoltativa (Impostazioni > Inventario; gli `assets` estratti di AlecaFrame vengono trovati da
+soli) aggiunge le immagini dei Frammenti Arconte e del portafoglio; quei file vengono solo letti dove sono, mai copiati.
 
-Tutto viene dal tuo `lastData.dat` di AlecaFrame (trovato da solo, lo stesso file dell'Inventario); *Ricarica dal file* lo rilegge dopo che AlecaFrame l'ha aggiornato. Non viene scaricato nulla da nessun sito. I nomi di mod, Arcani, abilità e shard vengono dal `loadout_data.json` incluso (rigenerato dai dati pubblici del gioco con `build_loadouts.py`). Le polarità messe con le Forma vengono dal file; polarità innate, drain, statistiche per rank e dati delle armi vengono dai dati pubblici WFCD/warframe-items, anch'essi dentro `loadout_data.json` (`build_loadouts.py --wfcd <cartella>`); le polarità innate sono assegnate agli slot nell'ordine in cui quei dati le elencano.
-
-Le card seguono la schermata build del gioco (polarità dello slot in alto a sinistra, polarità e drain della mod in alto a destra, rank a rombi sotto), con accanto la **capacità** (libera / totale) e un **riepilogo statistiche** approssimato: contano solo le mod, non Arcani, Archon Shard, Helminth, bonus di set o effetti condizionali. I nomi che hai dato alle configurazioni in gioco compaiono come pulsanti.
-
-Sotto il titolo: rank dell'oggetto, forma e se ha un **Reattore / Catalizzatore Orokin** (dal file; *dedotto* per gli oggetti vecchi i cui loadout ci stanno solo con esso). Le **Riven spliced** sono mostrate ghiacciate (❄), con la statistica spliced come "?" (i dati del gioco non hanno ancora i valori). Le armi esaltate hanno un loro gruppo.
-
-Le immagini di questa scheda (card delle mod, Warframe, armi, compagni) vengono **solo dalla wiki di Warframe**; quelle che mancano vengono chieste in background all'avvio. L'elenco *Per oggetto* è diviso per tipo. La capacità delle mod è il rank dell'oggetto (40 per armi Kuva/Tenet/Coda e Necramech), raddoppiata da un Reactor/Catalyst; le polarità innate vengono messe dove fanno risparmiare più drain, perché il file di gioco non dice dove sono.
-
-Le card **si adattano alla finestra** (larghezza e altezza, stesse proporzioni per mod e Arcani) e mostrano l'immagine della mod al passaggio del mouse.
-
-Le **Riven** installate mostrano nome, statistiche, polarità e drain (10 + rank) e contano nel riepilogo; le armi hanno un riepilogo *Bonus delle mod* (somma dei bonus percentuali di mod e Riven).
-
-Il **Build planner** (terza voce del selettore di vista): scegli una Warframe o un'arma, clicca una card per scegliere mod, rank e polarità dello slot (Forma); capacità, drain e statistiche si aggiornano. *Salva* tiene il piano in `build_plans.json`; *Copia da un mio loadout…* parte da uno dei tuoi. L'elenco delle mod è filtrato per oggetto (le mod specifiche di un'arma sono riconosciute per nome).
-
-**Cartella icone trovata da sola.** Overwolf salva AlecaFrame in `Extensions\<id>\<versione>\` e cambia la cartella di versione a ogni aggiornamento: il programma cerca in quelle cartelle (la più recente per prima) e segue il cambiamento; una cartella scritta nelle impostazioni, se esiste, ha la precedenza. **Aya**: il file di AlecaFrame indica 0 Aya, quindi scrivi il numero in Impostazioni > Inventario (*Aya, scritti a mano*); resta nascosto finché è 0.
+### Settimanali
+Le offerte dei vendor con un limite di acquisto (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…), quanto hai
+comprato in questo periodo e quando si azzera. Il file di gioco registra ogni acquisto limitato ma non quale offerta
+fosse, quindi il programma lo ricava da ciò che il `deltas.dat` di AlecaFrame ha registrato come guadagnato e
+dall'inventario rispetto alla sync precedente; quando è ambiguo ti chiede di sceglierla (★ = candidate probabili).
+Spunta *Segui* per seguire un'offerta in Attività.
 
 ### Profilo
-Standing e rank per fazione, più il grado di maestria, **letti dal `lastData.dat` di AlecaFrame** (o dal JSON
-dell'app companion) con **Importa lo standing da file…**; *Ricarica il file* lo rilegge dopo che AlecaFrame l'ha
-aggiornato. Puoi anche scrivere o correggere ogni valore a mano (restano fino alla prossima importazione). È
-un'istantanea: ricaricala dopo aver speso standing. Il file viene **trovato da solo** in `%LOCALAPPDATA%\AlecaFrame` (o `%APPDATA%\AlecaFrame`): non serve importarlo, e il tuo nome in gioco viene preso dal `lastUsername.txt` di AlecaFrame (un nome scritto da te non viene mai sovrascritto). Il file viene **riletto da solo** quando cambia (controllo ogni 10 s, impostazione *Controllo file AlecaFrame*, 0 = spento; serve il riavvio). AlecaFrame riscrive il file ogni volta che entri o esci da una missione, quindi standing e inventario si aggiornano negli stessi momenti (solo con AlecaFrame in esecuzione). La colonna *Rimasto oggi* è lo standing che puoi ancora guadagnare oggi (limite giornaliero).
-Il file contiene lo standing *totale*; il programma sottrae l'inizio del tuo rank attuale, così i numeri coincidono con il gioco (es. 68 195 / 132 000). Scrivi i valori come li mostra il gioco.
-Lo standing negativo indica la fazione opposta (ne puoi comprare 0).
+Standing e rank per sindacato e grado di maestria, **letti da `lastData.dat`** (riletto quando cambia, impostazione
+*Controllo file AlecaFrame*, ogni 10 s). AlecaFrame riscrive il file quando entri o esci da una missione, quindi i numeri
+si aggiornano in quei momenti. Il file contiene lo standing *totale*; il programma sottrae l'inizio del rank attuale, così
+i numeri coincidono con il gioco. *Rimasto oggi* è lo standing che puoi ancora guadagnare oggi. Puoi scrivere o correggere
+qualunque valore a mano (resta fino alla lettura successiva). Standing negativo = sei nella fazione opposta.
 
-### Mondo
-Fenditure, invasioni, sortita, cicli e inventario attuale di Baro Ki'Teer (con i prezzi in platino se noti),
-dal mirror della community `api.warframestat.us`. Si aggiorna mentre la scheda è aperta (impostazione *Aggiornamento mondo*).
-
-*Non inclusi:* inventario/foundry completo (esiste solo il JSON dell'app companion: usa l'importazione dell'Inventario), standing giornaliero rimasto, tabelle drop, lettura di EE.log.
+### Mondo, Console
+**Mondo**: fessure, invasioni, sortie, cicli e l'inventario attuale di Baro con i prezzi in platino (si aggiorna mentre
+la scheda è aperta, impostazione *Aggiornamento mondo*). **Console**: cosa gira in background e ogni errore.
 
 ### Impostazioni
-Tutte le impostazioni del programma, raggruppate (generali, tasti, rilevamento, dati, aspetto,
-prestazioni, consigli). **Salva** le applica e le scrive in `config.json`; **Salva e riavvia** riavvia anche
-il programma. Quelle con ⟳ (lingua, tasti, OCR, parti attivo, soglia nomi) richiedono il riavvio; le altre
-valgono subito. **Ripristina predefiniti** carica i valori di default (premi Salva per applicarli).
+Una sotto-scheda per categoria. **Salva** applica e memorizza in `config.json`; **Salva e riavvia** riavvia anche il
+programma; le impostazioni segnate ⟳ (lingua, tasti, OCR…) richiedono un riavvio. **Ripristina predefiniti** carica i
+valori predefiniti (premi Salva per applicarli). **Tema e carattere**: temi colore ispirati a fazioni, alleati e nemici di
+Warframe (più *Classico*), ognuno con il suo motivo di sfondo, un altro motivo, una tua immagine o niente; famiglia e
+dimensione del carattere. Anteprima immediata, mantenuta solo quando premi Salva. Gli overlay in gioco tengono i loro
+colori.
 
-### Impostazioni, temi e caratteri
+## Fonti dei dati
+| Cosa | Da dove |
+|---|---|
+| Prezzi, volumi, catalogo, ordini di vendita, annunci di riven | [warframe.market](https://warframe.market) (API v1 e v2, max 3 richieste/s) |
+| Il tuo standing, inventario, loadout, acquisti, sfide | `lastData.dat` / `deltas.dat` di AlecaFrame sul tuo PC |
+| Vendor, costi in standing, nomi, offerte settimanali, nomi delle sfide | dati pubblici del gioco, inclusi (`build_*.py`) |
+| Immagini (build, logo dei sindacati), lista di Baro | [wiki.warframe.com](https://wiki.warframe.com) |
+| Stato del mondo (fessure, cicli, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
+| Nightwave e Calendario 1999 | world state pubblico di DE (`content.warframe.com`), ogni 10 min |
+| Tier / calendario degli Arbitrati | [arbi.guide](https://arbi.guide) / browse.wf |
+| Aggiornamenti | release GitHub di questo repository |
 
-Le Impostazioni hanno una sotto-scheda per categoria. **Tema e carattere** offre temi di colori ispirati alle fazioni di Warframe, alleate (Tenno, Ostron, Entrati, Steel Meridian, Red Veil, New Loka) e nemiche (Grineer, Corpus, Infested, Orokin, Sentient, Narmer), più il *Classic* originale, oltre a famiglia e dimensione del carattere. La scelta si vede subito in anteprima in tutte le finestre e resta solo se premi Salva (uscendo dalla scheda torna l'aspetto salvato). L'overlay in gioco mantiene i suoi colori. Tutti i temi sono scuri.
+Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
 ## Aggiornamenti (versione attuale 0.3.1)
-
-Vedi [CHANGELOG.it.md](CHANGELOG.it.md) per cosa cambia in ogni versione (dalla 0.2.1; la pagina della release mostra le stesse note).
-
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
-recente e ti chiede se vuoi installarla (*Installa ora* / *Più tardi* / *Salta questa versione*). Se la release esiste ma il suo pacchetto non è ancora pronto (costruzione ancora in corso o fallita) te lo dice. In **Impostazioni → Aggiornamenti** puoi controllare a mano e, se sei d'accordo,
-scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della stessa release, sostituisce i
-file del programma dopo la chiusura e lo riavvia. Impostazioni e dati (`%LOCALAPPDATA%\WFVendorOverlay`) non vengono toccati.
-Il passaggio di installazione scrive `update.log` nella cartella dei dati (ogni passo e gli eventuali errori di copia). Se un aggiornamento non fa nulla, quel file dice perché; come alternativa manuale chiudi il programma e decomprimi la release sopra la sua cartella. Si aggiorna da solo solo la versione Windows pacchettizzata; dai sorgenti usa `git pull`. La verifica dimostra solo che il
-download non è corrotto: ci si fida delle release del repository (l'exe non è firmato, quindi SmartScreen può avvisare).
+recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
+intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche
+controllare da **Impostazioni → Aggiornamenti**.
 
-**Pubblicare una versione** (manutentore): cambia `version.py`, fai commit, poi `git tag v0.1.1 && git push origin v0.1.1`.
-Il workflow in `.github/workflows/release.yml` costruisce il pacchetto Windows e crea la release con zip e checksum.
+L'installazione scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della release,
+sostituisce i file del programma dopo la sua chiusura e lo riavvia. I tuoi dati (`%LOCALAPPDATA%\WFVendorOverlay`) non
+vengono mai toccati. Ogni passaggio va in `update.log` nella cartella dei dati; come ripiego manuale chiudi il programma ed
+estrai la release sopra la sua cartella. Solo la versione Windows pacchettizzata si aggiorna da sola; dai sorgenti usa
+`git pull`. Il checksum dimostra solo che il download non è corrotto: si fida delle release di questo repository.
 
-## Lingua
-Inglese di default. Si cambia in Impostazioni → Generali → Lingua (English / Italiano) e si riavvia.
-Codice, commenti e README esistono in inglese; l'interfaccia è tradotta per intero.
+Cosa è cambiato in ogni versione: [CHANGELOG.it.md](CHANGELOG.it.md) (dalla 0.2.1).
 
-## Da sorgente (Windows, Python 3.12 a 64 bit)
+## File e impostazioni
+Tutto sta in `%LOCALAPPDATA%\WFVendorOverlay`:
+
+| File | Contenuto |
+|---|---|
+| `config.json` | impostazioni |
+| `prices.json`, `items_cache.json`, `baro.json` | prezzi e volumi raccolti, catalogo del mercato, lista di Baro |
+| `inventory.json`, `standing.json`, `loadouts.json` | inventario e ordini piazzati dall'app, standing, cache delle build |
+| `goals.json`, `weekly_state.json`, `worldstate_de.json` | piano di Attività, acquisti settimanali e offerte seguite, copia del world state di DE |
+| `build_plans.json`, `riven_weights.json` | piani del pianificatore, pesi riven personalizzati (facoltativo) |
+| `market_session.json` | token di sessione di warframe.market |
+| `vendors.json`, `gamenames.json` | facoltativi: sostituiscono quelli inclusi |
+| `img\`, `icons\`, `backdrop\` | immagini scaricate, logo dei sindacati, sfondi generati |
+| `overlay.log`, `riven.log`, `update.log`, `last_scan.txt` | errori, richieste del Riven flip, passaggi dell'aggiornamento, ultima lettura OCR (F8) |
+
+Chiavi principali di `config.json` (tutte sono nelle Impostazioni, con spiegazione):
+
+| chiave | significato (default) |
+|---|---|
+| `language` | `en` o `it` |
+| `key_goals` / `key_menu` / `key_scan` / `key_clear` / `key_quit` | tasti (`<f6>` `<f7>` `<f8>` `<f9>` `<f10>`) |
+| `start_active` / `auto_detect` | parte già attivo / riconosce i vendor da solo (true) |
+| `refresh_interval` | secondi tra gli aggiornamenti automatici (180) |
+| `open_max_age` | all'apertura di un vendor, aggiorna i dati più vecchi di N s (30) |
+| `show_cached_max_age` | mostra subito i dati salvati più recenti di N s (3600) |
+| `refresh_skip_age` / `refresh_confirm_over` / `baro_refresh_days` | salto in "Aggiorna elenco mostrato" (300 s) / conferma oltre N oggetti (150) / aggiornamento Baro (7 giorni) |
+| `volume_low` / `volume_high` | volume rosso fino a `low`, verde da `high` (10 / 50) |
+| `match_threshold` | soglia di somiglianza dei nomi (90) |
+| `watch_interval`, `watch_interval_moving`, `ocr_threads`, `ocr_priority`, `publish_throttle` | rilevamento e prestazioni |
+| `rec_min_volume`, `rec_min_price`, `rec_top` | filtri dei consigli |
+| `sell_price_offset` | aggiunto al prezzo di mercato quando vendi (0) |
+
+## Prestazioni
+La scansione (OCR) è la parte pesante. Per non disturbare il gioco:
+- OCR e abbinamento dei nomi girano in un **processo separato** (`ocr_worker.py`) a priorità "sotto il normale" e con
+  pochi thread (circa 1/4 dei core, da 1 a 3); overlay, tasti e rotellina restano sempre reattivi.
+- Se lo schermo non è cambiato dall'ultima scansione, il risultato viene riusato senza rifare l'OCR.
+- Mentre giochi, lo schermo viene controllato meno spesso (`watch_interval_moving`).
+- Ancora rallentamenti? `ocr_priority` = `idle`, `ocr_threads` = 1, un `watch_interval` più alto (1.0), oppure
+  `auto_detect` disattivato e scansione solo con F8.
+
+## Per sviluppatori
+**Dai sorgenti** (Windows, Python 3.12 a 64 bit):
 ```
 py -3.12 -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
 .venv\Scripts\python.exe main.py
 ```
 
-## Creare l'eseguibile
+**Costruire l'eseguibile** (i modelli OCR sono inclusi):
 ```
 powershell -ExecutionPolicy Bypass -File build.ps1            # cartella dist\WFVendorOverlay (consigliato)
 powershell -ExecutionPolicy Bypass -File build.ps1 -Console   # con console (per vedere gli errori)
 powershell -ExecutionPolicy Bypass -File build.ps1 -OneFile   # singolo .exe (avvio più lento)
 ```
-I modelli OCR sono inclusi. Se Warframe gira come amministratore, avvia l'overlay come amministratore.
 
-## File e impostazioni
-Tutto sta in `%LOCALAPPDATA%\WFVendorOverlay`:
-- `config.json` impostazioni · `prices.json` prezzi e volumi raccolti · `items_cache.json` catalogo del market ·
-  `baro.json` elenco di Baro · `inventory.json` il tuo inventario e gli ordini piazzati dal programma ·
-  `market_session.json` token di sessione di warframe.market · `vendors.json` / `gamenames.json` (facoltativi,
-  hanno la precedenza su quelli inclusi) · `overlay.log` errori (utile con l'exe) · `riven.log` richieste ed errori di Riven flip.
+**Pubblicare una versione**: cambia `version.py`, aggiungi la sezione della versione a `CHANGELOG.md` e
+`CHANGELOG.it.md`, fai il commit, poi `git tag vX.Y.Z && git push origin vX.Y.Z`. Il workflow in
+`.github/workflows/release.yml` costruisce il pacchetto Windows e crea la release (zip, checksum, note dal changelog).
 
-| chiave | significato (default) |
+**File sorgente**
+
+| Area | File |
 |---|---|
-| `language` | `en` oppure `it` |
-| `key_menu` / `key_scan` / `key_clear` / `key_quit` | tasti (`<f7>` `<f8>` `<f9>` `<f10>`) |
-| `start_active` / `auto_detect` | parte già in scansione / rileva i vendor da solo (true) |
-| `refresh_interval` | secondi tra gli aggiornamenti automatici (180) |
-| `open_max_age` | all'apertura di un vendor aggiorna i dati più vecchi di N s (30) |
-| `show_cached_max_age` | mostra subito i dati salvati più recenti di N s (3600) |
-| `refresh_skip_age` / `refresh_confirm_over` / `baro_refresh_days` | soglia di «aggiorna mostrato» (300 s) / conferma sopra N oggetti (150) / aggiornamento Baro (7 giorni) |
-| `volume_low` / `volume_high` | volume rosso fino a `low`, verde da `high` (10 / 50) |
-| `volume_offset_y` / `show_volume` | distanza dell'etichetta del volume (2 px) / mostrala |
-| `hide_zero_volume` | nasconde gli oggetti a volume zero nel listino (false) |
-| `match_threshold` | soglia di somiglianza dei nomi (90) |
-| `watch_interval`, `watch_interval_moving`, `auto_settle_polls`, `auto_motion_frac`, `auto_min_gap`, `scroll_debounce` | sensibilità del rilevamento |
-| `ocr_threads`, `ocr_width`, `ocr_mask_panel`, `ocr_priority`, `publish_throttle`, `menu_refresh_ms` | prestazioni |
-| `inv_exclude_maxed`, `sell_price_offset` | inventario: esclude mod/arcane a rank massimo / scostamento sul prezzo di vendita (0) |
-| `rec_min_volume`, `rec_min_price`, `rec_top` | filtri dei consigli |
+| Avvio, scansione, OCR | `main.py`, `scanner.py`, `ocr_worker.py`, `ocr.py`, `winrect.py`, `matcher.py`, `wheel.py`, `overlay.py` |
+| Mercato e prezzi | `market.py`, `refresher.py`, `market_auth.py`, `recommend.py`, `recommend_tab.py`, `advice.py`, `advice_dialog.py` |
+| Vendor e standing | `vendors.py`, `standing.py`, `profile_tab.py`, `weekly.py`, `weekly_tab.py` |
+| Attività | `goals.py`, `goals_overlay.py`, `quests.py` |
+| Inventario, riven, Quantframe | `inventory.py`, `inventory_tab.py`, `aleca.py`, `rivens.py`, `riven_dialog.py`, `riven_flip_tab.py`, `rivenmarket.py`, `quantframe.py`, `quantframe_dialog.py` |
+| Build | `loadouts.py`, `builds_tab.py`, `buildcards.py`, `buildcalc.py`, `planner_tab.py`, `icons.py`, `previews.py` |
+| Mondo | `world.py`, `world_tab.py`, `world_strip.py`, `arbi.py` |
+| Finestra e interfaccia | `menu.py`, `player_bar.py`, `logos.py`, `settings_tab.py`, `console_tab.py`, `logbus.py`, `theme.py`, `uiutil.py`, `i18n.py`, `config.py` |
+| Aggiornamenti | `version.py`, `updater.py`, `update_box.py` |
+| Generatori di dati | `build_vendors.py`, `build_loadouts.py`, `build_rivens.py`, `build_weekly.py`, `build_nodes.py`, `build_challenges.py`, `build_icon.py`, `prepare_models.py`, `build.ps1` |
 
-## Prestazioni
-La scansione (OCR) è la parte pesante. Per non disturbare il gioco:
-- OCR e riconoscimento dei nomi girano in un **processo separato** (`ocr_worker.py`) a priorità
-  "inferiore al normale" e con pochi thread (circa 1/4 dei core, da 1 a 3); il processo principale,
-  che gestisce overlay, tasti e rotellina, resta sempre reattivo. Una scansione dura qualche secondo
-  in più, ma senza rubare CPU al gioco.
-- Se lo schermo non è cambiato dall'ultima scansione, il risultato viene riusato senza rifare l'OCR.
-- Durante il gioco in movimento lo schermo viene controllato meno spesso (`watch_interval_moving`),
-  e l'overlay si ridisegna al massimo ogni `publish_throttle` secondi durante gli aggiornamenti.
-- Hai ancora lag? `ocr_priority` = `idle`, `ocr_threads` = 1, `watch_interval` più alto (1.0), oppure
-  `auto_detect` = `false` e scansione solo con F8.
-
-## File del codice
-`main.py` avvio · `scanner.py` scansioni, rilevamento automatico, aggiornamenti · `ocr_worker.py` processo OCR ·
-`version.py` · `updater.py` · `update_box.py` auto-aggiornamento · `ocr.py` cattura e OCR · `winrect.py` posizione della finestra del gioco · `matcher.py` riconoscimento nomi · `market.py` catalogo, prezzi, volumi, archivio JSON ·
-`vendors.py` / `build_vendors.py` / `vendors.json` catalogo dei vendor e costi in standing ·
-`menu.py` finestra del listino · `recommend.py` + `recommend_tab.py` consigli ·
-`inventory.py` + `inventory_tab.py` inventario e importazioni · `market_auth.py` accesso e ordini di vendita ·
-`settings_tab.py` impostazioni · `refresher.py` aggiornamenti in blocco · `uiutil.py` parti comuni dell'interfaccia ·
-`overlay.py` grafica · `config.py` impostazioni · `i18n.py` traduzioni ·
-`build.ps1` / `prepare_models.py` eseguibile.
-
-## Note
-- I volumi usano l'endpoint v1 di warframe.market (deprecato ma attivo); se smette di funzionare resta il prezzo.
-- Il rilevamento automatico controlla lo schermo ogni 0,6 s (poco carico, ma non nullo): aumenta
-  `watch_interval` o metti `auto_detect` a `false` se noti cali di prestazioni.
-- Prezzo a rank massimo = mediana dei 3 ordini di vendita più bassi di utenti online con quel rank;
-  se nessuno vende a quel rank mostra `–`.
-- La lista dei vendor viene dai dati pubblici del gioco: i vendor assenti (es. Varzia, onori Arbitrations)
-  non sono inclusi. Si rigenera con `python build_vendors.py` (una copia in
-  `%LOCALAPPDATA%\WFVendorOverlay\vendors.json` ha la precedenza).
-- Il tuo standing e il tuo inventario non vengono letti dal gioco: Warframe li tiene sui server di DE, non in file locali.
+## Note e limiti
+- I volumi usano l'endpoint statistiche v1 di warframe.market (deprecato ma attivo); se smette di funzionare viene
+  mostrato solo il prezzo.
+- Prezzo a rank massimo = mediana dei 3 ordini di vendita più bassi di utenti online con quel rank; `–` se nessuno vende
+  a quel rank.
+- L'elenco dei vendor viene dai dati pubblici del gioco: i vendor che mancano (es. Varzia) non sono inclusi. Si rigenera
+  con `python build_vendors.py` (una copia nella cartella dei dati ha la precedenza).
+- AlecaFrame aggiorna `lastData.dat` solo quando sincronizza (entrando o uscendo da una missione, al login): ciò che hai
+  fatto nel frattempo compare alla sync successiva. AlecaFrame segnala 0 Aya, quindi scrivili in Impostazioni > Inventario
+  (*Aya (scritti a mano)*).
+- Il completamento di Nightwave e Calendario dipende da ciò che registra il file di gioco; il Calendario è segnato per
+  giorno.
