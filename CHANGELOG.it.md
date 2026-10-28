@@ -15,6 +15,8 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 - **Niente più finestre bianche**: la barra del mondo veniva mostrata prima di essere messa nella finestra, e si apriva
   per un attimo come finestra separata (bianca); i widget tolti da un layout ora vengono nascosti prima di essere
   eliminati invece di essere staccati.
+- Nomi dei perk Incarnon: quando il wikitext della pagina richiama solo un template, viene letta la pagina renderizzata;
+  una pagina che ancora non si riesce a interpretare viene salvata nella cartella `incarnon_debug` della cartella dei dati.
 
 ## 0.3.6
 - **File di AlecaFrame letto una volta, in background**: ogni scheda controllava, decifrava e analizzava `lastData.dat`

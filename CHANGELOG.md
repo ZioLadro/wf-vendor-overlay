@@ -13,6 +13,8 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
   shown under the title.
 - **No more white windows**: the world strip was shown before being put in the window, so it opened for a moment as a
   separate (white) window; widgets taken out of a layout are now hidden before being deleted instead of being detached.
+- Incarnon perk names: when the page's wikitext only calls a template, the rendered page is read instead; a page that
+  still cannot be understood is saved in the `incarnon_debug` folder of the data folder.
 
 ## 0.3.6
 - **AlecaFrame's file read once, in the background**: every tab used to watch, decrypt and parse `lastData.dat` on its

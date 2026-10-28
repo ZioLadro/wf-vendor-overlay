@@ -110,8 +110,8 @@ def parse_tiers(wikitext: str) -> list:
                     or re.search(r"Evolution|Genesis|Challenge|Unlock", name, re.I)):
                 continue
             found.append(name)
-        if found and roman not in tiers:
-            tiers[roman] = found
+        if found and len(found) >= len(tiers.get(roman, [])):    # the fullest mention wins (the table, not the intro)
+            tiers[roman] = found[:4]
     if not tiers:
         return []
     last = max(ROMAN.index(r) for r in tiers)
@@ -124,6 +124,8 @@ def perks(page: str):
         return None
     c = _load().get(page)
     now = time.time()
+    if c and c.get("v") != PARSER and not c.get("tiers"):
+        c = None                              # failed with an older parser: try again now
     if c and now - c.get("t", 0) < (TTL if c.get("tiers") else RETRY):
         return c.get("tiers") or None
     if CFG.get("item_previews", True):
@@ -139,23 +141,57 @@ def _want(page):
     threading.Thread(target=_get, args=(page,), daemon=True, name="incarnon-wiki").start()
 
 
+BOLD = "'" * 3
+PARSER = 2              # failed cache entries made by an older parser are read again
+
+
+def html_to_marked(html: str) -> str:
+    """The rendered page as plain text, with bold text and table headers marked as bold wikitext, so parse_tiers reads it
+    like wikitext (the evolutions are usually drawn by a template or a Lua module: the page's own wikitext then holds
+    only the call, not the perks)."""
+    import html as _html
+    h = re.sub(r"(?is)<(script|style)\b.*?</\1>", "", html or "")
+    h = re.sub(r"(?is)<(b|strong|th)\b[^>]*>(.*?)</\1>",
+               lambda m: "\n" + BOLD + re.sub(r"<[^>]+>", "", m.group(2)).strip() + BOLD + "\n", h)
+    h = re.sub(r"(?i)<br\s*/?>|</(tr|p|li|div|h\d)>", "\n", h)
+    h = re.sub(r"<[^>]+>", " ", h)
+    return _html.unescape(h)
+
+
 def _get(page):
     global done_count
     from app.core import logbus
     from app.trade.market import HEADERS
-    tiers = []
+    tiers, how = [], ""
     try:
+        h = {"User-Agent": HEADERS["User-Agent"]}
         r = requests.get(WIKI_API, params={"action": "parse", "page": page, "prop": "wikitext", "format": "json",
-                                           "redirects": 1}, headers={"User-Agent": HEADERS["User-Agent"]}, timeout=15)
+                                           "redirects": 1}, headers=h, timeout=15)
         r.raise_for_status()
         wt = ((r.json().get("parse") or {}).get("wikitext") or {}).get("*") or ""
-        tiers = parse_tiers(wt)
-        logbus.add("incarnon", f"{page}: {sum(len(x) for x in tiers)} perks in {len(tiers)} tiers read from the wiki",
-                   "ok" if tiers else "warn")
+        tiers, how = parse_tiers(wt), "wikitext"
+        if not tiers:                         # the perks come from a template: read the rendered page instead
+            time.sleep(0.5)
+            r = requests.get(WIKI_API, params={"action": "parse", "page": page, "prop": "text", "format": "json",
+                                               "redirects": 1, "disablelimitreport": 1}, headers=h, timeout=20)
+            r.raise_for_status()
+            html = ((r.json().get("parse") or {}).get("text") or {}).get("*") or ""
+            marked = html_to_marked(html)
+            tiers, how = parse_tiers(marked), "page"
+            if not tiers:                     # kept so the page's layout can be looked at (and the reader fixed)
+                try:
+                    d = APP_DIR / "incarnon_debug"
+                    d.mkdir(exist_ok=True)
+                    (d / (re.sub(r"[^A-Za-z0-9]+", "_", page) + ".txt")).write_text(
+                        "=== wikitext ===\n" + wt + "\n\n=== page html ===\n" + html, encoding="utf-8")
+                except OSError:
+                    pass
+        logbus.add("incarnon", f"{page}: {sum(len(x) for x in tiers)} perks in {len(tiers)} tiers read from the wiki"
+                   + (f" ({how})" if tiers else " — page saved in the incarnon_debug folder"), "ok" if tiers else "warn")
     except Exception as e:
         logbus.error("incarnon", f"{page}: {type(e).__name__}: {e}")
     with _lock:
-        _load()[page] = {"t": time.time(), "tiers": tiers}
+        _load()[page] = {"t": time.time(), "tiers": tiers, "v": PARSER}
         try:
             CACHE_FILE.write_text(json.dumps(_cache, ensure_ascii=False), encoding="utf-8")
         except OSError:
