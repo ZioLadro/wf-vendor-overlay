@@ -40,6 +40,8 @@ Sotto la barra del giocatore, la **barra del mondo** mostra le fessure Omnia Ste
 
 **Piano standing** (in gioco, F6): una finestra sempre in primo piano, spostabile e ridimensionabile, con gli acquisti suggeriti dai Consigli, lo standing che manca e come guadagnarlo; segue lastData.dat e toglie un oggetto solo quando il file di gioco mostra che l'hai comprato. ⚙ per opacità, dimensione del testo e cosa elencare.
 
+La scheda **Settimanali** elenca le offerte dei vendor con un limite di acquisto (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…) con quanto hai comprato in questo periodo e quando si azzera; l'acquisto viene letto da lastData.dat e abbinato all'offerta confrontando l'inventario con la sync precedente (ti viene chiesto quando è ambiguo). Le offerte seguite compaiono anche nel piano standing.
+
 Il **listino prezzi** e i **consigli** condividono la prima scheda (*Prezzi e consigli*): il listino sopra, i consigli sotto; trascina il divisore per cambiarne le altezze (viene ricordato).
 
 ### Listino prezzi

@@ -1,7 +1,7 @@
 """Settings tab: edits config.json from inside the program."""
 import re
 
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QCheckBox, QComboBox, QDoubleSpinBox, QFontComboBox, QFormLayout, QGroupBox, QHBoxLayout, QLabel, QLineEdit,
@@ -46,6 +46,9 @@ GROUPS = [
         ("key_quit", "text", None, True),
         ("key_goals", "text", None, True),
         ("goals_click_only_cursor", "bool", None, False),
+        ("goals_track_interact", "bool", None, False),
+        ("goals_weekly", "bool", None, False),
+        ("goals_untracked", "activities", None, False),
     ]),
     ("detection", [
         ("watch_interval", "float", (0.1, 10, 2), False),
@@ -211,6 +214,12 @@ class SettingsTab(QWidget):
 
     @staticmethod
     def _make(kind, opt):
+        if kind == "activities":                      # a button opening the list of the standing plan's activities
+            w = QPushButton(t("set.goals_untracked.button"))
+            w.value = []
+            w.clicked.connect(lambda _c=False, b=w: SettingsTab._edit_activities(b))
+            w.setMaximumWidth(260)
+            return w
         if kind == "bool":
             return QCheckBox()
         if kind == "int":
@@ -262,6 +271,10 @@ class SettingsTab(QWidget):
     # ---------- values <-> widgets ----------
     def _set(self, key, value):
         w, kind, _ = self.widgets[key]
+        if kind == "activities":
+            w.value = list(value or [])
+            w.setText(t("set.goals_untracked.button") + (f" ({len(w.value)} ✘)" if w.value else ""))
+            return
         if kind == "bool":
             w.setChecked(bool(value))
         elif kind in ("int", "float"):
@@ -273,8 +286,56 @@ class SettingsTab(QWidget):
         else:
             w.setText(str(value))
 
+    @staticmethod
+    def _edit_activities(button):
+        """Which activities the standing plan shows, syndicate by syndicate (unticked = left out)."""
+        from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QTreeWidget, QTreeWidgetItem
+        import goals as G
+        from standing import syndicate_name
+        dlg = QDialog(button.window())
+        dlg.setWindowTitle(t("set.goals_untracked"))
+        dlg.resize(520, 520)
+        tree = QTreeWidget()
+        tree.setHeaderHidden(True)
+        off = set(button.value or [])
+        lang = "it" if str(CFG.get("language", "en")).startswith("it") else "en"
+        tags = list(G.RELAY) + [k for k in G.ACTIVITIES[lang] if not k.startswith("_")]
+        for tag in tags:
+            name = syndicate_name(tag)
+            top = QTreeWidgetItem([name])
+            top.setFlags(top.flags() | Qt.ItemFlag.ItemIsUserCheckable | Qt.ItemFlag.ItemIsAutoTristate)
+            for n, a in enumerate(G.activities(tag, name)):
+                ch = QTreeWidgetItem([a])
+                ch.setFlags(ch.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                ch.setData(0, Qt.ItemDataRole.UserRole, f"{tag}|{n}")
+                ch.setCheckState(0, Qt.CheckState.Unchecked if (f"{tag}|{n}" in off or f"{tag}|*" in off)
+                                 else Qt.CheckState.Checked)
+                top.addChild(ch)
+            tree.addTopLevelItem(top)
+        bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+        bb.accepted.connect(dlg.accept)
+        bb.rejected.connect(dlg.reject)
+        hint = QLabel(t("set.goals_untracked.tip"))
+        hint.setWordWrap(True)
+        lay = QVBoxLayout(dlg)
+        lay.addWidget(hint)
+        lay.addWidget(tree, 1)
+        lay.addWidget(bb)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            out = []
+            for i in range(tree.topLevelItemCount()):
+                top = tree.topLevelItem(i)
+                for j in range(top.childCount()):
+                    ch = top.child(j)
+                    if ch.checkState(0) != Qt.CheckState.Checked:
+                        out.append(ch.data(0, Qt.ItemDataRole.UserRole))
+            button.value = out
+            button.setText(t("set.goals_untracked.button") + (f" ({len(out)} ✘)" if out else ""))
+
     def _get(self, key):
         w, kind, _ = self.widgets[key]
+        if kind == "activities":
+            return list(w.value or [])
         if kind == "bool":
             return w.isChecked()
         if kind == "int":

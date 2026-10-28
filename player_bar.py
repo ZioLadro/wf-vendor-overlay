@@ -154,8 +154,10 @@ class PlayerBar(QFrame):
                              + (" " + t("bar.trades.stale") if trades_stale(s.synced) else ""))
         while self.grid.count():
             it = self.grid.takeAt(0)
-            if it.widget():
-                it.widget().deleteLater()
+            w = it.widget()
+            if w:
+                w.setParent(None)                    # off the window now (deleteLater alone left it drawn for a moment)
+                w.deleteLater()
         shown = [tg for tg in self._tags() if not (CFG["hide_negative_ranks"] and (s.get(tg) or {}).get("rank") is not None
                                                    and s.get(tg)["rank"] < 0)]
         for i, tag in enumerate(shown):

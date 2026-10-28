@@ -271,6 +271,8 @@ class PriceList(QWidget):
         self.world_strip = WorldStrip()
         from console_tab import ConsoleTab
         self.console = ConsoleTab()
+        from weekly_tab import WeeklyTab
+        self.weekly = WeeklyTab(self.inventory)
         self.tabs = QTabWidget()
         # price list and recommendations share one tab: the list on top, the recommendations below (splitter remembered)
         self.market_tab = QSplitter(Qt.Orientation.Vertical)
@@ -285,6 +287,7 @@ class PriceList(QWidget):
         self.tabs.addTab(self.market_tab, t("tab.market"))
         self.tabs.addTab(self.inv_tab, t("tab.inventory"))
         self.tabs.addTab(self.builds, t("tab.builds"))
+        self.tabs.addTab(self.weekly, t("tab.weekly"))
         self.tabs.addTab(self.riven_flip, t("tab.rflip"))
         self.tabs.addTab(self.profile, t("tab.profile"))
         self.tabs.addTab(self.world, t("tab.world"))
@@ -328,6 +331,8 @@ class PriceList(QWidget):
             self.recommend.refresh(force=force)
         elif w is self.inv_tab:
             self.inv_tab.refresh(force=force)
+        elif w is self.weekly:
+            self.weekly.refresh(force=force)
         elif w is self.builds:
             self.builds.refresh(force=force)
         elif w is self.riven_flip:

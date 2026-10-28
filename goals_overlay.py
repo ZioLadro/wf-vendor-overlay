@@ -62,6 +62,12 @@ from i18n import t
 from uiutil import market_url, thousands
 
 
+def _left(seconds) -> str:
+    s = max(0, int(seconds))
+    d, h, m = s // 86400, s % 86400 // 3600, s % 3600 // 60
+    return f"{d}d {h}h" if d else (f"{h}h {m:02d}m" if h else f"{m}m")
+
+
 def _n(v) -> str:
     return "–" if v is None else thousands(v)
 
@@ -269,12 +275,16 @@ class GoalsOverlay(QWidget):
         choice(t("goals.opt.items"), "goals_items", [3, 5, 8, 12, 20], str)
         for key, label in (("goals_per_vendor", "goals.opt.pervendor"), ("goals_activities", "goals.opt.activities"),
                            ("goals_only_short", "goals.opt.onlyshort"),
-                           ("goals_click_only_cursor", "goals.opt.cursor")):
+                           ("goals_click_only_cursor", "goals.opt.cursor"), ("goals_weekly", "goals.opt.weekly")):
             a = QAction(t(label), m, checkable=True)
             a.setChecked(bool(CFG.get(key)))
             a.triggered.connect(lambda c, k=key: self._set(k, bool(c)))
             m.addAction(a)
         m.addSeparator()
+        tr = QAction(t("goals.opt.trackall"), m)
+        tr.setEnabled(bool(CFG.get("goals_untracked")))
+        tr.triggered.connect(lambda: self._set_untracked([]))
+        m.addAction(tr)
         a = QAction(t("goals.opt.reset"), m)
         a.triggered.connect(lambda: (self.plan.reset(), self.refresh(force=True)))
         m.addAction(a)
@@ -349,7 +359,9 @@ class GoalsOverlay(QWidget):
 
     def refresh(self, force=False):
         """Rebuilt when the game file was read again (standing, inventory), the prices changed, or every minute."""
-        sig = (self.store.version, self.inv.imported, len(self.inv.items), int(time.time() // 60))
+        import weekly as WK
+        sig = (self.store.version, self.inv.imported, len(self.inv.items), int(time.time() // 60), WK.get().version,
+               repr(CFG.get("goals_untracked")))
         if not force and sig == self._sig:
             return
         self._sig = sig
@@ -362,6 +374,7 @@ class GoalsOverlay(QWidget):
         for c in data["confirmed"]:
             self.status.setText(t("goals.confirmed", name=c["name"]))
         shown = repr((data["groups"], [d["name"] for d in data["done"][-3:]], CFG.get("goals_activities"),
+                      WK.get().version, CFG.get("goals_untracked"), CFG.get("goals_weekly"), int(time.time() // 60),
                       CFG.get("goals_only_short")))
         if shown == self._shown_sig and not force:
             return
@@ -391,7 +404,9 @@ class GoalsOverlay(QWidget):
             ready = any(it.get("can") for it in g["items"])
             icon = "?" if ready else "!"
             self.rows.addSpacing(6)
-            self.rows.addWidget(self._label(f"{icon}  {g['name']}", "quest"))
+            title = self._label(f"{icon}  {g['name']}", "quest")
+            self._menu_on(title, lambda pos, w=title, g=g: self._quest_menu(w, pos, g))
+            self.rows.addWidget(title)
             sub = []
             if g.get("rank") is not None:
                 sub.append(t("goals.q.rank", r=g["rank"]))
@@ -411,8 +426,16 @@ class GoalsOverlay(QWidget):
                         f"   - {t('goals.q.earn', n=_n(best['need']))}: {_n(have)}/{_n(have + best['need'])}"
                         + (f"  ({when})" if when else ""), "obj"))
             if CFG.get("goals_activities", True) and g["activities"]:
-                for a in g["activities"]:
-                    self.rows.addWidget(self._label("      ◦ " + a, "act"))
+                untracked = set(CFG.get("goals_untracked") or [])
+                for n, a in enumerate(g["activities"]):
+                    key = f"{g['tag']}|{n}"
+                    if key in untracked or f"{g['tag']}|*" in untracked:
+                        continue
+                    lab = self._label("      ◦ " + a, "act")
+                    self._menu_on(lab, lambda pos, w=lab, k=key: self._activity_menu(w, pos, k))
+                    self.rows.addWidget(lab)
+        if CFG.get("goals_weekly", True):
+            self._draw_weekly()
         recent = [d for d in data["done"] if time.time() - d.get("t", 0) < 86400][-3:]
         if recent:
             self.rows.addSpacing(6)
@@ -452,6 +475,88 @@ class GoalsOverlay(QWidget):
             w.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             w.customContextMenuRequested.connect(lambda pos, w=w, i=it: self._item_menu(w, pos, i))
         return row
+
+    # ---------- weekly offers ----------
+    def _draw_weekly(self):
+        """The weekly offers you follow (Weekly tab), like a weekly quest: what is left to buy and when it resets, plus the
+        purchases to identify (click one to say which offer it was)."""
+        import weekly as WK
+        w = WK.get()
+        now = time.time()
+        tracked = [o for o in w.offers(False) if o["tracked"]]
+        unknown = w.unknown()
+        if not tracked and not unknown:
+            return
+        self.rows.addSpacing(6)
+        reset = WK.next_reset(now)
+        self.rows.addWidget(self._label("⟳  " + t("goals.weekly"), "quest"))
+        self.rows.addWidget(self._label("   " + t("goals.weekly.sub", left=_left(reset - now)), "sub"))
+        for o in sorted(tracked, key=lambda o: (o["bought"] >= o["limit"], o["vendor_name"], o["name"])):
+            qty = f" ×{thousands(o['qty'])}" if o["qty"] > 1 else ""
+            done = o["bought"] >= o["limit"]
+            lab = self._label(f"   - {o['vendor_name']}: {o['name']}{qty} ({o['bought']}/{o['limit']})", "ready" if done else "obj")
+            lab.setToolTip(t("goals.weekly.tip", cost=", ".join(f"{thousands(n)} {c}" for n, c in o["cost"]) or "–"))
+            self._menu_on(lab, lambda pos, wd=lab, o=o: self._weekly_menu(wd, pos, o))
+            self.rows.addWidget(lab)
+        for u in unknown:
+            lab = self._label("   ? " + t("goals.weekly.unknown", vendor=u["vendor_name"], n=u["n"]), "wait")
+            lab.setToolTip(t("goals.weekly.unknown.tip", region=w.region or "–"))
+            lab.setCursor(Qt.CursorShape.PointingHandCursor)
+            self._menu_on(lab, lambda pos, wd=lab, u=u: self._identify_menu(wd, pos, u))
+            lab.mousePressEvent = lambda e, wd=lab, u=u: self._identify_menu(wd, e.position().toPoint(), u)
+            self.rows.addWidget(lab)
+
+    def _weekly_menu(self, w, pos, o):
+        import weekly as WK
+        m = QMenu(self)
+        a = m.addAction(t("goals.weekly.untrack"))
+        a.triggered.connect(lambda: (WK.get().track(o["vendor"], o["id"], False), self.refresh(force=True)))
+        m.exec(w.mapToGlobal(pos))
+
+    def _identify_menu(self, w, pos, u):
+        """Which offer was it? The ones whose item went up in your inventory come first (★)."""
+        import weekly as WK
+        m = QMenu(self)
+        m.addSection(t("goals.weekly.which", vendor=u["vendor_name"]))
+        for i in u["items"]:
+            star = "★ " if i["id"] in u["candidates"] else ""
+            qty = f" ×{thousands(i['qty'])}" if i["qty"] > 1 else ""
+            a = m.addAction(star + i["name"] + qty)
+            a.triggered.connect(lambda _c=False, s=i["id"]: (WK.get().identify(u["key"], s), self.refresh(force=True)))
+        m.addSeparator()
+        sk = m.addAction(t("weekly.skip"))
+        sk.triggered.connect(lambda: (WK.get().identify(u["key"], WK.SKIP), self.refresh(force=True)))
+        m.exec(w.mapToGlobal(pos))
+
+    # ---------- tracking the activities ----------
+    def _menu_on(self, w, handler):
+        """Right-click menu on a line, when tracking from the overlay is allowed (Settings)."""
+        if not CFG.get("goals_track_interact", True):
+            return
+        w.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        w.customContextMenuRequested.connect(handler)
+
+    def _set_untracked(self, keys):
+        save_config({"goals_untracked": sorted(set(keys))})
+        self.refresh(force=True)
+
+    def _activity_menu(self, w, pos, key):
+        m = QMenu(self)
+        a = m.addAction(t("goals.untrack.one"))
+        a.triggered.connect(lambda: self._set_untracked(list(CFG.get("goals_untracked") or []) + [key]))
+        m.exec(w.mapToGlobal(pos))
+
+    def _quest_menu(self, w, pos, g):
+        cur = list(CFG.get("goals_untracked") or [])
+        m = QMenu(self)
+        whole = f"{g['tag']}|*"
+        if whole in cur or any(k.startswith(g["tag"] + "|") for k in cur):
+            a = m.addAction(t("goals.track.all", name=g["name"]))
+            a.triggered.connect(lambda: self._set_untracked([k for k in cur if not k.startswith(g["tag"] + "|")]))
+        if whole not in cur:
+            b = m.addAction(t("goals.untrack.all", name=g["name"]))
+            b.triggered.connect(lambda: self._set_untracked(cur + [whole]))
+        m.exec(w.mapToGlobal(pos))
 
     def _item_menu(self, w, pos, it):
         m = QMenu(self)

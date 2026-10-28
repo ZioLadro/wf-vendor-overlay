@@ -18,6 +18,16 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Standing plan restyled like a quest tracker**: no heavy panel (a faint band fading to the right), gold syndicate
   titles with **?** (something to buy now) or **!** (standing still to earn), objectives in white, ready ones in green,
   how to earn the standing in grey, every text outlined to read over the game.
+- **Weekly tab: limited vendor offers** (Teshin's Steel Path offers, Ironwake, Nightcap, Archimedean, Acrithis, event
+  vendors…; from the game data, `weekly.json` made by `build_weekly.py`): cost, limit, how many you bought this period and
+  when it resets, with a filter by vendor, weekly only, tracked only. Purchases come from lastData.dat; since the file does
+  not say which offer was bought, the program compares your inventory with the previous sync (what the last mission or
+  visit gave you) and assigns it when only one offer fits; otherwise it asks you, with the offers whose item went up
+  first (★) and the last place you were in as a hint. Answers last until the limit resets.
+- **Standing plan: weekly section** with the offers you track (bought/limit, reset countdown) and the purchases to
+  identify (click to choose). **Track / untrack** from the overlay: right-click an activity, a syndicate title or a
+  weekly offer; settings *Standing plan: track/untrack with right-click*, *weekly offers*, and *tracked activities*
+  (a list to tick, syndicate by syndicate).
 - **Standing plan clickable only with the cursor**: in a mission Warframe hides the mouse cursor, and the plan then lets
   every click through to the game (its buttons disappear); it can be used again as soon as the cursor shows (menus,
   consoles, vendors). Setting *Standing plan: clickable only with the cursor* (on by default), also in ⚙.

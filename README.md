@@ -39,6 +39,8 @@ Under the player strip, the **world strip** shows the Steel Path Omnia fissures,
 
 **Standing plan** (in game, F6): an always-on-top, movable and resizable window with the purchases the Recommendations suggest, the standing each still needs and what earns it; it follows lastData.dat and removes an item only when the game file shows you bought it. ⚙ for opacity, text size and what it lists.
 
+The **Weekly** tab lists the vendor offers with a purchase limit (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…) with what you bought this period and when it resets; the purchase is read from lastData.dat and matched to the offer by comparing your inventory with the previous sync (you are asked when it is ambiguous). Tracked offers also appear in the standing plan.
+
 The **price list** and the **recommendations** share the first tab (*Prices and recommendations*): the list on top, the recommendations below; drag the divider to change their heights (remembered).
 
 ### Price list

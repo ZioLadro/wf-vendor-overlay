@@ -18,6 +18,17 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 - **Piano standing in stile quest tracker**: niente pannello pesante (una banda leggera che sfuma a destra), titoli dei
   sindacati in oro con **?** (qualcosa da comprare ora) o **!** (standing ancora da guadagnare), obiettivi in bianco,
   quelli pronti in verde, come guadagnare lo standing in grigio, ogni testo con contorno per leggerlo sopra il gioco.
+- **Scheda Settimanali: offerte limitate dei vendor** (offerte Steel Path di Teshin, Ironwake, Nightcap, Archimedean,
+  Acrithis, vendor degli eventi…; dai dati del gioco, `weekly.json` creato da `build_weekly.py`): costo, limite, quanti
+  ne hai comprati in questo periodo e quando si azzera, con filtro per vendor, solo settimanali, solo seguite. Gli
+  acquisti vengono da lastData.dat; siccome il file non dice quale offerta è stata comprata, il programma confronta
+  l'inventario con la sync precedente (quello che ti hanno dato l'ultima missione o visita) e la assegna quando una sola
+  offerta torna; altrimenti te lo chiede, con prima le offerte il cui oggetto è aumentato (★) e l'ultimo luogo in cui sei
+  stato come indizio. Le risposte valgono fino al reset del limite.
+- **Piano standing: sezione settimanale** con le offerte che segui (acquistate/limite, conto alla rovescia del reset) e
+  gli acquisti da identificare (clic per scegliere). **Segui / non seguire** dall'overlay: clic destro su un'attività,
+  sul titolo di un sindacato o su un'offerta settimanale; impostazioni *Piano standing: segui/non seguire col clic
+  destro*, *offerte settimanali* e *attività seguite* (un elenco da spuntare, sindacato per sindacato).
 - **Piano standing cliccabile solo col cursore**: in missione Warframe nasconde il cursore, e il piano lascia allora
   passare ogni clic al gioco (i suoi pulsanti spariscono); torna utilizzabile appena il cursore ricompare (menu, console,
   vendor). Impostazione *Piano standing: cliccabile solo col cursore* (attiva di default), anche in ⚙.

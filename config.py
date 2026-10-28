@@ -79,6 +79,9 @@ DEFAULTS = {
     "goals_per_vendor": True,        # at most one item per vendor (the best one)
     "goals_activities": True,        # what to do to earn the standing that is missing
     "goals_only_short": False,       # only the syndicates you still lack standing for
+    "goals_weekly": True,            # show the weekly vendor offers you track (Weekly tab)
+    "goals_track_interact": True,    # right-click lines of the plan to track / untrack them
+    "goals_untracked": [],           # activities left out of the plan: "<syndicate tag>|<n>" or "<tag>|*"
     "goals_click_only_cursor": True, # usable only while the mouse cursor is visible (in a mission clicks go to the game)
     "hide_operational_supply": True, # leave out the event syndicate (Plague Star…) while no event runs
     "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)
