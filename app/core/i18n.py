@@ -1036,8 +1036,8 @@ EN = {
     "bs.stat.total": "Total",
     "bs.stat.dps": "Damage per second (~)",
     "bs.stat.dps.tip": "Total damage × fire rate (attack speed) × multishot × average critical multiplier. No status effects, reload, ammo or conditional bonuses: for comparing builds, not the in-game number.",
-    "bs.note.wf": "Stats at rank 30 with the mods' full effect. Not counted: Arcanes, Archon Shards, Helminth, set bonuses, conditional effects.",
-    "bs.note.weapon": "Base stats from the public data, mods at their rank. Not counted: conditional effects (Galvanized stacks, Condition Overload…), Arcanes, Incarnon perks, disposition of Rivens beyond their stats.",
+    "bs.note.wf": "Stats at rank 30 with the mods' full effect and the Archon Shards (strength, duration, health, shields, armor, energy). Not counted: Arcanes, Helminth, set bonuses, conditional effects.",
+    "bs.note.weapon": "Base stats from the public data, mods at their rank, Incarnon perks of the chosen evolutions. Not counted: conditional effects (Galvanized stacks, Condition Overload…), Arcanes, disposition of Rivens beyond their stats.",
     "bs.note.other": "Bonuses of the mods at their rank (conditional effects left out).",
     "bs.locked.exilus": "Exilus slot locked: install an Exilus adapter (right-click, or the switch above)",
     "bs.locked.arcane": "Arcane slot locked: install an Arcane adapter (right-click, or the switch above)",
@@ -1115,6 +1115,12 @@ EN = {
     # ---- 0.4.0 ----
     "bs.up.on": "installed",
     "bs.up.off": "not installed",
+    # ---- 0.4.0 ----
+    "bs.perks.used": "Incarnon perks counted: {names}",
+    "bs.perks.tip": "The chosen evolution perks (Evolution II and up) are read from the wiki and counted in the stats; effects that need a condition (on headshot, after a kill…) are left out.",
+    "plan.shards": "Archon Shards:",
+    "plan.shards.tip": "Archon Shard in this slot. Ability Strength/Duration, Health, Shields, Armor and Energy count in the stats.",
+    "plan.shards.tau": "Tauforged (+50% bonus)",
 }
 
 IT = {
@@ -2138,8 +2144,8 @@ IT = {
     "bs.stat.total": "Totale",
     "bs.stat.dps": "Danno al secondo (~)",
     "bs.stat.dps.tip": "Danno totale × cadenza (velocità d'attacco) × multicolpo × moltiplicatore critico medio. Senza effetti di status, ricarica, munizioni o bonus condizionali: per confrontare build, non è il numero del gioco.",
-    "bs.note.wf": "Statistiche al rank 30 con l'effetto pieno delle mod. Non contati: Arcani, Frammenti Archon, Helminth, bonus dei set, effetti condizionali.",
-    "bs.note.weapon": "Statistiche base dai dati pubblici, mod al loro rank. Non contati: effetti condizionali (cariche Galvanized, Condition Overload…), Arcani, perk Incarnon.",
+    "bs.note.wf": "Statistiche al rank 30 con l'effetto pieno delle mod e i Frammenti Archon (potenza, durata, salute, scudi, armatura, energia). Non contati: Arcani, Helminth, bonus dei set, effetti condizionali.",
+    "bs.note.weapon": "Statistiche base dai dati pubblici, mod al loro rank, perk Incarnon delle evoluzioni scelte. Non contati: effetti condizionali (cariche Galvanized, Condition Overload…), Arcani.",
     "bs.note.other": "Bonus delle mod al loro rank (effetti condizionali esclusi).",
     "bs.locked.exilus": "Slot Exilus bloccato: installa un adattatore Exilus (clic destro, o l'interruttore qui sopra)",
     "bs.locked.arcane": "Slot Arcano bloccato: installa un adattatore Arcano (clic destro, o l'interruttore qui sopra)",
@@ -2217,6 +2223,12 @@ IT = {
     # ---- 0.4.0 ----
     "bs.up.on": "installato",
     "bs.up.off": "non installato",
+    # ---- 0.4.0 ----
+    "bs.perks.used": "Perk Incarnon contati: {names}",
+    "bs.perks.tip": "I perk scelti (Evoluzione II e successive) sono letti dalla wiki e contati nelle statistiche; gli effetti con una condizione (con colpo alla testa, dopo un'uccisione…) sono esclusi.",
+    "plan.shards": "Frammenti Archon:",
+    "plan.shards.tip": "Frammento Archon in questo slot. Potenza/Durata abilità, Salute, Scudi, Armatura ed Energia contano nelle statistiche.",
+    "plan.shards.tau": "Tauforgiato (bonus +50%)",
 }
 
 STRINGS = {"en": EN, "it": IT}

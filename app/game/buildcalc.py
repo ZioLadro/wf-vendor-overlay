@@ -159,8 +159,45 @@ def frame_base(item: str, level: int = 30) -> dict:
     return {key: (round(v) if key != "sprint" else v) for key, v in out.items()}
 
 
+# ---------- Archon Shards (Warframes) ----------
+# what a shard adds (normal; Tauforged = x1.5), from the wiki's Archon Shard page. "pct": with the mods (additive);
+# "flat": added after every other bonus (the Azure ones). Shards whose bonus is not a stat of the panel (casting speed,
+# orbs, ability damage on statused enemies…) are listed, not counted.
+SHARD_STATS = {"AbilityStrength": ("pct", "strength", 0.10), "AbilityDuration": ("pct", "duration", 0.10),
+               "HealthMax": ("flat", "health", 150), "ShieldMax": ("flat", "shield", 150),
+               "EnergyMax": ("flat", "energy", 50), "ArmourMax": ("flat", "armor", 150)}
+# the shard choices of the planner: colour -> [(key, label)]
+SHARD_CHOICES = {"RED": [("AbilityStrength", "Ability Strength +10%"), ("AbilityDuration", "Ability Duration +10%"),
+                         ("CritDamageBoost", "Melee Critical Damage +25%"), ("PrimaryStatusChance", "Primary Status Chance +25%"),
+                         ("SecondaryCritChance", "Secondary Critical Chance +25%")],
+                 "BLUE": [("HealthMax", "Health +150"), ("ShieldMax", "Shield Capacity +150"), ("EnergyMax", "Energy Max +50"),
+                          ("ArmourMax", "Armor +150"), ("HealthRegen", "Health Regeneration +5/s")],
+                 "YELLOW": [("CastingSpeed", "Casting Speed +25%"), ("ParkourVelocity", "Parkour Velocity +15%"),
+                            ("StartingEnergy", "Energy on Spawn +30%"), ("HealthOrbEffectiveness", "Health Orbs +100%"),
+                            ("EnergyOrbEffectiveness", "Energy Orbs +50%")],
+                 "GREEN": [("ToxinDamage", "Toxin Status Damage +30%"), ("CorrosiveStack", "Max Corrosion Stacks +2")],
+                 "PURPLE": [("ElectricDamage", "Primary Electricity Damage +30%"), ("CritDamageBoostViolet", "Melee Critical Damage +25%")],
+                 "ORANGE": [("BlastHealth", "Health per Blast kill +1")]}
+
+
+def shard_bonus(shards, shield=True, energy=True) -> tuple:
+    """({stat: percentage to add with the mods}, {stat: flat amount added at the end}) of a Warframe's Archon Shards.
+    shield / energy False: the Warframe has no shields (Inaros, Nidus, Kullervo) / no energy (Hildryn, Lavos)."""
+    pct, flat = {}, {}
+    for s in shards or []:
+        spec = SHARD_STATS.get(str(s.get("key") or ""))
+        if not spec:
+            continue
+        how, stat, v = spec
+        if (stat == "shield" and not shield) or (stat == "energy" and not energy):
+            continue
+        v *= 1.5 if s.get("tauforged") else 1.0
+        (pct if how == "pct" else flat)[stat] = (pct if how == "pct" else flat).get(stat, 0) + v
+    return pct, flat
+
+
 def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor: bool = True, level: int = 30,
-             locked: dict | None = None) -> dict:
+             locked: dict | None = None, shards=None) -> dict:
     """mods: per slot (name, rank or None) or None. Returns {"slots": [{"drain","state","pol","mpol"}], "total", "used", "free",
     "stats": {...} (Warframes only), "bonus": {label: %} and "elements": [(element, fraction)] in slot order (weapons)}.
     locked: {"exilus": True} when the Exilus slot has no adapter (its mod counts for nothing)."""
@@ -217,11 +254,16 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
     if fr:
         s = res["stats"]
         base = frame_base(item, level)
+        spct, sflat = shard_bonus(shards, shield=bool(fr[1]), energy=item not in ("Hildryn", "Hildryn Prime", "Lavos", "Lavos Prime"))
+        for k, v in spct.items():
+            sums[k] += v
         cut = lambda v, d=0: math.floor(v * 10 ** d + 1e-6) / 10 ** d   # the game cuts decimals off (655.5 -> 655)
         s["health"] = int(cut(base["health"] * (1 + sums["health"])))
         s["shield"] = int(cut(base["shield"] * (1 + sums["shield"])))
         s["armor"] = int(cut(base["armor"] * (1 + sums["armor"])))
         s["energy"] = int(cut(base["energy"] * (1 + sums["energy"])))
+        for k, v in sflat.items():                   # Azure shards: added after every other bonus
+            s[k] += int(v)
         s["sprint"] = cut(fr[4] * (1 + sums["sprint"]), 2)
         s["duration"] = cut(max(12.5, 100 * (1 + sums["duration"])))
         s["efficiency"] = cut(min(175.0, max(25.0, 100 * (1 + sums["efficiency"]))))
@@ -281,14 +323,32 @@ def combine(order: list, innate: dict) -> dict:
 
 
 def weapon_stats(kind: str, item: str, bonus: dict, elements: list, valence: dict | None = None,
-                 flat: dict | None = None) -> dict | None:
+                 flat: dict | None = None, perks: dict | None = None) -> dict | None:
     """The weapon's stats with the build: {"rows": [(key, base, modded)], "damage": [(element, base, modded)], "total":
     (base, modded), "dps": (base, modded)} or None without base stats. bonus: {label: %} (evaluate()["bonus"]);
     elements: evaluate()["elements"]; valence: {"element", "pct"} for Kuva / Tenet / Coda weapons.
-    Not counted: conditional effects (Galvanized stacks, Condition Overload…), Arcanes, Incarnon perks, ammo, falloff."""
+    perks: the chosen Incarnon perks' stats (incarnon.bonuses): base damage, critical / status chance, multishot… added
+    to the weapon's own (the "base" column then includes them), percentages added like a mod's.
+    Not counted: conditional effects (Galvanized stacks, Condition Overload…), Arcanes, the Incarnon form, ammo, falloff."""
     ws = LO.data().get("wstats", {}).get(item)
     if not ws:
         return None
+    if perks:
+        ws = dict(ws)
+        dmg0 = dict(ws.get("dmg") or {})
+        t0 = sum(dmg0.values())
+        if perks.get("damage") and t0:                 # "+10 Damage": the base damage, spread over its types
+            k = (t0 + perks["damage"]) / t0
+            ws["dmg"] = {e: v * k for e, v in dmg0.items()}
+        for key, src in (("cc", "cc"), ("sc", "sc"), ("cd", "cd"), ("ms", "ms"), ("mag", "mag"), ("rng", "range")):
+            if perks.get(src) and ws.get(key) is not None:
+                ws[key] = ws[key] + perks[src]
+        if ws.get("fr") is not None and (perks.get("fr") or perks.get("as")):
+            ws["fr"] = ws["fr"] + (perks.get("fr") or 0) + (perks.get("as") or 0)
+        if perks.get("pct"):
+            bonus = dict(bonus)
+            for lab, v in perks["pct"].items():
+                bonus[lab] = bonus.get(lab, 0) + v
     b = lambda *labels: sum(bonus.get(lab, 0) for lab in labels) / 100
     melee = kind in ("melee", "archmelee") or "rng" in ws
     base = {k.title() if k != "true" else "True": float(v) for k, v in (ws.get("dmg") or {}).items()}
@@ -348,7 +408,7 @@ def weapon_stats(kind: str, item: str, bonus: dict, elements: list, valence: dic
     return {"rows": rows, "crit": crit,
             "damage": [(el, base_dmg.get(el, 0), dmg.get(el, 0)) for el in names if base_dmg.get(el) or dmg.get(el)],
             "total": (total0, total), "dps": (dps(total0, rate0, ms0, cc0, cd0), dps(total, rate, ms, cc, cd)),
-            "melee": melee}
+            "melee": melee, "perks": list((perks or {}).get("used") or [])}
 
 
 def forma_count(kind: str, item: str, roles: list, forma: dict) -> int:

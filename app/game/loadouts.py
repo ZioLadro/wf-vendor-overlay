@@ -83,9 +83,10 @@ def shard(entry: dict) -> dict:
     base = color.replace("ACC_", "").replace("_MYTHIC", "")
     upgrade = str(entry.get("UpgradeType", "")).rsplit("/", 1)[-1]
     key = upgrade.replace("ArchonCrystalUpgrade", "").replace("Mythic", "")
+    target = (re.match(r"^(Warframe|Melee|Primary|Secondary)", key) or [""])[0]
     key = re.sub(r"^(Warframe|Melee|Primary|Secondary)", "", key)
     return {"color": base, "color_name": SHARD_COLORS.get(base, base.title()), "tauforged": color.endswith("_MYTHIC"),
-            "effect": SHARD_EFFECT.get(key) or _words(key) or upgrade}
+            "effect": SHARD_EFFECT.get(key) or _words(key) or upgrade, "key": key, "target": target}
 
 
 def ability_name(path: str) -> str:
@@ -218,11 +219,13 @@ def read(inv: dict, market=None) -> list:
                 mods = [((s["name"], s["rank"], s["riven"]) if s.get("riven") and not s["riven"].get("unrevealed") else (s["name"], s["rank"]))
                         if s["name"] else None for s in slots]
                 pols = BC.fitted_polarities(kind, item_name, roles, item.get("Polarity"), mods)
-                calc = BC.evaluate(kind, item_name, roles, mods, pols, reactor, level)
+                calc = BC.evaluate(kind, item_name, roles, mods, pols, reactor, level,
+                                       shards=shards if kind == "warframe" else None)
                 if not reactor and "Features" not in item and calc["free"] < 0:
                     # older items do not say whether a Reactor / Catalyst is installed; a build that only fits with one has it
                     reactor, reactor_src = True, "guess"
-                    calc = BC.evaluate(kind, item_name, roles, mods, pols, reactor, level)
+                    calc = BC.evaluate(kind, item_name, roles, mods, pols, reactor, level,
+                                       shards=shards if kind == "warframe" else None)
                 formaed = set()
                 for f in item.get("Polarity") or []:
                     try:

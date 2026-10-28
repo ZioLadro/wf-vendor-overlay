@@ -592,6 +592,12 @@ def stats_panel(m: dict) -> QFrame:
         _row(g, r + 1, t("bs.stat.dps"), ws["dps"][0], ws["dps"][1], bold=True)
         g.itemAtPosition(r + 1, 0).widget().setToolTip(t("bs.stat.dps.tip"))
         lay.addLayout(g)
+        if ws.get("perks"):                              # the Incarnon perks counted in these stats
+            pl = QLabel("✦ " + t("bs.perks.used", names=", ".join(ws["perks"])))
+            pl.setWordWrap(True)
+            pl.setStyleSheet(f"color: {ACCENT}; margin-top: 4px;")
+            pl.setToolTip(t("bs.perks.tip"))
+            lay.addWidget(pl)
     bonus = m.get("bonus") or {}
     if ws:
         shown = {"Damage", "Melee Damage", "Multishot", "Critical Chance", "Critical Damage", "Status Chance",

@@ -68,6 +68,17 @@ def prefetch_names(loadouts, presets) -> list:
     return names
 
 
+def _perk_stats(lo):
+    """The chosen Incarnon perks of a loadout's weapon, as stats (None without an installed / built-in Incarnon)."""
+    from app.game import incarnon as INC
+    inc = lo.get("incarnon")
+    if not inc or inc.get("kind") not in ("genesis", "builtin"):
+        return None
+    skill = inc.get("skill") or ""
+    return INC.bonuses(inc["page"], [int(c) if c.isdigit() else 0 for c in skill[:5]],
+                       max(int(inc.get("evo") or 0), len(skill)), lo["item"])
+
+
 class LoadoutView(QWidget):
     """The selected loadout, laid out like the game's upgrade screen (buildscreen.py), with the Archon Shards and the
     Helminth ability under it. "Simulate in the planner" opens the item in the build planner."""
@@ -183,7 +194,7 @@ class LoadoutView(QWidget):
              "level": lo.get("level", 30), "reactor": lo.get("reactor", True), "wf_stats": lo.get("stats") or {},
              "wf_base": wf_base_stats(lo["item"]) if lo["kind"] == "warframe" else {},
              "weapon": BC.weapon_stats(lo["kind"], lo["item"], lo.get("bonus") or {}, lo.get("elements") or [], ex.get("valence"),
-                             lo.get("flat"))
+                             lo.get("flat"), _perk_stats(lo))
              if lo["kind"] in weapons else None,
              "bonus": lo.get("bonus") or {}, "valence": ex.get("valence"), "unique": bool(ex.get("valence")),
              "subtitle": sub, "subtitle_tip": t("builds.pot.tip") + ("\n" + ", ".join(unlocked) if unlocked else ""),

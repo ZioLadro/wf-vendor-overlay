@@ -245,7 +245,9 @@ refreshed it).
   mod changes them (green better, red worse). Warframes: health, shields, armor, energy, sprint and the ability stats.
 - **Capacity** = rank (40 for Kuva/Tenet/Coda weapons and Necramechs) × 2 with Reactor/Catalyst + aura; innate
   polarities are placed where they save the most drain (the file does not say where they are). An approximate **stat
-  recap** counts mods only (not Arcanes, shards, Helminth, set bonuses or conditional effects).
+  recap** counts the mods, the Archon Shards (strength, duration, health, shields, armor, energy; Tauforged ×1.5) and,
+  on weapons, the chosen Incarnon perks (read from the wiki; conditional ones left out). Not counted: Arcanes, Helminth,
+  set bonuses, conditional effects.
 - **Incarnon**: whether the Genesis adapter is installed (or the Incarnon is built in, or the Genesis is on another
   variant of the weapon), the evolution tier reached (shared by all variants) and the perk chosen in each tier, from the
   game file, drawn as the **evolution path** (every tier's perks, the chosen ones lit and joined); perk names from the
@@ -275,7 +277,8 @@ refreshed it).
   **polarity (Forma)** with the item's own one, remove; adapters. The switches above the slots: rank (up to 40 for Kuva /
   Tenet / Coda), **Orokin Reactor / Catalyst**, **Exilus adapter**, **Arcane adapter** (weapons; a locked slot shows a
   🔒), **bonus element and percentage** of Kuva / Tenet / Coda weapons (Valence Fusion, 25-60 %), **Incarnon Genesis**
-  and the evolution tier (click a perk on the evolution path to choose it). **Configurations** A, B, C… (⊕ adds one;
+  and the evolution tier (click a perk on the evolution path to choose it), the Warframe's 5 **Archon Shards** (shard
+  and Tauforged per slot). **Configurations** A, B, C… (⊕ adds one;
   *Actions*: copy, rename, delete a configuration, remove every Forma, Forma every slot to its mod's polarity). The Forma
   count, capacity and stats follow every change. Every kind you fill is kept as a piece of the loadout (buttons on top
   switch between them; *+ add* adds a piece). *Save* keeps plans in `build_plans.json` (plans of older versions open as

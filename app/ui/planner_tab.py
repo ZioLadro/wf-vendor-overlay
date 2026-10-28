@@ -76,7 +76,8 @@ def new_piece(kind: str, item: str) -> dict:
     return {"item": item, "configs": [{"mods": [None] * len(roles)}], "cfg": 0, "forma": {}, "reactor": True,
             "level": LO.max_rank(item, kind), "exilus": True, "arcane": True,
             "incarnon": {"on": bool(inc and inc["kind"] == "builtin"), "evo": 5, "perks": [0, 0, 0, 0, 0]},
-            "valence": {"element": "Toxin", "pct": 60.0} if BC.valence_capable(item) else None}
+            "valence": {"element": "Toxin", "pct": 60.0} if BC.valence_capable(item) else None,
+            "shards": [None] * 5 if kind == "warframe" else []}
 
 
 def upgrade_piece(p: dict, kind: str) -> dict:
@@ -91,6 +92,16 @@ def upgrade_piece(p: dict, kind: str) -> dict:
     q["forma"] = {int(k): v for k, v in (p.get("forma") or {}).items()}
     q["reactor"], q["level"] = bool(p.get("reactor", True)), int(p.get("level", q["level"]))
     return q
+
+
+def piece_shards(p: dict, kind: str) -> list:
+    """The piece's 5 Archon Shard slots (Warframes): [{"color","key","tauforged"} or None]."""
+    if kind != "warframe":
+        return []
+    sh = list(p.get("shards") or [])[:5]
+    sh += [None] * (5 - len(sh))
+    p["shards"] = sh
+    return sh
 
 
 class PlannerView(QWidget):
@@ -325,6 +336,10 @@ class PlannerView(QWidget):
         if inc:
             p["incarnon"] = {"on": inc["kind"] in ("genesis", "builtin"), "evo": max(inc.get("evo") or 0, len(inc.get("skill") or "")) or 5,
                              "perks": [int(c) if c.isdigit() else 0 for c in (inc.get("skill") or "")[:5]] + [0] * (5 - len((inc.get("skill") or "")[:5]))}
+        if kind == "warframe":
+            sh = [{"color": x.get("color"), "key": x.get("key"), "tauforged": bool(x.get("tauforged"))}
+                  for x in (lo.get("shards") or [])[:5]]
+            p["shards"] = sh + [None] * (5 - len(sh))
         return p
 
     def _copy(self):
@@ -605,7 +620,8 @@ class PlannerView(QWidget):
         pols = BC.slot_polarities(kind, item, roles, p["forma"])
         has_ex = "exilus" in roles
         locked = {"exilus": has_ex and not p.get("exilus", True), "arcane": kind in WEAPONS and not p.get("arcane", True)}
-        calc = BC.evaluate(kind, item, roles, self.mods, pols, p.get("reactor", True), p.get("level", 30), locked=locked)
+        calc = BC.evaluate(kind, item, roles, self.mods, pols, p.get("reactor", True), p.get("level", 30), locked=locked,
+                           shards=[x for x in piece_shards(p, kind) if x] or None)
         slots = []
         for i, r in enumerate(roles):
             m = self.mods[i]
@@ -617,8 +633,13 @@ class PlannerView(QWidget):
             slots.append({"role": r, "name": name, "rank": m[1] if m else None, "max": mx, "pol": pols[i], "mpol": c["mpol"],
                           "drain": c["drain"], "state": c["state"], "riven": rv})
         valence = p.get("valence") if BC.valence_capable(item) else None
+        avail = INC.available(item) if kind in ("primary", "secondary", "melee") else None
+        pk = None
+        if avail and p["incarnon"].get("on"):          # the chosen evolution perks count in the stats
+            top = INC.tier_count(avail["kind"], avail["page"])
+            pk = INC.bonuses(avail["page"], p["incarnon"].get("perks") or [], min(int(p["incarnon"].get("evo", 5) or 5), top), item)
         weapon = BC.weapon_stats(kind, item, calc["bonus"], calc.get("elements") or [], valence,
-                                  calc.get("flat")) if kind in WEAPONS else None
+                                  calc.get("flat"), pk) if kind in WEAPONS else None
         cfgs = [{"label": c.get("name") or t("bs.cfg", c=LETTERS[n]), "active": n == p["cfg"]} for n, c in enumerate(p["configs"])]
         out = {"kind": kind, "item": item, "title": item, "rank": p.get("level"), "configs": cfgs, "slots": slots,
                "capacity": {k: calc[k] for k in ("total", "used", "free")}, "level": p.get("level"),
@@ -709,6 +730,58 @@ class PlannerView(QWidget):
             evo.setEnabled(bool(inc.get("on")))
             evo.valueChanged.connect(lambda x: (inc.__setitem__("evo", int(x)), self._draw()))
             h.addWidget(evo)
+        h.addStretch(1)
+        if kind != "warframe":
+            return w
+        outer = QWidget()
+        v = QVBoxLayout(outer)
+        v.setContentsMargins(0, 0, 0, 0)
+        v.setSpacing(4)
+        v.addWidget(w)
+        v.addWidget(self._shard_row())
+        return outer
+
+    def _shard_row(self) -> QWidget:
+        """The Warframe's 5 Archon Shards: a shard per slot and Tauforged or not (strength, duration, health, shields,
+        armor and energy count in the stats)."""
+        sh = piece_shards(self.p, self.kind)
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(6)
+        lab = QLabel(t("plan.shards"))
+        lab.setToolTip(t("plan.shards.tip"))
+        h.addWidget(lab)
+        for i in range(5):
+            cur = sh[i] or {}
+            box = QComboBox()
+            box.addItem("—", None)
+            known = set()
+            for color, rows in BC.SHARD_CHOICES.items():
+                for key, label in rows:
+                    box.addItem(f"{LO.SHARD_COLORS.get(color, color.title())}: {label}", f"{color}|{key}")
+                    known.add((color, key))
+            if cur.get("key") and (cur.get("color"), cur.get("key")) not in known:     # a shard of your loadout not listed
+                box.addItem(f"{LO.SHARD_COLORS.get(cur.get('color'), str(cur.get('color')).title())}: "
+                            f"{LO.SHARD_EFFECT.get(cur['key'], cur['key'])}", f"{cur.get('color')}|{cur['key']}")
+            box.setCurrentIndex(max(0, box.findData(f"{cur.get('color')}|{cur.get('key')}")) if cur.get("key") else 0)
+            box.setToolTip(t("plan.shards.tip"))
+            box.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+            box.setMinimumContentsLength(17)
+            tau = QCheckBox("τ")
+            tau.setToolTip(t("plan.shards.tau"))
+            tau.setChecked(bool(cur.get("tauforged")))
+            tau.setEnabled(bool(cur.get("key")))
+
+            def changed(_x=None, i=i, box=box, tau=tau):
+                d = str(box.currentData() or "")
+                c, _s, k = d.partition("|")
+                sh[i] = {"color": c, "key": k, "tauforged": tau.isChecked()} if k else None
+                self._draw()
+            box.currentIndexChanged.connect(changed)
+            tau.toggled.connect(changed)
+            h.addWidget(box)
+            h.addWidget(tau)
         h.addStretch(1)
         return w
 

@@ -187,6 +187,11 @@ def _rows_to_tiers(rows: list) -> list:
                 break
         if name and name not in tiers[cur]:
             tiers[cur].append(name)
+            # what the perk does: the rest of its row (the name's own cell without the name, then the other cells)
+            text = " \n".join(c[0] for c in rest)
+            text = text.replace(name, "", 1).strip(" :-–\n")
+            if text:
+                _EFFECTS.setdefault(name, text)
     if not tiers or sum(len(v) for v in tiers.values()) < 2:
         return []
     return [tiers.get(k, []) for k in range(1, max(tiers) + 1)]
@@ -340,13 +345,21 @@ def parse_tiers(wikitext: str) -> list:
     for i, (pos, roman) in enumerate(marks):
         end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
         chunk = text[pos:end]
-        found = []
+        found, spans = [], []
         for m in re.finditer(r"'''([^\n]{3,48}?)'''", chunk):
             name = re.sub(r"\[\[(?:[^|\]]*\|)?([^\]]*)\]\]", r"\1", m.group(1)).strip(" :.")   # [[Link|Text]] -> Text
             if (not name or "|" in name or "{" in name or "''" in name or name in found
                     or re.search(r"Evolution|Genesis|Challenge|Unlock", name, re.I)):
                 continue
             found.append(name)
+            spans.append((name, m.start(), m.end()))
+        for k, (name, _s, start) in enumerate(spans):   # what each perk does: its text, up to the next perk's name
+            body = chunk[start:spans[k + 1][1] if k + 1 < len(spans) else len(chunk)]
+            body = re.sub(r"\[\[(?:File|Image):[^\]]*\]\]", "", body, flags=re.I)
+            body = re.sub(r"\[\[(?:[^|\]]*\|)?([^\]]*)\]\]", r"\1", body)
+            body = re.sub(r"\{\{[^{}]*\}\}|<[^>]+>|'{2,}", " ", body).strip(" :-–\n*")
+            if body:
+                _EFFECTS.setdefault(name, body[:400])
         if found and len(found) >= len(tiers.get(roman, [])):    # the fullest mention wins (the table, not the intro)
             tiers[roman] = found[:4]
     if not tiers:
@@ -380,7 +393,8 @@ def _want(page):
     threading.Thread(target=_get, args=(page,), daemon=True, name="incarnon-wiki").start()
 
 
-PARSER = 4              # cache entries made by an older reader are read again (0.4.0: the evolution table itself)
+PARSER = 5              # cache entries made by an older reader are read again (0.4.6: the perks' effects too)
+_EFFECTS = {}           # perk name -> its effect text, filled while a page is read
 
 
 def html_to_marked(html: str) -> str:
@@ -397,7 +411,9 @@ def html_to_marked(html: str) -> str:
 
 
 def read_page(wikitext: str, html: str) -> tuple:
-    """(tiers, how): the evolution table from the rendered page, else from the wikitext, else the older readers."""
+    """(tiers, how): the evolution table from the rendered page, else from the wikitext, else the older readers.
+    The perks' effect texts are collected on the way (_EFFECTS)."""
+    _EFFECTS.clear()
     for how, fn, src in (("page table", parse_html_tables, html), ("wikitext table", parse_wiki_tables, wikitext),
                          ("wikitext", parse_evo_table, wikitext), ("wikitext", parse_tiers, wikitext),
                          ("page", lambda h: parse_tiers(html_to_marked(h)), html)):
@@ -443,7 +459,9 @@ def _get(page):
         if old:                               # keep what an older reading had (and try again tomorrow)
             tiers = old
     with _lock:
-        _load()[page] = {"t": time.time(), "tiers": tiers, "v": PARSER}
+        names = {n for tier in tiers for n in tier}
+        _load()[page] = {"t": time.time(), "tiers": tiers, "v": PARSER,
+                         "effects": {n: e for n, e in _EFFECTS.items() if n in names}}
         try:
             CACHE_FILE.write_text(json.dumps(_cache, ensure_ascii=False), encoding="utf-8")
         except OSError:
@@ -479,3 +497,100 @@ def perk_name(tiers, i: int, choice, t) -> str:
     if i == 0 and not names:
         return t("inc.form")                  # tier I unlocks the Incarnon form itself (no perk name on built-in pages)
     return t("inc.option", n=k + 1)
+
+
+# ---------- what the chosen perks do to the weapon's stats ----------
+# The wiki writes a perk's effect as "Increase Damage by +10 (Gorgon) / +5 (Wraith) / +5 (Prisma).", "+50% Reload
+# Speed", "Increase Critical Chance by +8% (Gorgon) / …". Lines that only work sometimes ("On Shield Break: …",
+# "While …", "… for 8s", "Stacks up to …") and the Incarnon form's own stats are left out: only what is always on
+# counts, as for mods.
+_COND = re.compile(r"^\s*(on|while|when|whenever|after|during|upon|if|every)\b|\bfor \d+(?:\.\d+)?\s*s\b|stacks? up to|"
+                   r"incarnon form|alt[- ]fire|per (?:kill|hit)", re.I)
+_VAL = re.compile(r"([+-]?\d+(?:\.\d+)?)\s*(%|x)?(?:\s*\(([^)]*)\))?")
+
+
+def effects(page: str) -> dict:
+    """{perk name: effect text} of a weapon's wiki page (read with the perk names)."""
+    return ((_load().get(page) or {}).get("effects") or {}) if page else {}
+
+
+def _value(seg: str, item: str):
+    """(number, unit) of a stat line; when the line gives one value per variant ("+10 (Gorgon) / +5 (Wraith)"), the
+    one of this weapon (Gorgon Wraith -> Wraith, Prisma Gorgon -> Prisma, else the first)."""
+    vals = [(float(m.group(1)), m.group(2) or "", (m.group(3) or "").strip()) for m in _VAL.finditer(seg)]
+    if not vals:
+        return None
+    tagged = [v for v in vals if v[2]]
+    if tagged:
+        words = set(item.lower().replace("-", " ").split())
+        for v, unit, tag in tagged:
+            if tag.lower() in words and tag.lower() != family(item).lower():
+                return v, unit
+        for v, unit, tag in tagged:
+            if tag.lower() == family(item).lower() or tag.lower() == item.lower():
+                return v, unit
+        return tagged[0][0], tagged[0][1]
+    return vals[0][0], vals[0][1]
+
+
+STAT_WORDS = (  # (words in the line, key, kind): "flat" adds to the base stat, "pct" adds like a mod
+    (r"critical (?:chance)", "cc", "points"), (r"critical (?:damage|multiplier)", "cd", "flat"),
+    (r"status (?:chance)", "sc", "points"), (r"multishot", "ms", "flat"),
+    (r"reload speed", "Reload Speed", "pct"), (r"fire rate", "fr", "flat_or_pct"), (r"attack speed", "as", "flat_or_pct"),
+    (r"magazine", "mag", "flat"), (r"\brange\b", "range", "flat"), (r"punch ?through", "pt", "flat"),
+    (r"\bdamage\b", "damage", "flat_or_pct"))
+
+
+def perk_stats(text: str, item: str) -> dict:
+    """What a perk's effect text adds, always on: {"damage": +base damage, "cc"/"sc": +points (0.08 = 8 %), "cd": +x,
+    "ms", "fr", "as", "mag", "range": +flat, "pct": {mod-like label: %}}."""
+    out = {"pct": {}}
+    for line in re.split(r"\n|(?<=[.!])\s+(?=[A-Z+])", text or ""):
+        line = line.strip(" •*-")
+        if not line or _COND.search(line):
+            continue
+        low = line.lower()
+        for words, key, kind in STAT_WORDS:
+            m = re.search(words, low)
+            if not m:
+                continue
+            if key == "damage" and re.search(r"(heat|cold|electric|toxin|blast|radiation|gas|magnetic|viral|corrosive|"
+                                             r"slash|impact|puncture|status|critical|ability|weak ?point|headshot|"
+                                             r"radial|explosion|melee damage per)\s*damage", low):
+                break                                      # an elemental / conditional damage line, not base damage
+            got = _value(line, item)
+            if not got:
+                break
+            v, unit = got
+            if kind == "points":
+                out[key] = out.get(key, 0) + v / 100
+            elif kind == "pct" or (kind == "flat_or_pct" and unit == "%"):
+                label = {"Reload Speed": "Reload Speed", "fr": "Fire Rate", "as": "Attack Speed",
+                         "damage": "Damage"}.get(key, key)
+                out["pct"][label] = out["pct"].get(label, 0) + v
+            else:
+                out[key] = out.get(key, 0) + v
+            break                                          # one stat per line
+    return out
+
+
+def bonuses(page: str, chosen: list, unlocked: int, item: str) -> dict:
+    """The chosen perks' stats added together (tiers II and up that are unlocked; tier I is the Incarnon form) and
+    the lines used: {"damage","cc",…,"pct": {…}, "used": [perk names counted]}."""
+    tiers, eff = perks(page) or [], effects(page)
+    total = {"pct": {}, "used": []}
+    for i in range(1, min(unlocked, len(tiers))):
+        names = tiers[i]
+        k = chosen[i] if i < len(chosen) else 0
+        if not names or k >= len(names) or names[k] not in eff:
+            continue
+        st = perk_stats(eff[names[k]], item)
+        if len(st) > 1 or st["pct"]:
+            total["used"].append(names[k])
+        for key, v in st.items():
+            if key == "pct":
+                for lab, p in v.items():
+                    total["pct"][lab] = total["pct"].get(lab, 0) + p
+            else:
+                total[key] = total.get(key, 0) + v
+    return total

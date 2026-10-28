@@ -11,6 +11,13 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
   rank 0); it was counted as rank / max rank (0 at rank 0, too low at every rank below max). Builds and planner.
 - **Flat values**: Primed Reach and the like (+3 range) now add to the melee range.
 - Stats are cut, not rounded, like the game shows them (655.5 -> 655).
+- **Archon Shards in the stats**: Crimson (strength, duration +10 %) with the mods, Azure (health / shields / armor
+  +150, energy +50) after every other bonus, Tauforged ×1.5; no shields for Inaros / Nidus / Kullervo, no energy for
+  Hildryn / Lavos. Builds and planner (5 shard slots under the options; *Copy from my loadout* brings yours).
+- **Incarnon perks in the weapon stats**: the chosen perks of Evolution II and up are read from the weapon's wiki page
+  (damage, crit / status chance, crit multiplier, fire rate, magazine, reload, range…, per-variant values such as
+  "(Prisma)" picked); effects with a condition (on headshot, after a kill…) are left out. The stats panel lists the
+  perks counted.
 
 ## 0.4.5
 - **Capacity fixed for slots marked `AP_UNIVERSAL`**: the game file writes it on slots without a polarity (an Exilus

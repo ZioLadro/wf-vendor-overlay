@@ -265,7 +265,9 @@ AlecaFrame l'ha aggiornato).
   armatura, energia, scatto e le statistiche delle abilità.
 - **Capacità** = rank (40 per armi Kuva/Tenet/Coda e Necramech) × 2 con Reattore/Catalizzatore + aura; le polarità
   innate sono messe dove fanno risparmiare più consumo (il file non dice dove sono). Un **riepilogo statistiche**
-  approssimato conta solo le mod (non Arcane, frammenti, Helminth, bonus dei set o effetti condizionali).
+  approssimato conta le mod, i Frammenti Archon (potenza, durata, salute, scudi, armatura, energia; Tauforgiati ×1,5)
+  e, sulle armi, i perk Incarnon scelti (letti dalla wiki; quelli condizionali esclusi). Non contati: Arcani, Helminth,
+  bonus dei set, effetti condizionali.
 - **Incarnon**: se l'adattatore Genesis è installato (o l'Incarnon è integrata, o la Genesis è su un'altra variante
   dell'arma), il livello di evoluzione raggiunto (condiviso da tutte le varianti) e il perk scelto in ogni livello, dal
   file di gioco, disegnati come **percorso di evoluzione** (i perk di ogni livello, quelli scelti illuminati e uniti);

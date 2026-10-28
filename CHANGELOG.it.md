@@ -12,6 +12,14 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
   pianificatore.
 - **Valori fissi**: Primed Reach e simili (+3 portata) ora si sommano alla portata in mischia.
 - Le statistiche vengono troncate, non arrotondate, come le mostra il gioco (655,5 -> 655).
+- **Frammenti Archon nelle statistiche**: Cremisi (potenza, durata +10 %) insieme alle mod, Azzurri (salute / scudi /
+  armatura +150, energia +50) dopo ogni altro bonus, Tauforgiati ×1,5; niente scudi per Inaros / Nidus / Kullervo,
+  niente energia per Hildryn / Lavos. Build e pianificatore (5 slot frammento sotto le opzioni; *Copia dal mio
+  equipaggiamento* porta i tuoi).
+- **Perk Incarnon nelle statistiche delle armi**: i perk scelti dall'Evoluzione II in su vengono letti dalla pagina wiki
+  dell'arma (danno, probabilità critico / stato, moltiplicatore critico, cadenza, caricatore, ricarica, portata…, con i
+  valori per variante come "(Prisma)"); gli effetti con una condizione (con colpo alla testa, dopo un'uccisione…) sono
+  esclusi. Il pannello statistiche elenca i perk contati.
 
 ## 0.4.5
 - **Capacità corretta per gli slot segnati `AP_UNIVERSAL`**: il file di gioco lo scrive sugli slot senza polarità (uno
