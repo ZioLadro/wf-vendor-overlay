@@ -617,7 +617,8 @@ class PlannerView(QWidget):
             slots.append({"role": r, "name": name, "rank": m[1] if m else None, "max": mx, "pol": pols[i], "mpol": c["mpol"],
                           "drain": c["drain"], "state": c["state"], "riven": rv})
         valence = p.get("valence") if BC.valence_capable(item) else None
-        weapon = BC.weapon_stats(kind, item, calc["bonus"], calc.get("elements") or [], valence) if kind in WEAPONS else None
+        weapon = BC.weapon_stats(kind, item, calc["bonus"], calc.get("elements") or [], valence,
+                                  calc.get("flat")) if kind in WEAPONS else None
         cfgs = [{"label": c.get("name") or t("bs.cfg", c=LETTERS[n]), "active": n == p["cfg"]} for n, c in enumerate(p["configs"])]
         out = {"kind": kind, "item": item, "title": item, "rank": p.get("level"), "configs": cfgs, "slots": slots,
                "capacity": {k: calc[k] for k in ("total", "used", "free")}, "level": p.get("level"),

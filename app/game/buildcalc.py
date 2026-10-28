@@ -134,13 +134,38 @@ def drain(info, rank, slot_pol: str):
     return (d + math.ceil(d / 4), "mismatch") if d >= 0 else (-(abs(d) - round(abs(d) * 0.25)), "mismatch")
 
 
+def rank_factor(rank, mx) -> float:
+    """How much of a mod's max-rank effect it gives at a rank: (rank + 1) / (max + 1), as in the game (Serration +15 %
+    at rank 0, +165 % at rank 10). A mod without ranks gives all of it."""
+    if not mx:
+        return 1.0
+    r = mx if rank is None else max(0, min(int(rank), int(mx)))
+    return (r + 1) / (int(mx) + 1)
+
+
+# what a Warframe gains by rank 30 over its rank-0 stats (the public data has rank 0): checked on Cyte-09 in the game,
+# 225 / 135 / 180 -> 325 / 235 / 230
+RANK_GAIN = {"health": 100, "shield": 100, "energy": 50}
+
+
+def frame_base(item: str, level: int = 30) -> dict:
+    """A Warframe's stats without mods at its rank (the gains spread evenly over the 30 ranks); {} if unknown."""
+    fr = LO.data().get("frames", {}).get(item)
+    if not fr:
+        return {}
+    k = max(0, min(30, int(level))) / 30
+    out = {"health": fr[0] + RANK_GAIN["health"] * k, "shield": fr[1] + (RANK_GAIN["shield"] * k if fr[1] else 0),
+           "armor": fr[2], "energy": fr[3] + RANK_GAIN["energy"] * k, "sprint": fr[4]}
+    return {key: (round(v) if key != "sprint" else v) for key, v in out.items()}
+
+
 def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor: bool = True, level: int = 30,
              locked: dict | None = None) -> dict:
     """mods: per slot (name, rank or None) or None. Returns {"slots": [{"drain","state","pol","mpol"}], "total", "used", "free",
     "stats": {...} (Warframes only), "bonus": {label: %} and "elements": [(element, fraction)] in slot order (weapons)}.
     locked: {"exilus": True} when the Exilus slot has no adapter (its mod counts for nothing)."""
     locked = locked or {}
-    elements = []
+    elements, flat = [], {}
     out, used, aura_bonus = [], 0, 0
     sums = {k: 0.0 for k in STAT_ORDER}
     bonus = {}                                   # weapons: label -> total percentage bonus of the mods and the Riven
@@ -166,17 +191,19 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
             aura_bonus += -dr
         else:
             used += dr
-        mx = info[2] or 1
-        rank = mx if m[1] is None else max(0, min(int(m[1]), mx))
+        f = rank_factor(m[1], info[2])
         if role == "exilus" and locked.get("exilus"):
             continue                              # an Exilus slot without its adapter: the mod does nothing
         for k, v in info[5].items():
-            if k in sums and kind == "warframe":
-                sums[k] += v * (rank / mx)
+            if k.endswith(" (flat)"):             # "+3 Range" (Primed Reach): added, not a percentage
+                lab = k[:-7]
+                flat[lab] = flat.get(lab, 0) + v * f
+            elif k in sums and kind == "warframe":
+                sums[k] += v * f
             elif kind != "warframe" and not riven:
-                bonus[k] = bonus.get(k, 0) + v * (rank / mx)
+                bonus[k] = bonus.get(k, 0) + v * f
                 if k in ELEMENTS or k in COMBINED:
-                    elements.append((k, v * (rank / mx)))
+                    elements.append((k, v * f))
         if riven:
             for a in riven.get("attributes", []):
                 lab = _plain(a.get("label", ""))
@@ -184,19 +211,22 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
                     elements.append((lab, a["value"] / 100))
     total = max(0, min(40, int(level))) * (2 if reactor else 1) + aura_bonus
     res = {"slots": out, "total": total, "used": used, "free": total - used, "stats": {}, "elements": elements,
+           "flat": {k: round(v, 2) for k, v in flat.items()},
            "bonus": {k: round(v * 100, 1) for k, v in sorted(bonus.items(), key=lambda kv: -abs(kv[1])) if abs(v) > 1e-9}}
     fr = LO.data().get("frames", {}).get(item) if kind == "warframe" else None
     if fr:
         s = res["stats"]
-        s["health"] = round(fr[0] * (1 + sums["health"]))
-        s["shield"] = round(fr[1] * (1 + sums["shield"]))
-        s["armor"] = round(fr[2] * (1 + sums["armor"]))
-        s["energy"] = round(fr[3] * (1 + sums["energy"]))
-        s["sprint"] = round(fr[4] * (1 + sums["sprint"]), 2)
-        s["duration"] = round(max(12.5, 100 * (1 + sums["duration"])), 1)
-        s["efficiency"] = round(min(175.0, max(25.0, 100 * (1 + sums["efficiency"]))), 1)
-        s["range"] = round(max(10.0, 100 * (1 + sums["range"])), 1)
-        s["strength"] = round(max(0.0, 100 * (1 + sums["strength"])), 1)
+        base = frame_base(item, level)
+        cut = lambda v, d=0: math.floor(v * 10 ** d + 1e-6) / 10 ** d   # the game cuts decimals off (655.5 -> 655)
+        s["health"] = int(cut(base["health"] * (1 + sums["health"])))
+        s["shield"] = int(cut(base["shield"] * (1 + sums["shield"])))
+        s["armor"] = int(cut(base["armor"] * (1 + sums["armor"])))
+        s["energy"] = int(cut(base["energy"] * (1 + sums["energy"])))
+        s["sprint"] = cut(fr[4] * (1 + sums["sprint"]), 2)
+        s["duration"] = cut(max(12.5, 100 * (1 + sums["duration"])))
+        s["efficiency"] = cut(min(175.0, max(25.0, 100 * (1 + sums["efficiency"]))))
+        s["range"] = cut(max(10.0, 100 * (1 + sums["range"])))
+        s["strength"] = cut(max(0.0, 100 * (1 + sums["strength"])))
     return res
 
 
@@ -250,7 +280,8 @@ def combine(order: list, innate: dict) -> dict:
     return out
 
 
-def weapon_stats(kind: str, item: str, bonus: dict, elements: list, valence: dict | None = None) -> dict | None:
+def weapon_stats(kind: str, item: str, bonus: dict, elements: list, valence: dict | None = None,
+                 flat: dict | None = None) -> dict | None:
     """The weapon's stats with the build: {"rows": [(key, base, modded)], "damage": [(element, base, modded)], "total":
     (base, modded), "dps": (base, modded)} or None without base stats. bonus: {label: %} (evaluate()["bonus"]);
     elements: evaluate()["elements"]; valence: {"element", "pct"} for Kuva / Tenet / Coda weapons.
@@ -287,7 +318,7 @@ def weapon_stats(kind: str, item: str, bonus: dict, elements: list, valence: dic
         rate = rate0 * (1 + b("Attack Speed"))
         rows.append(("attack_speed", rate0, rate))
         if ws.get("rng"):
-            rows.append(("range", ws["rng"], ws["rng"]))
+            rows.append(("range", ws["rng"], ws["rng"] + float((flat or {}).get("Range", 0))))
         if ws.get("slam"):
             rows.append(("slam", ws["slam"], ws["slam"] * mult))
         if ws.get("slide"):

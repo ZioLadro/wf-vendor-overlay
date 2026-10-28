@@ -237,7 +237,7 @@ def read(inv: dict, market=None) -> list:
                 out.append({"item": item_name, "kind": kind, "path": path, "config": LETTERS[n] if n < 8 else str(n + 1),
                             "cfg_name": cname, "owner": owner, "reactor": reactor, "level": level,
                             "capacity": ({k: calc[k] for k in ("total", "used", "free")} if kind != "exalted" else None), "stats": calc["stats"], "bonus": calc["bonus"],
-                            "elements": calc.get("elements") or [],
+                            "elements": calc.get("elements") or [], "flat": calc.get("flat") or {},
                             # what the game file says, as read (Builds: "Copy data for a capacity check")
                             "raw": {"ItemType": path, "XP": item.get("XP"), "Features": item.get("Features"),
                                     "Polarized": item.get("Polarized"), "Polarity": item.get("Polarity"),

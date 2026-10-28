@@ -3,6 +3,16 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.6
+- **Statistiche dei Warframe al rank 30**: salute, scudi ed energia partivano dai valori al rank 0 dei dati pubblici;
+  ora vengono aggiunti i guadagni dei rank (+100 salute, +100 scudi, +50 energia al rank 30, distribuiti sui rank
+  inferiori). Cyte-09 con la tua build: 325 / 235 / 150 / 655, 226 % / 45 % / 34 % / 298 %, come nel gioco.
+- **Mod sotto il rank massimo**: una mod dà (rank + 1) / (rank massimo + 1) del suo effetto, come nel gioco (Serration
+  +15 % al rank 0); era contata come rank / rank massimo (0 al rank 0, troppo poco a ogni rank sotto il massimo). Build e
+  pianificatore.
+- **Valori fissi**: Primed Reach e simili (+3 portata) ora si sommano alla portata in mischia.
+- Le statistiche vengono troncate, non arrotondate, come le mostra il gioco (655,5 -> 655).
+
 ## 0.4.5
 - **Capacità corretta per gli slot segnati `AP_UNIVERSAL`**: il file di gioco lo scrive sugli slot senza polarità (uno
   slot Exilus mai formato), ed era contato come polarità universale che dimezza il consumo di ogni mod. Universale è

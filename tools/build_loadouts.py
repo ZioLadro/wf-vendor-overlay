@@ -79,6 +79,11 @@ def wfcd(folder: Path) -> dict:
                 if hit:
                     label = re.sub(r"\s*\(.*?\)", "", hit.group(3)).strip()
                     stats[label] = round(stats.get(label, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
+                    continue
+                hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)\s+(Range)", re.sub(r"<[^>]+>", "", line).strip())
+                if hit:                                  # a flat value: Primed Reach "+3 Range" (metres)
+                    key = hit.group(3) + " (flat)"
+                    stats[key] = round(stats.get(key, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)), 4)
         mst[name] = [m.get("polarity") or "", int(m["baseDrain"]), lim, m.get("compatName") or "", kind, stats,
                      1 if m.get("isUtility") else 0]
         if levels:

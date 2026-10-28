@@ -1083,10 +1083,7 @@ class BuildScreen(QWidget):
 
 def wf_base_stats(item: str) -> dict:
     """A Warframe's stats at rank 30 without mods (for the base ▸ modded arrows)."""
-    fr = LO.data().get("frames", {}).get(item)
-    if not fr:
-        return {}
-    return {"health": fr[0], "shield": fr[1], "armor": fr[2], "energy": fr[3], "sprint": fr[4]}
+    return BC.frame_base(item, 30)
 
 
 def incarnon_model(inc_kind: str, page: str, chosen: list, unlocked: int, head: str = "", note: str = "") -> dict:

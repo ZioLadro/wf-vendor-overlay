@@ -182,7 +182,8 @@ class LoadoutView(QWidget):
              "slots": lo["slots"], "capacity": lo.get("capacity"), "capacity_none": lo.get("capacity") is None,
              "level": lo.get("level", 30), "reactor": lo.get("reactor", True), "wf_stats": lo.get("stats") or {},
              "wf_base": wf_base_stats(lo["item"]) if lo["kind"] == "warframe" else {},
-             "weapon": BC.weapon_stats(lo["kind"], lo["item"], lo.get("bonus") or {}, lo.get("elements") or [], ex.get("valence"))
+             "weapon": BC.weapon_stats(lo["kind"], lo["item"], lo.get("bonus") or {}, lo.get("elements") or [], ex.get("valence"),
+                             lo.get("flat"))
              if lo["kind"] in weapons else None,
              "bonus": lo.get("bonus") or {}, "valence": ex.get("valence"), "unique": bool(ex.get("valence")),
              "subtitle": sub, "subtitle_tip": t("builds.pot.tip") + ("\n" + ", ".join(unlocked) if unlocked else ""),
