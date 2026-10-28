@@ -5,6 +5,7 @@ It can be moved (drag the title bar), resized (corner grip), collapsed, made mor
 with a hotkey (Settings: key_goals, F6 by default). It is interactive: tick an item you bought (it stays until the game
 file confirms the purchase), right-click an item to hide it or open it on warframe.market. It is read again every time
 AlecaFrame rewrites lastData.dat. The OCR never reads its area (it would see item names in it)."""
+import sys
 import time
 
 from PyQt6.QtCore import QPoint, QRect, Qt, QTimer, QUrl
@@ -14,6 +15,48 @@ from PyQt6.QtWidgets import (
 )
 
 import goals as G
+
+
+def cursor_visible() -> bool:
+    """True when the mouse cursor is on screen. In a mission Warframe hides it (camera control), in menus, the Orbiter's
+    consoles and vendors it shows it. Off Windows (or if the check fails) the answer is always True."""
+    if sys.platform != "win32":
+        return True
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class CURSORINFO(ctypes.Structure):
+            _fields_ = [("cbSize", wintypes.DWORD), ("flags", wintypes.DWORD), ("hCursor", wintypes.HANDLE),
+                        ("ptScreenPos", wintypes.POINT)]
+        ci = CURSORINFO()
+        ci.cbSize = ctypes.sizeof(CURSORINFO)
+        if not ctypes.windll.user32.GetCursorInfo(ctypes.byref(ci)):
+            return True
+        return bool(ci.flags & 1) and bool(ci.hCursor)        # CURSOR_SHOWING, and a cursor shape at all
+    except Exception:
+        return True
+
+
+def set_click_through(widget, on: bool):
+    """Lets mouse clicks pass through the window to the game (Windows: WS_EX_TRANSPARENT on the layered window), without
+    re-creating it."""
+    if sys.platform != "win32":
+        return
+    try:
+        import ctypes
+        u = ctypes.windll.user32
+        hwnd = int(widget.winId())
+        get = getattr(u, "GetWindowLongPtrW", u.GetWindowLongW)
+        put = getattr(u, "SetWindowLongPtrW", u.SetWindowLongW)
+        get.restype = ctypes.c_ssize_t
+        put.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_ssize_t]
+        ex = get(ctypes.c_void_p(hwnd), -20)                 # GWL_EXSTYLE
+        new = (ex | 0x20 | 0x80000) if on else (ex & ~0x20)  # WS_EX_TRANSPARENT (| WS_EX_LAYERED)
+        if new != ex:
+            put(ctypes.c_void_p(hwnd), -20, new)
+    except Exception:
+        pass
 from config import CFG, save_config
 from i18n import t
 from uiutil import market_url, thousands
@@ -92,6 +135,9 @@ class GoalsOverlay(QWidget):
         self._wanted = bool(CFG.get("goals_visible", False))
         self._vendor = False
         self._restore = QTimer(self, singleShot=True, interval=1500, timeout=self._vendor_gone)
+        # clickable only while the cursor is visible (menus, consoles): in a mission clicks go through to the game
+        self._clickable = True
+        self._cursor_timer = QTimer(self, interval=250, timeout=self._check_cursor)
         self._save_timer = QTimer(self, singleShot=True, interval=600, timeout=self._save_geom)
 
     # ---------- look ----------
@@ -224,7 +270,8 @@ class GoalsOverlay(QWidget):
         choice(t("goals.opt.font"), "goals_font", [10, 11, 12, 13, 14, 16, 18], lambda v: f"{v}px")
         choice(t("goals.opt.items"), "goals_items", [3, 5, 8, 12, 20], str)
         for key, label in (("goals_per_vendor", "goals.opt.pervendor"), ("goals_activities", "goals.opt.activities"),
-                           ("goals_only_short", "goals.opt.onlyshort")):
+                           ("goals_only_short", "goals.opt.onlyshort"),
+                           ("goals_click_only_cursor", "goals.opt.cursor")):
             a = QAction(t(label), m, checkable=True)
             a.setChecked(bool(CFG.get(key)))
             a.triggered.connect(lambda c, k=key: self._set(k, bool(c)))
@@ -279,10 +326,26 @@ class GoalsOverlay(QWidget):
         super().showEvent(e)
         self.refresh(force=True)
         self._timer.start()
+        self._clickable = True
+        self._check_cursor()
+        self._cursor_timer.start()
 
     def hideEvent(self, e):
         super().hideEvent(e)
         self._timer.stop()
+        self._cursor_timer.stop()
+
+    def _check_cursor(self):
+        """In a mission (no cursor) the plan lets every click through to the game and its buttons fade; as soon as the
+        cursor comes back (menu, console, vendor) it can be used again. Setting goals_click_only_cursor."""
+        on = (not CFG.get("goals_click_only_cursor", True)) or cursor_visible()
+        if on == self._clickable:
+            return
+        self._clickable = on
+        set_click_through(self, not on)
+        for b in (self.btn_refresh, self.btn_menu, self.btn_fold, self.btn_close):
+            b.setVisible(on)                              # no buttons to aim at while they cannot be clicked
+        self.head.setCursor(Qt.CursorShape.SizeAllCursor if on else Qt.CursorShape.ArrowCursor)
 
     def screen_rect_px(self):
         """Its rectangle in physical pixels (None if hidden): the OCR must not read the item names in it."""

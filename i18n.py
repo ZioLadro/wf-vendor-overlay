@@ -801,6 +801,9 @@ EN = {
     "goals.q.ready": "- {name}: ready, {n}× ({cost})",
     "goals.q.wait": "- {name}: bought? waiting for the game file",
     "goals.q.unknown": "standing unknown (needs the AlecaFrame file)",
+    "goals.opt.cursor": "Clickable only while the cursor is visible",
+    "set.goals_click_only_cursor": "Standing plan: clickable only with the cursor",
+    "set.goals_click_only_cursor.tip": "In a mission Warframe hides the mouse cursor: the plan then lets every click through to the game. It can be used again as soon as the cursor shows (menus, consoles, vendors)",
 }
 
 IT = {
@@ -1589,6 +1592,9 @@ IT = {
     "goals.q.ready": "- {name}: pronto, {n}× ({cost})",
     "goals.q.wait": "- {name}: comprato? in attesa del file di gioco",
     "goals.q.unknown": "standing sconosciuto (serve il file di AlecaFrame)",
+    "goals.opt.cursor": "Cliccabile solo col cursore visibile",
+    "set.goals_click_only_cursor": "Piano standing: cliccabile solo col cursore",
+    "set.goals_click_only_cursor.tip": "In missione Warframe nasconde il cursore: il piano lascia allora passare ogni clic al gioco. Torna utilizzabile appena il cursore ricompare (menu, console, vendor)",
 }
 
 STRINGS = {"en": EN, "it": IT}

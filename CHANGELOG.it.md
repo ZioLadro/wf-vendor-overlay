@@ -18,6 +18,9 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 - **Piano standing in stile quest tracker**: niente pannello pesante (una banda leggera che sfuma a destra), titoli dei
   sindacati in oro con **?** (qualcosa da comprare ora) o **!** (standing ancora da guadagnare), obiettivi in bianco,
   quelli pronti in verde, come guadagnare lo standing in grigio, ogni testo con contorno per leggerlo sopra il gioco.
+- **Piano standing cliccabile solo col cursore**: in missione Warframe nasconde il cursore, e il piano lascia allora
+  passare ogni clic al gioco (i suoi pulsanti spariscono); torna utilizzabile appena il cursore ricompare (menu, console,
+  vendor). Impostazione *Piano standing: cliccabile solo col cursore* (attiva di default), anche in ⚙.
 
 ## 0.3.0
 - **Overlay piano standing** (in gioco, F6 lo mostra/nasconde; impostazione *Tasto piano standing*): una piccola

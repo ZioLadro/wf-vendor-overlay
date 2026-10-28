@@ -18,6 +18,9 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Standing plan restyled like a quest tracker**: no heavy panel (a faint band fading to the right), gold syndicate
   titles with **?** (something to buy now) or **!** (standing still to earn), objectives in white, ready ones in green,
   how to earn the standing in grey, every text outlined to read over the game.
+- **Standing plan clickable only with the cursor**: in a mission Warframe hides the mouse cursor, and the plan then lets
+  every click through to the game (its buttons disappear); it can be used again as soon as the cursor shows (menus,
+  consoles, vendors). Setting *Standing plan: clickable only with the cursor* (on by default), also in ⚙.
 
 ## 0.3.0
 - **Standing plan overlay** (in game, F6 shows/hides it; setting *Standing plan key*): a small always-on-top window

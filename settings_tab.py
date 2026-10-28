@@ -45,6 +45,7 @@ GROUPS = [
         ("key_clear", "text", None, True),
         ("key_quit", "text", None, True),
         ("key_goals", "text", None, True),
+        ("goals_click_only_cursor", "bool", None, False),
     ]),
     ("detection", [
         ("watch_interval", "float", (0.1, 10, 2), False),
