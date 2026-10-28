@@ -30,9 +30,24 @@ def main():
         m = re.fullmatch(r"RANK_(\d+)", k)
         if m and isinstance(v, dict) and v.get("DIT_AUTO"):
             ranks[int(m.group(1))] = v["DIT_AUTO"]
-    Path(a.out).write_text(json.dumps({"avatars": avatars, "mastery": {str(k): ranks[k] for k in sorted(ranks)}},
-                                      separators=(",", ":")), encoding="utf-8")
-    print(f"{len(avatars)} glyphs, {len(ranks)} mastery ranks -> {a.out}")
+    # currencies: the ones the limited vendors ask for (data/weekly.json) and the ones the player strip tracks: their game
+    # path (to count them in your inventory) and icon
+    lang = fetch("dict.en", cache)
+    want = {"pathos clamp", "riven sliver", "live heartcell", "vitus essence", "steel essence"}
+    try:
+        weekly = json.loads((Path(a.out).parent / "weekly.json").read_text(encoding="utf-8"))["vendors"]
+        want |= {n.lower() for v in weekly.values() for i in v["items"] for _q, n in (i.get("cost") or [])}
+    except Exception:
+        pass
+    currencies = {}
+    for fn in ("ExportResources", "ExportGear", "ExportFlavour"):
+        for p, e in fetch(fn, cache).items():
+            n = re.sub(r"<[^>]+>\s*", "", lang.get(e.get("name", ""), "") if isinstance(e, dict) else "").strip()
+            if n and n.lower() in want and n.lower() not in currencies and not re.search(r"\d+Pack$", p):
+                currencies[n.lower()] = {"name": n, "path": p, "icon": e.get("icon") or ""}
+    Path(a.out).write_text(json.dumps({"avatars": avatars, "mastery": {str(k): ranks[k] for k in sorted(ranks)},
+                                       "currencies": currencies}, separators=(",", ":")), encoding="utf-8")
+    print(f"{len(avatars)} glyphs, {len(ranks)} mastery ranks, {len(currencies)} currencies -> {a.out}")
 
 
 if __name__ == "__main__":

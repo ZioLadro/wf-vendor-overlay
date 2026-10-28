@@ -3,6 +3,19 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.3.9
+- **Incarnon perks read again**: the wiki's evolution table (rows *EVO1…EVO5*) is now understood, so the Builds tab
+  names the perk chosen in each tier (Torid: Incarnon Form, Final Fusillade…); pages that failed before are read again.
+- **Builds: the right weapon for each companion**: every companion showed the same weapon; now Sentinels / MOAs show
+  their robotic weapon and beasts their claws.
+- **Player strip: more currencies, with icons**, under name and MR: Pathos Clamps, Riven Slivers, Live Heartcells and
+  Vitus Essence next to Steel Essence, each with its game icon (AlecaFrame's icons folder, else browse.wf).
+- **Weekly: your currencies** for the vendors shown (Steel Essence for Teshin, Pathos Clamps for Acrithis, Riven Slivers
+  for Palladino…).
+- **Sounds**: optional sound when a vendor, riven or price scan starts (Settings → Sounds).
+- **Riven flip: Copy whisper** (right click): `/w <seller> Hi, I would like to buy <weapon> <riven> for <price>
+  platinum`, template editable in Settings.
+
 ## 0.3.8
 - **Activities: buy with all your standing**: each syndicate's standing is spent on its best items, as many copies as
   it pays for (*Buy 2× Martyr Symbiosis (20,000 standing)* with 27,000), the rest on the next item, never more copies

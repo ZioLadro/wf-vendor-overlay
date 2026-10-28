@@ -577,7 +577,15 @@ def auction_url(listing):
     return "https://warframe.market/auction/" + str(listing["id"])
 
 
+WHISPER = "/w {seller} Hi, I would like to buy {weapon} {riven} for {price} platinum"
+
+
 def whisper(row):
+    """The in-game message to the seller, from the template in Settings (riven_whisper: {seller}, {weapon}, {riven},
+    {price} are filled in)."""
     l = row["listing"]
-    return (f"/w {l['seller']} Hi! I want to buy: {row['weapon']} {l['name']} for {l['price']} platinum. "
-            f"(warframe.market)")
+    tpl = str(CFG.get("riven_whisper") or WHISPER)
+    try:
+        return tpl.format(seller=l["seller"], weapon=row["weapon"], riven=l["name"], price=l["price"])
+    except (KeyError, IndexError, ValueError):
+        return WHISPER.format(seller=l["seller"], weapon=row["weapon"], riven=l["name"], price=l["price"])

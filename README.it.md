@@ -107,8 +107,9 @@ sua area viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 In cima a ogni scheda:
 - **Barra del giocatore**: il glifo del tuo profilo e l'emblema del grado di maestria (immagini da browse.wf, scaricate
   una volta), nome (dal `lastUsername.txt` di AlecaFrame, oppure clicca per scriverlo), grado di maestria,
-  scambi rimasti (⚠ quando l'ultima sync è precedente al reset giornaliero), portafoglio (Endo, platino, ducati, Aya, Steel Essence;
-  compatti, valore esatto nel tooltip) e un badge per sindacato con rank e standing (mouse sopra: standing rimasto oggi).
+  scambi rimasti (⚠ quando l'ultima sync è precedente al reset giornaliero), portafoglio sotto nome e MR (platino, Endo,
+  ducati, Aya, Steel Essence, Pathos Clamp, Riven Sliver, Live Heartcell, Vitus Essence, ognuno con la sua icona di
+  gioco; compatti, valore esatto nel tooltip) e un badge per sindacato con rank e standing (mouse sopra: standing rimasto oggi).
   I logo dei sindacati vengono scaricati una volta dalla wiki; senza, i badge sono disegnati con i colori del sindacato.
 - **Barra del mondo**: fessure Omnia Steel Path, cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer, Prime Resurgence e
   l'**Arbitrato** attuale con il suo tier di [arbi.guide](https://arbi.guide), tutti con conto alla rovescia.
@@ -232,7 +233,8 @@ quelle più vecchie del doppio sono escluse dal prezzo equo (un prezzo che non v
 
 Le richieste di riven hanno un loro limitatore (*Richieste riven al minuto*, default 12, mai sopra 20, come chiede
 warframe.market); a un "troppe richieste" aspetta e si ferma dopo tre di fila. La scheda legge soltanto: non pubblica
-nulla. *Apri l'asta* e *Copia whisper* aiutano a contattare il venditore. Profitto e prezzo equo sono stime.
+nulla. *Apri l'asta* e *Copia whisper* (clic destro su una riga) aiutano a contattare il venditore: il whisper è
+`/w <venditore> Hi, I would like to buy <arma> <riven> for <prezzo> platinum`, modificabile in Impostazioni → Riven. Profitto e prezzo equo sono stime.
 
 ### Build
 I tuoi loadout di gioco, mostrati come nella schermata dei loadout, da `lastData.dat` (*Ricarica dal file* dopo che
@@ -279,7 +281,8 @@ Spunta *Segui* per seguire un'offerta in Attività.
 I vendor degli eventi a tempo (Jade Shadows, Duviri Murmur, Triad…) compaiono solo mentre il loro evento è in corso
 (world state di DE; *Mostra eventi finiti* li mostra comunque). **Acquistati (Attività) → Quantframe…** invia allo stock
 di Quantframe gli acquisti confermati da Attività dal file di gioco (Martyr Symbiosis dall'Entrati, Aerial Bond da
-Solaris United…) non ancora inviati (anche dal menu ⚙ di Attività).
+Solaris United…) non ancora inviati (anche dal menu ⚙ di Attività). Sopra la lista: quanto hai di ogni valuta chiesta dai vendor
+mostrati (Steel Essence, Pathos Clamp, Riven Sliver, Vosfor…).
 
 ### Profilo (una pagina delle Impostazioni)
 Standing e rank per sindacato e grado di maestria, **letti da `lastData.dat`** (riletto quando cambia, impostazione
@@ -300,7 +303,8 @@ Warframe (più *Classico*), ognuno con il suo motivo di sfondo, un altro motivo,
 dimensione del carattere. Anteprima immediata, mantenuta solo quando premi Salva. **Overlay**: tutto dei due overlay in
 gioco: dimensioni delle etichette di prezzo e volume, sfondo delle etichette, colori del prezzo e delle stelle; per
 Attività sfondo, carattere, dimensione, colori (titoli, testo, pronto, suggerimenti) e cosa elencare (anche dal suo menu
-⚙).
+⚙). **Suoni**: un suono quando parte una scansione dei vendor, delle riven o dei prezzi (il suono di notifica di
+sistema, o un tuo `.wav`).
 
 ## Fonti dei dati
 | Cosa | Da dove |
@@ -317,7 +321,7 @@ Attività sfondo, carattere, dimensione, colori (titoli, testo, pronto, suggerim
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.3.8)
+## Aggiornamenti (versione attuale 0.3.9)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

@@ -294,11 +294,16 @@ class Scanner:
                                                         float(CFG["vendor_min_share"]), header)
             self._dump_lines(manual, header, vendor)
             if vendor is None or (CFG["vendor_header_required"] and vendor not in header):
+                self._last_vendor = None
                 self.items = []
                 if manual:
                     self.bridge.status.emit(t("status.novendor"))
                 return
             hits, patches = [hits[i] for i in keep], [patches[i] for i in keep]
+            if vendor != getattr(self, "_last_vendor", None):       # a vendor screen just opened: optional sound
+                from app.core import sound
+                sound.play("vendor")
+            self._last_vendor = vendor
             self.vendor = vendor
             self.bridge.status.emit(t("status.vendor_header" if vendor in header else "status.vendor", vendor=vendor))
 

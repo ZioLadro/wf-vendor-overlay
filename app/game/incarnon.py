@@ -25,6 +25,7 @@ import requests
 from app.core.config import APP_DIR, CFG
 
 GENESIS_FLAG = 512
+BOLD = "'" * 3
 WIKI_API = "https://wiki.warframe.com/api.php"
 CACHE_FILE = APP_DIR / "incarnon_perks.json"
 TTL, RETRY = 14 * 86400, 86400
@@ -94,6 +95,32 @@ def _load():
     return _cache
 
 
+def parse_evo_table(wikitext: str) -> list:
+    """The wiki's evolution table (as on every Incarnon page, checked on Torid Incarnon Genesis): rows headed "EVO1",
+    "EVO2"... and, in each, the perks written in bold followed by their icon ([[File:...]]).
+    [[perks of tier 1], [tier 2], ...] or []."""
+    text = re.sub(r"<!--.*?-->", "", wikitext or "", flags=re.S)
+    start = text.find("Evolutions")
+    if start < 0:
+        return []
+    body = text[start:]
+    marks = [(m.start(), int(m.group(1))) for m in re.finditer(r"\bEVO\s*([1-5])\b", body)]
+    tiers = {}
+    for i, (pos, n) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(body)
+        chunk = body[pos:end].split("|}", 1)[0]            # the table ends there
+        names = []
+        for m in re.finditer(BOLD + r"([^\n]{2,60}?)" + BOLD + r"\s*\[\[File:", chunk):
+            name = m.group(1).strip()
+            if name not in names:
+                names.append(name)
+        if names and n not in tiers:
+            tiers[n] = names
+    if not tiers:
+        return []
+    return [tiers.get(k, []) for k in range(1, max(tiers) + 1)]
+
+
 def parse_tiers(wikitext: str) -> list:
     """[[perk names of tier I], [tier II], …] from a page's wikitext: the text is cut at every "Evolution I/II/III/IV/V"
     and, in each piece, the bold names ('''Name''') are the perks. Empty when nothing like that is found."""
@@ -141,8 +168,7 @@ def _want(page):
     threading.Thread(target=_get, args=(page,), daemon=True, name="incarnon-wiki").start()
 
 
-BOLD = "'" * 3
-PARSER = 2              # failed cache entries made by an older parser are read again
+PARSER = 3              # failed cache entries made by an older parser are read again
 
 
 def html_to_marked(html: str) -> str:
@@ -169,7 +195,9 @@ def _get(page):
                                            "redirects": 1}, headers=h, timeout=15)
         r.raise_for_status()
         wt = ((r.json().get("parse") or {}).get("wikitext") or {}).get("*") or ""
-        tiers, how = parse_tiers(wt), "wikitext"
+        tiers, how = parse_evo_table(wt), "wikitext"
+        if not tiers:
+            tiers = parse_tiers(wt)
         if not tiers:                         # the perks come from a template: read the rendered page instead
             time.sleep(0.5)
             r = requests.get(WIKI_API, params={"action": "parse", "page": page, "prop": "text", "format": "json",

@@ -43,6 +43,12 @@ GROUPS = [
         ("key_quit", "text", None, True),
         ("key_goals", "text", None, True),
     ]),
+    ("sounds", [
+        ("sound_vendor", "bool", None, False),
+        ("sound_riven", "bool", None, False),
+        ("sound_prices", "bool", None, False),
+        ("sound_file", "text", "sound", False),
+    ]),
     ("overlays", [
         # prices over the vendor screen
         ("show_volume", "bool", None, False),
@@ -132,6 +138,7 @@ GROUPS = [
         ("riven_scan_weapons", "int", (1, 500), False),
         ("riven_auto_hours", "int", (0, 168), False),
         ("riven_max_age_days", "int", (0, 365), False),
+        ("riven_whisper", "text", "wide", False),
         ("riven_weapon_filter", "text", None, False),
         ("riven_sell_factor", "int", (30, 100), False),
         ("riven_online_only", "bool", None, False),
@@ -294,6 +301,28 @@ class SettingsTab(QWidget):
         else:
             w = QLineEdit()
             w.setMaximumWidth(220)
+            if opt == "wide":
+                w.setMaximumWidth(560)
+                w.setMinimumWidth(420)
+            if opt == "sound":                         # a .wav of yours, with a button to choose it and one to hear it
+                from PyQt6.QtWidgets import QFileDialog, QStyle
+                act = w.addAction(w.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon),
+                                  QLineEdit.ActionPosition.TrailingPosition)
+                act.triggered.connect(lambda _c=False, box=w: box.setText(
+                    QFileDialog.getOpenFileName(box, t("set.sound_file"), box.text(), "WAV (*.wav)")[0] or box.text()))
+                test = w.addAction(w.style().standardIcon(QStyle.StandardPixmap.SP_MediaPlay),
+                                   QLineEdit.ActionPosition.TrailingPosition)
+
+                def hear(_c=False, box=w):
+                    from app.core import sound
+                    from app.core.config import CFG as C
+                    old = (C.get("sound_file"), C.get("sound_vendor"))
+                    C["sound_file"], C["sound_vendor"] = box.text().strip(), True
+                    sound._last.pop("vendor", None)
+                    sound.play("vendor")
+                    C["sound_file"], C["sound_vendor"] = old
+                test.triggered.connect(hear)
+                w.setMaximumWidth(320)
             if opt == "picture":                       # a file of yours: a button in the box opens the file chooser
                 from PyQt6.QtWidgets import QFileDialog, QStyle
                 act = w.addAction(w.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon),

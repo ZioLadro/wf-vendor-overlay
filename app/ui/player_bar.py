@@ -7,7 +7,7 @@ import time
 
 from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QColor, QFont, QPainter, QPixmap
-from PyQt6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QInputDialog, QLabel, QWidget
+from PyQt6.QtWidgets import QFrame, QGridLayout, QHBoxLayout, QInputDialog, QLabel, QVBoxLayout, QWidget
 
 from app.core.config import APP_DIR, CFG, save_config
 from app.core.i18n import t
@@ -90,8 +90,12 @@ class PlayerBar(QFrame):
         self.emblem.setFixedSize(EMBLEM, EMBLEM)
         lay.addWidget(self.avatar, 0, Qt.AlignmentFlag.AlignTop)
         lay.addWidget(self.emblem, 0, Qt.AlignmentFlag.AlignTop)
-        lay.addWidget(self.info, 0, Qt.AlignmentFlag.AlignTop)
-        lay.addWidget(self.wallet_w, 0, Qt.AlignmentFlag.AlignTop)
+        col = QVBoxLayout()                          # name / MR / trades, and the currencies under them
+        col.setSpacing(4)
+        col.addWidget(self.info)
+        col.addWidget(self.wallet_w)
+        col.addStretch(1)
+        lay.addLayout(col)
         lay.addWidget(self.grid_w, 1)
         self.refresh()
 
@@ -106,7 +110,11 @@ class PlayerBar(QFrame):
         tags.update(e["t"] for r in self.market.snapshot() for e in r["standing"] if e.get("t") and not is_hidden(e["t"]))
         return sorted(tags, key=lambda x: syndicate_name(x).lower())
 
-    WALLET = (("endo", "bar.endo"), ("plat", "bar.plat"), ("ducats", "bar.ducats"), ("aya", "bar.aya"), ("steel", "bar.steel"), ("regal", "bar.regal"))
+    WALLET = (("plat", "bar.plat"), ("endo", "bar.endo"), ("ducats", "bar.ducats"), ("aya", "bar.aya"), ("regal", "bar.regal"),
+              ("steel", "bar.steel"), ("pathos", "bar.pathos"), ("sliver", "bar.sliver"), ("heartcell", "bar.heartcell"),
+              ("vitus", "bar.vitus"))
+    GAME_NAME = {"steel": "Steel Essence", "pathos": "Pathos Clamp", "sliver": "Riven Sliver", "heartcell": "Live Heartcell",
+                 "vitus": "Vitus Essence"}
 
     def _wallet(self):
         """Endo, platinum, ducats and Aya you hold (from the AlecaFrame file), compact (3k, 30k, 1.2M), with the icons of the
@@ -129,11 +137,10 @@ class PlayerBar(QFrame):
             h = QHBoxLayout(cell)
             h.setContentsMargins(0, 0, 0, 0)
             h.setSpacing(4)
-            pm = icons.wallet(k)
-            if pm is None and k == "steel":            # the game's own icon (browse.wf), downloaded once
+            pm = icons.wallet(k)                     # AlecaFrame's icons folder first…
+            if pm is None and k in self.GAME_NAME:   # …else the game's own icon (browse.wf), downloaded once
                 from app.ui import playericons
-                f = playericons.path_for("/Lotus/Interface/Icons/StoreIcons/Currency/SteelEssence.png")
-                pm = QPixmap(f).scaledToHeight(20, Qt.TransformationMode.SmoothTransformation) if f else None
+                pm = playericons.currency_pixmap(self.GAME_NAME[k], 20)
             if pm:
                 ic = QLabel()
                 ic.setPixmap(pm)
@@ -142,7 +149,7 @@ class PlayerBar(QFrame):
             txt.setToolTip(f"{t(lab)}: {w[k]:,}")
             h.addWidget(txt)
             cell.setToolTip(f"{t(lab)}: {w[k]:,}")
-            self.wallet_g.addWidget(cell, n % 2, n // 2)
+            self.wallet_g.addWidget(cell, n // 5, n % 5)        # five a row, under the name and Mastery Rank
         self.wallet_w.setVisible(bool(shown))
 
     def _pictures(self):

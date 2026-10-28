@@ -81,6 +81,10 @@ DEFAULTS = {
     "goals_only_short": False,       # only the syndicates you still lack standing for
     "goals_quests": True,            # Nightwave weekly challenges and the 1999 Calendar (DE's world state)
     "goals_cal_rows": 4,             # how many Calendar challenges still to do are listed
+    "sound_vendor": False,         # a sound when a vendor screen is recognised (prices appear)
+    "sound_riven": False,          # a sound when a Riven scan starts
+    "sound_prices": False,         # a sound when a price update starts
+    "sound_file": "",              # your own .wav for those sounds ("" = the system's notification sound)
     "ov_price_font": 11,           # price overlay: price label size (pt)
     "ov_vol_font": 9,              # price overlay: volume label size (pt)
     "ov_bg_opacity": 88,           # price overlay: label background opacity (%)
@@ -119,7 +123,8 @@ DEFAULTS = {
     "riven_min_score": 50,        # smallest stats score (0-100)
     "riven_max_price": 0,         # platinum: do not show rivens above this price (0 = no limit)
     "riven_max_age_days": 14,     # Riven flip: listings on sale for longer than this are not shown as deals (0 = no limit)
-    "riven_auto_hours": 6,        # Riven flip: scan by itself every N hours while the program runs (0 = only by hand)
+    "riven_auto_hours": 6,
+    "riven_whisper": "/w {seller} Hi, I would like to buy {weapon} {riven} for {price} platinum",        # Riven flip: scan by itself every N hours while the program runs (0 = only by hand)
     "riven_min_sales": 0,         # listings gone in 7 days (estimated sales) from which a weapon is shown, once observed for a day
     "theme": "classic",           # colour theme (see theme.py): classic, or a faction: tenno, grineer, corpus, infested, orokin...
     "ui_font": "Segoe UI",        # font family of the windows

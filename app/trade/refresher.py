@@ -53,6 +53,8 @@ class Refresher(QObject):
                 netguard.when_free(lambda s=slugs, a=max_age: self.queue_start.emit(s, a))
             return False
         self._cancel.clear()
+        from app.core import sound
+        sound.play("prices")
         self.started.emit(len(slugs))
         market, cancel = self.market, self._cancel
 

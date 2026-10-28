@@ -3,6 +3,20 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.3.9
+- **Perk Incarnon letti di nuovo**: la tabella delle evoluzioni della wiki (righe *EVO1…EVO5*) ora viene capita, quindi
+  Build mostra il perk scelto in ogni livello (Torid: Incarnon Form, Final Fusillade…); le pagine fallite prima vengono
+  rilette.
+- **Build: l'arma giusta per ogni companion**: tutti i companion mostravano la stessa arma; ora Sentinelle / MOA mostrano
+  la loro arma robotica e le bestie i loro artigli.
+- **Barra del giocatore: più valute, con icone**, sotto nome e MR: Pathos Clamp, Riven Sliver, Live Heartcell e Vitus
+  Essence accanto a Steel Essence, ognuna con la sua icona di gioco (cartella icone di AlecaFrame, altrimenti browse.wf).
+- **Settimanali: le tue valute** per i vendor mostrati (Steel Essence per Teshin, Pathos Clamp per Acrithis, Riven Sliver
+  per Palladino…).
+- **Suoni**: suono opzionale quando parte una scansione di vendor, riven o prezzi (Impostazioni → Suoni).
+- **Riven flip: Copia whisper** (clic destro): `/w <venditore> Hi, I would like to buy <arma> <riven> for <prezzo>
+  platinum`, modello modificabile nelle Impostazioni.
+
 ## 0.3.8
 - **Attività: compra con tutto il tuo standing**: lo standing di ogni sindacato va ai suoi oggetti migliori, quante
   copie ne paga (*Compra 2× Martyr Symbiosis (20.000 standing)* con 27.000), il resto all'oggetto dopo, mai più copie di

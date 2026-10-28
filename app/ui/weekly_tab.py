@@ -4,7 +4,7 @@ not identify are listed on top, to pick from the vendor's offers (see weekly.py)
 import os
 import time
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, QUrl
 from PyQt6.QtWidgets import (
     QCheckBox, QComboBox, QFrame, QHBoxLayout, QHeaderView, QLabel, QPushButton, QTableWidget, QTableWidgetItem,
     QVBoxLayout, QWidget,
@@ -46,6 +46,8 @@ class WeeklyTab(QWidget):
         self.show_inactive.setToolTip(t("weekly.inactive.tip"))
         self.summary = QLabel("")
         role(self.summary, "muted")
+        self.wallet = QLabel("")                    # the currencies these vendors ask for, and how many you have
+        self.wallet.setWordWrap(True)
         bar = QHBoxLayout()
         bar.addWidget(QLabel(t("weekly.vendor")))
         bar.addWidget(self.vendor, 1)
@@ -69,6 +71,7 @@ class WeeklyTab(QWidget):
         lay.addWidget(self.unknown_box)
         lay.addLayout(bar)
         lay.addWidget(self.summary)
+        lay.addWidget(self.wallet)
         lay.addWidget(self.table, 1)
         lay.addWidget(hint)
         self.vendor.currentIndexChanged.connect(lambda _i: self.refresh(force=True))
@@ -146,6 +149,7 @@ class WeeklyTab(QWidget):
         tb.blockSignals(False)
         tb.resizeColumnsToContents()
         tb.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self._draw_wallet(rows)
         n_b = sum(1 for o in rows if o["bought"])
         self.summary.setText(t("weekly.summary", n=len(rows), b=n_b, reset=left(WK.next_reset(now) - now),
                                region=self.w.region or "–"))
@@ -171,6 +175,33 @@ class WeeklyTab(QWidget):
         sent = {e["slug"] for e in entries if (Q.sent_before("stock", e["slug"], e["rank"]) or {}).get("t", 0) >= start}
         if sent:
             plan.mark_sent(sent)
+
+    def _draw_wallet(self, rows):
+        """Each currency the shown offers cost (Steel Essence for Teshin, Riven Slivers for Ironwake, Pathos Clamps for
+        Acrithis…) with how many you own (from the game file), and its icon."""
+        from app.ui import playericons as P
+        names = []
+        for o in rows:
+            for _q, n in o.get("cost") or []:
+                if n not in names:
+                    names.append(n)
+        if not names:
+            self.wallet.setText("")
+            return
+        path = self._path()
+        inv = WK.raw_inventory(path) if path else None
+        have = WK.counts(inv) if inv else {}
+        parts = []
+        for n in names:
+            c = P.currency(n)
+            if n.lower() == "credits":
+                q = have.get("RegularCredits")
+            else:
+                q = have.get(c["path"]) if c else None
+            icon = P.path_for(c["icon"]) if c and c.get("icon") else None
+            img = f"<img src='{QUrl.fromLocalFile(icon).toString()}' height='16'> " if icon else ""
+            parts.append(f"{img}{n.title() if n.isupper() else n}: <b>{thousands(q) if q is not None else '–'}</b>")
+        self.wallet.setText(t("weekly.wallet") + " " + " &nbsp;·&nbsp; ".join(parts))
 
     def _track_changed(self, item):
         if item.column() != 5 or item.data(Qt.ItemDataRole.UserRole) is None:

@@ -98,8 +98,8 @@ game its area is blanked before the OCR, so it never reads its own names.
 On top of every tab:
 - **Player strip**: your profile glyph and Mastery Rank emblem (pictures from browse.wf, downloaded once), name (from
   AlecaFrame's `lastUsername.txt`, or click to type it), mastery rank, trades left
-  (⚠ when the last sync is before the daily reset), wallet (Endo, platinum, ducats, Aya, Steel Essence; compact, exact value in the
-  tooltip) and a badge per syndicate with rank and standing (hover for the standing left today). Syndicate logos are
+  (⚠ when the last sync is before the daily reset), wallet under name and MR (platinum, Endo, ducats, Aya, Steel Essence, Pathos Clamps, Riven Slivers, Live Heartcells,
+  Vitus Essence, each with its game icon; compact, exact value in the tooltip) and a badge per syndicate with rank and standing (hover for the standing left today). Syndicate logos are
   downloaded from the wiki once; without them the badges are drawn in the syndicate colours.
 - **World strip**: Steel Path Omnia fissures, Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer, Prime Resurgence and the
   current **Arbitration** with its tier from [arbi.guide](https://arbi.guide), all with live countdowns.
@@ -217,7 +217,8 @@ older than (days)* (default 14) are not shown as deals, and those older than twi
 
 Riven requests have their own limiter (*Riven requests per minute*, default 12, never above 20, as warframe.market
 asks); on "too many requests" it waits and stops after three in a row. The tab only reads: nothing is posted.
-*Open the auction* and *Copy whisper* help you contact the seller. Profit and fair price are estimates.
+*Open the auction* and *Copy whisper* (right click on a row) help you contact the seller: the whisper is
+`/w <seller> Hi, I would like to buy <weapon> <riven> for <price> platinum`, editable in Settings → Riven. Profit and fair price are estimates.
 
 ### Builds
 Your in-game loadouts, shown like the game's loadout screen, from `lastData.dat` (*Reload from file* after AlecaFrame
@@ -261,7 +262,8 @@ is ambiguous you are asked to pick it (★ = likely candidates). Tick *Track* to
 Vendors of time-gated events (Jade Shadows, Duviri Murmur, Triad…) are listed only while their event runs (DE's world
 state; *Show ended events* shows them anyway). **Bought (Activities) → Quantframe…** sends the purchases Activities
 confirmed from the game file (Martyr Symbiosis at the Entrati, Aerial Bond at Solaris United…), not sent yet, to
-Quantframe's stock (also in Activities' ⚙ menu).
+Quantframe's stock (also in Activities' ⚙ menu). Above the list: how much of each currency the shown vendors take you
+hold (Steel Essence, Pathos Clamps, Riven Slivers, Vosfor…).
 
 ### Profile (a page of Settings)
 Your standing and rank per syndicate and your mastery rank, **read from `lastData.dat`** (re-read when it changes,
@@ -281,7 +283,8 @@ to apply). **Theme and font**: colour themes inspired by Warframe's factions, al
 with its background pattern, another pattern, your own picture or none; font family and size. Previewed at once, kept
 only when you press Save. **Overlays**: everything about the two in-game overlays: price and volume label sizes,
 label background, price and stars colours; Activities background, font, size, colours (titles, text, ready, hints) and
-what it lists (also in its ⚙ menu).
+what it lists (also in its ⚙ menu). **Sounds**: a sound when a vendor scan, a riven scan or a price scan starts (the
+system notification sound, or a `.wav` of yours).
 
 ## Data sources
 | What | From |
@@ -298,7 +301,7 @@ what it lists (also in its ⚙ menu).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.3.8)
+## Updates (current version 0.3.9)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

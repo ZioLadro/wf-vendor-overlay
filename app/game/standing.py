@@ -85,6 +85,11 @@ def parse_profile(data) -> dict:
             "wallet": wallet(res), "avatar": str(res.get("ActiveAvatarImageType") or "")}
 
 
+TRACKED = {"steel": "/Lotus/Types/Items/MiscItems/SteelEssence", "pathos": "/Lotus/Types/Gameplay/Duviri/Resource/DuviriDragonDropItem",
+           "sliver": "/Lotus/Types/Items/MiscItems/RivenFragment", "heartcell": "/Lotus/Types/Items/MiscItems/CodaWeaponBucks",
+           "vitus": "/Lotus/Types/Items/MiscItems/Elitium"}
+
+
 def wallet(res) -> dict:
     """What you hold: Endo (FusionPoints), platinum (paid + free), ducats (the PrimeBucks item), Aya (PrimeTokens), Regal Aya,
     credits. Missing values are left out."""
@@ -101,8 +106,12 @@ def wallet(res) -> dict:
     duc = sum(int(it.get("ItemCount") or 0) for it in res.get("MiscItems") or []
               if isinstance(it, dict) and str(it.get("ItemType", "")).endswith("/MiscItems/PrimeBucks"))
     out["ducats"] = duc
-    out["steel"] = sum(int(it.get("ItemCount") or 0) for it in res.get("MiscItems") or []
-                       if isinstance(it, dict) and str(it.get("ItemType", "")).endswith("/SteelEssence"))
+    counts = {}
+    for it in res.get("MiscItems") or []:
+        if isinstance(it, dict):
+            counts[str(it.get("ItemType", ""))] = counts.get(str(it.get("ItemType", "")), 0) + int(it.get("ItemCount") or 0)
+    for key, path in TRACKED.items():                 # Steel Essence, Pathos Clamps, Riven Slivers, Live Heartcells, Vitus Essence
+        out[key] = counts.get(path, 0)
     if num(res.get("PrimeTokens")) is not None:
         out["aya"] = num(res["PrimeTokens"])
     if num(res.get("RegalCredits")):

@@ -95,6 +95,8 @@ class RivenFlipTab(QWidget):
         self.btn_open.clicked.connect(self.open_selected)
         self.btn_whisper.clicked.connect(self.copy_whisper)
         self.table.doubleClicked.connect(lambda _i: self.open_selected())
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self._menu)
         self.auto = QLabel("")
         role(self.auto, "hint")
         lay.insertWidget(2, self.auto)
@@ -144,6 +146,8 @@ class RivenFlipTab(QWidget):
             netguard.when_free(self.queue_scan.emit)
             return
         self.summary.setText(t("rflip.starting"))
+        from app.core import sound
+        sound.play("riven")
         M.log("scan button pressed")
         self.running = True
         self.cancel.clear()
@@ -275,6 +279,16 @@ class RivenFlipTab(QWidget):
             if r["weapon"] == item.text() and r["listing"]["name"] == name and f"{r['listing']['price']}p" == price:
                 return r
         return None
+
+    def _menu(self, pos):
+        from PyQt6.QtWidgets import QMenu
+        if self.table.itemAt(pos) is None:
+            return
+        self.table.selectRow(self.table.itemAt(pos).row())
+        m = QMenu(self)
+        m.addAction(t("rflip.whisper"), self.copy_whisper)
+        m.addAction(t("rflip.open"), self.open_selected)
+        m.exec(self.table.viewport().mapToGlobal(pos))
 
     def open_selected(self):
         r = self._selected()

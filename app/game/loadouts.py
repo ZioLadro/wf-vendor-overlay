@@ -302,6 +302,8 @@ def _row(role, ref, owned):
     path = it.get("ItemType", "")
     names = I.names_for_path(path)
     name = re.sub(r"<[^>]*>\s*", "", names[0] if names else path.rsplit("/", 1)[-1]).strip() or path
+    if not names and re.search(r"PetWeapon|Claws?$", path):        # a beast companion's own claws: no name in the data
+        name = "Claws"
     rk = _rank(it.get("XP"), 1000 if sect in _FRAME_KINDS else 500)
     custom = ""
     if isinstance(it.get("ItemName"), str) and "|" in it["ItemName"]:      # a name you gave it, or a Kuva/Tenet weapon's own
@@ -340,7 +342,15 @@ def presets(inv: dict) -> dict:
         name = e.get("n") or ""
         if not name or name.startswith("/"):                  # unnamed, or a bundle's language key
             name = wf[0]["item"] + " Loadout"
-        comp = rows(sentinel[i] if i < len(sentinel) else None, (("s", "companion"), ("l", "companion_weapon")))
+        se = sentinel[i] if i < len(sentinel) else None
+        comp = rows(se, (("s", "companion"),))
+        if comp:
+            # the companion's weapon: a Sentinel or a MOA uses the robotic weapon ("l"); a Kubrow, Kavat, Vulpaphyla,
+            # Predasite… its own claws ("b"). The preset keeps both, so "l" alone showed the same Sentinel weapon for
+            # every companion.
+            sect = owned.get(comp[0]["oid"], ("", {}))[0]
+            key = "l" if sect in ("Sentinels", "MoaPets") else "b"
+            comp += rows(se, ((key, "companion_weapon"),))
         out.append({"name": name, "favorite": bool(e.get("Favorite")), "warframe": wf, "companion": comp})
     tenno = {"archwing": rows((lp.get("ARCHWING") or [None])[0], (("s", "archwing"), ("l", "archgun"), ("m", "archmelee"))),
              "necramech": rows((lp.get("MECH") or [None])[0], (("s", "necramech"), ("h", "archgun"), ("a", "necramech_weapon")))}

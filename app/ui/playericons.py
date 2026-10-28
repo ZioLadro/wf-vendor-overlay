@@ -42,6 +42,22 @@ def mastery_icon(mr):
     return m.get(str(int(mr))) or (m.get(str(max(int(k) for k in m))) if m and int(mr) > 0 else None)
 
 
+def currency(name: str):
+    """{"name","path","icon"} of a currency / resource by name (data/player_icons.json), or None."""
+    return (_icons().get("currencies") or {}).get(str(name or "").lower())
+
+
+def currency_pixmap(name: str, height: int = 18):
+    """The currency's icon (AlecaFrame's icons folder is not organised by name: the game icon, from browse.wf), or None
+    until it is downloaded."""
+    from PyQt6.QtCore import Qt
+    from PyQt6.QtGui import QPixmap
+    c = currency(name)
+    f = path_for(c["icon"]) if c and c.get("icon") else None
+    pm = QPixmap(f) if f else QPixmap()
+    return None if pm.isNull() else pm.scaledToHeight(height, Qt.TransformationMode.SmoothTransformation)
+
+
 def local(icon_path):
     return DIR / str(icon_path).strip("/").replace("/", "_")
 
