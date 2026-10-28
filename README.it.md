@@ -20,7 +20,7 @@ nel vendor) e prezzo a **rank massimo**. Il volume resta il totale degli scambi 
   Se la lista cambia in altro modo (barra trascinata, tastiera, chiusura del vendor) il cambiamento
   viene rilevato confrontando i pixel sotto i nomi.
 - **Uscita dal vendor**: appena chiudi il vendor o cambi pagina le etichette spariscono.
-- **F6** mostra/nasconde il **piano standing** · **F7** apre/chiude il **listino prezzi** · **F8** scansiona subito (e riprende se in pausa) ·
+- **F6** mostra/nasconde l'overlay **Attività** · **F7** apre/chiude il **listino prezzi** · **F8** scansiona subito (e riprende se in pausa) ·
   **F9** pausa · **F10** esci. Le stesse azioni sono nel menu dell'icona vicino all'orologio
   (clic sull'icona = listino).
 - Warframe deve essere in finestra senza bordi (**Borderless**).
@@ -38,9 +38,9 @@ La finestra **si apre da sola all'avvio del programma** (impostazione *Apri il l
 
 Sotto la barra del giocatore, la **barra del mondo** mostra le fessure Omnia Steel Path, i cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer e la Prime Resurgence con conto alla rovescia. L'**Arbitrato** attuale è mostrato con il suo tier di [arbi.guide](https://arbi.guide) (Arbitration Goons; letto dall'API `tierlist.json` della guida, in cache 15 minuti); quale nodo sia viene dal calendario orario di browse.wf (`arbys.txt`). La scheda **Console** elenca cosa gira in background e ogni errore.
 
-**Piano standing** (in gioco, F6): una finestra sempre in primo piano, spostabile e ridimensionabile, con gli acquisti suggeriti dai Consigli, lo standing che manca e come guadagnarlo; segue lastData.dat e toglie un oggetto solo quando il file di gioco mostra che l'hai comprato. ⚙ per opacità, dimensione del testo e cosa elencare.
+**Attività** (in gioco, F6): una finestra sempre in primo piano, spostabile e ridimensionabile, con gli acquisti suggeriti dai Consigli, lo standing che manca e come guadagnarlo, più le sfide settimanali di Nightwave e quelle del Calendario 1999 (quelle fatte sono spuntate quando il file di gioco lo indica); segue lastData.dat e toglie un oggetto solo quando il file di gioco mostra che l'hai comprato. ⚙ per opacità, dimensione del testo e cosa elencare.
 
-La scheda **Settimanali** elenca le offerte dei vendor con un limite di acquisto (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…) con quanto hai comprato in questo periodo e quando si azzera; l'acquisto viene letto da lastData.dat e abbinato all'offerta confrontando l'inventario con la sync precedente (ti viene chiesto quando è ambiguo). Le offerte seguite compaiono anche nel piano standing.
+La scheda **Settimanali** elenca le offerte dei vendor con un limite di acquisto (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…) con quanto hai comprato in questo periodo e quando si azzera; l'acquisto viene letto da lastData.dat e abbinato all'offerta confrontando l'inventario con la sync precedente (ti viene chiesto quando è ambiguo). Le offerte seguite compaiono anche in Attività.
 
 Il **listino prezzi** e i **consigli** condividono la prima scheda (*Prezzi e consigli*): il listino sopra, i consigli sotto; trascina il divisore per cambiarne le altezze (viene ricordato).
 

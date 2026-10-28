@@ -48,6 +48,7 @@ GROUPS = [
         ("goals_click_only_cursor", "bool", None, False),
         ("goals_track_interact", "bool", None, False),
         ("goals_weekly", "bool", None, False),
+        ("goals_quests", "bool", None, False),
         ("goals_untracked", "activities", None, False),
     ]),
     ("detection", [
@@ -214,7 +215,7 @@ class SettingsTab(QWidget):
 
     @staticmethod
     def _make(kind, opt):
-        if kind == "activities":                      # a button opening the list of the standing plan's activities
+        if kind == "activities":                      # a button opening the list of the Activities overlay
             w = QPushButton(t("set.goals_untracked.button"))
             w.value = []
             w.clicked.connect(lambda _c=False, b=w: SettingsTab._edit_activities(b))
@@ -288,7 +289,7 @@ class SettingsTab(QWidget):
 
     @staticmethod
     def _edit_activities(button):
-        """Which activities the standing plan shows, syndicate by syndicate (unticked = left out)."""
+        """Which activities the Activities overlay shows, syndicate by syndicate (unticked = left out)."""
         from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QTreeWidget, QTreeWidgetItem
         import goals as G
         from standing import syndicate_name

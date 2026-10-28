@@ -24,7 +24,7 @@ DEFAULTS = {
     "key_scan": "<f8>",          # scan now (and resume if paused)
     "key_clear": "<f9>",         # pause: hides prices and stops automatic detection
     "key_quit": "<f10>",         # quit
-    "key_goals": "<f6>",         # shows/hides the in-game standing plan
+    "key_goals": "<f6>",         # shows/hides the in-game Activities overlay
     # startup and automatic vendor detection
     "start_active": True,        # True = starts already active (no need to press F8)
     "auto_detect": True,         # detect a vendor being opened / the list changing by itself
@@ -70,7 +70,7 @@ DEFAULTS = {
     "backdrop_image": "",            # your own picture for backdrop_style "image"
     "backdrop": True,                # themed background pattern behind the tabs (tables and inputs keep solid colours)
     "backdrop_strength": 45,         # how visible the pattern is (0-100)
-    "goals_visible": False,          # standing plan overlay: shown (remembered between sessions)
+    "goals_visible": False,          # Activities overlay: shown (remembered between sessions)
     "goals_geom": [],                # its position and size [x, y, width, height]
     "goals_collapsed": False,
     "goals_opacity": 45,             # background opacity (%): a faint band, like a quest tracker
@@ -79,6 +79,8 @@ DEFAULTS = {
     "goals_per_vendor": True,        # at most one item per vendor (the best one)
     "goals_activities": True,        # what to do to earn the standing that is missing
     "goals_only_short": False,       # only the syndicates you still lack standing for
+    "goals_quests": True,            # Nightwave weekly challenges and the 1999 Calendar (DE's world state)
+    "goals_cal_rows": 4,             # how many Calendar challenges still to do are listed
     "goals_weekly": True,            # show the weekly vendor offers you track (Weekly tab)
     "goals_track_interact": True,    # right-click lines of the plan to track / untrack them
     "goals_untracked": [],           # activities left out of the plan: "<syndicate tag>|<n>" or "<tag>|*"

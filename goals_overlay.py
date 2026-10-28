@@ -275,7 +275,8 @@ class GoalsOverlay(QWidget):
         choice(t("goals.opt.items"), "goals_items", [3, 5, 8, 12, 20], str)
         for key, label in (("goals_per_vendor", "goals.opt.pervendor"), ("goals_activities", "goals.opt.activities"),
                            ("goals_only_short", "goals.opt.onlyshort"),
-                           ("goals_click_only_cursor", "goals.opt.cursor"), ("goals_weekly", "goals.opt.weekly")):
+                           ("goals_click_only_cursor", "goals.opt.cursor"), ("goals_weekly", "goals.opt.weekly"),
+                           ("goals_quests", "goals.opt.quests")):
             a = QAction(t(label), m, checkable=True)
             a.setChecked(bool(CFG.get(key)))
             a.triggered.connect(lambda c, k=key: self._set(k, bool(c)))
@@ -315,7 +316,7 @@ class GoalsOverlay(QWidget):
             save_config({"goals_visible": False})
             self._apply_visibility()
             import logbus
-            logbus.add("plan", "vendor recognised: standing plan switched off (the hotkey turns it on again)")
+            logbus.add("plan", "vendor recognised: Activities switched off (the hotkey turns it on again)")
 
     def _apply_visibility(self):
         want = self._wanted
@@ -360,7 +361,9 @@ class GoalsOverlay(QWidget):
     def refresh(self, force=False):
         """Rebuilt when the game file was read again (standing, inventory), the prices changed, or every minute."""
         import weekly as WK
+        import quests as Q
         sig = (self.store.version, self.inv.imported, len(self.inv.items), int(time.time() // 60), WK.get().version,
+               Q._state["fetched"],
                repr(CFG.get("goals_untracked")))
         if not force and sig == self._sig:
             return
@@ -375,6 +378,7 @@ class GoalsOverlay(QWidget):
             self.status.setText(t("goals.confirmed", name=c["name"]))
         shown = repr((data["groups"], [d["name"] for d in data["done"][-3:]], CFG.get("goals_activities"),
                       WK.get().version, CFG.get("goals_untracked"), CFG.get("goals_weekly"), int(time.time() // 60),
+                      Q._state["fetched"], CFG.get("goals_quests"), self.inv.imported,
                       CFG.get("goals_only_short")))
         if shown == self._shown_sig and not force:
             return
@@ -436,6 +440,8 @@ class GoalsOverlay(QWidget):
                     self.rows.addWidget(lab)
         if CFG.get("goals_weekly", True):
             self._draw_weekly()
+        if CFG.get("goals_quests", True):
+            self._draw_quests()
         recent = [d for d in data["done"] if time.time() - d.get("t", 0) < 86400][-3:]
         if recent:
             self.rows.addSpacing(6)
@@ -505,6 +511,67 @@ class GoalsOverlay(QWidget):
             self._menu_on(lab, lambda pos, wd=lab, u=u: self._identify_menu(wd, pos, u))
             lab.mousePressEvent = lambda e, wd=lab, u=u: self._identify_menu(wd, e.position().toPoint(), u)
             self.rows.addWidget(lab)
+
+    def _raw_inv(self):
+        import os
+        import aleca
+        import weekly as WK
+        p = self.inv.path if self.inv.path and os.path.exists(self.inv.path) else aleca.find_data_file()
+        try:
+            return WK.raw_inventory(p) if p else None
+        except Exception:
+            return None
+
+    def _section(self, key, icon, title, sub):
+        """A quest block title with its grey line; right-click untracks the whole block. False if untracked."""
+        if f"{key}|*" in set(CFG.get("goals_untracked") or []):
+            return False
+        self.rows.addSpacing(6)
+        lab = self._label(f"{icon}  {title}", "quest")
+        self._menu_on(lab, lambda pos, w=lab, k=key, n=title: self._quest_menu(w, pos, {"tag": k, "name": n}))
+        self.rows.addWidget(lab)
+        if sub:
+            self.rows.addWidget(self._label("   " + sub, "sub"))
+        return True
+
+    def _draw_quests(self):
+        """Nightwave's weekly challenges and the 1999 Calendar's, from DE's world state, with what the game file says you
+        completed (green ✔). Read again in the background every 10 minutes."""
+        import quests as Q
+        Q.refresh_async()
+        ws = Q.cached()
+        if not ws:
+            return
+        inv = self._raw_inv()
+        now = time.time()
+        nw = Q.nightwave(ws, inv)
+        if nw and nw["weekly"]:
+            left = _left(min([c["expiry"] for c in nw["weekly"] if c["expiry"]] or [now]) - now)
+            sub = t("quests.nw.sub", left=left, n=nw["daily_open"])
+            if self._section("nightwave", "☾", t("quests.nw"), sub):
+                for c in nw["weekly"]:
+                    elite = " ★" if c["kind"] == "elite" else ""
+                    if c["done"]:
+                        text, kind = f"   ✔ {c['name']}{elite}", "ready"
+                    else:
+                        text, kind = f"   - {c['name']}{elite}: {c['desc']} ({_n(c['standing'])})" + (" (?)" if c["maybe"] else ""), "obj"
+                    lab = self._label(text, kind)
+                    lab.setToolTip(f"{c['name']}{elite}\n{c['desc']}\n{_n(c['standing'])} standing"
+                                   + ("\n" + t("quests.unknown") if c["done"] is None else ""))
+                    self.rows.addWidget(lab)
+        cal = Q.calendar(ws, inv)
+        if cal and cal["challenges"]:
+            done = [c for c in cal["challenges"] if c["done"]]
+            todo = [c for c in cal["challenges"] if not c["done"]]
+            sub = t("quests.cal.sub", season=cal["season"], left=_left((cal["expiry"] or now) - now),
+                    done=len(done), n=len(cal["challenges"]))
+            if self._section("calendar", "▦", t("quests.cal"), sub):
+                if not cal["known"]:
+                    self.rows.addWidget(self._label("   " + t("quests.cal.unknown"), "act"))
+                for c in todo[:int(CFG.get("goals_cal_rows", 4))]:
+                    kind = "wait" if c["active"] else "obj"
+                    act = "  " + t("quests.cal.active") if c["active"] else ""
+                    self.rows.addWidget(self._label(f"   - {c['name']}: {c['desc']}{act}", kind))
 
     def _weekly_menu(self, w, pos, o):
         import weekly as WK

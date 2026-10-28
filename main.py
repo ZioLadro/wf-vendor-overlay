@@ -102,7 +102,7 @@ def main():
     # price list: stays usable while it is open; its own area is blanked before the OCR (it must not read its own names)
     pricelist = PriceList(market)
     pricelist.setWindowIcon(icon)
-    # in-game standing plan (hotkey key_goals): what to buy with standing and how to earn it
+    # in-game Activities overlay (hotkey key_goals): what to buy with standing and how to earn it
     from goals_overlay import GoalsOverlay
     from standing import get_store
     goals = GoalsOverlay(market, pricelist.inventory, get_store())

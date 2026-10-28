@@ -7,6 +7,12 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Overlay stars**: *★ Best here ★* is now the best purchase among **all** the items of the vendor you are looking at
   (not only the rows on screen; the status line names it if it is scrolled away), and *★ Recommended ★* marks the
   items among the best purchases **across all vendors** (the Recommendations ranking).
+- **Standing plan renamed *Activities*** (overlay title, settings, tray, hotkey label).
+- **Activities: Nightwave and 1999 Calendar**: this week's Nightwave challenges (elite ones marked ★, standing shown,
+  open dailies counted) and the current 1999 Calendar season's challenges (the one in progress marked), read from
+  Digital Extremes' public world state (content.warframe.com, every 10 minutes, saved copy when offline). Completion is
+  read from lastData.dat: Nightwave by the challenge id in *SeasonChallengeHistory* (exact), the Calendar from
+  *CalendarProgress* (days up to the last completed one). Setting *Activities: Nightwave and 1999 Calendar* and ⚙ option.
 - **Recommendations reviewed**: the score is now *~plat per day*: price × the copies one day of standing buys (daily cap
   16,000 + 500 × Mastery Rank), but no more than the market absorbs (≈ ¼ of the 24 h volume); a price above its 30-day
   average is pulled towards it, as in the inventory advice; items needing a higher syndicate rank than yours count half

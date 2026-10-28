@@ -7,6 +7,12 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 - **Stelle dell'overlay**: *★ Migliore qui ★* ora è il miglior acquisto tra **tutti** gli oggetti del vendor che stai
   guardando (non solo le righe a schermo; se è fuori vista lo nomina la riga di stato), e *★ Consigliato ★* segna gli
   oggetti tra i migliori acquisti **di tutti i vendor** (la classifica dei Consigli).
+- **Piano standing rinominato *Attività*** (titolo dell'overlay, impostazioni, tray, tasto).
+- **Attività: Nightwave e Calendario 1999**: le sfide settimanali di Nightwave (elite segnate ★, standing indicato,
+  giornaliere aperte contate) e le sfide della stagione corrente del Calendario 1999 (quella in corso segnata), lette
+  dal world state pubblico di Digital Extremes (content.warframe.com, ogni 10 minuti, copia salvata se offline). Il
+  completamento viene da lastData.dat: Nightwave dall'id della sfida in *SeasonChallengeHistory* (esatto), il Calendario
+  da *CalendarProgress* (giorni fino all'ultimo completato). Impostazione *Attività: Nightwave e Calendario 1999* e opzione in ⚙.
 - **Consigli rivisti**: il punteggio ora è *~plat al giorno*: prezzo × le copie che compra un giorno di standing (limite
   16.000 + 500 × Mastery Rank), ma non più di quante ne assorbe il mercato (≈ ¼ del volume 24 h); un prezzo sopra la
   media a 30 giorni viene avvicinato a essa, come nei consigli dell'inventario; gli oggetti che richiedono un rank del

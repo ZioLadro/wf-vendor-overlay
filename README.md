@@ -20,7 +20,7 @@ vendor) and **max-rank** price. The volume is the total of the trades of all ran
   If the list changes in another way (dragged scrollbar, keyboard, vendor closed) the change is detected
   by comparing the pixels under the names.
 - **Leaving the vendor**: the labels disappear as soon as you close the vendor or change page.
-- **F6** shows/hides the **standing plan** · **F7** opens/closes the **price list** · **F8** scan now (and resume if paused) · **F9** pause ·
+- **F6** shows/hides the **Activities** overlay · **F7** opens/closes the **price list** · **F8** scan now (and resume if paused) · **F9** pause ·
   **F10** quit. The same actions are in the tray icon menu (click on the icon = price list).
 - Warframe must run in **Borderless** windowed mode.
 
@@ -37,9 +37,9 @@ The window **opens by itself when the program starts** (setting *Open the price 
 
 Under the player strip, the **world strip** shows the Steel Path Omnia fissures, the Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer and the Prime Resurgence with live countdowns. The current **Arbitration** is shown with its tier from [arbi.guide](https://arbi.guide) (Arbitration Goons; read from the guide's `tierlist.json` API, cached 15 minutes); which node it is comes from browse.wf's hourly schedule (`arbys.txt`). The **Console** tab lists what runs in the background and every error.
 
-**Standing plan** (in game, F6): an always-on-top, movable and resizable window with the purchases the Recommendations suggest, the standing each still needs and what earns it; it follows lastData.dat and removes an item only when the game file shows you bought it. ⚙ for opacity, text size and what it lists.
+**Activities** (in game, F6): an always-on-top, movable and resizable window with the purchases the Recommendations suggest, the standing each still needs and what earns it, plus this week's Nightwave challenges and the 1999 Calendar's challenges (done ones ticked when the game file shows it); it follows lastData.dat and removes an item only when the game file shows you bought it. ⚙ for opacity, text size and what it lists.
 
-The **Weekly** tab lists the vendor offers with a purchase limit (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…) with what you bought this period and when it resets; the purchase is read from lastData.dat and matched to the offer by comparing your inventory with the previous sync (you are asked when it is ambiguous). Tracked offers also appear in the standing plan.
+The **Weekly** tab lists the vendor offers with a purchase limit (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…) with what you bought this period and when it resets; the purchase is read from lastData.dat and matched to the offer by comparing your inventory with the previous sync (you are asked when it is ambiguous). Tracked offers also appear in Activities.
 
 The **price list** and the **recommendations** share the first tab (*Prices and recommendations*): the list on top, the recommendations below; drag the divider to change their heights (remembered).
 
