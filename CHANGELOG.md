@@ -15,7 +15,7 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Standing plan renamed *Activities*** (overlay title, settings, tray, hotkey label).
 - **Activities: Nightwave and 1999 Calendar**: this week's Nightwave challenges (elite ones marked ★, standing shown,
   open dailies counted) and the current 1999 Calendar season's challenges (the one in progress marked), read from
-  Digital Extremes' public world state (content.warframe.com, every 10 minutes, saved copy when offline). Completion is
+  Digital Extremes' public world state (api.warframe.com, every 10 minutes, saved copy when offline). Completion is
   read from lastData.dat: Nightwave by the challenge id in *SeasonChallengeHistory* (exact), the Calendar from
   *CalendarProgress* (days up to the last completed one). Setting *Activities: Nightwave and 1999 Calendar* and ⚙ option.
 - **Recommendations reviewed**: the score is now *~plat per day*: price × the copies one day of standing buys (daily cap

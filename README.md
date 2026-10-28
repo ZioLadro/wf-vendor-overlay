@@ -242,7 +242,7 @@ only when you press Save. The in-game overlays keep their own colours.
 | Vendors, standing costs, names, weekly offers, challenge names | public game data, bundled (`tools/build_*.py`) |
 | Pictures (builds, syndicate logos), Baro's list | [wiki.warframe.com](https://wiki.warframe.com) |
 | World state (fissures, cycles, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
-| Nightwave and 1999 Calendar | DE's public world state (`content.warframe.com`), every 10 min |
+| Nightwave and 1999 Calendar | DE's public world state (`api.warframe.com`), every 10 min |
 | Arbitration tier / schedule | [arbi.guide](https://arbi.guide) / browse.wf |
 | Updates | GitHub releases of this repository |
 

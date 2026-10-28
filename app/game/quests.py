@@ -1,8 +1,8 @@
 """Weekly quests for the Activities overlay: Nightwave's weekly (and elite) challenges and the 1999 Calendar's challenges,
 with their completion read from your game file where it can be.
 
-What is active comes from Digital Extremes' own public world state (content.warframe.com/dynamic/worldState.php: the
-same file the game reads; SeasonInfo for Nightwave, KnownCalendarSeasons for the Calendar), read every 10 minutes and
+What is active comes from Digital Extremes' own public world state (api.warframe.com/cdn/worldState.php, the old
+content.warframe.com address as a fallback: the same file the game reads; SeasonInfo for Nightwave, KnownCalendarSeasons for the Calendar), read every 10 minutes and
 kept on disk. Names and descriptions come from challenges.json (build_challenges.py).
 
 Completion (AlecaFrame's lastData.dat):
@@ -21,7 +21,8 @@ import requests
 from app.core.config import APP_DIR
 from app.core.paths import DATA
 
-WS_URL = "https://content.warframe.com/dynamic/worldState.php"
+WS_URLS = ("https://api.warframe.com/cdn/worldState.php",          # current address (2025 on)
+           "https://content.warframe.com/dynamic/worldState.php")  # the old one, in case it comes back
 WS_FILE = APP_DIR / "worldstate_de.json"
 REFRESH = 600
 DATA_FILE = DATA / "challenges.json"
@@ -67,19 +68,26 @@ def world_state(force=False):
             return _state["ws"]
         if now < _state["retry_at"]:
             return _state["ws"]
-        try:
-            r = requests.get(WS_URL, headers={"User-Agent": HEADERS["User-Agent"]}, timeout=20)
-            r.raise_for_status()
-            ws = r.json()
+        errors = []
+        for url in WS_URLS:
+            try:
+                r = requests.get(url, headers={"User-Agent": HEADERS["User-Agent"]}, timeout=20)
+                r.raise_for_status()
+                ws = r.json()
+                if not isinstance(ws, dict):
+                    raise ValueError("not a world state")
+            except Exception as e:
+                errors.append(f"{url.split('/')[2]}: {type(e).__name__}: {e}")
+                continue
             _state["ws"], _state["fetched"] = ws, now
             try:
                 WS_FILE.write_text(json.dumps(ws), encoding="utf-8")
             except OSError:
                 pass
-            logbus.add("quests", "world state read from content.warframe.com", "ok")
-        except Exception as e:
-            _state["retry_at"] = now + 300
-            logbus.error("quests", f"world state: {type(e).__name__}: {e} (the saved copy is used)")
+            logbus.add("quests", f"world state read from {url.split('/')[2]}", "ok")
+            return ws
+        _state["retry_at"] = now + 300
+        logbus.error("quests", "world state: " + " | ".join(errors) + " (the saved copy is used)")
         return _state["ws"]
 
 

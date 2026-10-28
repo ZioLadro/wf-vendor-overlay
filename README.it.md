@@ -259,7 +259,7 @@ colori.
 | Vendor, costi in standing, nomi, offerte settimanali, nomi delle sfide | dati pubblici del gioco, inclusi (`tools/build_*.py`) |
 | Immagini (build, logo dei sindacati), lista di Baro | [wiki.warframe.com](https://wiki.warframe.com) |
 | Stato del mondo (fessure, cicli, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
-| Nightwave e Calendario 1999 | world state pubblico di DE (`content.warframe.com`), ogni 10 min |
+| Nightwave e Calendario 1999 | world state pubblico di DE (`api.warframe.com`), ogni 10 min |
 | Tier / calendario degli Arbitrati | [arbi.guide](https://arbi.guide) / browse.wf |
 | Aggiornamenti | release GitHub di questo repository |
 
