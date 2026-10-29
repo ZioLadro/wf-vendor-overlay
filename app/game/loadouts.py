@@ -168,7 +168,7 @@ def read(inv: dict, market=None) -> list:
             path = item.get("ItemType", "")
             names = I.names_for_path(path)
             item_name = re.sub(r"<[^>]*>\s*", "", names[0] if names else path.rsplit("/", 1)[-1]).strip() or path
-            roles = LAYOUT.get(kind)
+            roles = LAYOUT.get(kind) or (["general"] * 8 if kind == "compweapon" else None)   # companion weapons: 8 slots
             cfgs = item.get("Configs") if isinstance(item.get("Configs"), list) else []
             owner = ""
             if kind == "exalted" and not path.startswith("/Lotus/Powersuits/") and CLAWS.search(path):
@@ -225,6 +225,10 @@ def read(inv: dict, market=None) -> list:
                 if filled < MIN_MODS:
                     continue
                 roles = [s["role"] for s in slots]
+                if kind == "compweapon":                       # a beast's claws: the stance-like slot is the Posture
+                    for s in slots:
+                        if s["role"] == "stance":
+                            s["posture"] = True
                 mods = [((s["name"], s["rank"], s["riven"]) if s.get("riven") and not s["riven"].get("unrevealed") else (s["name"], s["rank"]))
                         if s["name"] else None for s in slots]
                 pols = BC.fitted_polarities(kind, item_name, roles, item.get("Polarity"), mods)

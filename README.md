@@ -231,6 +231,12 @@ column shows how long a listing has been up (its creation date on warframe.marke
 older than (days)* (default 14) are not shown as deals, and those older than twice that are left out of the fair price
 (a price that has not sold for weeks says what does NOT sell).
 
+**0.4.9**: more filters above the table (price, fair price, profit, profit a day, score, the weapon's in-game
+popularity, sales, re-rolls, days on sale, seller online now; kept between sessions; *Clear filters*); the fair price
+compares rivens with the same stat combination first (2 of the same positive stats, as riven snipers price "god rolls";
+the score window otherwise), and one seller listing the same combination several times counts once; the detail panel
+grades every stat's roll (S best … D worst of the game's 90-110 % range).
+
 **What changed in 0.4.8**:
 - **DE's weekly in-game trades**: every week DE publishes, per weapon, what rivens really traded for in game (median,
   average, range, popularity; never rolled and rolled apart), read at most once a day from
@@ -345,7 +351,13 @@ Archon Shard and Helminth headings; Steel Essence and Pathos Clamp pictures go t
 The vendor offers with a purchase limit (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…), what you bought this
 period and when it resets. The game file records each limited purchase but not which offer it was, so the program works
 it out from what AlecaFrame's `deltas.dat` recorded as gained and from your inventory against the previous sync; when it
-is ambiguous you are asked to pick it (★ = likely candidates). Tick *Track* to follow an offer in Activities.
+is ambiguous you are asked to pick it (★ = likely candidates). Before asking, everything already known is used: an offer
+whose limit is below the number bought, already taken by another purchase of that vendor this period (the game keeps one
+entry per offer) or shown on sale by the vendor screen after the purchase is ruled out (✗); purchases of a vendor with
+the same number bought that can only be a set of offers are assigned at once (4 purchases of 10 at Palladino = the four
+Requiem relics); offers the vendor screen showed bought out, and shop items named in the game's log (EE.log), count as
+evidence; when the purchases can be all the possible offers but one, a single question asks which one you did **not**
+buy. The header also says where the game's log puts you now. Tick *Track* to follow an offer in Activities.
 Vendors of time-gated events (Jade Shadows, Duviri Murmur, Triad…) are listed only while their event runs (DE's world
 state; *Show ended events* shows them anyway). **Bought (Activities) → Quantframe…** sends the purchases Activities
 confirmed from the game file (Martyr Symbiosis at the Entrati, Aerial Bond at Solaris United…), not sent yet, to
@@ -400,7 +412,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.4.8)
+## Updates (current version 0.4.9)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

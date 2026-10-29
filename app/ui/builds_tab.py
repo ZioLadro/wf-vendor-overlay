@@ -60,7 +60,10 @@ def prefetch_names(loadouts, presets) -> list:
     names = []
     for lo in loadouts:
         names.append(lo["item"])
-        names += [s["name"] for s in lo["slots"] if s["name"] and s["role"] != "arcane" and not s.get("riven")]
+        mods = [s["name"] for s in lo["slots"] if s["name"] and s["role"] != "arcane" and not s.get("riven")]
+        names += mods
+        for m in mods:                                   # the artwork shown inside the cards
+            previews.by_name(m, kind="art")
     for p in (presets or {}).get("presets") or []:
         names += [r["item"] for r in p.get("warframe", []) + p.get("companion", [])]
     for rows in ((presets or {}).get("tenno") or {}).values():
@@ -170,7 +173,7 @@ class LoadoutView(QWidget):
         from app.game import incarnon as INC
         from app.ui.buildscreen import incarnon_model, wf_base_stats
         ex = lo.get("extras") or {}
-        what = t("builds.catalyst") if lo["kind"] in ("primary", "secondary", "melee", "archgun") else t("builds.reactor.name")
+        what = t("builds.catalyst") if lo["kind"] in ("primary", "secondary", "melee", "archgun", "archmelee", "compweapon") else t("builds.reactor.name")
         if lo.get("reactor"):
             pot = t("builds.pot.yes" if lo.get("reactor_src") != "guess" else "builds.pot.guess", what=what)
         elif lo.get("reactor_src") == "unknown":

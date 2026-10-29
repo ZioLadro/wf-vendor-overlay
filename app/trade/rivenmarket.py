@@ -388,12 +388,61 @@ def listing_age(listing, seen, now):
     return (now - min(t)) / 86400 if t else None
 
 
-def fair_price(score, others, factor, window=15.0, min_comps=3):
-    """Median price of the comparable listings (stats score within +-window) x factor; None if too few."""
-    comps = [p for s, p in others if abs(s - score) <= window]
+def fair_price(score, others, factor, window=15.0, min_comps=3, tags=None):
+    """Median price of the comparable rivens x factor; None if too few.
+    others: [(score, price)] or [(score, price, positive tags, seller)].
+    With the riven's positive stats (tags), rivens with the same stat combination come first (2 of the same positive
+    stats, or all of them when it has fewer): what a stat combination sells for says more than a score (the
+    "god roll" pricing of riven snipers); their score may differ more (+-25). Without 3 of them, the score window.
+    The same seller listing the same combination several times counts once (a flood of copies would set the price)."""
+    def dedup(rows):
+        seen, out = set(), []
+        for r in rows:
+            k = (r[3], tuple(sorted(r[2]))) if len(r) > 3 and r[3] else None
+            if k and k in seen:
+                continue
+            if k:
+                seen.add(k)
+            out.append(r)
+        return out
+    rows = dedup(list(others))
+    if tags:
+        mine = set(tags)
+        need = min(2, len(mine))
+        same = [r[1] for r in rows if len(r) > 2 and len(mine & set(r[2])) >= need and abs(r[0] - score) <= 25.0]
+        if len(same) >= min_comps:
+            return int(statistics.median(same) * factor)
+    comps = [r[1] for r in rows if abs(r[0] - score) <= window]
     if len(comps) < min_comps:
         return None
     return int(statistics.median(comps) * factor)
+
+
+def positives(listing, index):
+    """The game's stat tags of a listing's positive stats."""
+    return [index.get(a["url"]) or a["url"] for a in listing["attrs"] if a["positive"]]
+
+
+GRADES = ((0.9, "S"), (0.75, "A"), (0.5, "B"), (0.25, "C"), (0.0, "D"))
+
+
+def grade(q):
+    """A letter for how well a stat rolled (0 = the lowest roll, 1 = the highest; the game rolls 90-110 %)."""
+    if q is None:
+        return "?"
+    return next(g for lim, g in GRADES if q >= lim)
+
+
+def roll_grades(listing, wtype, index, dispo=None):
+    """[(label tag, value, grade)] of every stat of a listing."""
+    pos = [a for a in listing["attrs"] if a["positive"]]
+    neg = [a for a in listing["attrs"] if not a["positive"]]
+    out = []
+    for a in listing["attrs"]:
+        tag = index.get(a["url"])
+        q = roll_quality(a, tag, wtype, dispo or R.DISPOSITION, listing.get("rank", 8), len(pos), len(neg)) if tag else None
+        out.append((tag or a["url"], a["value"], grade(q)))
+    return out
 
 
 # ---------- storage and the sales estimate ----------
@@ -782,7 +831,7 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
             # comparables: every seller (online or not), but listings stuck for more than twice the max age say what
             # does NOT sell, so they are left out of the fair price; bids are not prices
             if not l.get("bid") and not (max_age and age is not None and age > 2 * max_age):
-                comps_all.append((s, l, age))
+                comps_all.append((s, l, age, positives(l, index)))
             if online_only and l["status"] not in ("ingame", "online"):
                 continue
             if l["seller"].lower() in hidden_s and not include_hidden:
@@ -792,7 +841,8 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
             scored.append((s, l, tags, age))
         sales, days = store.sales(url, now)
         sold = store.likely_sold(url, now)
-        sold_scored = [(stats_score(x, info["type"], dispo, index, w, info["name"])[0], x["price"]) for x in sold]
+        sold_scored = [(stats_score(x, info["type"], dispo, index, w, info["name"])[0], x["price"], positives(x, index), "")
+                       for x in sold]
         t7, t30 = store.trend(url, 7), store.trend(url, 30)
         sell_days = statistics.median([x["age"] for x in sold]) / 86400 if sold else None
         k = calib.get(url, calib.get("*", 1.0))
@@ -801,8 +851,10 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
                 continue
             if max_age and age is not None and age > max_age:
                 continue                           # on sale for too long at that price: probably not a real offer
-            ask = fair_price(s, [(o[0], o[1]["price"]) for o in comps_all if o[1]["id"] != l["id"]], factor)
-            got = fair_price(s, sold_scored, SOLD_FACTOR)
+            mine = positives(l, index)
+            ask = fair_price(s, [(o[0], o[1]["price"], o[3], o[1]["seller"]) for o in comps_all if o[1]["id"] != l["id"]],
+                             factor, tags=mine)
+            got = fair_price(s, sold_scored, SOLD_FACTOR, tags=mine)
             de = WK.lookup(info["name"], info["type"], l["rerolls"] > 0)
             dfair = de_fair(de, s)
             if ask is None and got is None and dfair is None:
@@ -827,7 +879,8 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
                          "t7": t7, "t30": t30, "n_sold": len(sold), "sell_days": sell_days,
                          "median": hist[-1][1] if hist else None, "hist_days": len(hist), "age": age,
                          "exp_days": exp_days, "per_day": margin / (exp_days + 1.0),
-                         "bid": bool(l.get("bid")), "contacted": contacted.get(str(l["id"]))})
+                         "bid": bool(l.get("bid")), "contacted": contacted.get(str(l["id"])),
+                         "pop": WK.popularity(info["name"])})
     if str(CFG.get("riven_sort") or "day") == "margin":
         rows.sort(key=lambda r: -r["margin"])
     else:
@@ -845,7 +898,8 @@ def comparables(store, row, index, n=8):
             out.append((stats_score(l, row["type"], R.DISPOSITION, index, None, row["weapon"])[0], l["price"], l, "listed"))
     for x in store.likely_sold(row["url"]):
         out.append((stats_score(x, row["type"], R.DISPOSITION, index, None, row["weapon"])[0], x["price"], x, "sold"))
-    out.sort(key=lambda o: abs(o[0] - row["score"]))
+    mine = set(positives(row["listing"], index))
+    out.sort(key=lambda o: (-len(mine & set(positives(o[2], index))), abs(o[0] - row["score"])))
     return out[:n]
 
 
@@ -858,13 +912,13 @@ def backtest(store, weapons_by_url, index, factor=None):
     w = weights()
     for url, wd in store.d["weapons"].items():
         info = weapons_by_url.get(url) or {"name": wd.get("name", url), "type": ""}
-        comps = [(stats_score(l, info["type"], R.DISPOSITION, index, w, info["name"])[0], l["price"])
-                 for l in wd.get("listings") or []]
+        comps = [(stats_score(l, info["type"], R.DISPOSITION, index, w, info["name"])[0], l["price"], positives(l, index),
+                  l["seller"]) for l in wd.get("listings") or []]
         for x in store.likely_sold(url):
             if x["price"] <= 0:
                 continue
             s = stats_score(x, info["type"], R.DISPOSITION, index, w, info["name"])[0]
-            f = fair_price(s, comps, factor)
+            f = fair_price(s, comps, factor, tags=positives(x, index))
             if f:
                 errs.append((f - x["price"] * SOLD_FACTOR) / (x["price"] * SOLD_FACTOR))
     if len(errs) < 5:

@@ -3,6 +3,25 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.9
+- **Settimanali, acquisti da identificare**: prima di chiedere viene usato ciò che si sa già. Le offerte col limite sotto
+  il numero acquistato, già prese da un altro acquisto del vendor o mostrate in vendita dopo l'acquisto vengono escluse
+  (✗); un gruppo di acquisti che può essere solo un insieme di offerte viene assegnato in una volta (i tuoi 4 acquisti da
+  10 da Palladino = le quattro reliquie Requiem); le offerte viste esaurite sullo schermo e gli oggetti di negozio nominati
+  nel log del gioco contano come prove; "quale NON hai comprato?" risponde per un gruppo intero; l'intestazione mostra
+  dove ti mette il log del gioco.
+- **Build: immagini delle mod**: dentro le carte l'illustrazione della mod (CDN WFCD), al passaggio del mouse la carta
+  intera (wiki). Le immagini salvate dalla 0.4.7-0.4.8 col tipo sbagliato vengono sistemate da sole.
+- **Dati delle mod corretti**: quando più mod hanno lo stesso nome (Vital Sense, Intensify, Heavy Impact, Hell's
+  Chamber… hanno varianti Beginner / Expert nei dati del gioco) veniva usato il rank massimo della variante (10 invece di
+  5), così queste mod contavano meno di quanto fanno al loro rank (82 mod). I tag di danno nei testi delle mod hanno il
+  loro nome ("chance to apply Slash on Critical").
+- **Armi dei compagni**: 8 slot (ne compariva un 9° vuoto), *Catalizzatore Orokin* invece del Reattore, lo slot degli
+  artigli è la *Postura*.
+- **Riven flip**: più filtri (prezzo, prezzo equo, profitto, profitto al giorno, punteggio, popolarità in gioco, vendite,
+  re-roll, giorni in vendita, venditore online adesso); prezzo equo dai riven con la stessa combinazione di statistiche
+  per primi, le copie di un venditore contano una volta; voto del roll (S-D) di ogni statistica nel pannello di dettaglio.
+
 ## 0.4.8
 Riven flip:
 - **Scambi in gioco settimanali di DE** (`weeklyRivensPC.json` ufficiale, verificato: ancora pubblicato ogni settimana;

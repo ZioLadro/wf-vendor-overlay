@@ -93,9 +93,12 @@ class Card(QWidget):
             if arcane:
                 self.pic = icons.arcane(self.name, int(self.height() * 0.8))
             else:
-                f = previews.by_name(self.name, wiki_only=True, fetch=not library)
+                f = previews.by_name(self.name, kind="art", fetch=not library)     # the artwork in the card
+                f = f or previews.by_name(self.name, kind="card", fetch=False)     # (until it is there: the card)
                 if f:
                     self.pic = _scaled(f, max(40, int(self.width() * 1.1)))
+                if not library:
+                    previews.by_name(self.name, kind="card")                         # the whole card, for the tooltip
         if editable or library:
             self.setCursor(Qt.CursorShape.PointingHandCursor)
         if editable and not library:
@@ -116,7 +119,8 @@ class Card(QWidget):
         if self.locked:
             return t("bs.locked." + ("arcane" if s.get("role") == "arcane" else "exilus"))
         if not n:
-            return t("builds.slot." + s.get("role", "general")) if s.get("role") not in (None, "general") else ""
+            return t("builds.slot." + ("posture" if s.get("posture") else s.get("role", "general"))) \
+                if s.get("role") not in (None, "general") else ""
         if s.get("riven"):
             rv = s["riven"]
             return t("builds.riven.tip", weapon=rv.get("weapon", ""), rerolls=rv.get("rerolls", 0))
@@ -131,7 +135,7 @@ class Card(QWidget):
                 parts.append("<span style='color:#9aa4b2'>" + t("bs.tip.max", n=eff["max"]) + "<br>"
                              + escape(eff["max_text"]).replace("\n", "<br>") + "</span>")
             parts.append("<span style='color:#6b7280; font-size:small'>" + t("bs.tip.src." + eff["source"]) + "</span>")
-        f = previews.by_name(n, wiki_only=True, fetch=False) if not arcane else None
+        f = previews.by_name(n, kind="card", fetch=not self.library) if not arcane else None
         if f:
             parts.append(f"<img src='{f.as_posix()}' width='200'>")
         if self.owned:
@@ -213,7 +217,7 @@ class Card(QWidget):
             p.setFont(f)
             p.setPen(QColor("#9aa4b2"))
             p.drawText(QRectF(x, 4, W * 0.5, small + 6), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-                       t("builds.slot." + role_).upper())
+                       t("builds.slot." + ("posture" if s.get("posture") else role_)).upper())
         # drain and the mod's polarity (top right)
         if name and s.get("drain") is not None and role_ != "arcane":
             d = s["drain"]
@@ -483,7 +487,7 @@ def capacity_detail(m: dict) -> str:
             continue
         pol = t("pol." + s["pol"]) if s.get("pol") else t("pol.none")
         src = {"forma": " (Forma)", "innate": " (" + t("bs.cap.innate") + ")"}.get(s.get("pol_src") or "", "")
-        role = t("builds.slot." + s["role"]) if s.get("role") not in (None, "general") else ""
+        role = t("builds.slot." + ("posture" if s.get("posture") else s["role"])) if s.get("role") not in (None, "general") else ""
         if s.get("name"):
             dr = s.get("drain")
             drain = "" if dr is None else (f"+{-dr}" if dr < 0 else str(dr))

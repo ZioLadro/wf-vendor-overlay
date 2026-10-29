@@ -250,6 +250,13 @@ per il prezzo equo e la stima delle vendite); la tabella mostra come affari solo
 inserzioni più vecchie di *Nascondi inserzioni più vecchie di (giorni)* (default 14) non vengono mostrate come affari, e
 quelle più vecchie del doppio sono escluse dal prezzo equo (un prezzo che non vende da settimane dice cosa NON si vende).
 
+**0.4.9**: più filtri sopra la tabella (prezzo, prezzo equo, profitto, profitto al giorno, punteggio, popolarità
+dell'arma in gioco, vendite, re-roll, giorni in vendita, venditore online adesso; ricordati tra una sessione e l'altra;
+*Azzera filtri*); il prezzo equo confronta prima i riven con la stessa combinazione di statistiche (2 statistiche positive
+uguali, come i riven sniper prezzano i "god roll"; altrimenti la finestra di punteggio), e un venditore che mette la
+stessa combinazione più volte conta una volta; il pannello di dettaglio dà un voto al roll di ogni statistica (S migliore
+… D peggiore nell'intervallo 90-110 % del gioco).
+
 **Novità della 0.4.8**:
 - **Scambi in gioco settimanali di DE**: ogni settimana DE pubblica, per arma, a quanto si sono davvero scambiati i riven
   in gioco (mediana, media, intervallo, popolarità; mai rollati e rollati separati), letti al massimo una volta al giorno
@@ -371,7 +378,14 @@ Steel Essence e Pathos Clamp vanno nella barra del giocatore.
 Le offerte dei vendor con un limite di acquisto (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…), quanto hai
 comprato in questo periodo e quando si azzera. Il file di gioco registra ogni acquisto limitato ma non quale offerta
 fosse, quindi il programma lo ricava da ciò che il `deltas.dat` di AlecaFrame ha registrato come guadagnato e
-dall'inventario rispetto alla sync precedente; quando è ambiguo ti chiede di sceglierla (★ = candidate probabili).
+dall'inventario rispetto alla sync precedente; quando è ambiguo ti chiede di sceglierla (★ = candidate probabili). Prima di
+chiedere usa tutto ciò che sa già: un'offerta col limite sotto il numero acquistato, già presa da un altro acquisto dello
+stesso vendor in questo periodo (il gioco tiene una voce per offerta) o mostrata in vendita dalla schermata del vendor
+dopo l'acquisto è esclusa (✗); gli acquisti di un vendor con lo stesso numero che possono essere solo un insieme di
+offerte vengono assegnati in una volta (4 acquisti da 10 da Palladino = le quattro reliquie Requiem); le offerte mostrate
+esaurite dalla schermata del vendor e gli oggetti di negozio nominati nel log del gioco (EE.log) contano come prove; quando
+gli acquisti possono essere tutte le offerte possibili tranne una, una sola domanda chiede quale **non** hai comprato.
+L'intestazione dice anche dove ti mette ora il log del gioco.
 Spunta *Segui* per seguire un'offerta in Attività.
 I vendor degli eventi a tempo (Jade Shadows, Duviri Murmur, Triad…) compaiono solo mentre il loro evento è in corso
 (world state di DE; *Mostra eventi finiti* li mostra comunque). **Acquistati (Attività) → Quantframe…** invia allo stock
@@ -430,7 +444,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.4.8)
+## Aggiornamenti (versione attuale 0.4.9)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

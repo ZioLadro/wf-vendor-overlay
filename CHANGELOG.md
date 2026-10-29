@@ -3,6 +3,23 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.4.9
+- **Weekly, purchases to identify**: what is already known is used before asking. Offers whose limit is below the number
+  bought, already taken by another purchase of the vendor, or shown on sale after the purchase are ruled out (✗); a group
+  of purchases that can only be a set of offers is assigned at once (your 4 purchases of 10 at Palladino = the four
+  Requiem relics); offers seen bought out on screen and shop items named in the game's log count as evidence; "which one
+  did you NOT buy?" answers a whole group; the header shows where the game's log puts you.
+- **Builds: mod pictures**: inside the cards the mod's artwork (WFCD CDN), on hover the whole card (wiki). Pictures saved
+  by 0.4.7-0.4.8 under the wrong kind are sorted out by themselves.
+- **Mod data fixed**: when several mods share a name (Vital Sense, Intensify, Heavy Impact, Hell's Chamber… have Beginner /
+  Expert variants in the game data) the variant's max rank was used (10 instead of 5), so these mods counted less than
+  they do at their rank (82 mods). Damage tags in mod texts are named ("chance to apply Slash on Critical").
+- **Companion weapons**: 8 slots (an empty 9th showed), *Orokin Catalyst* instead of Reactor, the claws' slot is the
+  *Posture*.
+- **Riven flip**: more filters (price, fair price, profit, profit a day, score, in-game popularity, sales, re-rolls, days
+  on sale, seller online now); fair price from rivens with the same stat combination first, one seller's copies count
+  once; roll grade (S-D) of every stat in the detail panel.
+
 ## 0.4.8
 Riven flip:
 - **DE's weekly in-game riven trades** (official `weeklyRivensPC.json`, checked: still published every week; community

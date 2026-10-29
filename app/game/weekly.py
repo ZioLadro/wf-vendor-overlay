@@ -145,16 +145,18 @@ class Weekly:
             self.snapshot = dict(d.get("snapshot") or {})
             self.candidates = dict(d.get("candidates") or {})
             self.ocr = {k: v for k, v in (d.get("ocr") or {}).items() if isinstance(v, dict)}
+            self._first_loaded = dict(d.get("first") or {})
         except Exception:
             pass
         self.current = []
         self.version = 0
+        self.first = dict(self._first_loaded) if hasattr(self, "_first_loaded") else {}
 
     def save(self):
         try:
             STATE_FILE.write_text(json.dumps({"assign": self.assign, "tracked": sorted(self.tracked),
                                               "snapshot": self.snapshot, "candidates": self.candidates,
-                                              "ocr": self.ocr},
+                                              "ocr": self.ocr, "first": self.first},
                                              ensure_ascii=False), encoding="utf-8")
         except OSError:
             pass
@@ -205,6 +207,7 @@ class Weekly:
                 else:
                     self.assign[k] = UNKNOWN
                     self.candidates[k] = cands
+                    self.first.setdefault(k, now)
                     logbus.add("weekly", f"{data()[p['vendor']]['name']}: new limited purchase to identify "
                                f"({len(cands)} candidates from deltas.dat and the inventory)", "warn")
                 changed = True
@@ -212,6 +215,14 @@ class Weekly:
             for k in [k for k in self.assign if k not in live]:        # reset: the purchase no longer counts
                 self.assign.pop(k, None)
                 self.candidates.pop(k, None)
+                self.first.pop(k, None)
+                changed = True
+            for p in self.current:                    # purchases to identify from before 0.4.9: seen from now on
+                k = f"{p['vendor']}|{p['id']}"
+                if self.assign.get(k) == UNKNOWN and k not in self.first:
+                    self.first[k] = now
+                    changed = True
+            if self._refine():
                 changed = True
             if cur != self.snapshot:
                 self.snapshot = cur
@@ -234,6 +245,7 @@ class Weekly:
             before = json.dumps([self.assign, self.candidates, {v: sorted(x.get("gone", {})) for v, x in self.ocr.items()}],
                                 sort_keys=True)
             log = WO.apply(self, seen)
+            self._refine()
             name = data()[seen["vendor"]]["name"]
             for line in log:
                 logbus.add("weekly", f"{name}: {line}", "ok")
@@ -245,6 +257,81 @@ class Weekly:
                 return True
             return False
 
+    def possible(self, p, k=None) -> list:
+        """The offers a purchase can still be, with everything known (lock held): an offer whose limit is below the number
+        bought cannot be it; one already taken by another purchase of the same vendor this period cannot (the game keeps
+        one entry per offer); one the vendor screen showed on sale after this purchase appeared, with a limit the number
+        bought reaches, cannot. The candidates found from deltas.dat / the inventory are kept when some survive."""
+        k = k or f"{p['vendor']}|{p['id']}"
+        items = {i["id"]: i for i in data()[p["vendor"]]["items"]}
+        taken = {self.assign.get(f"{q['vendor']}|{q['id']}") for q in self.current
+                 if q["vendor"] == p["vendor"] and q["id"] != p["id"]} - {UNKNOWN, SKIP, None}
+        since = float(self.first.get(k) or 0)
+        seen = (self.ocr.get(p["vendor"]) or {}).get("seen") or {}
+        ok = [i for i in items.values() if int(i.get("limit") or 1) >= p["n"] and i["id"] not in taken
+              and not (i["id"] in seen and seen[i["id"]].get("t", 0) > since and p["n"] >= int(i.get("limit") or 1))]
+        cands = [i for i in ok if i["id"] in (self.candidates.get(k) or [])]
+        return cands or ok
+
+    def _refine(self) -> bool:
+        """Works out more purchases from what is already known (lock held); True when some were assigned.
+        - only one offer possible (possible()): it is that one;
+        - shop items the game's log named (EE.log, a purchase screen) narrow the possible offers when some match;
+        - the vendor screen showed the offer bought out (OCR "gone") and it is among the possible ones: preferred;
+        - a group of purchases of one vendor with the same number bought whose possible offers are exactly as many as
+          the purchases (4 purchases of 10 at Palladino, 4 relics with a limit of 10): each offer is one of them; which is
+          which does not matter, every one was bought that many times."""
+        from app.core import logbus
+        try:
+            from app.game.eelog import LOCATION
+            logged = LOCATION.store_items()
+        except Exception:
+            logged = set()
+        changed, again = False, True
+        while again:
+            again = False
+            unk = [p for p in self.current if self.assign.get(f"{p['vendor']}|{p['id']}") == UNKNOWN]
+            for p in unk:
+                k = f"{p['vendor']}|{p['id']}"
+                poss = self.possible(p, k)
+                hit = [i for i in poss if i.get("store") in logged]
+                gone = set(((self.ocr.get(p["vendor"]) or {}).get("gone") or {}))
+                ocr = [i for i in poss if i["id"] in gone]
+                for pool, how in ((poss, "the only offer left"), (hit, "the game's log"), (ocr, "the vendor screen")):
+                    if len(pool) == 1:
+                        self.assign[k] = pool[0]["id"]
+                        self.candidates.pop(k, None)
+                        logbus.add("weekly", f"{data()[p['vendor']]['name']}: purchase recognised as {pool[0]['name']} "
+                                   f"({how})", "ok")
+                        changed = again = True
+                        break
+                else:
+                    ids = [i["id"] for i in (hit or ocr or poss)]
+                    if ids != self.candidates.get(k):
+                        self.candidates[k] = ids
+                        changed = True
+                if again:
+                    break
+            if again:
+                continue
+            groups = {}
+            for p in unk:
+                groups.setdefault((p["vendor"], p["n"]), []).append(p)
+            for (vend, n), ps in groups.items():
+                union = {}
+                for p in ps:
+                    for i in self.possible(p):
+                        union[i["id"]] = i
+                if len(ps) > 1 and len(union) == len(ps):
+                    for p, oid in zip(ps, sorted(union)):
+                        self.assign[f"{p['vendor']}|{p['id']}"] = oid
+                        self.candidates.pop(f"{p['vendor']}|{p['id']}", None)
+                    logbus.add("weekly", f"{data()[vend]['name']}: {len(ps)} purchases of {n} recognised together as "
+                               + ", ".join(union[o]["name"] for o in sorted(union)), "ok")
+                    changed = again = True
+                    break
+        return changed
+
     def unknown(self) -> list:
         """Purchases to identify: [{"key","vendor","vendor_name","n","expiry","candidates": [store…], "items": [...]}]."""
         out = []
@@ -253,14 +340,48 @@ class Weekly:
             if self.assign.get(k) == UNKNOWN:
                 v = data()[p["vendor"]]
                 cand = self.candidates.get(k) or []
-                items = sorted(v["items"], key=lambda i: (i["id"] not in cand, i["name"].lower(), i["qty"]))
-                out.append(dict(p, key=k, vendor_name=v["name"], candidates=cand, items=items))
+                poss = {i["id"] for i in self.possible(p, k)}
+                items = sorted(v["items"], key=lambda i: (i["id"] not in cand, i["id"] not in poss, i["name"].lower(), i["qty"]))
+                out.append(dict(p, key=k, vendor_name=v["name"], candidates=cand, possible=sorted(poss), items=items))
         return out
 
     def identify(self, key: str, offer: str):
         with _lock:
             self.assign[key] = offer
             self.candidates.pop(key, None)
+            self._refine()                         # one answer can settle others (the offer is no longer free)
+            self.version += 1
+            self.save()
+
+    def groups(self) -> list:
+        """Purchases to identify that can be answered at once: a vendor's purchases with the same number bought whose
+        possible offers are just one more than the purchases ("which one did you NOT buy?").
+        [{"vendor","vendor_name","n","keys","offers": [items]}]."""
+        out = {}
+        for u in self.unknown():
+            g = out.setdefault((u["vendor"], u["n"]), {"vendor": u["vendor"], "vendor_name": u["vendor_name"], "n": u["n"],
+                                                     "keys": [], "ids": set()})
+            g["keys"].append(u["key"])
+            g["ids"] |= set(u["possible"])
+        res = []
+        for g in out.values():
+            if len(g["keys"]) >= 2 and len(g["ids"]) == len(g["keys"]) + 1:
+                items = {i["id"]: i for i in data()[g["vendor"]]["items"]}
+                res.append(dict(g, offers=sorted((items[i] for i in g["ids"]), key=lambda i: i["name"].lower())))
+        return res
+
+    def identify_group(self, keys, not_bought):
+        """Answers a group (groups()): every possible offer but not_bought, one per purchase."""
+        with _lock:
+            ids = set()
+            for p in self.current:
+                k = f"{p['vendor']}|{p['id']}"
+                if k in keys:
+                    ids |= {i["id"] for i in self.possible(p, k)}
+            for k, oid in zip(keys, sorted(ids - {not_bought})):
+                self.assign[k] = oid
+                self.candidates.pop(k, None)
+            self._refine()
             self.version += 1
             self.save()
 

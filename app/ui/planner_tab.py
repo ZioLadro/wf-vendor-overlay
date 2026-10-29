@@ -631,7 +631,7 @@ class PlannerView(QWidget):
             mx = 8 if rv else (info[2] if info else (arcane_max(name) if name else None))
             c = calc["slots"][i]
             slots.append({"role": r, "name": name, "rank": m[1] if m else None, "max": mx, "pol": pols[i], "mpol": c["mpol"],
-                          "drain": c["drain"], "state": c["state"], "riven": rv})
+                          "drain": c["drain"], "state": c["state"], "riven": rv, "posture": kind == "compweapon" and r == "stance"})
         valence = p.get("valence") if BC.valence_capable(item) else None
         avail = INC.available(item) if kind in ("primary", "secondary", "melee") else None
         pk = None

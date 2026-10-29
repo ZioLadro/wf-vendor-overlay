@@ -137,6 +137,7 @@ DEFAULTS = {
     "riven_sort": "day",         # Riven flip: best expected profit a day first ("day") or biggest profit first ("margin")
     "riven_alert_margin": 150,   # ... a sound when a deal with at least this profit has its seller in game / online (0 = off)
     "riven_bids": False,         # ... also auctions you can bid on (one more request per watched weapon)
+    "riven_table_filters": {},   # ... the table's filters (Riven flip tab)
     "riven_hidden_weapons": [],  # ... weapons hidden from the deals (right click)
     "riven_hidden_sellers": [],  # ... sellers hidden from the deals (right click)
     "riven_whisper": "/w {seller} Hi, I would like to buy {weapon} {riven} for {price} platinum",        # Riven flip: scan by itself every N hours while the program runs (0 = only by hand)

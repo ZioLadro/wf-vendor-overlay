@@ -242,18 +242,49 @@ class WeeklyTab(QWidget):
         self.unknown_box.setVisible(bool(unk))
         if not unk:
             return
-        head = QLabel(t("weekly.unknown.head", n=len(unk), region=self.w.region or "–"))
+        region = self.w.region or "–"
+        try:
+            from app.game.eelog import LOCATION, PLACE_NAMES
+            here = LOCATION.current()
+            if here:
+                region += " · " + t("weekly.unknown.eelog", place=PLACE_NAMES.get(here, here))
+        except Exception:
+            pass
+        head = QLabel(t("weekly.unknown.head", n=len(unk), region=region))
+        head.setToolTip(t("weekly.unknown.tip"))
         head.setWordWrap(True)
         head.setStyleSheet("font-weight: bold; color: #c9a227;")
         self.unknown_lay.addWidget(head)
         now = time.time()
+        grouped = set()
+        for g in self.w.groups():                  # "which one did you NOT buy?": one answer for a whole group
+            grouped |= set(g["keys"])
+            row = QHBoxLayout()
+            lab = QLabel(t("weekly.group.row", vendor=g["vendor_name"], k=len(g["keys"]), n=g["n"]))
+            box = QComboBox()
+            for i in g["offers"]:
+                box.addItem(i["name"] + (f" ×{thousands(i['qty'])}" if i["qty"] > 1 else ""), i["id"])
+            box.setToolTip(t("weekly.group.tip"))
+            ok = QPushButton(t("weekly.confirm"))
+            ok.clicked.connect(lambda _c=False, ks=list(g["keys"]), b=box: (self.w.identify_group(ks, b.currentData()),
+                                                                          self.refresh(force=True)))
+            row.addWidget(lab)
+            row.addWidget(box, 1)
+            row.addWidget(ok)
+            self.unknown_lay.addLayout(row)
         for u in unk:
+            if u["key"] in grouped:
+                continue
             row = QHBoxLayout()
             lab = QLabel(t("weekly.unknown.row", vendor=u["vendor_name"], n=u["n"], left=left(u["expiry"] - now)))
             box = QComboBox()
+            poss = set(u.get("possible") or [])
             for i in u["items"]:
-                star = "★ " if i["id"] in u["candidates"] else ""
+                star = "★ " if i["id"] in u["candidates"] else ("" if not poss or i["id"] in poss else "✗ ")
                 box.addItem(star + i["name"] + (f" ×{thousands(i['qty'])}" if i["qty"] > 1 else ""), i["id"])
+                if poss and i["id"] not in poss:
+                    box.setItemData(box.count() - 1, t("weekly.unknown.impossible"), Qt.ItemDataRole.ToolTipRole)
+            box.setToolTip(t("weekly.unknown.box", n=len(poss)) if poss else "")
             box.addItem(t("weekly.skip"), WK.SKIP)
             ok = QPushButton(t("weekly.confirm"))
             ok.clicked.connect(lambda _c=False, k=u["key"], b=box: (self.w.identify(k, b.currentData()), self.refresh(force=True)))

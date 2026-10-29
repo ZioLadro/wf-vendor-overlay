@@ -22,6 +22,11 @@ MAX_FIRST = 4 * 1024 * 1024
 _LAYOUT = re.compile(r"(/Lotus/Levels/\S+?)\s+generating layout", re.I)
 _HOST = re.compile(r"Host loading\s*\{[^}]*?\"name\"\s*:\s*\"([^\"]+)\"", re.I)
 _NODE = re.compile(r"^([A-Za-z]*(?:Node|HUB|Hub)\d*[A-Za-z0-9]*)")
+_STORE = re.compile(r"(/Lotus/StoreItems/[A-Za-z0-9_/]+)")      # an item of a shop named in a log line (a purchase?)
+PLACE_NAMES = {"orbiter": "Orbiter", "camp": "Drifter's camp", "cetus": "Cetus", "fortuna": "Fortuna",
+               "necralisk": "Necralisk / Sanctum", "chrysalith": "Chrysalith", "hollvania": "Höllvania",
+               "ironwake": "Iron Wake", "hunhow": "Hunhow's hub", "relay": "Relay", "duviri": "Duviri", "dojo": "Dojo",
+               "mission": "mission"}
 
 # star-chart node / level path (regular expression, checked in order) -> place
 NODE_PLACES = {"CetusHub4": "cetus", "SolarisUnitedHub1": "fortuna", "DeimosHub": "necralisk", "EntratiLabHub": "necralisk",
@@ -103,16 +108,25 @@ class Location:
         self.path, self.pos, self.size = None, 0, 0
         self.place, self.what, self.t = "", "", 0.0
         self.mtime = 0.0
+        self.history = []                 # [(time, place, what)] of the places loaded (the last 60)
+        self.store_hits = []              # [(time, /Lotus/StoreItems/… path)] named in the log (the last 300)
 
     def _feed(self, text: str, quiet=False):
         before = self.place
+        now = time.time()
         for line in text.splitlines():
+            if "/Lotus/StoreItems/" in line:
+                for m in _STORE.finditer(line):
+                    self.store_hits.append((now, m.group(1)))
+                self.store_hits = self.store_hits[-300:]
             r = parse_line(line)
             if r:
                 if not r[0] and self.place == "mission" and "Host loading" not in line:
                     continue                    # a mission's own tiles: still the mission chosen on the star chart
+                if r[0] != self.place or not self.history:
+                    self.history = (self.history + [(now, r[0], r[1])])[-60:]
                 self.place, self.what = r
-                self.t = time.time()
+                self.t = now
         if self.place != before and not quiet:
             try:
                 from app.core import logbus
@@ -163,6 +177,20 @@ class Location:
         here = self.current()
         places = vendor_places(name) or vendor_places(vendor)
         return not here or not places or here in places
+
+    def recent_places(self, since=0.0) -> list:
+        """The places loaded since that time (the log read so far), oldest first, without repeats."""
+        self.poll()
+        out = []
+        for t, p, _w in self.history:
+            if t >= since and p and p not in out:
+                out.append(p)
+        return out
+
+    def store_items(self) -> set:
+        """Shop items (/Lotus/StoreItems/…) the game's log named since the program started reading it."""
+        self.poll()
+        return {p for _t, p in self.store_hits}
 
     def in_mission(self) -> bool:
         return self.current() == "mission"

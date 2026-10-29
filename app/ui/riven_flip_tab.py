@@ -160,6 +160,39 @@ class RivenFlipTab(QWidget):
         self.btn_unhide = QPushButton(t("rflip.unhide"))
         self.btn_unhide.setToolTip(t("rflip.unhide.tip"))
         fl.addWidget(self.btn_unhide)
+        # more filters (kept in riven_table_filters): price, fair price, profit, profit a day, score, in-game popularity,
+        # sales, re-rolls, age, seller online now
+        from PyQt6.QtWidgets import QGridLayout, QSpinBox
+        saved = dict(CFG.get("riven_table_filters") or {})
+        self.f_num = {}
+        fl2 = QGridLayout()
+        fl2.setHorizontalSpacing(6)
+        for key, lo, hi, step, default in (("price_max", 0, 100000, 10, 0), ("fair_min", 0, 100000, 10, 0),
+                                           ("margin_min", 0, 100000, 10, 0), ("perday_min", 0, 10000, 5, 0),
+                                           ("score_min", 0, 100, 5, 0), ("pop_min", 0, 200, 1, 0),
+                                           ("sales_min", 0, 1000, 1, 0), ("rerolls_max", -1, 999, 1, -1),
+                                           ("age_max", 0, 365, 1, 0)):
+            sb = QSpinBox()
+            sb.setRange(lo, hi)
+            sb.setSingleStep(step)
+            sb.setValue(int(saved.get(key, default)))
+            sb.setSpecialValueText(t("rflip.tf.any"))       # the lowest value = no filter
+            sb.setToolTip(t("rflip.tf." + key + ".tip"))
+            sb.setKeyboardTracking(False)
+            sb.valueChanged.connect(lambda _v: self._filters_changed())
+            n = len(self.f_num)
+            fl2.addWidget(QLabel(t("rflip.tf." + key)), n // 5, (n % 5) * 2, Qt.AlignmentFlag.AlignRight)
+            fl2.addWidget(sb, n // 5, (n % 5) * 2 + 1)
+            self.f_num[key] = sb
+        self.f_online = QCheckBox(t("rflip.tf.online"))
+        self.f_online.setToolTip(t("rflip.tf.online.tip"))
+        self.f_online.setChecked(bool(saved.get("online_now")))
+        self.f_online.toggled.connect(lambda _c: self._filters_changed())
+        fl2.addWidget(self.f_online, 1, 8)
+        reset = QPushButton(t("rflip.tf.reset"))
+        reset.clicked.connect(self._filters_reset)
+        fl2.addWidget(reset, 1, 9)
+        fl2.setColumnStretch(10, 1)
         self.f_type.currentIndexChanged.connect(lambda _i: self._fill())
         self.f_text.textChanged.connect(lambda _s: self._fill())
         self.f_contacted.toggled.connect(lambda _c: self._fill())
@@ -229,6 +262,7 @@ class RivenFlipTab(QWidget):
         lay = QVBoxLayout(deals)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.addLayout(fl)
+        lay.addLayout(fl2)
         lay.addWidget(split, 1)
 
         # the journal
@@ -491,10 +525,38 @@ class RivenFlipTab(QWidget):
                                 bias=f"{bt['bias'] * 100:+.0f}") if bt else t("rflip.accuracy.none"))
         self._fill_journal()
 
+    def _filters_changed(self):
+        vals = {k: sb.value() for k, sb in self.f_num.items()}
+        vals["online_now"] = self.f_online.isChecked()
+        save_config({"riven_table_filters": vals})
+        self._fill()
+
+    def _filters_reset(self):
+        for k, sb in self.f_num.items():
+            sb.blockSignals(True)
+            sb.setValue(sb.minimum())
+            sb.blockSignals(False)
+        self.f_online.setChecked(False)
+        self._filters_changed()
+
     def _visible_rows(self):
         ty, txt = self.f_type.currentData() or "", self.f_text.text().strip().lower()
+        f = {k: sb.value() for k, sb in self.f_num.items()}
         out = []
         for r in self._rows:
+            l = r["listing"]
+            if (f["price_max"] and l["price"] > f["price_max"]) or (f["fair_min"] and r["fair"] < f["fair_min"]) \
+                    or (f["margin_min"] and r["margin"] < f["margin_min"]) or (f["perday_min"] and r["per_day"] < f["perday_min"]) \
+                    or (f["score_min"] and r["score"] < f["score_min"]) or (f["pop_min"] and r.get("pop", 0) < f["pop_min"]) \
+                    or (f["sales_min"] and (r["days"] < 1 or r["sales"] < f["sales_min"])) \
+                    or (f["rerolls_max"] >= 0 and l["rerolls"] > f["rerolls_max"]) \
+                    or (f["age_max"] and r.get("age") is not None and r["age"] > f["age_max"]):
+                continue
+            if self.f_online.isChecked():
+                x = M.live(l)
+                st = x.get("status") if x else l.get("status")
+                if (x and x.get("gone")) or st not in ("ingame", "online"):
+                    continue
             if ty and r.get("type") != ty:
                 continue
             if txt and txt not in r["weapon"].lower() and txt not in r["listing"]["name"].lower():
@@ -602,7 +664,7 @@ class RivenFlipTab(QWidget):
             f"<b>{r['weapon']} {l['name']}</b> · {l['price']}p → {t('rflip.col.fair').lower()} <b>{r['fair']}p</b>{calib}<br>"
             + " · ".join(parts) + "<br>"
             + t("rflip.detail.sell", d=f"{r['exp_days']:.1f}", pd=f"{r['per_day']:.0f}", m=r["margin"]) + "<br>"
-            + describe_listing(l, self._index))
+            + self._graded(l, r["type"]))
         comps = M.comparables(self.store, r, self._index)
         self.comps.setRowCount(len(comps))
         for i, (s, p, x, kind) in enumerate(comps):
@@ -611,6 +673,15 @@ class RivenFlipTab(QWidget):
                 self.comps.setItem(i, c, cell)
         hist = (self.store.d["weapons"].get(r["url"]) or {}).get("hist") or []
         self.chart.set_data(hist, (r.get("de") or {}).get("median") if (r.get("de") or {}).get("own") else None)
+
+    def _graded(self, l, wtype):
+        """The stats with how well each rolled (S best … D worst of the game's 90-110 % range; ? = not known)."""
+        colors = {"S": "#e8c547", "A": "#4fbf6a", "B": "#5aa9e6", "C": "#b48ce0", "D": "#e0584a", "?": "#9aa4b2"}
+        parts = []
+        for a, (tag, _v, g) in zip(l["attrs"], M.roll_grades(l, wtype, self._index)):
+            label = describe_listing({"attrs": [a]}, self._index)
+            parts.append(f"{label} <b style='color:{colors[g]}'>{g}</b>")
+        return t("rflip.detail.rolls") + " " + ", ".join(parts)
 
     # ---------- actions ----------
     def _selected(self):

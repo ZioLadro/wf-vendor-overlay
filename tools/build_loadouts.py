@@ -41,11 +41,27 @@ MOD_TYPES = {"Warframe Mod": "W", "Primary Mod": "P", "Shotgun Mod": "G", "Secon
              "Posture Mod": "Y"}
 
 
+DT_NAMES = {"FIRE": "Heat", "FREEZE": "Cold", "ELECTRICITY": "Electricity", "POISON": "Toxin", "EXPLOSION": "Blast",
+            "IMPACT": "Impact", "PUNCTURE": "Puncture", "SLASH": "Slash", "RADIATION": "Radiation", "VIRAL": "Viral",
+            "CORROSIVE": "Corrosive", "GAS": "Gas", "MAGNETIC": "Magnetic", "TAU": "Tau", "VOID": "Void"}
+
+
+def _plain(line: str) -> str:
+    """A stat line without markup; the damage-type tags become their names ("<DT_SLASH_COLOR>" -> "Slash")."""
+    s = str(line)
+
+    def name(m):                                         # the tag alone ("apply <DT_SLASH_COLOR> on") -> its name;
+        word = DT_NAMES.get(m.group(1), m.group(1).title())          # a tag before the name itself -> nothing
+        return "" if s[m.end():].lstrip().lower().startswith(word.lower()) else word + " "
+    s = re.sub(r"<DT_([A-Z]+?)(?:_COLOR)?>", name, s)
+    return re.sub(r"\s{2,}", " ", re.sub(r"<[^>]+>", "", s))
+
+
 def _stat_text(level: dict) -> str:
     """One rank's effect as text: its lines without markup, the "+1 Arcane Revive" note and repeated lines left out."""
     out = []
     for line in level.get("stats") or []:
-        for part in re.sub(r"<[^>]+>", "", str(line)).replace("\\n", "\n").split("\n"):
+        for part in _plain(line).replace("\\n", "\n").split("\n"):
             part = part.strip()
             if part and part not in out and not re.fullmatch(r"\+\d+ Arcane Revives?", part):
                 out.append(part)
@@ -56,15 +72,19 @@ def wfcd(folder: Path) -> dict:
     """Polarity, drain and stats from the community-maintained WFCD/warframe-items data."""
     def load(name):
         return json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
-    mst, mtext = {}, {}
+    mst, mtext, pri_of = {}, {}, {}
     for m in load("Mods"):
         kind = MOD_TYPES.get(m.get("type"))
         name = m.get("name")
         if not kind or not name or "baseDrain" not in m:
             continue
         lim = int(m.get("fusionLimit") or 0)
-        if name in mst and mst[name][2] >= lim:
+        # several mods share a name (Vital Sense: the normal one, a Beginner and an Expert variant): the normal one wins,
+        # then the highest rank
+        pri = (0 if re.search(r"/(Beginner|Expert|Intermediate)/", str(m.get("uniqueName") or "")) else 1, lim)
+        if name in mst and pri_of.get(name, (0, 0)) >= pri:
             continue
+        pri_of[name] = pri
         stats = {}
         levels = m.get("levelStats") or []
         if kind == "W" and levels:
@@ -75,12 +95,12 @@ def wfcd(folder: Path) -> dict:
                     stats[key] = round(stats.get(key, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
         if kind in "PGSM" and levels:                    # weapon mods: percentage stats by (plain) label, for the bonus recap
             for line in levels[-1].get("stats", []):
-                hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)%\s*(.+)", re.sub(r"<[^>]+>", "", line).strip())
+                hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)%\s*(.+)", _plain(line).strip())
                 if hit:
                     label = re.sub(r"\s*\(.*?\)", "", hit.group(3)).strip()
                     stats[label] = round(stats.get(label, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
                     continue
-                hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)\s+(Range)", re.sub(r"<[^>]+>", "", line).strip())
+                hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)\s+(Range)", _plain(line).strip())
                 if hit:                                  # a flat value: Primed Reach "+3 Range" (metres)
                     key = hit.group(3) + " (flat)"
                     stats[key] = round(stats.get(key, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)), 4)

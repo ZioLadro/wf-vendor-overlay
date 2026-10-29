@@ -121,14 +121,33 @@ def _from_wiki(name):
     return None
 
 
+_cards_ok = set()                                     # card pictures already checked to be whole cards
 _done = [0, 0]                                         # pictures saved, not found / failed (Console)
+
+
+def _portrait(path) -> bool:
+    """True when a picture is taller than wide (a whole mod card from the wiki; the CDN's mod art is wider)."""
+    try:
+        from PyQt6.QtGui import QImageReader
+        s = QImageReader(str(path)).size()
+        return s.height() > s.width() * 1.1
+    except Exception:
+        return True
+
+
+def _is_mod(name) -> bool:
+    try:
+        from app.game import loadouts as LO
+        return name in LO.data().get("mst", {})
+    except Exception:
+        return False
 
 
 def _run():
     from app.core import logbus
     fails = 0
     while True:
-        key, slug, name = _q.get()
+        key, slug, name, mode = _q.get()
         try:
             if _file(key).exists():
                 continue
@@ -136,14 +155,17 @@ def _run():
                 logbus.add("pictures", "the sites do not answer: pausing the downloads for 10 minutes", "warn")
                 time.sleep(600)
                 fails = 0
-            src = "warframe.market"
-            data = _from_market(slug)
-            if data is None and name:
-                src = "cdn.warframestat.us"
-                data = _from_cdn(name)
-            if data is None and name:
-                src = "wiki"
-                data = _from_wiki(name)
+            data, src = None, ""
+            order = {"art": ("cdn", "wiki"), "card": ("wiki", "cdn")}.get(mode, ("market", "cdn", "wiki"))
+            for how in order:
+                if data is not None:
+                    break
+                if how == "market":
+                    src, data = "warframe.market", _from_market(slug)
+                elif how == "cdn" and name:
+                    src, data = "cdn.warframestat.us", _from_cdn(name)
+                elif how == "wiki" and name:
+                    src, data = "wiki", _from_wiki(name)
             if data:
                 DIR.mkdir(parents=True, exist_ok=True)
                 _file(key).write_bytes(data)
@@ -180,20 +202,35 @@ def pending() -> int:
     return len(_pending)
 
 
-def by_name(name, slug=None, wiki_only=False, fetch=True):
+def by_name(name, slug=None, wiki_only=False, fetch=True, kind=None):
     """File of the picture of an item known by name (a mod or Arcane of a loadout, say); asks for it if missing.
-    wiki_only: the picture comes from the Warframe wiki only (the Builds tab), kept apart from the market's.
+    wiki_only: the picture of the Builds tab, kept apart from the market's (kind "card": the whole mod card from the
+    wiki, for tooltips; kind "art": the mod's artwork from the WFCD CDN, inside the build's cards).
     fetch=False: only a picture already downloaded (the planner's mod library: hundreds of cards)."""
     global _worker
     if not CFG.get("item_previews", True) or not name:
         return None
-    if wiki_only:
+    mode = "market"
+    if wiki_only or kind:
         slug = None
+        mode = kind or "card"
     else:
         slug = slug or (_market.slug_for_name(name) if _market else None)
-    key = slug or "wiki_" + name
+    key = slug or ("art_" if mode == "art" else "wiki_") + name
     f = _file(key)
+    if mode == "card" and key not in _cards_ok and f.exists() and _is_mod(name) and not _portrait(f):
+        # 0.4.7-0.4.8 saved the CDN's artwork under the card's name: it becomes the artwork, the card is read again
+        art = _file("art_" + name)
+        try:
+            if not art.exists():
+                f.replace(art)
+            else:
+                f.unlink()
+        except OSError:
+            return f
     if f.exists():
+        if mode == "card":
+            _cards_ok.add(key)
         return f
     if not fetch:
         return None
@@ -203,7 +240,7 @@ def by_name(name, slug=None, wiki_only=False, fetch=True):
     if _worker is None:
         _worker = threading.Thread(target=_run, daemon=True)
         _worker.start()
-    _q.put((key, slug, name))
+    _q.put((key, slug, name, mode))
     return None
 
 
