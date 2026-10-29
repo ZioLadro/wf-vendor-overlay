@@ -181,16 +181,29 @@ class Card(QWidget):
         grad = __import__("PyQt6.QtGui", fromlist=["QLinearGradient"]).QLinearGradient(0, 0, 0, H)
         grad.setColorAt(0, QColor("#252c38" if name else "#161a21"))
         grad.setColorAt(1, QColor("#14171d" if name else "#111419"))
-        p.fillPath(path, QBrush(grad))
         p.save()
-        p.setClipPath(path)
-        if wiki:
+        if wiki:                                           # the frame is the card's outline: nothing drawn outside it
+            p.setClipRect(modframes.inner(W, H))
+            p.fillRect(self.rect(), QBrush(grad))
             modframes.paint_back(p, W, H, wiki)
+        else:
+            p.fillPath(path, QBrush(grad))
+            p.setClipPath(path)
         if self.pic is not None and not self.pic.isNull():
             pm = self.pic
             if s.get("role") == "arcane":                  # an Arcane: its picture on the left, whole
                 p.setOpacity(0.85)
                 p.drawPixmap(int(W * 0.06), int((H - pm.height()) / 2), pm)
+            elif wiki:                                     # inside the game's frame, as bright as in the game
+                ir = modframes.inner(W, H)
+                p.save()
+                p.setClipRect(ir)
+                p.setOpacity(0.62)
+                k = max(ir.width() / pm.width(), ir.height() / pm.height())
+                w, h = pm.width() * k, pm.height() * k
+                p.drawPixmap(QRectF(ir.center().x() - w / 2, ir.top() + (ir.height() - h) * 0.3, w, h), pm,
+                             QRectF(pm.rect()))
+                p.restore()
             else:                                          # a mod: its art fills the card, dimmed
                 p.setOpacity(0.38)
                 x = (W - pm.width()) / 2

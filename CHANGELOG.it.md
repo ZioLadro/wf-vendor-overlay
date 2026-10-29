@@ -3,6 +3,13 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.5
+- **Cornici delle carte come nel gioco**: disposte sui file veri della wiki: il FrameTop (l'ornamento della rarità) in
+  alto, il FrameBottom (la vaschetta curva) in basso, le loro gambe fanno i lati, l'immagine dentro, il drain sul
+  riquadro del gioco, le tacche di rank sulla riga di rank. I pezzi vengono chiesti per nome (Bronze / Silver / Gold /
+  Legendary / Riven / Galvanized / Peculiar…); le cornici Avionic della Railjack e le luci laterali / d'angolo non sono
+  più usate. I pezzi scaricati dalla 0.5.3–0.5.4 vengono sostituiti una volta.
+
 ## 0.5.4
 - **Le cornici delle carte ora compaiono**: i pezzi sono riconosciuti dalla didascalia sulla pagina della wiki («Rare Mod
   Top Border»…), non solo dal nome del file, e le carte a schermo vengono ridisegnate appena arrivano. La Console dice

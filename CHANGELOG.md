@@ -3,6 +3,13 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.5
+- **Card frames like the game's**: laid out on the real wiki files: the FrameTop (the rarity's ornament) across the top,
+  the FrameBottom (the curved tray) across the bottom, their legs making the sides, the art inside, the drain on the
+  game's box, the rank pips on the rank line. The parts are asked for by their names (Bronze / Silver / Gold /
+  Legendary / Riven / Galvanized / Peculiar…); Railjack's Avionic frames and the side / corner lights are no longer
+  used. The parts downloaded by 0.5.3–0.5.4 are replaced once.
+
 ## 0.5.4
 - **Card frames now show up**: the parts are recognised by their caption on the wiki page ("Rare Mod Top Border"…), not
   only by their file name, and the cards on screen are drawn again as soon as they arrive. The Console says what was

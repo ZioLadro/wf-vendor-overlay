@@ -1,16 +1,17 @@
 """Mod card frames from the Warframe wiki (https://wiki.warframe.com/w/Mod/Assets): the parts the game's own cards are
-made of (top and bottom border, background, side and corner lights, the backer of the drain, rank line and pips), per
-rarity (Common, Uncommon, Rare, Legendary, Riven, Galvanized, Amalgam, Peculiar…). The wiki took them from the Warframe
-Companion app / the Arsenal Twitch extension.
+made of, per metal / rarity (Bronze = Common, Silver = Uncommon, Gold = Rare, Legendary, Riven, Galvanized, Peculiar,
+Amalgam). The wiki took them from the Warframe Companion app / the Arsenal Twitch extension.
 
-The page is read once through the standard MediaWiki API (the list of its pictures, then each picture's address), the
-pictures are kept in the data folder (modframes/) and read again after 30 days; nothing else is asked of the wiki. The
-parts are recognised by their file names ("Rare Mod Top Border", "Mod Rank Pip"…, spaces or not), so a renamed file is
-simply left out. Missing parts or no connection: the Builds cards are drawn as before.
+The files are named <Metal><Part>.png: FrameTop (the top edge with the rarity's ornament and two legs going down),
+FrameBottom (the curved tray at the bottom with its uprights), Background, TopRightBacker (the drain's box), LowerTab,
+SideLight, CornerLights; shared: RankCompleteLine and RankSlotActive (the rank line and a lit pip), BlankMod. They are
+asked for by name through the standard MediaWiki API (plus whatever else the page lists that is recognised), kept in
+the data folder (modframes/) and read again after 30 days. The page's "Avionic" frames (Railjack) are left out.
 
-The Builds cards are landscape (as in the game's upgrade screen) while the parts were made for the tall card: they are
-drawn at one common scale (the card's width over the top border's), borders at the top and bottom, lights on the sides,
-the backer behind the drain, the rank pips on the rank line."""
+The Builds cards are landscape like the game's upgrade screen; the game builds those from the same two pieces: the
+FrameTop across the top and the FrameBottom across the bottom, their legs making the sides. The background and the
+mod's art fill the inside, the drain sits on the TopRightBacker, the rank pips on the rank line under the card.
+Missing parts or no connection: the simple cards."""
 import json
 import re
 import threading
@@ -23,16 +24,26 @@ DIR = APP_DIR / "modframes"
 INDEX = DIR / "index.json"
 MAX_AGE = 30 * 86400
 API = "https://wiki.warframe.com/api.php"
+VERSION = 3
 
-RARITIES = ("common", "uncommon", "rare", "legendary", "riven", "galvanized", "amalgam", "peculiar")
-# part key -> words its file name contains (normalised: lower case, letters only)
-PARTS = (("topborder", ("topborder",)), ("bottomborder", ("bottomborder",)), ("background", ("background",)),
-         ("backer", ("backer",)), ("sidelight", ("sidelight", "sidesmoke")), ("cornerlight", ("cornerlight",)),
-         ("bottomlight", ("bottomlight",)), ("typetab", ("typetab",)), ("rankline", ("rankline",)),
-         ("rankpip", ("rankpip",)), ("empty", ("emptymodslot", "emptyslot")))
-SHARED = ("rankline", "rankpip", "empty")
-FALLBACK = {"galvanized": "uncommon", "amalgam": "legendary", "peculiar": "legendary", "riven": "uncommon"}
+METALS = {"bronze": "common", "silver": "uncommon", "gold": "rare", "legendary": "legendary", "riven": "riven",
+          "galvanized": "galvanized", "peculiar": "peculiar", "amalgam": "amalgam",
+          # the page's captions use the rarities' names
+          "uncommon": "uncommon", "common": "common", "rare": "rare"}
+# part key -> words of its file name / caption (normalised: lower case, letters only)
+PARTS = (("topborder", ("frametop", "topborder")), ("bottomborder", ("framebottom", "bottomborder")),
+         ("background", ("background",)), ("backer", ("toprightbacker", "backer")),
+         ("sidelight", ("sidelight", "sidesmoke")), ("cornerlight", ("cornerlight",)), ("bottomlight", ("bottomlight",)),
+         ("typetab", ("lowertab", "typetab")), ("rankline", ("rankcompleteline", "rankline")),
+         ("rankpipoff", ("rankslotinactive", "rankslotempty", "rankslotunlit")),
+         ("rankpip", ("rankslotactive", "rankpip", "rankslot")), ("empty", ("blankmod", "emptymodslot", "emptyslot")))
+SHARED = ("rankline", "rankpip", "rankpipoff", "empty")
+FALLBACK = {"galvanized": "uncommon", "amalgam": "legendary", "peculiar": "legendary", "riven": "uncommon",
+            "uncommon": "common"}
 CODE = {"C": "common", "U": "uncommon", "R": "rare", "L": "legendary", "riven": "riven"}
+KNOWN = [m + p + ".png" for m in ("Bronze", "Silver", "Gold", "Legendary", "Riven", "Galvanized", "Peculiar", "Amalgam")
+         for p in ("FrameTop", "FrameBottom", "Background", "TopRightBacker")] + \
+        ["RankCompleteLine.png", "RankSlotActive.png", "RankSlotInactive.png", "RankSlotEmpty.png", "BlankMod.png"]
 
 _lock = threading.Lock()
 _state = {"index": None, "busy": False, "pix": {}}
@@ -43,17 +54,21 @@ def _norm(s) -> str:
 
 
 def classify(filename: str):
-    """(rarity or "", part, side) of a file of the page, or None. side: "left" / "right" / ""."""
+    """(rarity or "", part, side) of a file, or None. Railjack's Avionic frames are not mod frames."""
     n = _norm(re.sub(r"\.(png|webp|jpg|gif)$", "", filename, flags=re.I))
+    if "avionic" in n:
+        return None
     part = next((k for k, words in PARTS if any(w in n for w in words)), None)
     if not part:
         return None
     rar = ""
-    for r in sorted(RARITIES, key=len, reverse=True):     # "uncommon" before "common"
-        if r in n:
-            rar = r
+    for word in sorted(METALS, key=len, reverse=True):    # "uncommon" before "common"
+        if word in n:
+            rar = METALS[word]
             break
-    side = "left" if "left" in n else ("right" if "right" in n else "")
+    if part in SHARED:
+        rar = ""
+    side = "left" if "left" in n else ("right" if n.endswith("right") else "")
     return rar, part, side
 
 
@@ -90,15 +105,19 @@ def notifier():
     return _Notifier.get()
 
 
+def _usable(idx) -> bool:
+    return any((DIR / f).exists() for f in idx.get("files") or {})
+
+
 def ensure(force=False):
-    """Reads the page's pictures in the background when they are missing or 30 days old (once per run)."""
+    """Reads the parts in the background when they are missing, of an older layout or 30 days old (once per run)."""
     if not enabled():
         return
     notifier()                                             # created here, in the GUI thread
     idx = _index()
-    if not force and idx.get("v") == 2 and _usable(idx) and time.time() - float(idx.get("t") or 0) < MAX_AGE:
+    if not force and idx.get("v") == VERSION and _usable(idx) and time.time() - float(idx.get("t") or 0) < MAX_AGE:
         return
-    if not force and idx.get("tried") and time.time() - float(idx["tried"]) < 3600:
+    if not force and idx.get("v") == VERSION and time.time() - float(idx.get("tried") or 0) < 3600:
         return                                             # failed less than an hour ago: not again yet
     with _lock:
         if _state["busy"]:
@@ -107,15 +126,11 @@ def ensure(force=False):
     threading.Thread(target=_download, daemon=True, name="modframes").start()
 
 
-def _usable(idx) -> bool:
-    files = idx.get("files") or {}
-    return any((DIR / f).exists() for f in files)
-
-
 def page_files(html: str) -> list:
-    """[(file name, caption)] of the page's pictures in page order: the caption is the text after the picture up to the
-    next one (a gallery's caption, a table cell), with the section title in front."""
+    """[(file name, caption)] of the page's pictures in page order (the caption: the text after the picture up to the
+    next one, with the section title in front)."""
     import html as H
+    from urllib.parse import unquote
     out, section = [], ""
     marks = [(m.start(), "h", m.group(1)) for m in re.finditer(r"<h[2-4][^>]*>(.*?)</h[2-4]>", html, re.S)]
     marks += [(m.start(), "f", m.group(1)) for m in re.finditer(r'href="[^"]*?/(?:File|Image):([^"#?]+)"', html)]
@@ -124,34 +139,23 @@ def page_files(html: str) -> list:
         if kind == "h":
             section = H.unescape(re.sub(r"<[^>]+>", " ", val)).strip()
             continue
-        from urllib.parse import unquote
         name = unquote(H.unescape(val)).replace(" ", "_")
         end = marks[n + 1][0] if n + 1 < len(marks) else len(html)
         chunk = html[pos:end]
-        chunk = chunk[chunk.find(">") + 1:]                # from after the link's own tag
-        text = H.unescape(re.sub(r"<[^>]+>", " ", chunk))
-        text = re.sub(r"\s+", " ", text).strip()[:120]
-        if out and out[-1][0] == name:
-            continue
-        out.append((name, (section + " | " + text).strip(" |")))
+        chunk = chunk[chunk.find(">") + 1:]
+        text = re.sub(r"\s+", " ", H.unescape(re.sub(r"<[^>]+>", " ", chunk))).strip()[:120]
+        if not (out and out[-1][0] == name):
+            out.append((name, (section + " | " + text).strip(" |")))
     return out
 
 
-def _label_class(name: str, caption: str):
-    """classify() on the caption (its own words), else on the file name."""
+def _label(name: str, caption: str = ""):
+    """The part a file is: from its own name first (<Metal><Part>), else from its caption on the page."""
+    c = classify(name)
+    if c or "avionic" in _norm(name):
+        return c
     cap = caption.split(" | ", 1)[-1]
-    c = classify(cap) if cap else None
-    if c and not c[0]:                                     # a caption without a rarity: the section's ("Rare Mod")
-        sec = caption.split(" | ", 1)[0] if " | " in caption else ""
-        cs = classify(sec + " " + cap)
-        c = cs if cs else c
-    f = classify(name)
-    if c and f and not c[2] and f[2]:
-        c = (c[0], c[1], f[2])                             # left / right from the file name
-    c = c or f
-    if c and c[1] in SHARED:
-        c = ("", c[1], c[2])                               # the same rank line / pip / empty slot for every rarity
-    return c
+    return classify(cap) if cap else None
 
 
 def _download():
@@ -159,42 +163,37 @@ def _download():
     from app.core import logbus
     from app.trade.market import HEADERS
     h = {"User-Agent": HEADERS["User-Agent"]}
-    got, step = 0, "page"
+    step = "page"
     try:
-        r = requests.get(API, params={"action": "parse", "page": PAGE, "prop": "text|images", "format": "json"},
-                         headers=h, timeout=20)
-        r.raise_for_status()
-        parse = r.json().get("parse") or {}
-        listed = (parse.get("text") or {}).get("*") or ""
-        pairs = page_files(listed)
-        known = {n for n, _c in pairs}
-        pairs += [(n.replace(" ", "_"), "") for n in parse.get("images") or [] if n.replace(" ", "_") not in known]
-        labels = {}
-        for name, cap in pairs:
-            c = _label_class(name, cap)
-            if c:
-                labels[name] = "|".join(c)
-        logbus.add("builds", f"mod frames: the wiki page lists {len(pairs)} pictures, {len(labels)} recognised as card parts",
-                   "ok" if labels else "warn")
-        if not labels:
-            sample = ", ".join(f"{n} ({c[:40]})" for n, c in pairs[:6])
-            logbus.add("builds", f"mod frames: none recognised; first pictures: {sample}", "warn")
-            return
+        labels = {n: _label(n) for n in KNOWN}
+        try:                                               # whatever else the page shows (new rarities…)
+            r = requests.get(API, params={"action": "parse", "page": PAGE, "prop": "text|images", "format": "json"},
+                             headers=h, timeout=20)
+            r.raise_for_status()
+            parse = r.json().get("parse") or {}
+            pairs = page_files((parse.get("text") or {}).get("*") or "")
+            pairs += [(n.replace(" ", "_"), "") for n in parse.get("images") or []]
+            for name, cap in pairs:
+                c = _label(name, cap)
+                if c and name not in labels:
+                    labels[name] = c
+        except Exception as e:
+            logbus.add("builds", f"mod frames: wiki page not read ({type(e).__name__}), asking for the known files", "warn")
+        labels = {n: "|".join(c) for n, c in labels.items() if c}
         DIR.mkdir(parents=True, exist_ok=True)
-        files = {}
-        names = list(labels)
+        files, names = {}, list(labels)
         step = "files"
         for i in range(0, len(names), 40):                 # the addresses, 40 files per request
-            batch = names[i:i + 40]
-            q = requests.get(API, params={"action": "query", "format": "json", "prop": "imageinfo",
-                                          "iiprop": "url|size", "titles": "|".join("File:" + n for n in batch)},
+            q = requests.get(API, params={"action": "query", "format": "json", "prop": "imageinfo", "iiprop": "url",
+                                          "titles": "|".join("File:" + n for n in names[i:i + 40])},
                              headers=h, timeout=20)
             q.raise_for_status()
-            norm = {x.get("to"): x.get("from") for x in (q.json().get("query") or {}).get("normalized") or []}
-            for page in (q.json().get("query") or {}).get("pages", {}).values():
+            data = q.json().get("query") or {}
+            back = {x.get("to"): x.get("from") for x in data.get("normalized") or []}
+            for page in (data.get("pages") or {}).values():
                 info = (page.get("imageinfo") or [{}])[0]
                 title = str(page.get("title") or "")
-                title = (norm.get(title) or title).split(":", 1)[-1].replace(" ", "_")
+                title = (back.get(title) or title).split(":", 1)[-1].replace(" ", "_")
                 if not info.get("url") or title not in labels:
                     continue
                 time.sleep(0.25)
@@ -203,13 +202,18 @@ def _download():
                     safe = re.sub(r"[^\w.-]", "_", title)
                     (DIR / safe).write_bytes(d.content)
                     files[safe] = labels[title]
-                    got += 1
+        for old in DIR.glob("*.png"):                      # parts of an older download that are not used any more
+            if old.name not in files:
+                try:
+                    old.unlink()
+                except OSError:
+                    pass
         with _lock:
-            _state["index"] = {"v": 2, "t": time.time(), "files": files}
+            _state["index"] = {"v": VERSION, "t": time.time(), "files": files}
             _state["pix"].clear()
             INDEX.write_text(json.dumps(_state["index"]), encoding="utf-8")
-        logbus.add("builds", f"mod frames from the wiki: {got} parts saved", "ok" if got else "warn")
-        if got:
+        logbus.add("builds", f"mod frames from the wiki: {len(files)} parts saved", "ok" if files else "warn")
+        if files:
             try:
                 notifier().ready.emit()
             except Exception:
@@ -218,7 +222,7 @@ def _download():
         logbus.add("builds", f"mod frames from the wiki ({step}): {type(e).__name__}: {e}", "warn")
         with _lock:
             idx = dict(_index())
-            idx["tried"] = time.time()
+            idx.update(v=VERSION, tried=time.time())
             _state["index"] = idx
             try:
                 DIR.mkdir(parents=True, exist_ok=True)
@@ -230,23 +234,29 @@ def _download():
 
 
 def parts(rarity: str) -> dict:
-    """{part: (file, side)} for a rarity (common … peculiar), the rarity's own parts first, then its fallback's, then
-    the shared ones (rank line and pip)."""
-    files = _index().get("files") or {}
-    found = {}
-    for want in (rarity, FALLBACK.get(rarity, ""), ""):
+    """{part: file} for a rarity: its own parts, then its fallback's (Silver without its own: Bronze's shape), then the
+    shared ones. Only parts of the current layout (index version) count."""
+    idx = _index()
+    if idx.get("v") != VERSION:
+        return {}
+    files = idx.get("files") or {}
+    found, chain, r = {}, [], rarity
+    while r and r not in chain:
+        chain.append(r)
+        r = FALLBACK.get(r, "")
+    for want in chain + [""]:
         for f, lab in files.items():
-            c = tuple(lab.split("|")) if isinstance(lab, str) and lab.count("|") == 2 else classify(f)
+            c = lab.split("|") if isinstance(lab, str) and lab.count("|") == 2 else None
             if not c or c[0] != want or not (DIR / f).exists():
                 continue
-            rar, part, side = c
-            key = part + (":" + side if side else "")
-            found.setdefault(key, f)
+            found.setdefault(c[1], f)
     return found
 
 
 def _pix(file):
     from PyQt6.QtGui import QPixmap
+    if not file:
+        return None
     pm = _state["pix"].get(file)
     if pm is None:
         pm = QPixmap(str(DIR / file))
@@ -264,102 +274,77 @@ def rarity_of(name: str, code: str, riven=False) -> str:
 
 
 def available(rar: str) -> bool:
-    return enabled() and bool(rar) and "topborder" in parts(rar) and "bottomborder" in parts(rar)
-
-
-def paint_back(p, W, H, rar: str) -> bool:
-    """The rarity's background over the whole card (cover). False when there is none."""
     ps = parts(rar)
-    f = ps.get("background")
-    pm = _pix(f) if f else None
-    if pm is None:
-        return False
-    from PyQt6.QtCore import QRectF
-    s = max(W / pm.width(), H / pm.height())
-    w, h = pm.width() * s, pm.height() * s
-    p.drawPixmap(QRectF((W - w) / 2, (H - h) / 2, w, h), pm, QRectF(pm.rect()))
-    return True
-
-
-def paint_front(p, W, H, rar: str, rank=None, mx=None):
-    """Borders, lights, backer and rank pips over the card. Returns the backer's rectangle (or None) so the drain can be
-    drawn on it."""
-    from PyQt6.QtCore import QRectF
-    ps = parts(rar)
-    top = _pix(ps.get("topborder")) if ps.get("topborder") else None
-    bottom = _pix(ps.get("bottomborder")) if ps.get("bottomborder") else None
-    if top is None or bottom is None:
-        return None
-    s = W / top.width()                                    # one scale for every part (they were made together)
-
-    def put(pm, x, y, mirror=False, max_h=None):
-        w, h = pm.width() * s, pm.height() * s
-        if max_h and h > max_h:                            # never taller than the room it has on a landscape card
-            k = max_h / h
-            w, h = w * k, h * k
-        if mirror:
-            p.save()
-            p.translate(x + w, y)
-            p.scale(-1, 1)
-            p.drawPixmap(QRectF(0, 0, w, h), pm, QRectF(pm.rect()))
-            p.restore()
-        else:
-            p.drawPixmap(QRectF(x, y, w, h), pm, QRectF(pm.rect()))
-        return w, h
-
-    def side_pair(key, y_of):
-        left = ps.get(key + ":left") or ps.get(key)
-        right = ps.get(key + ":right")
-        pl = _pix(left) if left else None
-        if pl is None:
-            return
-        w, h = pl.width() * s, min(pl.height() * s, H)
-        y = y_of(h)
-        put(pl, 0, y, max_h=H)
-        pr = _pix(right) if right else None
-        if pr is not None:
-            put(pr, W - pr.width() * s, y, max_h=H)
-        else:
-            put(pl, W - w, y, mirror=True, max_h=H)
-
-    side_pair("sidelight", lambda h: (H - h) / 2)
-    side_pair("cornerlight", lambda h: H - h)
-    bl = _pix(ps["bottomlight"]) if ps.get("bottomlight") else None
-    if bl is not None:
-        w = bl.width() * s
-        put(bl, (W - w) / 2, H - bl.height() * s)
-    _w, th = put(top, 0, 0, max_h=H * 0.32)
-    bw, bh = bottom.width() * s, bottom.height() * s
-    if bh > H * 0.36:
-        bw, bh = bw * H * 0.36 / bh, H * 0.36
-    put(bottom, (W - bw) / 2, H - bh, max_h=H * 0.36)
-    # the rank: the line across the bottom border, a pip per rank (dim when not reached)
-    if mx:
-        line = _pix(ps["rankline"]) if ps.get("rankline") else None
-        pip = _pix(ps["rankpip"]) if ps.get("rankpip") else None
-        cy = H - bh * 0.55
-        if line is not None:
-            lw, lh = min(line.width() * s, W * 0.8), line.height() * s
-            put(line, (W - lw) / 2, cy - lh / 2, max_h=max(2.0, H * 0.06))
-        if pip is not None:
-            r = mx if rank is None else max(0, min(int(rank), int(mx)))
-            pw, ph = pip.width() * s, pip.height() * s
-            gap = pw * 1.15
-            x0 = (W - gap * (mx - 1) - pw) / 2
-            for i in range(int(mx)):
-                p.setOpacity(1.0 if i < r else 0.28)
-                p.drawPixmap(QRectF(x0 + i * gap, cy - ph / 2, pw, ph), pip, QRectF(pip.rect()))
-            p.setOpacity(1.0)
-    backer = _pix(ps["backer"]) if ps.get("backer") else None
-    if backer is not None:
-        w, h = backer.width() * s, backer.height() * s
-        if h > H * 0.3:
-            w, h = w * H * 0.3 / h, H * 0.3
-        rect = QRectF(W - w - W * 0.03, th * 0.15, w, h)
-        p.drawPixmap(rect, backer, QRectF(backer.rect()))
-        return rect
-    return None
+    return enabled() and bool(rar) and "topborder" in ps and "bottomborder" in ps
 
 
 def has_pips(rar: str) -> bool:
     return available(rar) and "rankpip" in parts(rar)
+
+
+def inner(W, H):
+    """The inside of the frame (where the background and the art go)."""
+    from PyQt6.QtCore import QRectF
+    return QRectF(W * 0.035, H * 0.05, W * 0.93, H * 0.84)
+
+
+def paint_back(p, W, H, rar: str) -> bool:
+    """The rarity's background stretched over the inside of the card. False when there is none."""
+    from PyQt6.QtCore import QRectF
+    pm = _pix(parts(rar).get("background"))
+    if pm is None:
+        return False
+    p.drawPixmap(inner(W, H), pm, QRectF(pm.rect()))
+    return True
+
+
+def _piece(pm, target_w):
+    """(w, h) of a piece drawn target_w wide (its own proportions)."""
+    return target_w, pm.height() * target_w / pm.width()
+
+
+def paint_front(p, W, H, rar: str, rank=None, mx=None):
+    """The frame over the card: the FrameTop across the top, the FrameBottom across the bottom (their legs are the
+    card's sides), the rank pips on the rank line at the bottom, the drain's backer top right (its rectangle is returned
+    so the drain is written on it)."""
+    from PyQt6.QtCore import QRectF
+    ps = parts(rar)
+    top, bottom = _pix(ps.get("topborder")), _pix(ps.get("bottomborder"))
+    if top is None or bottom is None:
+        return None
+    wide = bottom.width() >= 400                           # Galvanized / Peculiar: drawn at twice the size
+    # the tray is a little wider than the top edge (292 / 281 px): the tray fills the card, the top is centred on it
+    bw, bh = _piece(bottom, W)
+    tw, th = _piece(top, W * (top.width() / bottom.width() if not wide else 0.97))
+    # on a landscape card the legs must not go past the other piece: each is cut to the card's height
+    bh_draw = min(bh, H * 0.98)
+    p.drawPixmap(QRectF(0, H - bh_draw, bw, bh_draw), bottom,
+                 QRectF(0, bottom.height() * (1 - bh_draw / bh), bottom.width(), bottom.height() * bh_draw / bh))
+    th_draw = min(th, H * 0.9)
+    p.drawPixmap(QRectF((W - tw) / 2, 0, tw, th_draw), top,
+                 QRectF(0, 0, top.width(), top.height() * th_draw / th))
+    # the rank: a line along the bottom edge, a pip per rank (lit up to the rank)
+    if mx:
+        line, pip, off = _pix(ps.get("rankline")), _pix(ps.get("rankpip")), _pix(ps.get("rankpipoff"))
+        cy = H - H * 0.075
+        if line is not None:
+            lw = W * 0.62
+            p.drawPixmap(QRectF((W - lw) / 2, cy + H * 0.02, lw, max(2.0, H * 0.035)), line, QRectF(line.rect()))
+        if pip is not None:
+            r = int(mx) if rank is None else max(0, min(int(rank), int(mx)))
+            d = max(5.0, min(H * 0.085, W * 0.5 / max(1, int(mx))))
+            gap = d * 1.25
+            x0 = (W - gap * (int(mx) - 1) - d) / 2
+            for i in range(int(mx)):
+                src = pip if i < r or off is None else off
+                p.setOpacity(1.0 if i < r else (0.9 if off is not None else 0.25))
+                p.drawPixmap(QRectF(x0 + i * gap, cy - d / 2, d, d), src, QRectF(src.rect()))
+            p.setOpacity(1.0)
+    backer = _pix(ps.get("backer"))
+    if backer is not None:
+        h = H * 0.2
+        w = max(h * backer.width() / backer.height(), W * 0.25)
+        rect = QRectF(W - w - W * 0.055, H * 0.11, w, h)
+        p.drawPixmap(rect, backer, QRectF(backer.rect()))
+        return rect
+    return None
