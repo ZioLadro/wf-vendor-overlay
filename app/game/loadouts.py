@@ -19,10 +19,11 @@ from app.core.paths import DATA
 DATA_FILE = DATA / "loadout_data.json"
 CATEGORIES = (("Suits", "warframe"), ("LongGuns", "primary"), ("Pistols", "secondary"), ("Melee", "melee"),
               ("SpaceSuits", "archwing"), ("SpaceGuns", "archgun"), ("MechSuits", "necramech"),
-              ("Sentinels", "companion"), ("KubrowPets", "companion"), ("MoaPets", "companion"),
-              ("SentinelWeapons", "companion"), ("SpecialItems", "exalted"))
-# SpecialItems also holds companion claws and summoned "suits" (Sevagoth's Shadow, Venari, Merulina): only the Warframes'
-# exalted weapons (under /Lotus/Powersuits/) are kept
+              ("Sentinels", "companion"), ("KubrowPets", "companion"), ("MoaPets", "companion"), ("HoundPets", "companion"),
+              ("SentinelWeapons", "compweapon"), ("SpecialItems", "exalted"))
+# SpecialItems also holds the beast companions' claws (read as companion weapons) and summoned "suits" (Sevagoth's Shadow,
+# Venari, Merulina): of the rest only the Warframes' exalted weapons (under /Lotus/Powersuits/) are kept
+CLAWS = re.compile(r"PetWeapon|Claws?$")
 EXALTED_SKIP = re.compile(r"(PowerSuit|Suit|/SevagothShadow\w*|/Reaper)$")
 # kind -> slot roles in index order (the 8 general slots come first)
 LAYOUT = {
@@ -161,15 +162,22 @@ def read(inv: dict, market=None) -> list:
     from app.game import incarnon as INC
     evo, genesis = INC.index(inv, I.names_for_path)
     out = []
-    for key, kind in CATEGORIES:
+    for key, cat_kind in CATEGORIES:
         for item in inv.get(key) or []:
+            kind = cat_kind                                    # (the claws in SpecialItems change it for themselves)
             path = item.get("ItemType", "")
             names = I.names_for_path(path)
             item_name = re.sub(r"<[^>]*>\s*", "", names[0] if names else path.rsplit("/", 1)[-1]).strip() or path
             roles = LAYOUT.get(kind)
             cfgs = item.get("Configs") if isinstance(item.get("Configs"), list) else []
             owner = ""
-            if kind == "exalted":
+            if kind == "exalted" and not path.startswith("/Lotus/Powersuits/") and CLAWS.search(path):
+                kind = "compweapon"                            # a Kubrow's / Kavat's claws: a companion weapon
+                if not names:
+                    item_name = "Claws"
+                longest = max((len(c.get("Upgrades") or []) for c in cfgs if isinstance(c, dict)), default=8)
+                roles = ["general"] * 8 + (["stance"] if longest >= 9 else [])     # the Posture mod, like a stance
+            elif kind == "exalted":
                 if not path.startswith("/Lotus/Powersuits/") or EXALTED_SKIP.search(path):
                     continue
                 if not names:                                  # no name in the game data: from the path
@@ -181,7 +189,8 @@ def read(inv: dict, market=None) -> list:
             reactor = bool((item.get("Features") or 0) & 1)
             # file: the game file says it is there; none: the file says it is not; unknown: not stated; guess: deduced from a build
             reactor_src = "file" if reactor else ("none" if "Features" in item else "unknown")
-            level = _rank(item.get("XP"), 1000 if key in _FRAME_KINDS + ("SpecialItems",) else 500, max_rank(item_name, kind))
+            level = _rank(item.get("XP"), 1000 if key in _FRAME_KINDS + ("SpecialItems",) and kind != "compweapon" else 500,
+                          max_rank(item_name, kind))
             shards = [shard(a) for a in item.get("ArchonCrystalUpgrades") or [] if isinstance(a, dict)]
             first = len(out)
             for n, cfg in enumerate(cfgs):
@@ -319,7 +328,7 @@ def _row(role, ref, owned):
     path = it.get("ItemType", "")
     names = I.names_for_path(path)
     name = re.sub(r"<[^>]*>\s*", "", names[0] if names else path.rsplit("/", 1)[-1]).strip() or path
-    if not names and re.search(r"PetWeapon|Claws?$", path):        # a beast companion's own claws: no name in the data
+    if not names and CLAWS.search(path):        # a beast companion's own claws: no name in the data
         name = "Claws"
     rk = _rank(it.get("XP"), 1000 if sect in _FRAME_KINDS else 500)
     custom = ""

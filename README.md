@@ -56,13 +56,23 @@ price. The volume is the total of the trades of all ranks.
   *Recommended items marked*.
 
 **Recognising the vendor screen.** After reading the names, the program checks which vendor's stock they belong to
-(from `vendors.json` and Baro's list). Labels appear only if at least 3 matched items (setting *Items needed*) and 60 %
-of everything matched belong to the **same vendor**; names outside that vendor's stock are dropped. This keeps labels off
+(from `vendors.json` and Baro's list). Labels appear only if at least 3 matched items (setting *Items needed*) and 75 %
+of everything matched (setting *Share of the items*) belong to the **same vendor**; names outside that vendor's stock are dropped. This keeps labels off
 inventory, chat or codex pages that merely show some item names. The program also **reads the vendor's name** in the top
 20 % of the game window (setting *Vendor name zone*; e.g. *Cephalon Simaris*, *Red Veil*): when it is there and at least
 one item is that vendor's, labels are shown even with few items. *Require the vendor name* makes it mandatory (stricter,
 but vendors whose heading is not their name would never match). F8 writes everything it read to `last_scan.txt` in the
 data folder, to see why a vendor was or was not recognised. Turn it off with *Recognise the vendor screen*.
+
+**Where you are (the game's log).** Warframe writes in `%LOCALAPPDATA%\Warframe\EE.log` every place it loads (the
+Orbiter, a Relay, Cetus, Fortuna, the Necralisk / Sanctum, the Chrysalith, Höllvania, Iron Wake, the Drifter's camp, a
+mission…). The program reads the end of that file (only reads it) and uses it twice: a vendor that lives in one place
+(the Ostron and Cetus' vendors, Fortuna's, the Necralisk's and Cavia, Archimedean Yonta and the Holdfasts, the Hex,
+Palladino, Acrithis, Chipper, Simaris and Baro at a Relay) is never recognised while you are elsewhere, for the prices
+and for the Weekly check; and while you are in a mission or an open world no automatic scan runs (the scan key still
+works). Vendors you can open anywhere (Teshin, the Relay syndicates, Nightwave, events, Focus) always count. When the log
+is missing, old (the game is not running) or names a place the program does not know, nothing is ruled out. Settings >
+Detection > *Where you are*; the place read shows in the Console (`eelog`).
 
 ## Activities (in game, F6)
 A small always-on-top window over the game, styled like a quest tracker, movable (drag the title) and resizable
@@ -100,10 +110,12 @@ open it and does not stay above the game (setting *Window always on top* to keep
 game its area is blanked before the OCR, so it never reads its own names.
 
 On top of every tab:
-- **Player strip**: your profile glyph and Mastery Rank emblem (pictures from browse.wf, downloaded once), name (from
-  AlecaFrame's `lastUsername.txt`, or click to type it), mastery rank, trades left
-  (⚠ when the last sync is before the daily reset), wallet under name and MR (platinum, Endo, ducats, Aya, Steel Essence, Pathos Clamps, Riven Slivers, Live Heartcells,
-  Kuva, Vitus Essence, each with its game icon; compact, exact value in the tooltip) and a badge per syndicate with rank and standing (hover for the standing left today). Syndicate logos are
+- **Player strip**: your profile glyph in a box beside the name (from AlecaFrame's `lastUsername.txt`, or click to type
+  it), with the small Mastery Rank emblem in front of the MR (pictures from browse.wf, downloaded once) and the trades
+  left (⚠ when the last sync is before the daily reset); under them, from the box's left edge, your currencies
+  (platinum, credits, Endo, ducats, Aya, Steel Essence, Pathos Clamps, Riven Slivers, Live Heartcells, Kuva, Vitus
+  Essence, each with its game icon; compact, exact value in the tooltip; which ones in Settings > General > *Currencies
+  shown*) and a badge per syndicate with rank and standing (hover for the standing left today). Syndicate logos are
   downloaded from the wiki once; without them the badges are drawn in the syndicate colours.
 - **World strip**: Steel Path Omnia fissures, Earth / Cetus / Orb Vallis cycles, Baro Ki'Teer, Prime Resurgence and the
   current **Arbitration** with its tier from [arbi.guide](https://arbi.guide), all with live countdowns.
@@ -219,6 +231,14 @@ column shows how long a listing has been up (its creation date on warframe.marke
 older than (days)* (default 14) are not shown as deals, and those older than twice that are left out of the fair price
 (a price that has not sold for weeks says what does NOT sell).
 
+**Live check of the best deals**: the best deals of the table (10 by default) are checked again on warframe.market one
+after another, each about every 3 minutes (`/v1/auctions/entry/<id>`: one request per deal, with the seller's status
+now). The *Seller* column then shows ● in game / online or ○ offline and when it was checked; a riven sold or withdrawn
+shows *no longer listed*. A seller who comes online and a riven that is gone are written in the Console. These checks
+have their own limiter (at most 10 a minute, 6 by default) and pause during a riven scan, so all the riven requests
+together stay inside the 10-20 a minute warframe.market asks for; after repeated "too many requests" they stop for 15
+minutes. Settings > Riven flip > *Live check*.
+
 Riven requests have their own limiter (*Riven requests per minute*, default 12, never above 20, as warframe.market
 asks); on "too many requests" it waits and stops after three in a row. The tab only reads: nothing is posted.
 *Open the auction* and *Copy whisper* (right click on a row) help you contact the seller: the whisper is
@@ -228,8 +248,8 @@ asks); on "too many requests" it waits and stops after three in a row. The tab o
 Your in-game loadouts, shown like the game's loadout screen, from `lastData.dat` (*Reload from file* after AlecaFrame
 refreshed it).
 
-- **Game loadouts** (default view): your named loadouts with Warframe, weapons, Exalted weapon, companion, Archwing and
-  Necramech; click a row for that item's build. **By item**: every item's configurations, grouped by kind, with
+- **Game loadouts** (default view): your named loadouts with Warframe, weapons, Exalted weapon, companion and its weapon
+  (a Sentinel's / MOA's / Hound's weapon, or a beast's claws with their Posture slot), Archwing and Necramech; click a row for that item's build. **By item**: every item's configurations, grouped by kind, with
   thumbnails and a name/kind filter. Focus school and K-Drive are not shown.
 - **Laid out like the game's upgrade screen**: *UPGRADES / ITEM [rank]* with the Forma count, the configuration tabs
   (Config A, B, C… or the names you gave them: click to switch), on the left the **capacity** (left / total, as the game
@@ -319,17 +339,20 @@ numbers match the game. *Left today* is the standing you can still earn today. Y
 (kept until the next read). Negative standing means you are in the opposite faction.
 
 ### World, Console
-**World**: fissures, invasions, sortie, cycles and Baro's current stock with platinum prices (refreshes while the tab
-is open, setting *World state refresh*). **Console**: what runs in the background and every error.
+**World**: fissures, invasions, sortie, **Arbitrations** (the next 72 hours from browse.wf's schedule: start time,
+countdown, node, mission, faction and arbi.guide tier, with a filter to show only tier S, A or better…), cycles and
+Baro's current stock with platinum prices (refreshes while the tab is open, setting *World tab: refresh every*). **Console**: what runs in the background and every error.
 
 ### Settings
-One sub-tab per category. **Save** applies and stores them in `config.json`; **Save and restart** also relaunches the
+One sub-tab per category, each split in named boxes (General: the program and the player strip, with the
+**currencies shown** under your name; Detection: vendor recognition, *where you are*, screen watching; Riven flip:
+scanning, which deals, live check). **Save** applies and stores them in `config.json`; **Save and restart** also relaunches the
 program; settings marked ⟳ (language, hotkeys, OCR…) need a restart. **Restore defaults** loads the defaults (press Save
 to apply). **Theme and font**: colour themes inspired by Warframe's factions, allies and enemies (plus *Classic*), each
 with its background pattern, another pattern, your own picture or none; font family and size. Previewed at once, kept
-only when you press Save. **Overlays**: everything about the two in-game overlays: price and volume label sizes,
-label background, price and stars colours; Activities background, font, size, colours (titles, text, ready, hints) and
-what it lists (also in its ⚙ menu). **Sounds**: a sound when a vendor scan, a riven scan or a price scan starts (the
+only when you press Save. **Overlays** (one tab for both in-game overlays): the prices over the vendor screen (volume
+label and its colours, label sizes, background, price and star colours, hidden items) and the Activities overlay, its
+look (background, font, colours) and what it lists (also in its ⚙ menu). **Sounds**: a sound when a vendor scan, a riven scan or a price scan starts (the
 system notification sound, or a `.wav` of yours).
 
 ## Data sources
@@ -339,6 +362,8 @@ system notification sound, or a `.wav` of yours).
 | Your standing, inventory, loadouts, purchases, challenges | AlecaFrame's `lastData.dat` / `deltas.dat` on your PC |
 | Vendors, standing costs, names, weekly offers, challenge names | public game data, bundled (`tools/build_*.py`) |
 | Pictures (builds, syndicate logos), Baro's list, Incarnon perk names | [wiki.warframe.com](https://wiki.warframe.com) |
+| Item pictures (Builds first, then when warframe.market has none) | [cdn.warframestat.us](https://cdn.warframestat.us) (WFCD images, file names bundled by `tools/build_images.py`) |
+| Where you are (Relay, Cetus, Orbiter, mission…) | the game's own log, `EE.log`, read only |
 | Weapon base stats, mod polarity / drain / Exilus (build planner) | [WFCD/warframe-items](https://github.com/WFCD/warframe-items), bundled (`tools/build_loadouts.py`) |
 | World state (fissures, cycles, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave and 1999 Calendar | DE's public world state (`api.warframe.com`), every 10 min |

@@ -18,6 +18,26 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
   (damage, crit / status chance, crit multiplier, fire rate, magazine, reload, range…, per-variant values such as
   "(Prisma)" picked); effects with a condition (on headshot, after a kill…) are left out. The stats panel lists the
   perks counted.
+- **Where you are, from the game's log** (`EE.log`, read only): a vendor that lives in one place (Cetus, Fortuna, the
+  Necralisk / Sanctum, the Chrysalith, Höllvania, Iron Wake, Duviri, the Drifter's camp, Simaris and Baro at a Relay) is
+  no longer recognised by the OCR while you are elsewhere, for the prices and for the Weekly check; in a mission or an
+  open world no automatic scan runs. Teshin, the Relay syndicates, Nightwave and events count everywhere.
+- **Stricter vendor recognition**: 75 % of the items read must be one vendor's (was 60 %; new setting *Share of the
+  items*), on top of the place check.
+- **Riven flip, live check**: the 10 best deals are checked again on warframe.market every ~3 minutes, one request per
+  deal: the *Seller* column shows whether the seller is in game / online now, and rivens no longer listed. Own limiter
+  (6 a minute, never above 10), paused during riven scans; 15 minutes off after repeated "too many requests".
+- **Builds: companion weapons**: Sentinel / MOA / Hound weapons were read as companions, beasts' claws were skipped:
+  both now show with their mods (claws with the Posture slot).
+- **Player strip**: credits tracked, a smaller Mastery Rank emblem in front of the MR, the profile picture in a box beside
+  the name, the currencies from the box's left edge; Settings > General > *Currencies shown* picks which. "230k" no
+  longer shows as "23k".
+- **World > Arbitrations**: the next 72 hours (browse.wf's schedule) with node, mission, faction and arbi.guide tier,
+  filter by tier.
+- **Settings reorganised**: *Overlay* and *Overlays* are one tab; every tab split in named boxes; many names made
+  clearer (the Overlay labels lose their "Price overlay:" / "Activities:" prefixes, now box titles).
+- **Item pictures from cdn.warframestat.us** (WFCD images): one request per picture, tried before the wiki for the Builds
+  tab and when warframe.market has no picture.
 
 ## 0.4.5
 - **Capacity fixed for slots marked `AP_UNIVERSAL`**: the game file writes it on slots without a polarity (an Exilus

@@ -3,8 +3,10 @@
 The pictures are the ones warframe.market itself publishes for every item (static assets, documented at
 https://warframe.market/static/assets/). They are downloaded one at a time, only for items you hover, kept in the
 data folder and never downloaded twice; if the site cannot be reached the tooltips simply stay text-only.
-If warframe.market has no picture for an item, the item's File: page on the Warframe wiki (wiki.warframe.com, the
-standard MediaWiki API, one polite request at a time with this program's User-Agent) is tried instead.
+If warframe.market has no picture for an item (and for the Builds tab's pictures, first of all), the WFCD image CDN is
+tried: https://cdn.warframestat.us/img/<file>, the file named for that item in data/images.json (WFCD/warframe-items,
+tools/build_images.py), one request per picture. Last, the item's File: page on the Warframe wiki (wiki.warframe.com,
+the standard MediaWiki API, one polite request at a time with this program's User-Agent).
 This does not read AlecaFrame's own image files.
 """
 import re
@@ -32,6 +34,29 @@ def set_market(market):
 
 
 WIKI_API = "https://wiki.warframe.com/api.php"
+CDN = "https://cdn.warframestat.us/img/"
+_images = None
+
+
+def cdn_file(name):
+    """The WFCD CDN's file for an item name (data/images.json), or None."""
+    global _images
+    if _images is None:
+        try:
+            import json
+            from app.core.paths import DATA
+            _images = json.loads((DATA / "images.json").read_text(encoding="utf-8")).get("images") or {}
+        except Exception:
+            _images = {}
+    return _images.get(name) or _images.get(re.sub(r"\s*\(.*?\)\s*$", "", name or ""))
+
+
+def _from_cdn(name):
+    f = cdn_file(name)
+    if not f:
+        return None
+    from app.trade.market import HEADERS
+    return _save(requests.get(CDN + f, headers={"User-Agent": HEADERS["User-Agent"]}, timeout=10))
 
 
 def _file(key):
@@ -113,6 +138,9 @@ def _run():
                 fails = 0
             src = "warframe.market"
             data = _from_market(slug)
+            if data is None and name:
+                src = "cdn.warframestat.us"
+                data = _from_cdn(name)
             if data is None and name:
                 src = "wiki"
                 data = _from_wiki(name)

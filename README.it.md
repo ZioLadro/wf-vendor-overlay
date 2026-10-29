@@ -61,14 +61,25 @@ Per **mod e arcane** mostra due prezzi: `12p · max 45p` = prezzo a rank 0 (quel
 
 **Riconoscere la schermata del vendor.** Dopo aver letto i nomi, il programma controlla a quale catalogo di vendor
 appartengono (da `vendors.json` e dalla lista di Baro). Le etichette compaiono solo se almeno 3 oggetti riconosciuti
-(impostazione *Oggetti per riconoscere un vendor*) e il 60 % di tutto ciò che è stato riconosciuto appartengono **allo
-stesso vendor**; i nomi fuori dal suo catalogo vengono scartati. Così non appaiono etichette su inventario, chat o codex
+(impostazione *Oggetti necessari per riconoscere un vendor*) e il 75 % di tutto ciò che è stato riconosciuto
+(impostazione *Quota degli oggetti*) appartengono **allo stesso vendor**; i nomi fuori dal suo catalogo vengono scartati. Così non appaiono etichette su inventario, chat o codex
 che mostrano solo alcuni nomi. Il programma **legge anche il nome del vendor** nel 20 % in alto della finestra di gioco
 (impostazione *Zona del nome vendor*; es. *Cephalon Simaris*, *Red Veil*): se c'è e almeno un oggetto è di quel vendor,
 le etichette compaiono anche con pochi oggetti. *Richiedi il nome del vendor* lo rende obbligatorio (più rigido, ma i
 vendor la cui intestazione non è il loro nome non corrisponderebbero mai). F8 scrive tutto ciò che ha letto in
 `last_scan.txt` nella cartella dei dati, per capire perché un vendor è stato o non è stato riconosciuto. Si disattiva
 con *Riconosci la schermata del vendor*.
+
+**Dove ti trovi (il log del gioco).** Warframe scrive in `%LOCALAPPDATA%\Warframe\EE.log` ogni luogo che carica
+(l'Orbiter, un Relay, Cetus, Fortuna, il Necralisk / Sanctum, il Chrysalith, Höllvania, Iron Wake, il campo del
+Drifter, una missione…). Il programma legge la fine di quel file (solo in lettura) e la usa due volte: un vendor che si
+trova in un solo luogo (gli Ostron e i vendor di Cetus, quelli di Fortuna, del Necralisk e Cavia, Archimedean Yonta e gli
+Holdfasts, gli Hex, Palladino, Acrithis, Chipper, Simaris e Baro in un Relay) non viene mai riconosciuto mentre sei
+altrove, né per i prezzi né per il controllo Settimanali; e mentre sei in missione o in un open world non parte nessuna
+scansione automatica (il tasto di scansione funziona comunque). I vendor che puoi aprire ovunque (Teshin, i sindacati
+dei Relay, Nightwave, eventi, Focus) contano sempre. Se il log manca, è vecchio (il gioco non è aperto) o nomina un luogo
+che il programma non conosce, non viene escluso nulla. Impostazioni > Rilevamento > *Dove ti trovi*; il luogo letto
+compare nella Console (`eelog`).
 
 ## Attività (in gioco, F6)
 Una piccola finestra sempre in primo piano sopra il gioco, in stile quest tracker, spostabile (trascina il titolo) e
@@ -111,11 +122,12 @@ apri e non resta sopra il gioco (impostazione *Finestra sempre in primo piano* p
 sua area viene oscurata prima dell'OCR, quindi non legge mai i propri nomi.
 
 In cima a ogni scheda:
-- **Barra del giocatore**: il glifo del tuo profilo e l'emblema del grado di maestria (immagini da browse.wf, scaricate
-  una volta), nome (dal `lastUsername.txt` di AlecaFrame, oppure clicca per scriverlo), grado di maestria,
-  scambi rimasti (⚠ quando l'ultima sync è precedente al reset giornaliero), portafoglio sotto nome e MR (platino, Endo,
-  ducati, Aya, Steel Essence, Pathos Clamp, Riven Sliver, Live Heartcell, Kuva, Vitus Essence, ognuno con la sua icona di
-  gioco; compatti, valore esatto nel tooltip) e un badge per sindacato con rank e standing (mouse sopra: standing rimasto oggi).
+- **Barra del giocatore**: il glifo del tuo profilo in un riquadro accanto al nome (dal `lastUsername.txt` di
+  AlecaFrame, oppure clicca per scriverlo), con il piccolo emblema del grado di maestria davanti all'MR (immagini da
+  browse.wf, scaricate una volta) e gli scambi rimasti (⚠ quando l'ultima sync è precedente al reset giornaliero); sotto,
+  dal bordo sinistro del riquadro, le tue valute (platino, crediti, Endo, ducati, Aya, Steel Essence, Pathos Clamp, Riven
+  Sliver, Live Heartcell, Kuva, Vitus Essence, ognuna con la sua icona di gioco; compatte, valore esatto nel tooltip;
+  quali mostrare in Impostazioni > Generali > *Valute mostrate*) e un badge per sindacato con rank e standing (mouse sopra: standing rimasto oggi).
   I logo dei sindacati vengono scaricati una volta dalla wiki; senza, i badge sono disegnati con i colori del sindacato.
 - **Barra del mondo**: fessure Omnia Steel Path, cicli di Terra / Cetus / Orb Vallis, Baro Ki'Teer, Prime Resurgence e
   l'**Arbitrato** attuale con il suo tier di [arbi.guide](https://arbi.guide), tutti con conto alla rovescia.
@@ -237,6 +249,15 @@ per il prezzo equo e la stima delle vendite); la tabella mostra come affari solo
 inserzioni più vecchie di *Nascondi inserzioni più vecchie di (giorni)* (default 14) non vengono mostrate come affari, e
 quelle più vecchie del doppio sono escluse dal prezzo equo (un prezzo che non vende da settimane dice cosa NON si vende).
 
+**Controllo dal vivo degli affari migliori**: gli affari migliori della tabella (10 di default) vengono ricontrollati su
+warframe.market uno dopo l'altro, ognuno circa ogni 3 minuti (`/v1/auctions/entry/<id>`: una richiesta per affare, con
+lo stato attuale del venditore). La colonna *Venditore* mostra allora ● in gioco / online o ○ offline e quando è stato
+controllato; un riven venduto o ritirato mostra *non più in vendita*. Un venditore che va online e un riven sparito
+vengono scritti nella Console. Questi controlli hanno un loro limitatore (al massimo 10 al minuto, 6 di default) e si
+fermano durante una scansione dei riven, così tutte le richieste riven insieme restano entro le 10-20 al minuto chieste
+da warframe.market; dopo ripetute risposte "troppe richieste" si fermano per 15 minuti. Impostazioni > Riven flip >
+*Controllo dal vivo*.
+
 Le richieste di riven hanno un loro limitatore (*Richieste riven al minuto*, default 12, mai sopra 20, come chiede
 warframe.market); a un "troppe richieste" aspetta e si ferma dopo tre di fila. La scheda legge soltanto: non pubblica
 nulla. *Apri l'asta* e *Copia whisper* (clic destro su una riga) aiutano a contattare il venditore: il whisper è
@@ -246,7 +267,8 @@ nulla. *Apri l'asta* e *Copia whisper* (clic destro su una riga) aiutano a conta
 I tuoi loadout di gioco, mostrati come nella schermata dei loadout, da `lastData.dat` (*Ricarica dal file* dopo che
 AlecaFrame l'ha aggiornato).
 
-- **Loadout di gioco** (vista predefinita): i tuoi loadout con Warframe, armi, arma exalted, compagno, Archwing e
+- **Loadout di gioco** (vista predefinita): i tuoi loadout con Warframe, armi, arma exalted, compagno e la sua arma (l'arma di
+  una Sentinella / MOA / Hound, o gli artigli di una bestia con lo slot Postura), Archwing e
   Necramech; clicca una riga per la build di quell'oggetto. **Per oggetto**: le configurazioni di ogni oggetto,
   raggruppate per tipo, con miniature e filtro per nome/tipo. Scuola Focus e K-Drive non sono mostrati.
 - **Disposta come la schermata potenziamenti del gioco**: *POTENZIAMENTI / OGGETTO [rank]* con il numero di Forma, le
@@ -342,18 +364,22 @@ i numeri coincidono con il gioco. *Rimasto oggi* è lo standing che puoi ancora 
 qualunque valore a mano (resta fino alla lettura successiva). Standing negativo = sei nella fazione opposta.
 
 ### Mondo, Console
-**Mondo**: fessure, invasioni, sortie, cicli e l'inventario attuale di Baro con i prezzi in platino (si aggiorna mentre
-la scheda è aperta, impostazione *Aggiornamento mondo*). **Console**: cosa gira in background e ogni errore.
+**Mondo**: fessure, invasioni, sortie, **Arbitrati** (le prossime 72 ore dal programma di browse.wf: inizio, conto alla
+rovescia, nodo, missione, fazione e tier di arbi.guide, con un filtro per mostrare solo il tier S, A o migliore…), cicli e
+l'inventario attuale di Baro con i prezzi in platino (si aggiorna mentre la scheda è aperta, impostazione *Scheda Mondo:
+aggiorna ogni*). **Console**: cosa gira in background e ogni errore.
 
 ### Impostazioni
-Una sotto-scheda per categoria. **Salva** applica e memorizza in `config.json`; **Salva e riavvia** riavvia anche il
+Una sotto-scheda per categoria, divisa in riquadri con un nome (Generali: il programma e la barra del giocatore, con le
+**valute mostrate** sotto il tuo nome; Rilevamento: riconoscimento del vendor, *dove ti trovi*, controllo dello schermo;
+Riven flip: scansione, quali affari, controllo dal vivo). **Salva** applica e memorizza in `config.json`; **Salva e riavvia** riavvia anche il
 programma; le impostazioni segnate ⟳ (lingua, tasti, OCR…) richiedono un riavvio. **Ripristina predefiniti** carica i
 valori predefiniti (premi Salva per applicarli). **Tema e carattere**: temi colore ispirati a fazioni, alleati e nemici di
 Warframe (più *Classico*), ognuno con il suo motivo di sfondo, un altro motivo, una tua immagine o niente; famiglia e
-dimensione del carattere. Anteprima immediata, mantenuta solo quando premi Salva. **Overlay**: tutto dei due overlay in
-gioco: dimensioni delle etichette di prezzo e volume, sfondo delle etichette, colori del prezzo e delle stelle; per
-Attività sfondo, carattere, dimensione, colori (titoli, testo, pronto, suggerimenti) e cosa elencare (anche dal suo menu
-⚙). **Suoni**: un suono quando parte una scansione dei vendor, delle riven o dei prezzi (il suono di notifica di
+dimensione del carattere. Anteprima immediata, mantenuta solo quando premi Salva. **Overlay** (una sola scheda per i due overlay in
+gioco): i prezzi sopra la schermata del vendor (etichetta del volume e i suoi colori, dimensioni, sfondo, colori del
+prezzo e della stella, oggetti nascosti) e l'overlay Attività, il suo aspetto (sfondo, carattere, colori) e cosa elenca
+(anche dal suo menu ⚙). **Suoni**: un suono quando parte una scansione dei vendor, delle riven o dei prezzi (il suono di notifica di
 sistema, o un tuo `.wav`).
 
 ## Fonti dei dati
@@ -363,6 +389,8 @@ sistema, o un tuo `.wav`).
 | Il tuo standing, inventario, loadout, acquisti, sfide | `lastData.dat` / `deltas.dat` di AlecaFrame sul tuo PC |
 | Vendor, costi in standing, nomi, offerte settimanali, nomi delle sfide | dati pubblici del gioco, inclusi (`tools/build_*.py`) |
 | Immagini (build, logo dei sindacati), lista di Baro, nomi dei perk Incarnon | [wiki.warframe.com](https://wiki.warframe.com) |
+| Immagini degli oggetti (prima per le Build, poi quando warframe.market non ne ha) | [cdn.warframestat.us](https://cdn.warframestat.us) (immagini WFCD, nomi dei file inclusi da `tools/build_images.py`) |
+| Dove ti trovi (Relay, Cetus, Orbiter, missione…) | il log del gioco, `EE.log`, solo in lettura |
 | Statistiche base delle armi, polarità / consumo / Exilus delle mod (pianificatore) | [WFCD/warframe-items](https://github.com/WFCD/warframe-items), inclusi (`tools/build_loadouts.py`) |
 | Stato del mondo (fessure, cicli, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave e Calendario 1999 | world state pubblico di DE (`api.warframe.com`), ogni 10 min |

@@ -194,14 +194,16 @@ class VendorIndex:
                 best = (tx[4], found)
         return set(best[1])
 
-    def identify(self, slugs, min_items=3, min_share=0.6, header=()):
+    def identify(self, slugs, min_items=3, min_share=0.6, header=(), allow=None):
         """Which vendor's screen is it? The vendor whose stock covers most of the items the OCR matched.
         Returns (vendor, indices of the slugs that belong to it), or (None, []) when no vendor covers enough of
-        them (e.g. an inventory or chat window that just happens to show some item names)."""
+        them (e.g. an inventory or chat window that just happens to show some item names).
+        allow: vendor -> False when it cannot be the one on screen (you are somewhere else: eelog)."""
         count = {}
         for s in slugs:
             for v in self.by_slug.get(s, ()):
-                count[v] = count.get(v, 0) + 1
+                if allow is None or allow(v):
+                    count[v] = count.get(v, 0) + 1
         if not count or not slugs:
             return None, []
         if not hasattr(self, "_sizes") or self._sizes[0] is not self.by_slug:

@@ -4,7 +4,7 @@ import threading
 import time
 
 from PyQt6.QtCore import Qt, QTimer, QUrl, pyqtSignal
-from PyQt6.QtGui import QColor, QDesktopServices, QGuiApplication
+from PyQt6.QtGui import QBrush, QColor, QDesktopServices, QGuiApplication
 from PyQt6.QtWidgets import (
     QAbstractItemView, QHBoxLayout, QHeaderView, QLabel, QProgressBar, QPushButton, QTableWidget, QVBoxLayout, QWidget,
 )
@@ -104,6 +104,48 @@ class RivenFlipTab(QWidget):
         self._auto_timer = QTimer(self, interval=60_000, timeout=self._auto_check)
         self._auto_timer.start()
         QTimer.singleShot(5000, self._auto_check)
+        # live check of the best deals: the seller's status now, and whether the riven is still listed
+        self.live = M.LiveChecker(lambda: list(self._rows), lambda: self.running, market=self.market,
+                                  on_change=self._live_changed)
+        self.live.start()
+        self._live_timer = QTimer(self, interval=4000, timeout=self._apply_live)
+        self._live_timer.start()
+
+    # ---------- live check ----------
+    def _live_changed(self, listing, now, before):
+        """(scan thread) a deal's seller came online / the riven went: written to the log."""
+        from app.core import logbus
+        what = f"{listing.get('name', '')} {listing.get('price', '')}p ({listing.get('seller', '')})"
+        if now.get("gone"):
+            logbus.add("riven", f"no longer listed: {what}", "warn")
+        elif now.get("status") in ("ingame", "online") and before.get("status") not in ("ingame", "online"):
+            logbus.add("riven", f"seller {now['status']} now: {what}", "ok")
+
+    def _apply_live(self):
+        """The seller column (and the rows of rivens no longer listed) from the live checks."""
+        col = COLS.index("seller")
+        for i in range(self.table.rowCount()):
+            cell = self.table.item(i, col)
+            if cell is None:
+                continue
+            l = cell.data(Qt.ItemDataRole.UserRole)
+            if not isinstance(l, dict):
+                continue
+            x = M.live(l)
+            if not x:
+                continue
+            ago = int((time.time() - x["t"]) // 60)
+            when = t("rflip.live.ago", m=ago) if ago >= 1 else t("rflip.live.now")
+            if x.get("gone"):
+                text, color = f"{l['seller']} · {t('rflip.live.gone')}", RED
+            else:
+                st = x.get("status") or l.get("status") or "?"
+                text = f"{'●' if st in ('ingame', 'online') else '○'} {l['seller']} ({t('rflip.status.' + st) if st in ('ingame', 'online', 'offline') else st}) · {when}"
+                color = GREEN if st == "ingame" else AMBER if st == "online" else DIM_COLOR
+            if cell.text() != text:
+                cell.setText(text)
+                cell.setForeground(QBrush(color))
+                cell.setToolTip(t("rflip.live.tip"))
 
     # ---------- scheduled scans ----------
     def next_auto(self):
@@ -239,6 +281,7 @@ class RivenFlipTab(QWidget):
             for c, (text, key, color) in enumerate(vals):
                 self.table.setItem(i, c, Cell(text, text if key is None else key, color,
                                               center=c not in (0, 1, 2, COLS.index("seller"))))
+            self.table.item(i, COLS.index("seller")).setData(Qt.ItemDataRole.UserRole, dict(l))
             self.table.item(i, COLS.index("fair")).setToolTip(self._fair_tip(r))
             self.table.item(i, COLS.index("trend")).setToolTip(self._trend_tip(r))
             self.table.item(i, 0).setToolTip(self._trend_tip(r))
@@ -250,6 +293,7 @@ class RivenFlipTab(QWidget):
         if error:
             text += "\n" + t("rflip.error", err=error)
         self.summary.setText(text)
+        self._apply_live()
 
     def _fair_tip(self, r):
         lines = [t("rflip.tip.ask", p=r["ask"]) if r["ask"] is not None else t("rflip.tip.noask")]

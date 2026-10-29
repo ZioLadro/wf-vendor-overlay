@@ -12,7 +12,8 @@ Names are written "35.000 X Kuva", "150,000 Credits", "6.000 Endo" (the amount f
 two lines of the same card are joined, and names are compared without spaces. A few offers have another name on
 screen than in the game data (the Requiem relics). The vendor is the one with the most offers on screen, or the one
 named in the header ("THE STEEL PATH HONORS", "PALLADINO", "ARCHIMEDEAN YONTA"…, read loosely: the OCR often keeps
-only part of it). Two offers with the same name (Teshin's Kuva ×10,000 and ×50,000) are told apart by the amount;
+only part of it), among the vendors that can be open where you are (the game's log: Archimedean Yonta only in the
+Chrysalith, Palladino only in Iron Wake…; vendors open anywhere, like Teshin, always count). Two offers with the same name (Teshin's Kuva ×10,000 and ×50,000) are told apart by the amount;
 when it cannot be read they are not used as evidence.
 
 What it is used for: an offer on sale cannot be the purchase being identified (when its limit would be reached), and
@@ -175,15 +176,17 @@ def _amounts(line, lines) -> set:
     return found
 
 
-def read(texts) -> dict | None:
+def read(texts, allow=None) -> dict | None:
     """The limited-offer vendor shown in the scanned text: {"vendor", "sure": {offers surely on sale}, "any": {offers
     maybe listed}, "maxed": {offers showing PURCHASE LIMIT REACHED}, "pos": {offer: [x, y, h]}} or None.
-    texts: [(text, x, y, w, h)] as the OCR returns them."""
+    texts: [(text, x, y, w, h)] as the OCR returns them. allow: vendor -> False when you are somewhere it cannot be
+    opened (the game's log, eelog), so its offers on screen do not count."""
     lines = _lines(texts)
     singles = [l for l in lines if not l.get("joined")]
     best = None
-    named = {v for v, ix in index().items() if _header(singles, ix["words"])}
-    for vend, ix in index().items():
+    pool = {v: ix for v, ix in index().items() if allow is None or allow(v)}
+    named = {v for v, ix in pool.items() if _header(singles, ix["words"])}
+    for vend, ix in pool.items():
         if named and vend not in named:
             continue                                     # the header names another vendor: only that one counts
         hits = {}                                       # name key -> [lines where it is written]

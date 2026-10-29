@@ -589,3 +589,105 @@ def whisper(row):
         return tpl.format(seller=l["seller"], weapon=row["weapon"], riven=l["name"], price=l["price"])
     except (KeyError, IndexError, ValueError):
         return WHISPER.format(seller=l["seller"], weapon=row["weapon"], riven=l["name"], price=l["price"])
+
+
+# ---------- live check of the best deals: is the seller online now, is the riven still listed? ----------
+# One request per deal: GET /v1/auctions/entry/{id} gives the auction as it is now (closed / still visible, price) with
+# its owner's status (ingame / online / offline). Its own limiter, slow on purpose (LIVE_RPM a minute, never above 10),
+# and paused while a riven scan runs, so the riven requests together stay inside the 10-20 a minute warframe.market asks.
+LIVE_RPM = 6
+LIVE = {}                                   # auction id -> {"status", "gone", "price", "t", "last_seen"}
+_live_lock = threading.Lock()
+
+
+def live(listing):
+    """What the last live check said about this listing ({} when not checked, or checked too long ago)."""
+    with _live_lock:
+        x = LIVE.get(str(listing.get("id")))
+    if not x or time.time() - x["t"] > 15 * 60:
+        return {}
+    return x
+
+
+def check_listing(listing, limiter, cancel=None):
+    """The auction as it is now: {"status", "gone", "price", "t", "last_seen"}. Raises RivenError / RivenRateLimited."""
+    now = time.time()
+    try:
+        j = get_json(f"{V1}/auctions/entry/{listing['id']}", limiter, cancel=cancel)
+    except RivenError as e:
+        if "HTTP 404" in str(e):                      # removed (sold, withdrawn)
+            out = {"status": "", "gone": True, "price": None, "t": now, "last_seen": ""}
+            with _live_lock:
+                LIVE[str(listing["id"])] = out
+            return out
+        raise
+    a = ((j or {}).get("payload") or {}).get("auction") or {}
+    owner = a.get("owner")
+    status = str((owner or {}).get("status") or "").lower() if isinstance(owner, dict) else ""
+    seen = str((owner or {}).get("last_seen") or "") if isinstance(owner, dict) else ""
+    if not status and listing.get("seller"):             # the owner given as an id only: ask its profile
+        p = get_json(f"{V1}/profile/{listing['seller']}", limiter, cancel=cancel)
+        prof = ((p or {}).get("payload") or {}).get("profile") or {}
+        status, seen = str(prof.get("status") or "").lower(), str(prof.get("last_seen") or "")
+    out = {"status": status, "gone": bool(a.get("closed")) or a.get("visible") is False or bool(a.get("private")),
+           "price": a.get("buyout_price"), "t": now, "last_seen": seen}
+    with _live_lock:
+        LIVE[str(listing["id"])] = out
+    return out
+
+
+class LiveChecker:
+    """Checks the best deals one after another, again and again (each about every riven_live_minutes): the table
+    shows whether the seller is in game now. rows(): the deals to check (best first); busy(): True while a scan runs."""
+
+    def __init__(self, rows, busy, market=None, on_change=None):
+        self.rows, self.busy, self.on_change = rows, busy, on_change
+        self.limiter = Limiter(rpm=min(10, max(1, int(CFG.get("riven_live_rpm") or LIVE_RPM))), market=market)
+        self.stop = threading.Event()
+        self.thread = None
+        self.paused_until = 0.0
+
+    def start(self):
+        if self.thread is None or not self.thread.is_alive():
+            self.stop.clear()
+            self.thread = threading.Thread(target=self._run, daemon=True, name="riven-live")
+            self.thread.start()
+
+    def _next(self):
+        top = int(CFG.get("riven_live_top") or 0)
+        if top <= 0:
+            return None
+        every = max(1.0, float(CFG.get("riven_live_minutes") or 3)) * 60
+        now = time.time()
+        due = []
+        for r in (self.rows() or [])[:top]:
+            l = r["listing"]
+            x = LIVE.get(str(l["id"]))
+            if x and x.get("gone"):
+                continue
+            if not x or now - x["t"] >= every:
+                due.append((x["t"] if x else 0, l))
+        return min(due, key=lambda d: d[0])[1] if due else None
+
+    def _run(self):
+        while not self.stop.is_set():
+            if self.busy() or time.time() < self.paused_until:
+                self.stop.wait(5)
+                continue
+            l = self._next()
+            if l is None:
+                self.stop.wait(10)
+                continue
+            before = dict(LIVE.get(str(l["id"])) or {})
+            try:
+                now = check_listing(l, self.limiter, cancel=self.stop)
+            except RivenRateLimited:
+                self.paused_until = time.time() + 15 * 60    # the site said "too many": leave it alone for a while
+                log("live check: rate limited, paused for 15 minutes")
+                continue
+            except RivenError as e:
+                log(f"live check of {l.get('id')}: {e}")
+                self.stop.wait(30)
+                continue
+            if self.on_change and (before.get("status") != now["status"] or before.get("gone") != now["gone"]):
+                self.on_change(l, now, before)

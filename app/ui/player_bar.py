@@ -17,7 +17,7 @@ from app.core.uiutil import role
 from app.core.uiutil import MUTED_STYLE, thousands
 
 ICON_DIR = APP_DIR / "icons"
-AVATAR, EMBLEM = 52, 36
+AVATAR, EMBLEM = 58, 18                         # the profile picture (in its box) and the small Mastery Rank emblem
 SIZE = 28
 PER_COL = 4
 _cache = {}
@@ -56,7 +56,7 @@ def compact(n) -> str:
         if abs(n) >= div:
             v = n / div
             s = f"{v:.1f}" if abs(v) < 100 else f"{v:.0f}"
-            return s.rstrip("0").rstrip(".") + suf
+            return (s.rstrip("0").rstrip(".") if "." in s else s) + suf       # 230k stays 230k
     return str(n)
 
 
@@ -66,10 +66,12 @@ class PlayerBar(QFrame):
         self.market, self.store = market, get_store()
         self._shown = None
         self.setFrameShape(QFrame.Shape.StyledPanel)
-        self.info = QLabel("")
+        self.info = QLabel("")                       # the name (a click changes it)
         self.info.setToolTip(t("bar.name.tip"))
         self.info.setCursor(Qt.CursorShape.PointingHandCursor)
         self.info.mousePressEvent = lambda e: self.ask_name()
+        self.mr = QLabel("")
+        self.trades = QLabel("")
         self.grid_w = QWidget()
         self.grid = QGridLayout(self.grid_w)
         self.grid.setContentsMargins(0, 0, 0, 0)
@@ -83,17 +85,38 @@ class PlayerBar(QFrame):
         self.wallet_g.setContentsMargins(0, 0, 0, 0)
         self.wallet_g.setHorizontalSpacing(14)
         self.wallet_g.setVerticalSpacing(2)
-        self.avatar = QLabel()                       # the profile glyph chosen in the game
+        self.avatar = QLabel()                       # the profile glyph chosen in the game, in a box
         self.avatar.setFixedSize(AVATAR, AVATAR)
+        self.avatar.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.avatar.setObjectName("avatarBox")
+        self.avatar.setStyleSheet("#avatarBox { border: 1px solid palette(mid); border-radius: 6px;"
+                                  " background: rgba(255, 255, 255, 0.04); padding: 3px; }")
         self.avatar.setToolTip(t("bar.avatar.tip"))
-        self.emblem = QLabel()                       # the Mastery Rank emblem
+        self.emblem = QLabel()                       # the Mastery Rank emblem, small, in front of "MR 30"
         self.emblem.setFixedSize(EMBLEM, EMBLEM)
-        lay.addWidget(self.avatar, 0, Qt.AlignmentFlag.AlignTop)
-        lay.addWidget(self.emblem, 0, Qt.AlignmentFlag.AlignTop)
-        col = QVBoxLayout()                          # name / MR / trades, and the currencies under them
-        col.setSpacing(4)
-        col.addWidget(self.info)
-        col.addWidget(self.wallet_w)
+        mr_row = QHBoxLayout()
+        mr_row.setContentsMargins(0, 0, 0, 0)
+        mr_row.setSpacing(5)
+        mr_row.addWidget(self.emblem)
+        mr_row.addWidget(self.mr)
+        mr_row.addStretch(1)
+        text = QVBoxLayout()                         # name / MR / trades, beside the picture
+        text.setContentsMargins(0, 0, 0, 0)
+        text.setSpacing(1)
+        text.addWidget(self.info)
+        text.addLayout(mr_row)
+        text.addWidget(self.trades)
+        text.addStretch(1)
+        top = QHBoxLayout()
+        top.setContentsMargins(0, 0, 0, 0)
+        top.setSpacing(10)
+        top.addWidget(self.avatar, 0, Qt.AlignmentFlag.AlignTop)
+        top.addLayout(text)
+        top.addStretch(1)
+        col = QVBoxLayout()                          # the picture and the name, the currencies under them
+        col.setSpacing(6)
+        col.addLayout(top)
+        col.addWidget(self.wallet_w, 0, Qt.AlignmentFlag.AlignLeft)   # from the picture box's left edge
         col.addStretch(1)
         lay.addLayout(col)
         lay.addWidget(self.grid_w, 1)
@@ -110,10 +133,10 @@ class PlayerBar(QFrame):
         tags.update(e["t"] for r in self.market.snapshot() for e in r["standing"] if e.get("t") and not is_hidden(e["t"]))
         return sorted(tags, key=lambda x: syndicate_name(x).lower())
 
-    WALLET = (("plat", "bar.plat"), ("endo", "bar.endo"), ("ducats", "bar.ducats"), ("aya", "bar.aya"), ("regal", "bar.regal"),
+    WALLET = (("plat", "bar.plat"), ("credits", "bar.credits"), ("endo", "bar.endo"), ("ducats", "bar.ducats"), ("aya", "bar.aya"), ("regal", "bar.regal"),
               ("steel", "bar.steel"), ("pathos", "bar.pathos"), ("sliver", "bar.sliver"), ("heartcell", "bar.heartcell"),
               ("kuva", "bar.kuva"), ("vitus", "bar.vitus"))
-    GAME_NAME = {"steel": "Steel Essence", "pathos": "Pathos Clamp", "sliver": "Riven Sliver", "heartcell": "Live Heartcell",
+    GAME_NAME = {"credits": "Credits", "steel": "Steel Essence", "pathos": "Pathos Clamp", "sliver": "Riven Sliver", "heartcell": "Live Heartcell",
                  "vitus": "Vitus Essence", "kuva": "Kuva", "aya": "Aya"}
 
     def _wallet(self):
@@ -131,7 +154,9 @@ class PlayerBar(QFrame):
             w["aya"] = int(CFG["aya_manual"])
         elif not w.get("aya"):
             w.pop("aya", None)
-        shown = [(k, lab) for k, lab in self.WALLET if w.get(k) is not None and (k != "regal" or w[k])]
+        chosen = CFG.get("wallet_shown")
+        chosen = set(chosen) if isinstance(chosen, list) else {k for k, _l in self.WALLET}
+        shown = [(k, lab) for k, lab in self.WALLET if k in chosen and w.get(k) is not None and (k != "regal" or w[k])]
         for n, (k, lab) in enumerate(shown):
             cell = QWidget()
             h = QHBoxLayout(cell)
@@ -156,13 +181,17 @@ class PlayerBar(QFrame):
         """The profile glyph and the Mastery Rank emblem (hidden until their picture is there)."""
         from app.ui import playericons as P
         s = self.store
-        for lab, icon, size, tip in ((self.avatar, P.avatar_icon(getattr(s, "avatar", "")), AVATAR, None),
+        for lab, icon, size, tip in ((self.avatar, P.avatar_icon(getattr(s, "avatar", "")), AVATAR - 8, None),
                                      (self.emblem, P.mastery_icon(s.mr), EMBLEM, f"MR {s.mr}" if s.mr is not None else None)):
             f = P.path_for(icon)
             pm = QPixmap(f) if f else QPixmap()
             if pm.isNull():
                 lab.clear()
-                lab.setVisible(False)
+                if lab is self.avatar:                  # the box stays: the name's initial until the picture is there
+                    lab.setText(f"<span style='font-size:22px; font-weight:600'>{(CFG['player_name'] or '?')[:1].upper()}</span>")
+                    lab.setVisible(True)
+                else:
+                    lab.setVisible(False)
                 continue
             lab.setPixmap(pm.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             lab.setVisible(True)
@@ -179,19 +208,18 @@ class PlayerBar(QFrame):
         if playericons.done_count != getattr(self, "_pics_seen", 0):  # the glyph / emblem arrived: draw them
             self._pics_seen = playericons.done_count
             force = True
-        key = (CFG.get("assets_dir"), CFG.get("assets_auto"), CFG.get("aya_manual"), repr(self.store.wallet), self.store.version, int(time.time() // 600), CFG["player_name"], self.store.fetched, CFG["hide_negative_ranks"])
+        key = (repr(CFG.get("wallet_shown")), CFG.get("assets_dir"), CFG.get("assets_auto"), CFG.get("aya_manual"), repr(self.store.wallet), self.store.version, int(time.time() // 600), CFG["player_name"], self.store.fetched, CFG["hide_negative_ranks"])
         if not force and key == self._shown:
             return
         self._shown = key
         s = self.store
         name = CFG["player_name"] or t("bar.noname")
-        parts = [f"<b>{name}</b>", f"MR {s.mr}" if s.mr is not None else "MR –",
-                 t("bar.trades", n=s.trades if s.trades is not None else "–")
-                 + (" ⚠" if trades_stale(s.synced) else "")]
-        self.info.setText("<br>".join(parts))
+        self.info.setText(f"<b>{name}</b>")
+        self.mr.setText(f"MR {s.mr}" if s.mr is not None else "MR –")
+        self.trades.setText(t("bar.trades", n=s.trades if s.trades is not None else "–") + (" ⚠" if trades_stale(s.synced) else ""))
         self._pictures()
         self._wallet()
-        self.info.setToolTip(t("bar.trades.tip", when=time.strftime("%d/%m %H:%M", time.localtime(s.synced)) if s.synced else "–")
+        self.trades.setToolTip(t("bar.trades.tip", when=time.strftime("%d/%m %H:%M", time.localtime(s.synced)) if s.synced else "–")
                              + (" " + t("bar.trades.stale") if trades_stale(s.synced) else ""))
         while self.grid.count():
             it = self.grid.takeAt(0)

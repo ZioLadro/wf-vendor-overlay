@@ -1,0 +1,171 @@
+"""Where you are in the game, read from Warframe's own log (EE.log in %LOCALAPPDATA%\\Warframe).
+
+The game writes a line every time it loads a place:
+  - "<level> generating layout with segments" (/Lotus/Levels/Proc/PlayerShip = the Orbiter,
+    /Lotus/Levels/Proc/CivilianHubs/OstronTown = Cetus, /Lotus/Levels/Proc/Hub/RelayStationHubMain = a Relay…);
+  - "ThemedSquadOverlay.lua: Host loading {"name":"CetusHub4…"}" with the star-chart node (CetusHub4, SolNode228…).
+The last one tells the place: a hub (Relay, Cetus, Fortuna, Necralisk, Chrysalith, Höllvania…), the Orbiter, the
+Drifter's camp, a mission, or "" when the line is not one we know (then nothing is ruled out).
+
+What it is used for: a vendor that lives in one place (Cetus' Ostron, Fortuna's Nightcap, Archimedean Yonta in the
+Chrysalith…) cannot be the screen read by the OCR while you are somewhere else; in a mission no automatic scan runs.
+Vendors you can open from anywhere (Teshin, the Relay syndicates, Nightwave, events…) have no place.
+
+Only the end of the file is read (the last 4 MB at first, then what was added since), in the scan thread."""
+import os
+import re
+import threading
+import time
+from pathlib import Path
+
+MAX_FIRST = 4 * 1024 * 1024
+_LAYOUT = re.compile(r"(/Lotus/Levels/\S+?)\s+generating layout", re.I)
+_HOST = re.compile(r"Host loading\s*\{[^}]*?\"name\"\s*:\s*\"([^\"]+)\"", re.I)
+_NODE = re.compile(r"^([A-Za-z]*(?:Node|HUB|Hub)\d*[A-Za-z0-9]*)")
+
+# star-chart node / level path (regular expression, checked in order) -> place
+NODE_PLACES = {"CetusHub4": "cetus", "SolarisUnitedHub1": "fortuna", "DeimosHub": "necralisk", "EntratiLabHub": "necralisk",
+               "ZarimanHub": "chrysalith", "SolNode234": "chrysalith", "1999Hub": "hollvania", "IronwakeHUB3": "ironwake",
+               "JadeShadows2HUB": "hunhow", "MercuryHUB": "relay", "EarthHUB": "relay", "TradeHUB1": "relay",
+               "SaturnHUB": "relay", "PlutoHUB": "relay", "ErisHUB": "relay", "VenusHUB": "relay", "CeresHUB": "relay",
+               "EuropaHUB": "relay", "JupiterHUB": "relay"}
+LEVEL_PLACES = [(r"/PlayerShip\b", "orbiter"), (r"TNWDrifterCamp", "camp"), (r"OstronTown|CetusHub", "cetus"),
+                (r"SolarisUnitedTown", "fortuna"), (r"Necralisk|EntratiSecretLab|EntratiLab", "necralisk"),
+                (r"ZarimanHub", "chrysalith"), (r"TennoProtoRelayHUB|Hollvania|1999Hub", "hollvania"),
+                (r"ForestSteelMeridianQuestBase|Ironwake", "ironwake"), (r"JS2MHub", "hunhow"),
+                (r"RelayStationHub|/Hub/Relay", "relay"), (r"Dormizone|DuviriHub|Duviri/.*Hub", "duviri"),
+                (r"/Lotus/Levels/Clan/|/Dojo", "dojo")]
+
+# vendor (name in vendors.json / weekly.json, or its manifest path) -> where it is: regular expression -> place.
+# The Relay syndicates, Teshin, Nightwave, events, Focus schools and the like are left out: no place.
+VENDOR_PLACES = [(r"^Cetus\b|^Ostron\b|^The Quills|/Ostron/|/Cetus/", ("cetus",)),
+                 (r"^Fortuna\b|^Solaris United|^Vox Solaris|^Ventkids|Nightcap|/Solaris/", ("fortuna",)),
+                 (r"^Deimos\b|^Entrati$|^Necraloid|^Cavia|/Deimos/|/EntratiLabs/|/Entrati/", ("necralisk",)),
+                 (r"Archimedean|^The Holdfasts|^Zariman\b|/Zariman/", ("chrysalith",)),
+                 (r"^1999\b|^The Hex\b|/TheHex/", ("hollvania",)),
+                 (r"^Ironwake|Ironwake", ("ironwake",)),
+                 (r"Hunhow", ("hunhow",)),
+                 (r"^Chipper|Kahl|/Drifter/", ("camp",)),
+                 (r"^Acrithis|^Duviri\b|/Duviri/", ("duviri",)),
+                 (r"^Cephalon Simaris|Perrin ?Sequence ?Weapon|Baro", ("relay",))]
+HUBS = {"relay", "cetus", "fortuna", "necralisk", "chrysalith", "hollvania", "ironwake", "hunhow", "camp", "duviri", "dojo"}
+
+
+def log_path() -> Path:
+    from app.core.config import CFG
+    own = str(CFG.get("ee_log_path") or "").strip()
+    if own:
+        return Path(own)
+    return Path(os.environ.get("LOCALAPPDATA") or Path.home()) / "Warframe" / "EE.log"
+
+
+def vendor_places(vendor: str) -> tuple:
+    """Where a vendor can be opened: a tuple of places, () = anywhere / not known."""
+    v = str(vendor or "")
+    for rx, places in VENDOR_PLACES:
+        if re.search(rx, v, re.I):
+            return places
+    return ()
+
+
+def place_of_level(level: str) -> str:
+    for rx, place in LEVEL_PLACES:
+        if re.search(rx, level or "", re.I):
+            return place
+    return ""
+
+
+def place_of_node(node: str) -> str:
+    """A star-chart node: its hub, or "mission" for an ordinary node (SolNode…, ClanNode…)."""
+    m = _NODE.match(node or "")
+    n = m.group(1) if m else (node or "")
+    if n in NODE_PLACES:
+        return NODE_PLACES[n]
+    if re.match(r"^(SolNode|ClanNode)\d+$", n):
+        return "mission"
+    return ""
+
+
+def parse_line(line: str):
+    """(place, what) from one log line, or None when the line does not say where you are."""
+    m = _HOST.search(line)
+    if m:
+        return place_of_node(m.group(1)), m.group(1)
+    m = _LAYOUT.search(line)
+    if m:
+        return place_of_level(m.group(1)), m.group(1)
+    return None
+
+
+class Location:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.path, self.pos, self.size = None, 0, 0
+        self.place, self.what, self.t = "", "", 0.0
+        self.mtime = 0.0
+
+    def _feed(self, text: str, quiet=False):
+        before = self.place
+        for line in text.splitlines():
+            r = parse_line(line)
+            if r:
+                if not r[0] and self.place == "mission" and "Host loading" not in line:
+                    continue                    # a mission's own tiles: still the mission chosen on the star chart
+                self.place, self.what = r
+                self.t = time.time()
+        if self.place != before and not quiet:
+            try:
+                from app.core import logbus
+                logbus.add("eelog", f"location: {self.place or '?'} ({self.what})")
+            except Exception:
+                pass
+
+    def poll(self):
+        """Reads what the game added to its log since the last time (the end of it the first time)."""
+        with self.lock:
+            p = log_path()
+            try:
+                st = p.stat()
+            except OSError:
+                self.place, self.what, self.mtime = "", "", 0.0
+                return
+            if p != self.path or st.st_size < self.pos:        # another file, or the game started over (new log)
+                self.path, self.pos = p, max(0, st.st_size - MAX_FIRST)
+                self.place, self.what = "", ""
+            self.mtime = st.st_mtime
+            if st.st_size == self.pos:
+                return
+            try:
+                with open(p, "rb") as f:
+                    f.seek(self.pos)
+                    data = f.read(st.st_size - self.pos)
+            except OSError:
+                return
+            cut = data.rfind(b"\n")                            # a line still being written: next time
+            if cut < 0:
+                return
+            self.pos += cut + 1
+            self._feed(data[:cut + 1].decode("utf-8", "replace"))
+
+    def current(self) -> str:
+        """The place you are in ("" = not known: no log, an old log, or a place we do not recognise)."""
+        from app.core.config import CFG
+        if not CFG.get("ee_log", True):
+            return ""
+        self.poll()
+        if not self.mtime or time.time() - self.mtime > 6 * 3600:   # the game is not running (an old log)
+            return ""
+        return self.place
+
+    def allows(self, vendor: str, name: str = "") -> bool:
+        """False only when the log says you are somewhere this vendor cannot be opened (vendor: its name or manifest
+        path; name: its name too, when vendor is the path)."""
+        here = self.current()
+        places = vendor_places(name) or vendor_places(vendor)
+        return not here or not places or here in places
+
+    def in_mission(self) -> bool:
+        return self.current() == "mission"
+
+
+LOCATION = Location()

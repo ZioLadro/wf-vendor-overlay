@@ -20,6 +20,29 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
   dell'arma (danno, probabilità critico / stato, moltiplicatore critico, cadenza, caricatore, ricarica, portata…, con i
   valori per variante come "(Prisma)"); gli effetti con una condizione (con colpo alla testa, dopo un'uccisione…) sono
   esclusi. Il pannello statistiche elenca i perk contati.
+- **Dove ti trovi, dal log del gioco** (`EE.log`, solo in lettura): un vendor che si trova in un solo luogo (Cetus,
+  Fortuna, il Necralisk / Sanctum, il Chrysalith, Höllvania, Iron Wake, Duviri, il campo del Drifter, Simaris e Baro in
+  un Relay) non viene più riconosciuto dall'OCR mentre sei altrove, né per i prezzi né per il controllo Settimanali; in
+  missione o in un open world non parte nessuna scansione automatica. Teshin, i sindacati dei Relay, Nightwave e gli
+  eventi contano ovunque.
+- **Riconoscimento del vendor più rigido**: il 75 % degli oggetti letti deve essere di un vendor (era 60 %; nuova
+  impostazione *Quota degli oggetti*), oltre al controllo del luogo.
+- **Riven flip, controllo dal vivo**: i 10 affari migliori vengono ricontrollati su warframe.market ogni ~3 minuti, una
+  richiesta per affare: la colonna *Venditore* mostra se il venditore è in gioco / online adesso, e i riven non più in
+  vendita. Limitatore proprio (6 al minuto, mai più di 10), in pausa durante le scansioni dei riven; 15 minuti di stop
+  dopo ripetuti "troppe richieste".
+- **Build: armi dei compagni**: le armi di Sentinelle / MOA / Hound venivano lette come compagni, gli artigli delle
+  bestie erano saltati: ora compaiono entrambi con le loro mod (gli artigli con lo slot Postura).
+- **Barra del giocatore**: crediti tracciati, emblema del grado di maestria più piccolo davanti all'MR, immagine del
+  profilo in un riquadro accanto al nome, valute dal bordo sinistro del riquadro; Impostazioni > Generali > *Valute
+  mostrate* sceglie quali. "230k" non appare più come "23k".
+- **Mondo > Arbitrati**: le prossime 72 ore (programma di browse.wf) con nodo, missione, fazione e tier di arbi.guide,
+  filtro per tier.
+- **Impostazioni riorganizzate**: *Overlay* e *Overlays* sono una sola scheda; ogni scheda divisa in riquadri con un
+  nome; molti nomi resi più chiari (le voci degli overlay perdono i prefissi "Overlay prezzi:" / "Attività:", ora titoli
+  dei riquadri).
+- **Immagini degli oggetti da cdn.warframestat.us** (immagini WFCD): una richiesta per immagine, provata prima della wiki
+  per la scheda Build e quando warframe.market non ha l'immagine.
 
 ## 0.4.5
 - **Capacità corretta per gli slot segnati `AP_UNIVERSAL`**: il file di gioco lo scrive sugli slot senza polarità (uno

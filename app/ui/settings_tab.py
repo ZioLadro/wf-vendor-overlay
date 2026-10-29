@@ -13,153 +13,198 @@ from app.core.i18n import LANGUAGES, t
 from app.core.uiutil import role
 from app.core.uiutil import HINT_STYLE, MUTED_STYLE
 
-# (key, widget, options, restart)   widget: bool | int:(min,max) | float:(min,max,decimals) | choice | text
+# tab -> [(box, [(key, widget, options, restart)])]   widget: bool | int:(min,max) | float:(min,max,decimals) | choice | text
+# | color | font | activities | wallet
 GROUPS = [
     ("general", [
-        ("language", "choice", LANGUAGES, True),
-        ("start_active", "bool", None, True),
-        ("player_name", "text", None, False),
-        ("hide_negative_ranks", "bool", None, False),
-        ("check_updates", "bool", None, False),
-        ("vendor_check", "bool", None, False),
-        ("vendor_header", "bool", None, False),
-        ("vendor_header_top", "int", (5, 70), False),
-        ("vendor_header_required", "bool", None, False),
-        ("vendor_min_items", "int", (1, 20), False),
-        ("weekly_ocr", "bool", None, False),
-        ("only_warframe", "bool", None, True),
-        ("auto_detect", "bool", None, False),
-        ("hide_zero_volume", "bool", None, False),
-        ("hide_operational_supply", "bool", None, False),
-        ("open_list_on_start", "bool", None, False),
-        ("window_on_top", "bool", None, True),
-        ("world_strip", "bool", None, True),
-        ("profile_reload_s", "int", (0, 3600), True),
-        ("world_refresh_s", "int", (15, 3600), False),
+        ("general", [
+            ("language", "choice", LANGUAGES, True),
+            ("player_name", "text", None, False),
+            ("start_active", "bool", None, True),
+            ("open_list_on_start", "bool", None, False),
+            ("window_on_top", "bool", None, True),
+            ("check_updates", "bool", None, False),
+            ("profile_reload_s", "int", (0, 3600), True),
+        ]),
+        ("player", [
+            ("wallet_shown", "wallet", None, False),
+            ("hide_negative_ranks", "bool", None, False),
+            ("world_strip", "bool", None, True),
+            ("world_refresh_s", "int", (15, 3600), False),
+        ]),
     ]),
     ("hotkeys", [
-        ("key_menu", "text", None, True),
-        ("key_scan", "text", None, True),
-        ("key_clear", "text", None, True),
-        ("key_quit", "text", None, True),
-        ("key_goals", "text", None, True),
+        ("hotkeys", [
+            ("key_menu", "text", None, True),
+            ("key_scan", "text", None, True),
+            ("key_clear", "text", None, True),
+            ("key_quit", "text", None, True),
+            ("key_goals", "text", None, True),
+        ]),
     ]),
     ("sounds", [
-        ("sound_vendor", "bool", None, False),
-        ("sound_riven", "bool", None, False),
-        ("sound_prices", "bool", None, False),
-        ("sound_file", "text", "sound", False),
+        ("sounds", [
+            ("sound_vendor", "bool", None, False),
+            ("sound_riven", "bool", None, False),
+            ("sound_prices", "bool", None, False),
+            ("sound_file", "text", "sound", False),
+        ]),
     ]),
     ("overlays", [
-        # prices over the vendor screen
-        ("show_volume", "bool", None, False),
-        ("volume_offset_y", "int", (-20, 40), False),
-        ("rec_overlay", "bool", None, False),
-        ("rec_overlay_top", "int", (1, 50), False),
-        ("ov_price_font", "int", (7, 24), False),
-        ("ov_vol_font", "int", (6, 20), False),
-        ("ov_bg_opacity", "int", (0, 100), False),
-        ("ov_price_color", "color", None, False),
-        ("ov_star_color", "color", None, False),
-        # Activities
-        ("goals_opacity", "int", (0, 100), False),
-        ("goals_font", "int", (8, 24), False),
-        ("goals_font_family", "font", "empty", False),
-        ("goals_title_color", "color", None, False),
-        ("goals_text_color", "color", None, False),
-        ("goals_ready_color", "color", None, False),
-        ("goals_hint_color", "color", None, False),
-        ("goals_soon_color", "color", None, False),
-        ("goals_items", "int", (1, 40), False),
-        ("goals_per_vendor", "bool", None, False),
-        ("goals_repeat", "bool", None, False),
-        ("goals_by_reset", "bool", None, False),
-        ("goals_activities", "bool", None, False),
-        ("goals_only_short", "bool", None, False),
-        ("goals_where", "bool", None, False),
-        ("goals_weekly", "bool", None, False),
-        ("goals_quests", "bool", None, False),
-        ("goals_cal_rows", "int", (0, 20), False),
-        ("goals_routine", "bool", None, False),
-        ("goals_click_only_cursor", "bool", None, False),
-        ("goals_track_interact", "bool", None, False),
-        ("goals_untracked", "activities", None, False),
+        ("ov_prices", [                                  # prices over the vendor screen
+            ("show_volume", "bool", None, False),
+            ("volume_offset_y", "int", (-20, 40), False),
+            ("volume_low", "int", (1, 10000), False),
+            ("volume_high", "int", (2, 100000), False),
+            ("hide_zero_volume", "bool", None, False),
+            ("hide_operational_supply", "bool", None, False),
+            ("rec_overlay", "bool", None, False),
+            ("rec_overlay_top", "int", (1, 50), False),
+            ("ov_price_font", "int", (7, 24), False),
+            ("ov_vol_font", "int", (6, 20), False),
+            ("ov_bg_opacity", "int", (0, 100), False),
+            ("ov_price_color", "color", None, False),
+            ("ov_star_color", "color", None, False),
+        ]),
+        ("ov_goals_look", [                              # the Activities overlay: how it looks
+            ("goals_opacity", "int", (0, 100), False),
+            ("goals_font", "int", (8, 24), False),
+            ("goals_font_family", "font", "empty", False),
+            ("goals_title_color", "color", None, False),
+            ("goals_text_color", "color", None, False),
+            ("goals_ready_color", "color", None, False),
+            ("goals_hint_color", "color", None, False),
+            ("goals_soon_color", "color", None, False),
+            ("goals_click_only_cursor", "bool", None, False),
+            ("goals_track_interact", "bool", None, False),
+        ]),
+        ("ov_goals_content", [                           # … and what it lists
+            ("goals_untracked", "activities", None, False),
+            ("goals_items", "int", (1, 40), False),
+            ("goals_per_vendor", "bool", None, False),
+            ("goals_repeat", "bool", None, False),
+            ("goals_by_reset", "bool", None, False),
+            ("goals_activities", "bool", None, False),
+            ("goals_only_short", "bool", None, False),
+            ("goals_where", "bool", None, False),
+            ("goals_weekly", "bool", None, False),
+            ("goals_quests", "bool", None, False),
+            ("goals_cal_rows", "int", (0, 20), False),
+            ("goals_routine", "bool", None, False),
+        ]),
     ]),
     ("detection", [
-        ("watch_interval", "float", (0.1, 10, 2), False),
-        ("watch_interval_moving", "float", (0.1, 20, 2), False),
-        ("auto_settle_polls", "int", (1, 20), False),
-        ("auto_motion_frac", "float", (0.001, 0.5, 3), False),
-        ("auto_min_gap", "float", (0, 60, 1), False),
-        ("scroll_debounce", "float", (0.1, 5, 2), False),
-        ("match_threshold", "int", (50, 100), True),
+        ("vendor", [                                     # is the screen read a vendor's, and which one
+            ("auto_detect", "bool", None, False),
+            ("vendor_check", "bool", None, False),
+            ("vendor_min_items", "int", (1, 20), False),
+            ("vendor_min_share", "float", (0.3, 1, 2), False),
+            ("vendor_header", "bool", None, False),
+            ("vendor_header_top", "int", (5, 70), False),
+            ("vendor_header_required", "bool", None, False),
+            ("weekly_ocr", "bool", None, False),
+        ]),
+        ("eelog", [                                      # the game's own log: where you are
+            ("ee_log", "bool", None, False),
+            ("ee_log_skip_missions", "bool", None, False),
+            ("ee_log_path", "text", "eelog", False),
+        ]),
+        ("screen", [
+            ("only_warframe", "bool", None, True),
+            ("watch_interval", "float", (0.1, 10, 2), False),
+            ("watch_interval_moving", "float", (0.1, 20, 2), False),
+            ("auto_settle_polls", "int", (1, 20), False),
+            ("auto_motion_frac", "float", (0.001, 0.5, 3), False),
+            ("auto_min_gap", "float", (0, 60, 1), False),
+            ("scroll_debounce", "float", (0.1, 5, 2), False),
+            ("match_threshold", "int", (50, 100), True),
+        ]),
     ]),
     ("data", [
-        ("refresh_interval", "int", (30, 3600), False),
-        ("open_max_age", "int", (0, 3600), False),
-        ("show_cached_max_age", "int", (0, 86400), False),
-        ("refresh_skip_age", "int", (0, 86400), False),
-        ("refresh_confirm_over", "int", (1, 5000), False),
-        ("baro_refresh_days", "int", (1, 90), False),
+        ("data", [
+            ("refresh_interval", "int", (30, 3600), False),
+            ("open_max_age", "int", (0, 3600), False),
+            ("show_cached_max_age", "int", (0, 86400), False),
+            ("refresh_skip_age", "int", (0, 86400), False),
+            ("refresh_confirm_over", "int", (1, 5000), False),
+            ("baro_refresh_days", "int", (1, 90), False),
+        ]),
     ]),
     ("theme", [
-        ("theme", "choice", "themes", False),
-        ("backdrop", "bool", None, False),
-        ("backdrop_style", "choice", "backdrops", False),
-        ("backdrop_image", "text", "picture", False),
-        ("backdrop_strength", "int", (0, 100), False),
-        ("ui_font", "font", None, False),
-        ("ui_font_size", "int", (9, 24), False),
-    ]),
-    ("appearance", [
-        ("volume_low", "int", (1, 10000), False),
-        ("volume_high", "int", (2, 100000), False),
-        ("menu_refresh_ms", "int", (500, 30000), False),
+        ("theme", [
+            ("theme", "choice", "themes", False),
+            ("backdrop", "bool", None, False),
+            ("backdrop_style", "choice", "backdrops", False),
+            ("backdrop_image", "text", "picture", False),
+            ("backdrop_strength", "int", (0, 100), False),
+            ("ui_font", "font", None, False),
+            ("ui_font_size", "int", (9, 24), False),
+        ]),
     ]),
     ("performance", [
-        ("ocr_threads", "int", (0, 16), True),
-        ("ocr_width", "int", (0, 3840), True),
-        ("ocr_mask_panel", "bool", None, True),
-        ("ocr_priority", "choice", [("normal", "normal"), ("below_normal", "below_normal"), ("idle", "idle")], True),
-        ("publish_throttle", "float", (0.0, 2, 2), False),
+        ("performance", [
+            ("ocr_threads", "int", (0, 16), True),
+            ("ocr_width", "int", (0, 3840), True),
+            ("ocr_mask_panel", "bool", None, True),
+            ("ocr_priority", "choice", [("normal", "normal"), ("below_normal", "below_normal"), ("idle", "idle")], True),
+            ("publish_throttle", "float", (0.0, 2, 2), False),
+            ("menu_refresh_ms", "int", (500, 30000), False),
+        ]),
     ]),
     ("inventory", [
-        ("inv_exclude_maxed", "bool", None, False),
-        ("inv_exclude_installed", "bool", None, False),
-        ("item_previews", "bool", None, False),
-        ("assets_auto", "bool", None, False),
-        ("assets_dir", "text", None, False),
-        ("aya_manual", "int", (0, 1000000), False),
-        ("rankup_min_gain", "int", (0, 10000), False),
-        ("sell_price_offset", "int", (-100, 100), False),
+        ("inventory", [
+            ("inv_exclude_maxed", "bool", None, False),
+            ("inv_exclude_installed", "bool", None, False),
+            ("rankup_min_gain", "int", (0, 10000), False),
+            ("sell_price_offset", "int", (-100, 100), False),
+            ("aya_manual", "int", (0, 1000000), False),
+        ]),
+        ("pictures", [
+            ("item_previews", "bool", None, False),
+            ("assets_auto", "bool", None, False),
+            ("assets_dir", "text", None, False),
+        ]),
     ]),
     ("quantframe", [
-        ("quantframe_url", "text", None, False),
+        ("quantframe", [
+            ("quantframe_url", "text", None, False),
+        ]),
     ]),
     ("riven", [
-        ("riven_rpm", "int", (1, 20), False),
-        ("riven_scan_weapons", "int", (1, 500), False),
-        ("riven_auto_hours", "int", (0, 168), False),
-        ("riven_max_age_days", "int", (0, 365), False),
-        ("riven_whisper", "text", "wide", False),
-        ("riven_weapon_filter", "text", None, False),
-        ("riven_sell_factor", "int", (30, 100), False),
-        ("riven_online_only", "bool", None, False),
-        ("riven_min_margin", "int", (0, 100000), False),
-        ("riven_min_score", "int", (0, 100), False),
-        ("riven_max_price", "int", (0, 1000000), False),
-        ("riven_min_sales", "int", (0, 1000), False),
+        ("riven_scan", [
+            ("riven_rpm", "int", (1, 20), False),
+            ("riven_scan_weapons", "int", (1, 500), False),
+            ("riven_auto_hours", "int", (0, 168), False),
+            ("riven_weapon_filter", "text", None, False),
+        ]),
+        ("riven_deals", [
+            ("riven_sell_factor", "int", (30, 100), False),
+            ("riven_min_margin", "int", (0, 100000), False),
+            ("riven_min_score", "int", (0, 100), False),
+            ("riven_max_price", "int", (0, 1000000), False),
+            ("riven_min_sales", "int", (0, 1000), False),
+            ("riven_max_age_days", "int", (0, 365), False),
+            ("riven_online_only", "bool", None, False),
+            ("riven_whisper", "text", "wide", False),
+        ]),
+        ("riven_live", [
+            ("riven_live_top", "int", (0, 50), False),
+            ("riven_live_minutes", "int", (1, 120), False),
+            ("riven_live_rpm", "int", (1, 10), False),
+        ]),
     ]),
     ("recommendations", [
-        ("rec_min_volume", "int", (0, 100000), False),
-        ("pmax_min_volume", "float", (0, 50, 1), False),
-        ("stale_refresh_h", "float", (0, 48, 1), False),
-        ("rec_min_price", "int", (0, 100000), False),
-        ("rec_top", "int", (10, 2000), False),
-        ("ducat_min_ratio", "int", (1, 500), False),
-        ("advice_liquid_volume", "int", (1, 1000), False),
-        ("advice_trend_weight", "int", (0, 100), False),
-        ("sell_min_price", "int", (0, 100000), False),
+        ("recommendations", [
+            ("rec_min_volume", "int", (0, 100000), False),
+            ("rec_min_price", "int", (0, 100000), False),
+            ("rec_top", "int", (10, 2000), False),
+            ("pmax_min_volume", "float", (0, 50, 1), False),
+            ("stale_refresh_h", "float", (0, 48, 1), False),
+            ("ducat_min_ratio", "int", (1, 500), False),
+            ("advice_liquid_volume", "int", (1, 1000), False),
+            ("advice_trend_weight", "int", (0, 100), False),
+            ("sell_min_price", "int", (0, 100000), False),
+        ]),
     ]),
 ]
 
@@ -192,19 +237,20 @@ class SettingsTab(QWidget):
         self.widgets = {}                   # key -> (widget, kind, restart)
 
         self.subtabs = QTabWidget()
-        for gname, fields in GROUPS:
+        for gname, boxes in GROUPS:
             page = QWidget()
             col = QVBoxLayout(page)
-            box = QGroupBox(t("group." + gname))
-            form = QFormLayout(box)
-            for key, kind, opt, restart in fields:
-                w = self._make(kind, opt)
-                w.setToolTip(t("set." + key + ".tip"))
-                label = QLabel(t("set." + key) + (" ⟳" if restart else ""))
-                label.setToolTip(t("set." + key + ".tip"))
-                form.addRow(label, w)
-                self.widgets[key] = (w, kind, restart)
-            col.addWidget(box)
+            for bname, fields in boxes:
+                box = QGroupBox(t("box." + bname))
+                form = QFormLayout(box)
+                for key, kind, opt, restart in fields:
+                    w = self._make(kind, opt)
+                    w.setToolTip(t("set." + key + ".tip"))
+                    label = QLabel(t("set." + key) + (" ⟳" if restart else ""))
+                    label.setToolTip(t("set." + key + ".tip"))
+                    form.addRow(label, w)
+                    self.widgets[key] = (w, kind, restart)
+                col.addWidget(box)
             if gname == "general":
                 from app.ui.update_box import UpdateBox
                 self.update_box = UpdateBox()
@@ -261,6 +307,19 @@ class SettingsTab(QWidget):
             return w
         if kind == "bool":
             return QCheckBox()
+        if kind == "wallet":                          # one tick per currency the player strip can show
+            from PyQt6.QtWidgets import QGridLayout
+            from app.ui.player_bar import PlayerBar
+            w = QWidget()
+            g = QGridLayout(w)
+            g.setContentsMargins(0, 0, 0, 0)
+            g.setHorizontalSpacing(14)
+            w.boxes = {}
+            for n, (k, lab) in enumerate(PlayerBar.WALLET):
+                cb = QCheckBox(t(lab))
+                w.boxes[k] = cb
+                g.addWidget(cb, n // 4, n % 4)
+            return w
         if kind == "color":                           # a button showing the colour; a click opens the colour picker
             w = QPushButton()
             w.value = "#ffffff"
@@ -326,6 +385,15 @@ class SettingsTab(QWidget):
                     C["sound_file"], C["sound_vendor"] = old
                 test.triggered.connect(hear)
                 w.setMaximumWidth(320)
+            if opt == "eelog":                         # the game's log: empty = where the game keeps it
+                from PyQt6.QtWidgets import QFileDialog, QStyle
+                w.setPlaceholderText(t("set.ee_log_path.auto"))
+                act = w.addAction(w.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon),
+                                  QLineEdit.ActionPosition.TrailingPosition)
+                act.triggered.connect(lambda _c=False, box=w: box.setText(
+                    QFileDialog.getOpenFileName(box, t("set.ee_log_path"), box.text(), "EE.log (*.log)")[0] or box.text()))
+                w.setMaximumWidth(420)
+                w.setMinimumWidth(300)
             if opt == "picture":                       # a file of yours: a button in the box opens the file chooser
                 from PyQt6.QtWidgets import QFileDialog, QStyle
                 act = w.addAction(w.style().standardIcon(QStyle.StandardPixmap.SP_DirOpenIcon),
@@ -353,6 +421,11 @@ class SettingsTab(QWidget):
         w, kind, _ = self.widgets[key]
         if kind == "color":
             self._paint_color(w, value)
+            return
+        if kind == "wallet":
+            on = set(value) if isinstance(value, list) else set(w.boxes)
+            for k, cb in w.boxes.items():
+                cb.setChecked(k in on)
             return
         if kind == "activities":
             w.value = list(value or [])
@@ -419,6 +492,8 @@ class SettingsTab(QWidget):
         w, kind, _ = self.widgets[key]
         if kind == "activities":
             return list(w.value or [])
+        if kind == "wallet":
+            return [k for k, cb in w.boxes.items() if cb.isChecked()]
         if kind == "color":
             return w.value
         if kind == "bool":

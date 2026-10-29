@@ -260,6 +260,9 @@ class Scanner:
         if not self.active or self.suspended:
             return
         self.scan_epoch += 1
+        from app.game.eelog import LOCATION
+        if not manual and CFG.get("ee_log_skip_missions", True) and LOCATION.in_mission():
+            return                               # in a mission (the game's log says so): no vendor to read
         if manual:
             self.bridge.status.emit(t("status.scanning"))
         self.bridge.clear.emit()
@@ -296,8 +299,10 @@ class Scanner:
                     header = self.market.vendors.header_vendors(self._top_texts())
                 except Exception:
                     header = set()
+            allow = LOCATION.allows if CFG.get("ee_log", True) else None
+            header = {v for v in header if allow is None or allow(v)}
             vendor, keep = self.market.vendors.identify([h[4] for h in hits], int(CFG["vendor_min_items"]),
-                                                        float(CFG["vendor_min_share"]), header)
+                                                        float(CFG["vendor_min_share"]), header, allow)
             self._dump_lines(manual, header, vendor)
             if vendor is None or (CFG["vendor_header_required"] and vendor not in header):
                 self._last_vendor = None

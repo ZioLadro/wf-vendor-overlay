@@ -226,7 +226,8 @@ class Weekly:
         something changed."""
         from app.core import logbus
         from app.game import weekly_ocr as WO
-        seen = WO.read(texts)
+        from app.game.eelog import LOCATION
+        seen = WO.read(texts, allow=lambda v: LOCATION.allows(v, (data().get(v) or {}).get("name", "")))
         if not seen:
             return False
         with _lock:

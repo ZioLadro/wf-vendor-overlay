@@ -26,7 +26,7 @@ from app.core.version import __version__
 # the saved loadouts are read again from the game file after every program update (new fields, fixed calculations):
 # 0.2.9 added spliced Rivens and exalted weapons but kept the old copy, so they did not show until the file changed
 CACHE_VER = f"6-{__version__}"
-KINDS = ["warframe", "primary", "secondary", "melee", "exalted", "archwing", "archgun", "necramech", "companion"]
+KINDS = ["warframe", "primary", "secondary", "melee", "exalted", "archwing", "archgun", "necramech", "companion", "compweapon"]
 SHARD_RGB = {"RED": "#c8453c", "BLUE": "#3b8fd9", "GREEN": "#3fbf6a", "YELLOW": "#e0b83a", "ORANGE": "#e08a3a",
              "PURPLE": "#a46be0"}
 

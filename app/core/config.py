@@ -59,6 +59,8 @@ DEFAULTS = {
     "player_name": "",           # shown in the player strip (the game files do not contain it)
     "assets_dir": "",             # optional folder of icons of your own (e.g. AlecaFrame's unpacked assets): shard pictures in Builds
     "assets_auto": True,          # look for the icons folder by itself (Overwolf's AlecaFrame folder; follows its version changes)
+    "wallet_shown": ["plat", "credits", "endo", "ducats", "aya", "regal", "steel", "pathos", "sliver", "heartcell", "kuva",
+                     "vitus"],           # currencies shown under your name (main window)
     "aya_manual": 0,              # Aya you hold, typed by hand: the game file does not always carry it
     "item_previews": True,        # picture of the item (from warframe.market) in the tooltip of the item tables
     "inv_exclude_installed": False,   # Inventory: leave out the mods/Arcanes that sit in a loadout
@@ -128,6 +130,9 @@ DEFAULTS = {
     "riven_max_price": 0,         # platinum: do not show rivens above this price (0 = no limit)
     "riven_max_age_days": 14,     # Riven flip: listings on sale for longer than this are not shown as deals (0 = no limit)
     "riven_auto_hours": 6,
+    "riven_live_top": 10,        # Riven flip: the best N deals are checked again and again (seller in game now? still listed?)
+    "riven_live_minutes": 3,     # ... each one about this often
+    "riven_live_rpm": 6,         # ... at most this many requests a minute (never above 10)
     "riven_whisper": "/w {seller} Hi, I would like to buy {weapon} {riven} for {price} platinum",        # Riven flip: scan by itself every N hours while the program runs (0 = only by hand)
     "riven_min_sales": 0,         # listings gone in 7 days (estimated sales) from which a weapon is shown, once observed for a day
     "theme": "classic",           # colour theme (see theme.py): classic, or a faction: tenno, grineer, corpus, infested, orokin...
@@ -141,11 +146,15 @@ DEFAULTS = {
     "vendor_header_top": 20,     # the vendor name is looked for only in this top part of the window (% of its height)
     "vendor_header_required": False,   # ... and require it (stricter; vendors with unknown headings then never match)
     "vendor_min_items": 3,       # ... at least this many
-    "vendor_min_share": 0.6,     # ... and at least this share of everything matched
+    "vendor_min_share": 0.75,    # ... and at least this share of everything matched
+    "ee_log": True,              # read where you are from the game's log (EE.log): vendors of other places never match
+    "ee_log_skip_missions": True,  # ... and no automatic scan while you are in a mission
+    "ee_log_path": "",           # the game's log, when it is not %LOCALAPPDATA%\\Warframe\\EE.log
     "only_warframe": True,       # read only the Warframe window, and only while it is the active window
     # profile and world state
     "open_list_on_start": True,  # open the price-list window when the program starts
     "profile_reload_s": 10,      # re-read the imported AlecaFrame file (standing, inventory) when it changed (0 = never)
+    "world_arbi_min": "",        # World > Arbitrations: show only this tier or better ("" = all)
     "world_refresh_s": 60,       # world state refresh period while its tab is open (seconds)
     # inventory
     "inv_exclude_maxed": False,  # inventory: leave out mods/arcanes that are at max rank
@@ -156,7 +165,18 @@ DEFAULTS = {
     "rec_min_volume": 10,        # ignore items traded less than this in 24 h
     "rec_min_price": 5,          # ignore items cheaper than this (platinum)
     "rec_top": 200,              # maximum rows in the recommendations table
+    "cfg_rev": 0,                # settings written by an older version get the new defaults of what changed
 }
+CFG_REV = 1
+
+
+def _migrate(cfg: dict, data: dict) -> dict:
+    """Values an older version saved that were only its defaults: today's defaults instead."""
+    rev = int(data.get("cfg_rev") or 0)
+    if rev < 1 and data.get("vendor_min_share") == 0.6:
+        cfg["vendor_min_share"] = DEFAULTS["vendor_min_share"]           # 0.4.6: stricter vendor recognition
+    cfg["cfg_rev"] = CFG_REV
+    return cfg
 
 
 def _load() -> dict:
@@ -170,6 +190,7 @@ def _load() -> dict:
                     continue                                   # unknown key
                 if type(v) is type(d) or (type(d) is float and type(v) is int):
                     cfg[k] = v                                 # wrong types (e.g. "yes" for a number) are ignored
+            cfg = _migrate(cfg, data)
         except Exception:
             pass
     else:
