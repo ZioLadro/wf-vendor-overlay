@@ -3,21 +3,7 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
-## 0.4.6
-- **Warframe stats at rank 30**: health, shields and energy started from the rank-0 values of the public data; the
-  rank gains are now added (+100 health, +100 shields, +50 energy at rank 30, spread over the ranks below). Cyte-09
-  with your build: 325 / 235 / 150 / 655, 226 % / 45 % / 34 % / 298 %, as in the game.
-- **Mods below max rank**: a mod gives (rank + 1) / (max rank + 1) of its effect, as in the game (Serration +15 % at
-  rank 0); it was counted as rank / max rank (0 at rank 0, too low at every rank below max). Builds and planner.
-- **Flat values**: Primed Reach and the like (+3 range) now add to the melee range.
-- Stats are cut, not rounded, like the game shows them (655.5 -> 655).
-- **Archon Shards in the stats**: Crimson (strength, duration +10 %) with the mods, Azure (health / shields / armor
-  +150, energy +50) after every other bonus, Tauforged ×1.5; no shields for Inaros / Nidus / Kullervo, no energy for
-  Hildryn / Lavos. Builds and planner (5 shard slots under the options; *Copy from my loadout* brings yours).
-- **Incarnon perks in the weapon stats**: the chosen perks of Evolution II and up are read from the weapon's wiki page
-  (damage, crit / status chance, crit multiplier, fire rate, magazine, reload, range…, per-variant values such as
-  "(Prisma)" picked); effects with a condition (on headshot, after a kill…) are left out. The stats panel lists the
-  perks counted.
+## 0.4.7
 - **Where you are, from the game's log** (`EE.log`, read only): a vendor that lives in one place (Cetus, Fortuna, the
   Necralisk / Sanctum, the Chrysalith, Höllvania, Iron Wake, Duviri, the Drifter's camp, Simaris and Baro at a Relay) is
   no longer recognised by the OCR while you are elsewhere, for the prices and for the Weekly check; in a mission or an
@@ -38,6 +24,22 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
   clearer (the Overlay labels lose their "Price overlay:" / "Activities:" prefixes, now box titles).
 - **Item pictures from cdn.warframestat.us** (WFCD images): one request per picture, tried before the wiki for the Builds
   tab and when warframe.market has no picture.
+
+## 0.4.6
+- **Warframe stats at rank 30**: health, shields and energy started from the rank-0 values of the public data; the
+  rank gains are now added (+100 health, +100 shields, +50 energy at rank 30, spread over the ranks below). Cyte-09
+  with your build: 325 / 235 / 150 / 655, 226 % / 45 % / 34 % / 298 %, as in the game.
+- **Mods below max rank**: a mod gives (rank + 1) / (max rank + 1) of its effect, as in the game (Serration +15 % at
+  rank 0); it was counted as rank / max rank (0 at rank 0, too low at every rank below max). Builds and planner.
+- **Flat values**: Primed Reach and the like (+3 range) now add to the melee range.
+- Stats are cut, not rounded, like the game shows them (655.5 -> 655).
+- **Archon Shards in the stats**: Crimson (strength, duration +10 %) with the mods, Azure (health / shields / armor
+  +150, energy +50) after every other bonus, Tauforged ×1.5; no shields for Inaros / Nidus / Kullervo, no energy for
+  Hildryn / Lavos. Builds and planner (5 shard slots under the options; *Copy from my loadout* brings yours).
+- **Incarnon perks in the weapon stats**: the chosen perks of Evolution II and up are read from the weapon's wiki page
+  (damage, crit / status chance, crit multiplier, fire rate, magazine, reload, range…, per-variant values such as
+  "(Prisma)" picked); effects with a condition (on headshot, after a kill…) are left out. The stats panel lists the
+  perks counted.
 
 ## 0.4.5
 - **Capacity fixed for slots marked `AP_UNIVERSAL`**: the game file writes it on slots without a polarity (an Exilus

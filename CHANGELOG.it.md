@@ -3,23 +3,7 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
-## 0.4.6
-- **Statistiche dei Warframe al rank 30**: salute, scudi ed energia partivano dai valori al rank 0 dei dati pubblici;
-  ora vengono aggiunti i guadagni dei rank (+100 salute, +100 scudi, +50 energia al rank 30, distribuiti sui rank
-  inferiori). Cyte-09 con la tua build: 325 / 235 / 150 / 655, 226 % / 45 % / 34 % / 298 %, come nel gioco.
-- **Mod sotto il rank massimo**: una mod dà (rank + 1) / (rank massimo + 1) del suo effetto, come nel gioco (Serration
-  +15 % al rank 0); era contata come rank / rank massimo (0 al rank 0, troppo poco a ogni rank sotto il massimo). Build e
-  pianificatore.
-- **Valori fissi**: Primed Reach e simili (+3 portata) ora si sommano alla portata in mischia.
-- Le statistiche vengono troncate, non arrotondate, come le mostra il gioco (655,5 -> 655).
-- **Frammenti Archon nelle statistiche**: Cremisi (potenza, durata +10 %) insieme alle mod, Azzurri (salute / scudi /
-  armatura +150, energia +50) dopo ogni altro bonus, Tauforgiati ×1,5; niente scudi per Inaros / Nidus / Kullervo,
-  niente energia per Hildryn / Lavos. Build e pianificatore (5 slot frammento sotto le opzioni; *Copia dal mio
-  equipaggiamento* porta i tuoi).
-- **Perk Incarnon nelle statistiche delle armi**: i perk scelti dall'Evoluzione II in su vengono letti dalla pagina wiki
-  dell'arma (danno, probabilità critico / stato, moltiplicatore critico, cadenza, caricatore, ricarica, portata…, con i
-  valori per variante come "(Prisma)"); gli effetti con una condizione (con colpo alla testa, dopo un'uccisione…) sono
-  esclusi. Il pannello statistiche elenca i perk contati.
+## 0.4.7
 - **Dove ti trovi, dal log del gioco** (`EE.log`, solo in lettura): un vendor che si trova in un solo luogo (Cetus,
   Fortuna, il Necralisk / Sanctum, il Chrysalith, Höllvania, Iron Wake, Duviri, il campo del Drifter, Simaris e Baro in
   un Relay) non viene più riconosciuto dall'OCR mentre sei altrove, né per i prezzi né per il controllo Settimanali; in
@@ -43,6 +27,24 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
   dei riquadri).
 - **Immagini degli oggetti da cdn.warframestat.us** (immagini WFCD): una richiesta per immagine, provata prima della wiki
   per la scheda Build e quando warframe.market non ha l'immagine.
+
+## 0.4.6
+- **Statistiche dei Warframe al rank 30**: salute, scudi ed energia partivano dai valori al rank 0 dei dati pubblici;
+  ora vengono aggiunti i guadagni dei rank (+100 salute, +100 scudi, +50 energia al rank 30, distribuiti sui rank
+  inferiori). Cyte-09 con la tua build: 325 / 235 / 150 / 655, 226 % / 45 % / 34 % / 298 %, come nel gioco.
+- **Mod sotto il rank massimo**: una mod dà (rank + 1) / (rank massimo + 1) del suo effetto, come nel gioco (Serration
+  +15 % al rank 0); era contata come rank / rank massimo (0 al rank 0, troppo poco a ogni rank sotto il massimo). Build e
+  pianificatore.
+- **Valori fissi**: Primed Reach e simili (+3 portata) ora si sommano alla portata in mischia.
+- Le statistiche vengono troncate, non arrotondate, come le mostra il gioco (655,5 -> 655).
+- **Frammenti Archon nelle statistiche**: Cremisi (potenza, durata +10 %) insieme alle mod, Azzurri (salute / scudi /
+  armatura +150, energia +50) dopo ogni altro bonus, Tauforgiati ×1,5; niente scudi per Inaros / Nidus / Kullervo,
+  niente energia per Hildryn / Lavos. Build e pianificatore (5 slot frammento sotto le opzioni; *Copia dal mio
+  equipaggiamento* porta i tuoi).
+- **Perk Incarnon nelle statistiche delle armi**: i perk scelti dall'Evoluzione II in su vengono letti dalla pagina wiki
+  dell'arma (danno, probabilità critico / stato, moltiplicatore critico, cadenza, caricatore, ricarica, portata…, con i
+  valori per variante come "(Prisma)"); gli effetti con una condizione (con colpo alla testa, dopo un'uccisione…) sono
+  esclusi. Il pannello statistiche elenca i perk contati.
 
 ## 0.4.5
 - **Capacità corretta per gli slot segnati `AP_UNIVERSAL`**: il file di gioco lo scrive sugli slot senza polarità (uno

@@ -174,7 +174,7 @@ def _migrate(cfg: dict, data: dict) -> dict:
     """Values an older version saved that were only its defaults: today's defaults instead."""
     rev = int(data.get("cfg_rev") or 0)
     if rev < 1 and data.get("vendor_min_share") == 0.6:
-        cfg["vendor_min_share"] = DEFAULTS["vendor_min_share"]           # 0.4.6: stricter vendor recognition
+        cfg["vendor_min_share"] = DEFAULTS["vendor_min_share"]           # 0.4.7: stricter vendor recognition
     cfg["cfg_rev"] = CFG_REV
     return cfg
 
