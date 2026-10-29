@@ -3,6 +3,11 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.4
+- **Le cornici delle carte ora compaiono**: i pezzi sono riconosciuti dalla didascalia sulla pagina della wiki («Rare Mod
+  Top Border»…), non solo dal nome del file, e le carte a schermo vengono ridisegnate appena arrivano. La Console dice
+  cosa è stato trovato e salvato («mod frames…»); dopo un errore riprova un'ora dopo.
+
 ## 0.5.3
 - **Build: mod nell'ordine del gioco.** Il gioco numera gli otto slot dal basso a destra (l'ultimo slot del file è in
   alto a sinistra): le carte erano disegnate ruotate. Verificato su una build reale (Cyte-09). Il primo Arcano ora è

@@ -30,6 +30,7 @@ PARTS = (("topborder", ("topborder",)), ("bottomborder", ("bottomborder",)), ("b
          ("backer", ("backer",)), ("sidelight", ("sidelight", "sidesmoke")), ("cornerlight", ("cornerlight",)),
          ("bottomlight", ("bottomlight",)), ("typetab", ("typetab",)), ("rankline", ("rankline",)),
          ("rankpip", ("rankpip",)), ("empty", ("emptymodslot", "emptyslot")))
+SHARED = ("rankline", "rankpip", "empty")
 FALLBACK = {"galvanized": "uncommon", "amalgam": "legendary", "peculiar": "legendary", "riven": "uncommon"}
 CODE = {"C": "common", "U": "uncommon", "R": "rare", "L": "legendary", "riven": "riven"}
 
@@ -69,13 +70,36 @@ def enabled() -> bool:
     return bool(CFG.get("mod_frames", True))
 
 
-def ensure():
+class _Notifier:
+    """Tells the Builds tab (in the GUI thread) that the parts arrived, so its cards are drawn again."""
+    obj = None
+
+    @classmethod
+    def get(cls):
+        if cls.obj is None:
+            from PyQt6.QtCore import QObject, pyqtSignal
+
+            class N(QObject):
+                ready = pyqtSignal()
+            cls.obj = N()
+        return cls.obj
+
+
+def notifier():
+    """A QObject whose `ready` signal fires once new parts are on disk (create it in the GUI thread)."""
+    return _Notifier.get()
+
+
+def ensure(force=False):
     """Reads the page's pictures in the background when they are missing or 30 days old (once per run)."""
     if not enabled():
         return
+    notifier()                                             # created here, in the GUI thread
     idx = _index()
-    if idx.get("files") and time.time() - float(idx.get("t") or 0) < MAX_AGE:
+    if not force and idx.get("v") == 2 and _usable(idx) and time.time() - float(idx.get("t") or 0) < MAX_AGE:
         return
+    if not force and idx.get("tried") and time.time() - float(idx["tried"]) < 3600:
+        return                                             # failed less than an hour ago: not again yet
     with _lock:
         if _state["busy"]:
             return
@@ -83,44 +107,124 @@ def ensure():
     threading.Thread(target=_download, daemon=True, name="modframes").start()
 
 
+def _usable(idx) -> bool:
+    files = idx.get("files") or {}
+    return any((DIR / f).exists() for f in files)
+
+
+def page_files(html: str) -> list:
+    """[(file name, caption)] of the page's pictures in page order: the caption is the text after the picture up to the
+    next one (a gallery's caption, a table cell), with the section title in front."""
+    import html as H
+    out, section = [], ""
+    marks = [(m.start(), "h", m.group(1)) for m in re.finditer(r"<h[2-4][^>]*>(.*?)</h[2-4]>", html, re.S)]
+    marks += [(m.start(), "f", m.group(1)) for m in re.finditer(r'href="[^"]*?/(?:File|Image):([^"#?]+)"', html)]
+    marks.sort()
+    for n, (pos, kind, val) in enumerate(marks):
+        if kind == "h":
+            section = H.unescape(re.sub(r"<[^>]+>", " ", val)).strip()
+            continue
+        from urllib.parse import unquote
+        name = unquote(H.unescape(val)).replace(" ", "_")
+        end = marks[n + 1][0] if n + 1 < len(marks) else len(html)
+        chunk = html[pos:end]
+        chunk = chunk[chunk.find(">") + 1:]                # from after the link's own tag
+        text = H.unescape(re.sub(r"<[^>]+>", " ", chunk))
+        text = re.sub(r"\s+", " ", text).strip()[:120]
+        if out and out[-1][0] == name:
+            continue
+        out.append((name, (section + " | " + text).strip(" |")))
+    return out
+
+
+def _label_class(name: str, caption: str):
+    """classify() on the caption (its own words), else on the file name."""
+    cap = caption.split(" | ", 1)[-1]
+    c = classify(cap) if cap else None
+    if c and not c[0]:                                     # a caption without a rarity: the section's ("Rare Mod")
+        sec = caption.split(" | ", 1)[0] if " | " in caption else ""
+        cs = classify(sec + " " + cap)
+        c = cs if cs else c
+    f = classify(name)
+    if c and f and not c[2] and f[2]:
+        c = (c[0], c[1], f[2])                             # left / right from the file name
+    c = c or f
+    if c and c[1] in SHARED:
+        c = ("", c[1], c[2])                               # the same rank line / pip / empty slot for every rarity
+    return c
+
+
 def _download():
     import requests
     from app.core import logbus
     from app.trade.market import HEADERS
     h = {"User-Agent": HEADERS["User-Agent"]}
+    got, step = 0, "page"
     try:
-        r = requests.get(API, params={"action": "parse", "page": PAGE, "prop": "images", "format": "json"},
-                         headers=h, timeout=15)
+        r = requests.get(API, params={"action": "parse", "page": PAGE, "prop": "text|images", "format": "json"},
+                         headers=h, timeout=20)
         r.raise_for_status()
-        names = [n for n in (r.json().get("parse") or {}).get("images") or [] if classify(n)]
-        if not names:
-            logbus.add("builds", "mod frames: no card parts on the wiki page", "warn")
+        parse = r.json().get("parse") or {}
+        listed = (parse.get("text") or {}).get("*") or ""
+        pairs = page_files(listed)
+        known = {n for n, _c in pairs}
+        pairs += [(n.replace(" ", "_"), "") for n in parse.get("images") or [] if n.replace(" ", "_") not in known]
+        labels = {}
+        for name, cap in pairs:
+            c = _label_class(name, cap)
+            if c:
+                labels[name] = "|".join(c)
+        logbus.add("builds", f"mod frames: the wiki page lists {len(pairs)} pictures, {len(labels)} recognised as card parts",
+                   "ok" if labels else "warn")
+        if not labels:
+            sample = ", ".join(f"{n} ({c[:40]})" for n, c in pairs[:6])
+            logbus.add("builds", f"mod frames: none recognised; first pictures: {sample}", "warn")
             return
         DIR.mkdir(parents=True, exist_ok=True)
-        files = dict(_index().get("files") or {})
+        files = {}
+        names = list(labels)
+        step = "files"
         for i in range(0, len(names), 40):                 # the addresses, 40 files per request
             batch = names[i:i + 40]
             q = requests.get(API, params={"action": "query", "format": "json", "prop": "imageinfo",
                                           "iiprop": "url|size", "titles": "|".join("File:" + n for n in batch)},
-                             headers=h, timeout=15)
+                             headers=h, timeout=20)
             q.raise_for_status()
+            norm = {x.get("to"): x.get("from") for x in (q.json().get("query") or {}).get("normalized") or []}
             for page in (q.json().get("query") or {}).get("pages", {}).values():
                 info = (page.get("imageinfo") or [{}])[0]
-                title = str(page.get("title") or "").split(":", 1)[-1].replace(" ", "_")
-                if not info.get("url") or not title:
+                title = str(page.get("title") or "")
+                title = (norm.get(title) or title).split(":", 1)[-1].replace(" ", "_")
+                if not info.get("url") or title not in labels:
                     continue
-                time.sleep(0.3)
-                d = requests.get(info["url"], headers=h, timeout=15)
+                time.sleep(0.25)
+                d = requests.get(info["url"], headers=h, timeout=20)
                 if d.status_code == 200 and (d.content[:4] in (b"\x89PNG", b"RIFF") or d.content[:3] == b"\xff\xd8\xff"):
-                    (DIR / title).write_bytes(d.content)
-                    files[title] = [info.get("width"), info.get("height")]
+                    safe = re.sub(r"[^\w.-]", "_", title)
+                    (DIR / safe).write_bytes(d.content)
+                    files[safe] = labels[title]
+                    got += 1
         with _lock:
-            _state["index"] = {"t": time.time(), "files": files}
+            _state["index"] = {"v": 2, "t": time.time(), "files": files}
             _state["pix"].clear()
             INDEX.write_text(json.dumps(_state["index"]), encoding="utf-8")
-        logbus.add("builds", f"mod frames from the wiki: {len(files)} parts", "ok")
+        logbus.add("builds", f"mod frames from the wiki: {got} parts saved", "ok" if got else "warn")
+        if got:
+            try:
+                notifier().ready.emit()
+            except Exception:
+                pass
     except Exception as e:
-        logbus.add("builds", f"mod frames from the wiki: {type(e).__name__}: {e}", "warn")
+        logbus.add("builds", f"mod frames from the wiki ({step}): {type(e).__name__}: {e}", "warn")
+        with _lock:
+            idx = dict(_index())
+            idx["tried"] = time.time()
+            _state["index"] = idx
+            try:
+                DIR.mkdir(parents=True, exist_ok=True)
+                INDEX.write_text(json.dumps(idx), encoding="utf-8")
+            except OSError:
+                pass
     finally:
         _state["busy"] = False
 
@@ -131,9 +235,9 @@ def parts(rarity: str) -> dict:
     files = _index().get("files") or {}
     found = {}
     for want in (rarity, FALLBACK.get(rarity, ""), ""):
-        for f in files:
-            c = classify(f)
-            if not c or c[0] != want:
+        for f, lab in files.items():
+            c = tuple(lab.split("|")) if isinstance(lab, str) and lab.count("|") == 2 else classify(f)
+            if not c or c[0] != want or not (DIR / f).exists():
                 continue
             rar, part, side = c
             key = part + (":" + side if side else "")

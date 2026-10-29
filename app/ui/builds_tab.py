@@ -508,7 +508,20 @@ class BuildsTab(QWidget):
             self.reload_file(silent=True)
         from app.ui import modframes
         modframes.ensure()                             # the game's card frames (wiki), once
+        if not getattr(self, "_frames_hooked", False):
+            self._frames_hooked = True
+            modframes.notifier().ready.connect(self._frames_ready)
         previews.prefetch(prefetch_names(self.loadouts, self.presets))
+
+    def _frames_ready(self):
+        """The card frames arrived: the cards on screen are drawn again with them."""
+        try:
+            if self.view._lo is not None:
+                self.view.show_loadout(self.view._lo)
+            if self.pview.detail._lo is not None:
+                self.pview.detail.show_loadout(self.pview.detail._lo)
+        except Exception:
+            pass
 
     def _list_pick(self, cur, _prev=None):
         idx = cur.data(Qt.ItemDataRole.UserRole) if cur is not None else None

@@ -3,6 +3,11 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.4
+- **Card frames now show up**: the parts are recognised by their caption on the wiki page ("Rare Mod Top Border"…), not
+  only by their file name, and the cards on screen are drawn again as soon as they arrive. The Console says what was
+  found and saved ("mod frames…"); after a failure it tries again an hour later.
+
 ## 0.5.3
 - **Builds: mods in the game's order.** The game numbers the eight slots from the bottom right (its file's last slot is
   top left): the cards were drawn turned round. Checked on a real build (Cyte-09). The first Arcane is now level with
