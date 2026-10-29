@@ -282,10 +282,41 @@ def has_pips(rar: str) -> bool:
     return available(rar) and "rankpip" in parts(rar)
 
 
+def _bbox(pm):
+    """The visible part of a piece (alpha > 40) as a QRectF of its pixels: many pieces sit on a larger transparent
+    canvas (Galvanized and Peculiar on 512 px), only the Riven's fill theirs."""
+    from PyQt6.QtCore import QRectF
+    from PyQt6.QtGui import QImage
+    key = ("bbox", pm.cacheKey())
+    hit = _state["pix"].get(key)
+    if hit is not None:
+        return hit
+    img = pm.toImage().convertToFormat(QImage.Format.Format_ARGB32)
+    w, h = img.width(), img.height()
+    ptr = img.constBits()
+    ptr.setsize(img.sizeInBytes())
+    data = bytes(ptr)
+    bpl = img.bytesPerLine()
+    rows = [y for y in range(h) if max(data[y * bpl + 3: y * bpl + w * 4: 4]) > 40]
+    if not rows:
+        r = QRectF(0, 0, w, h)
+    else:
+        cols = [0] * w
+        for y in rows:
+            line = data[y * bpl + 3: y * bpl + w * 4: 4]
+            for x in range(w):
+                if line[x] > 40:
+                    cols[x] = 1
+        xs = [x for x in range(w) if cols[x]]
+        r = QRectF(xs[0], rows[0], xs[-1] - xs[0] + 1, rows[-1] - rows[0] + 1)
+    _state["pix"][key] = r
+    return r
+
+
 def inner(W, H):
     """The inside of the frame (where the background and the art go)."""
     from PyQt6.QtCore import QRectF
-    return QRectF(W * 0.035, H * 0.05, W * 0.93, H * 0.84)
+    return QRectF(W * 0.045, H * 0.06, W * 0.91, H * 0.8)
 
 
 def paint_back(p, W, H, rar: str) -> bool:
@@ -298,53 +329,46 @@ def paint_back(p, W, H, rar: str) -> bool:
     return True
 
 
-def _piece(pm, target_w):
-    """(w, h) of a piece drawn target_w wide (its own proportions)."""
-    return target_w, pm.height() * target_w / pm.width()
-
-
 def paint_front(p, W, H, rar: str, rank=None, mx=None):
-    """The frame over the card: the FrameTop across the top, the FrameBottom across the bottom (their legs are the
-    card's sides), the rank pips on the rank line at the bottom, the drain's backer top right (its rectangle is returned
-    so the drain is written on it)."""
+    """The frame over the card: the visible part of the FrameTop across the top and of the FrameBottom across the
+    bottom, both the card's full width (their legs are the sides), the rank pips on the rank line in the tray, the
+    drain's backer top right (its rectangle is returned so the drain is written on it)."""
     from PyQt6.QtCore import QRectF
     ps = parts(rar)
     top, bottom = _pix(ps.get("topborder")), _pix(ps.get("bottomborder"))
     if top is None or bottom is None:
         return None
-    wide = bottom.width() >= 400                           # Galvanized / Peculiar: drawn at twice the size
-    # the tray is a little wider than the top edge (292 / 281 px): the tray fills the card, the top is centred on it
-    bw, bh = _piece(bottom, W)
-    tw, th = _piece(top, W * (top.width() / bottom.width() if not wide else 0.97))
-    # on a landscape card the legs must not go past the other piece: each is cut to the card's height
-    bh_draw = min(bh, H * 0.98)
-    p.drawPixmap(QRectF(0, H - bh_draw, bw, bh_draw), bottom,
-                 QRectF(0, bottom.height() * (1 - bh_draw / bh), bottom.width(), bottom.height() * bh_draw / bh))
-    th_draw = min(th, H * 0.9)
-    p.drawPixmap(QRectF((W - tw) / 2, 0, tw, th_draw), top,
-                 QRectF(0, 0, top.width(), top.height() * th_draw / th))
-    # the rank: a line along the bottom edge, a pip per rank (lit up to the rank)
+    tb, bb = _bbox(top), _bbox(bottom)
+    th = tb.height() * W / tb.width()
+    bh = bb.height() * W / bb.width()
+    # a piece taller than the card (Riven, Peculiar: their legs reach the other end) is cut, never squeezed
+    bh_draw = min(bh, H)
+    src = QRectF(bb.left(), bb.bottom() - bb.height() * bh_draw / bh, bb.width(), bb.height() * bh_draw / bh)
+    p.drawPixmap(QRectF(0, H - bh_draw, W, bh_draw), bottom, src)
+    th_draw = min(th, H)
+    p.drawPixmap(QRectF(0, 0, W, th_draw), top, QRectF(tb.left(), tb.top(), tb.width(), tb.height() * th_draw / th))
     if mx:
         line, pip, off = _pix(ps.get("rankline")), _pix(ps.get("rankpip")), _pix(ps.get("rankpipoff"))
-        cy = H - H * 0.075
+        cy = H - H * 0.085
         if line is not None:
-            lw = W * 0.62
-            p.drawPixmap(QRectF((W - lw) / 2, cy + H * 0.02, lw, max(2.0, H * 0.035)), line, QRectF(line.rect()))
+            lb = _bbox(line)
+            lw = W * 0.6
+            p.drawPixmap(QRectF((W - lw) / 2, cy + H * 0.03, lw, max(2.0, H * 0.03)), line, lb)
         if pip is not None:
             r = int(mx) if rank is None else max(0, min(int(rank), int(mx)))
-            d = max(5.0, min(H * 0.085, W * 0.5 / max(1, int(mx))))
-            gap = d * 1.25
+            d = max(5.0, min(H * 0.075, W * 0.5 / max(1, int(mx))))
+            gap = d * 1.3
             x0 = (W - gap * (int(mx) - 1) - d) / 2
             for i in range(int(mx)):
-                src = pip if i < r or off is None else off
+                srcp = pip if i < r or off is None else off
                 p.setOpacity(1.0 if i < r else (0.9 if off is not None else 0.25))
-                p.drawPixmap(QRectF(x0 + i * gap, cy - d / 2, d, d), src, QRectF(src.rect()))
+                p.drawPixmap(QRectF(x0 + i * gap, cy - d / 2, d, d), srcp, QRectF(srcp.rect()))
             p.setOpacity(1.0)
     backer = _pix(ps.get("backer"))
     if backer is not None:
-        h = H * 0.2
+        h = H * 0.21
         w = max(h * backer.width() / backer.height(), W * 0.25)
-        rect = QRectF(W - w - W * 0.055, H * 0.11, w, h)
+        rect = QRectF(W - w - W * 0.06, H * 0.1, w, h)
         p.drawPixmap(rect, backer, QRectF(backer.rect()))
         return rect
     return None

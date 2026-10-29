@@ -472,7 +472,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.5.5)
+## Aggiornamenti (versione attuale 0.5.6)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

@@ -180,7 +180,9 @@ def wfcd(folder: Path, skip=frozenset()) -> dict:
     for w in load("SentinelWeapons"):                 # companions' weapons: robotic ones by name, beasts' claws as one
         if w.get("name"):
             weapons[w["name"]] = ["compweapon", "Robotic", w.get("polarities") or [], "", ""]
-    weapons["Claws"] = ["compweapon", "Claws", [], "", ""]
+    # beasts' claws: no public data has their slots; the game shows an innate Penjaga on the Posture slot and one
+    # Madurai slot (checked on Panzer Vulpaphyla and Predasite claws: 2/70 with 2 Forma, 5/70 with 3)
+    weapons["Claws"] = ["compweapon", "Claws", ["madurai"], "", "penjaga"]
     r4 = lambda v: round(float(v), 4) if isinstance(v, (int, float)) else None
     wstats = {}
     for fn in ("Primary", "Secondary", "Melee", "Arch-Gun", "Arch-Melee", "SentinelWeapons"):

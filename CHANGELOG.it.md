@@ -3,6 +3,13 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.6
+- **Cornici delle carte della misura giusta**: ogni pezzo viene ritagliato alla sua parte visibile prima di essere
+  steso sulla larghezza della carta (quasi tutti stanno su una tela trasparente più grande, Galvanized e Peculiar al
+  doppio): le cornici sono larghe quanto la carta, come nel gioco, e la Galvanized ha le sue proporzioni.
+- **Capacità degli artigli delle bestie**: gli artigli hanno lo slot Posture con Penjaga innato e uno slot Madurai (nessun
+  dato pubblico li riporta; verificato nel gioco: artigli Panzer Vulpaphyla 2/70 con 2 Forma).
+
 ## 0.5.5
 - **Cornici delle carte come nel gioco**: disposte sui file veri della wiki: il FrameTop (l'ornamento della rarità) in
   alto, il FrameBottom (la vaschetta curva) in basso, le loro gambe fanno i lati, l'immagine dentro, il drain sul

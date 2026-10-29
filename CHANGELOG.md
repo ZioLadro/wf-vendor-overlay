@@ -3,6 +3,13 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.6
+- **Card frames at the right size**: each part is cut to its visible area before it is stretched to the card's width
+  (most sit on a larger transparent canvas, Galvanized and Peculiar on twice the size): the frames are as wide as the
+  card, as in the game, and Galvanized has its proportions.
+- **Beasts' claws capacity**: claws have an innate Penjaga Posture slot and one Madurai slot (no public data has them;
+  checked in the game: Panzer Vulpaphyla claws 2/70 with 2 Forma).
+
 ## 0.5.5
 - **Card frames like the game's**: laid out on the real wiki files: the FrameTop (the rarity's ornament) across the top,
   the FrameBottom (the curved tray) across the bottom, their legs making the sides, the art inside, the drain on the
