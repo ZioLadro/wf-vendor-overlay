@@ -46,6 +46,7 @@ GROUPS = [
         ("sounds", [
             ("sound_vendor", "bool", None, False),
             ("sound_riven", "bool", None, False),
+            ("sound_deal", "bool", None, False),
             ("sound_prices", "bool", None, False),
             ("sound_file", "text", "sound", False),
         ]),
@@ -185,12 +186,14 @@ GROUPS = [
             ("riven_min_sales", "int", (0, 1000), False),
             ("riven_max_age_days", "int", (0, 365), False),
             ("riven_online_only", "bool", None, False),
+            ("riven_bids", "bool", None, False),
             ("riven_whisper", "text", "wide", False),
         ]),
         ("riven_live", [
             ("riven_live_top", "int", (0, 50), False),
             ("riven_live_minutes", "int", (1, 120), False),
             ("riven_live_rpm", "int", (1, 10), False),
+            ("riven_alert_margin", "int", (0, 100000), False),
         ]),
     ]),
     ("recommendations", [

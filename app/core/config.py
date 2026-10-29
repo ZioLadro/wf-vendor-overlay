@@ -84,6 +84,7 @@ DEFAULTS = {
     "goals_quests": True,            # Nightwave weekly challenges and the 1999 Calendar (DE's world state)
     "goals_cal_rows": 4,             # how many Calendar challenges still to do are listed
     "sound_vendor": False,         # a sound when a vendor screen is recognised (prices appear)
+    "sound_deal": True,          # a sound when a good riven deal has its seller online (Riven flip)
     "sound_riven": False,          # a sound when a Riven scan starts
     "sound_prices": False,         # a sound when a price update starts
     "sound_file": "",              # your own .wav for those sounds ("" = the system's notification sound)
@@ -133,6 +134,11 @@ DEFAULTS = {
     "riven_live_top": 10,        # Riven flip: the best N deals are checked again and again (seller in game now? still listed?)
     "riven_live_minutes": 3,     # ... each one about this often
     "riven_live_rpm": 6,         # ... at most this many requests a minute (never above 10)
+    "riven_sort": "day",         # Riven flip: best expected profit a day first ("day") or biggest profit first ("margin")
+    "riven_alert_margin": 150,   # ... a sound when a deal with at least this profit has its seller in game / online (0 = off)
+    "riven_bids": False,         # ... also auctions you can bid on (one more request per watched weapon)
+    "riven_hidden_weapons": [],  # ... weapons hidden from the deals (right click)
+    "riven_hidden_sellers": [],  # ... sellers hidden from the deals (right click)
     "riven_whisper": "/w {seller} Hi, I would like to buy {weapon} {riven} for {price} platinum",        # Riven flip: scan by itself every N hours while the program runs (0 = only by hand)
     "riven_min_sales": 0,         # listings gone in 7 days (estimated sales) from which a weapon is shown, once observed for a day
     "theme": "classic",           # colour theme (see theme.py): classic, or a faction: tenno, grineer, corpus, infested, orokin...

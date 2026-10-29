@@ -3,6 +3,23 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.8
+Riven flip:
+- **Scambi in gioco settimanali di DE** (`weeklyRivensPC.json` ufficiale, verificato: ancora pubblicato ogni settimana;
+  archivio della comunità come riserva): nuova colonna *In gioco* e terza parte del prezzo equo.
+- **Pesi delle statistiche per arma**: le armi critiche, da stato e da taglio valutano le loro statistiche; negativi
+  innocui sui tipi di danno fisico minori.
+- Colonna e ordine **Profitto al giorno** (profitto / giorni attesi per vendere).
+- **Diario** dei flip: comprato, in vendita (visto dalle scansioni), venduto (visto quando la tua inserzione sparisce, o
+  a mano), profitto e giorni; le tue rivendite correggono il prezzo equo.
+- **Ordine di scansione più furbo**: armi seguite riscansionate entro 2,5 giorni; prima quelle che vendono, danno affari
+  o si scambiano molto.
+- **Avvisi** (suono + Console) per affari sopra un profitto con il venditore online; facoltative le aste su cui fare
+  offerte.
+- **Pannello di dettaglio** (parti del prezzo equo, riven confrontabili, grafico dello storico), filtri per tipo / arma,
+  segno di contattato, nascondi arma / venditore.
+- **Verifica del prezzo equo**: di quanto sbaglia sui riven probabilmente venduti.
+
 ## 0.4.7
 - **Dove ti trovi, dal log del gioco** (`EE.log`, solo in lettura): un vendor che si trova in un solo luogo (Cetus,
   Fortuna, il Necralisk / Sanctum, il Chrysalith, Höllvania, Iron Wake, Duviri, il campo del Drifter, Simaris e Baro in

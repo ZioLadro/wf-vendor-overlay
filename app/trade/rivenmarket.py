@@ -283,9 +283,73 @@ def roll_quality(attr, tag, wtype, dispo, rank, n_pos, n_neg):
     return max(0.0, min(1.0, (norm - 0.9) / 0.2))
 
 
-def stats_score(listing, wtype, dispo, index, w=None):
-    """(score 0-100, [tags]) of a parsed listing. Useful stats weigh most; a good roll adds up to 2x."""
+PHYS = {"WeaponImpactDamageMod": "impact", "WeaponArmorPiercingDamageMod": "puncture", "WeaponSlashDamageMod": "slash"}
+ELEM = ("WeaponFireDamageMod", "WeaponFreezeDamageMod", "WeaponElectricityDamageMod", "WeaponToxinDamageMod")
+_profiles = {}
+
+
+def weapon_stats(name):
+    """Base stats of the weapon a riven is for (the build planner's data): its best variant (Prime, Kuva…), or None."""
+    from app.game import loadouts as LO
+    ws = LO.data().get("wstats") or {}
+    pre = ("Kuva ", "Tenet ", "Coda ", "Prisma ", "MK1-", "Rakta ", "Secura ", "Sancti ", "Synoid ", "Telos ", "Vaykor ",
+           "Dex ", "Mara ", "Vandal ", "Wraith ")
+    low = name.lower()
+    cands = [v for k, v in ws.items() if k.lower() == low or k.lower() in (low + " prime", low + " vandal", low + " wraith")
+             or any(k.lower() == p.lower() + low for p in pre)]
+    if not cands:
+        return None
+    return max(cands, key=lambda v: float(v.get("cc") or 0) * float(v.get("cd") or 0) + float(v.get("sc") or 0))
+
+
+def profile_weights(name, w=None):
+    """The stat weights for this weapon (riven_weights.json adjusted to what the weapon is good at):
+    a crit weapon (crit chance 20 %+) wants crit chance and damage, a weapon with little crit (under 10 %) much less;
+    a status weapon (status 25 %+) wants status chance, elements and status duration; a slash weapon slash.
+    Also returns the physical damage types that make up less than 20 % of its damage: a NEGATIVE on them costs nothing
+    (on a slash weapon, -impact even helps)."""
+    key = (name, id(w))
+    if key in _profiles:
+        return _profiles[key]
+    w = dict(w or weights())
+    st = weapon_stats(name) or {}
+    cc, cd, sc = float(st.get("cc") or 0), float(st.get("cd") or 0), float(st.get("sc") or 0)
+    dmg = {k.lower(): float(v or 0) for k, v in (st.get("dmg") or {}).items()}
+    total = sum(dmg.values()) or 0.0
+    harmless = set()
+    if st:
+        crit = cc >= 0.2 or (cc >= 0.15 and cd >= 2.4)
+        if crit:
+            w["WeaponCritChanceMod"] = w["WeaponCritDamageMod"] = 1.0
+        elif cc < 0.1:
+            w["WeaponCritChanceMod"] = w.get("WeaponCritChanceMod", 1.0) * 0.45
+            w["WeaponCritDamageMod"] = w.get("WeaponCritDamageMod", 1.0) * 0.35
+        if sc >= 0.25:
+            w["WeaponStunChanceMod"] = 1.0
+            for e in ELEM:
+                w[e] = min(1.0, w.get(e, 0.55) + 0.2)
+            w["WeaponProcTimeMod"] = max(w.get("WeaponProcTimeMod", 0.15), 0.35)
+        elif sc < 0.1:
+            w["WeaponStunChanceMod"] = w.get("WeaponStunChanceMod", 0.7) * 0.5
+        if total:
+            for tag, typ in PHYS.items():
+                share = dmg.get(typ, 0.0) / total
+                if share >= 0.5:
+                    w[tag] = max(w.get(tag, 0.2), 0.85 if typ == "slash" else 0.5)
+                if share < 0.2:
+                    harmless.add(tag)
+    out = (w, harmless, {"cc": cc, "cd": cd, "sc": sc})
+    _profiles[key] = out
+    return out
+
+
+def stats_score(listing, wtype, dispo, index, w=None, weapon=""):
+    """(score 0-100, [tags]) of a parsed listing. Useful stats weigh most; a good roll adds up to 2x. With the weapon's
+    name the weights follow what the weapon is good at (profile_weights)."""
     w = w or weights()
+    harmless = set()
+    if weapon:
+        w, harmless, _st = profile_weights(weapon, w)
     pos = [a for a in listing["attrs"] if a["positive"]]
     neg = [a for a in listing["attrs"] if not a["positive"]]
     top = sorted(w.values(), reverse=True)[:3]
@@ -301,7 +365,7 @@ def stats_score(listing, wtype, dispo, index, w=None):
     for a in neg:
         tag = index.get(a["url"])
         wt = w.get(tag, UNKNOWN_WEIGHT) if tag else UNKNOWN_WEIGHT
-        if wt <= HARMLESS:
+        if wt <= HARMLESS or tag in harmless:
             score += 6.0                    # a negative that costs nothing makes the riven better
         else:
             score -= 30.0 * wt
@@ -369,6 +433,7 @@ class Store:
                 full = len(all_ids) >= SEARCH_MAX
                 top = max(all_ids.values(), default=0)
                 gone_ids = [i for i, p in prev.items() if i not in all_ids and (not full or p < top)]
+                self._journal_gone(url_name, gone_ids, now)
                 if gone_ids:
                     w["gone"] = (w.get("gone") or []) + [[now, len(gone_ids)]]
                     log_ = w.setdefault("sold", [])
@@ -427,21 +492,144 @@ class Store:
                             "attrs": [{"url": a[0], "positive": a[1], "value": a[2]} for a in g.get("attrs") or []]})
         return out
 
-    def stale_order(self, urls, now=None):
-        """Weapon URLs, the ones never scanned first, then by how overdue they are. A weapon whose listings keep selling is
-        overdue sooner (its prices move), one watched for 3+ days with no sale and few listings later (rarely worth a request)."""
+    def stale_order(self, urls, now=None, names=None):
+        """Weapon URLs in the order to scan them: never scanned first; then the "watched" weapons (some sales, a deal
+        found in the last week, or rivens that trade in game) whose last scan is 2.5+ days old, so that two scans never
+        lie more than MAX_GAP apart and the sales estimate stays valid; then by how overdue they are, sooner for weapons
+        that sell, give deals or trade a lot in game, later for dead ones (watched 3+ days, no sale, few listings).
+        names: {url: weapon name} for DE's popularity."""
+        from app.trade import rivenweekly as WK
         now = int(now or time.time())
+        names = names or {}
+        deals = self.d.get("deals") or {}
 
         def overdue(u):
             w = self.d["weapons"].get(u) or {}
             if not w.get("t"):
                 return float("inf")
             sold, days = self.sales(u, now)
-            weight = 1.0 + min(3.0, sold / 5.0)
-            if days >= 3.0 and sold == 0 and int(w.get("n") or 0) <= 3:
+            pop = WK.popularity(names.get(u) or w.get("name") or u)
+            dealt = sum(1 for t in deals.get(u) or [] if now - t <= 7 * 86400)
+            age = now - int(w["t"])
+            watched = sold > 0 or dealt > 0 or pop >= 5
+            if watched and age >= MAX_GAP - 12 * 3600:
+                return 1e12 + age                         # before the gap makes the sales estimate restart
+            weight = 1.0 + min(3.0, sold / 5.0) + min(2.0, dealt / 2.0) + min(1.5, pop / 20.0)
+            if days >= 3.0 and sold == 0 and not dealt and int(w.get("n") or 0) <= 3:
                 weight = 0.25
-            return (now - int(w["t"])) * weight
+            return age * weight
         return sorted(urls, key=lambda u: -overdue(u))
+
+    def note_deals(self, rows, now=None):
+        """Remembers which weapons gave deals (for the scan order): one time per weapon per scan of it."""
+        now = int(now or time.time())
+        with self.lock:
+            d = self.d.setdefault("deals", {})
+            for r in rows:
+                t = int((self.d["weapons"].get(r["url"]) or {}).get("t") or 0)
+                lst = d.setdefault(r["url"], [])
+                if t and t not in lst:
+                    lst.append(t)
+            for u in list(d):
+                d[u] = [x for x in d[u] if now - x <= 14 * 86400][-20:]
+                if not d[u]:
+                    del d[u]
+
+    # ---------- marks ----------
+    def set_contacted(self, listing_id, on=True):
+        with self.lock:
+            c = self.d.setdefault("contacted", {})
+            now = int(time.time())
+            for k in [k for k, v in c.items() if now - v > 14 * 86400]:
+                del c[k]
+            if on:
+                c[str(listing_id)] = now
+            else:
+                c.pop(str(listing_id), None)
+            self.version += 1
+        self.save()
+
+    # ---------- flip journal ----------
+    def journal(self):
+        return self.d.setdefault("journal", [])
+
+    def journal_buy(self, row, price=None):
+        """A riven you bought (from a row of the table): its price, the fair price then, the stats."""
+        l = row["listing"]
+        with self.lock:
+            self.journal().append({"id": str(l["id"]), "url": row["url"], "weapon": row["weapon"], "riven": l["name"],
+                                   "rerolls": l.get("rerolls", 0), "rank": l.get("rank", 0),
+                                   "attrs": [[a["url"], a["positive"], a["value"]] for a in l["attrs"]],
+                                   "buy": int(price if price is not None else l["price"]), "fair": int(row["fair"]),
+                                   "t_buy": int(time.time()), "state": "held", "list": None, "t_list": None,
+                                   "sold": None, "t_sold": None, "auction": None})
+            self.version += 1
+        self.save()
+
+    def journal_set(self, idx, **kw):
+        with self.lock:
+            j = self.journal()
+            if 0 <= idx < len(j):
+                j[idx].update(kw)
+                if kw.get("state") == "sold" and not j[idx].get("t_sold"):
+                    j[idx]["t_sold"] = int(time.time())
+                self.version += 1
+        self.save()
+
+    def journal_remove(self, idx):
+        with self.lock:
+            j = self.journal()
+            if 0 <= idx < len(j):
+                j.pop(idx)
+                self.version += 1
+        self.save()
+
+    def journal_own_listings(self, url, auctions, me):
+        """Your own auctions seen in a scan: a riven of the journal listed at a price (matched by weapon and name)."""
+        if not me:
+            return
+        for a in auctions:
+            owner = a.get("owner") or {}
+            if str(owner.get("ingame_name") or "").lower() != me.lower():
+                continue
+            name = str((a.get("item") or {}).get("name") or "").lower()
+            for e in self.journal():
+                if e["url"] == url and e["riven"].lower() == name and e["state"] in ("held", "listed"):
+                    e.update(state="listed", list=int(a.get("buyout_price") or a.get("starting_price") or 0),
+                             auction=a.get("id"), t_list=e.get("t_list") or int(time.time()))
+                    break
+
+    def _journal_gone(self, url, gone_ids, now):
+        """(lock held) Your listed riven left the site: most likely sold, at the price it was listed at."""
+        gone = set(gone_ids)
+        for e in self.journal():
+            if e["url"] == url and e["state"] == "listed" and e.get("auction") in gone:
+                e.update(state="sold", sold=e.get("list"), t_sold=now, auto=True)
+
+    def calibration(self):
+        """{weapon url: factor, "*": factor}: what your resales got against the fair price shown when you bought
+        (median of sold / fair; 3+ sales for the overall factor, 2+ for a weapon's own), kept within 0.6-1.3."""
+        out = {}
+        sold = [e for e in self.d.get("journal") or [] if e.get("state") == "sold" and e.get("sold") and e.get("fair")]
+        clip = lambda x: max(0.6, min(1.3, x))
+        if len(sold) >= 3:
+            out["*"] = clip(statistics.median(e["sold"] / e["fair"] for e in sold[-20:]))
+        by = {}
+        for e in sold:
+            by.setdefault(e["url"], []).append(e["sold"] / e["fair"])
+        for u, v in by.items():
+            if len(v) >= 2:
+                out[u] = clip(statistics.median(v))
+        return out
+
+    def journal_summary(self):
+        j = self.d.get("journal") or []
+        sold = [e for e in j if e.get("state") == "sold" and e.get("sold") is not None]
+        held = [e for e in j if e.get("state") in ("held", "listed")]
+        days = [(e["t_sold"] - e["t_buy"]) / 86400 for e in sold if e.get("t_sold") and e.get("t_buy")]
+        return {"n_sold": len(sold), "profit": sum(e["sold"] - e["buy"] for e in sold),
+                "invested": sum(e["buy"] for e in held), "n_held": len(held),
+                "days": statistics.median(days) if days else None}
 
 
 # ---------- the scan ----------
@@ -453,15 +641,49 @@ def scan_weapon(weapon, limiter, store, cancel=None):
     ids = {a["id"]: int(a.get("buyout_price") or 0) for a in auctions
            if a.get("id") and not a.get("closed") and a.get("visible", True)}
     listings = [p for p in (parse_auction(a) for a in auctions) if p]
+    with store.lock:
+        store.journal_own_listings(weapon["url_name"], auctions, str(CFG.get("player_name") or ""))
     store.update(weapon["url_name"], weapon["name"], ids, listings)
+    if CFG.get("riven_bids") and watched(store, weapon):
+        try:                                       # auctions you can bid on: one more request, watched weapons only
+            d = get_json(V1 + "/auctions/search", limiter, cancel=cancel,
+                         params={"type": "riven", "weapon_url_name": weapon["url_name"], "sort_by": "price_asc"})
+            bids = [p for p in (parse_bid(a) for a in (d.get("payload") or {}).get("auctions") or []) if p]
+            with store.lock:
+                store.d["weapons"][weapon["url_name"]]["bids"] = sorted(bids, key=lambda x: x["price"])[:20]
+        except RivenError as e:
+            log(f"bids of {weapon['name']}: {e}")
     return len(listings)
+
+
+def watched(store, weapon, now=None):
+    """A weapon worth a closer look: its rivens sell, it gave a deal this week, or they trade a lot in game."""
+    from app.trade import rivenweekly as WK
+    now = int(now or time.time())
+    u = weapon["url_name"]
+    sold, _days = store.sales(u, now)
+    dealt = any(now - t <= 7 * 86400 for t in (store.d.get("deals") or {}).get(u) or [])
+    return sold > 0 or dealt or WK.popularity(weapon["name"]) >= 5
+
+
+def parse_bid(a):
+    """An auction you can bid on (not a direct sale) -> a listing whose price is the next bid it would take, or None."""
+    if a.get("is_direct_sell", True) or a.get("closed") or not a.get("visible", True):
+        return None
+    nxt = int(a.get("top_bid") or 0) + int(a.get("minimal_increment") or 1) if a.get("top_bid") else int(a.get("starting_price") or 0)
+    if nxt <= 0:
+        return None
+    p = parse_auction(dict(a, buyout_price=nxt))
+    if p:
+        p.update(bid=True, buyout=a.get("buyout_price"), top_bid=a.get("top_bid"))
+    return p
 
 
 def pick_weapons(all_weapons, store, wanted_names, limit):
     """Which weapons to scan now: the named ones if any (comma separated), else the stalest `limit`."""
     want = {R._norm(n) for n in str(wanted_names or "").split(",") if n.strip()}
     pool = [w for w in all_weapons if not want or R._norm(w["name"]) in want or R._norm(w["url_name"]) in want]
-    order = store.stale_order([w["url_name"] for w in pool])
+    order = store.stale_order([w["url_name"] for w in pool], names={w["url_name"]: w["name"] for w in pool})
     by = {w["url_name"]: w for w in pool}
     return [by[u] for u in order[:max(1, int(limit))]]
 
@@ -476,6 +698,11 @@ def scan(limiter, store, progress=None, cancel=None, wanted=None, limit=None):
         log(f"scan stopped before starting: {e}")
         return 0, str(e)
     log(f"scan: {len(weapons)} weapons known")
+    try:
+        from app.trade import rivenweekly as WK
+        WK.refresh(wait=True)                      # DE's weekly in-game riven trades (once a day at most)
+    except Exception as e:
+        log(f"weekly riven data: {e}")
     todo = pick_weapons(weapons, store, CFG["riven_weapon_filter"] if wanted is None else wanted,
                         CFG["riven_scan_weapons"] if limit is None else limit)
     done, err = 0, ""
@@ -501,9 +728,31 @@ def scan(limiter, store, progress=None, cancel=None, wanted=None, limit=None):
     return done, err
 
 
+DE_WEIGHT = 0.25                          # weight of DE's in-game median (scaled by the stats score) in the fair price
+
+
+def de_fair(de, score):
+    """A fair price from DE's weekly in-game median for the weapon: the median riven of that weapon traded at the median;
+    a better-than-usual riven (score) is worth more: x0.6 at score 0, x1.0 at 50, x1.4 at 100."""
+    if not de or not de.get("median"):
+        return None
+    return int(de["median"] * (0.6 + 0.8 * score / 100.0))
+
+
+def expected_days(sell_days, sales, days, n):
+    """How many days a riven of this weapon takes to sell: the median time of the likely-sold ones; else the listings
+    queue divided by the sales rate; else a week (not known yet)."""
+    if sell_days:
+        return max(0.5, min(60.0, sell_days))
+    if days >= 1.0 and sales:
+        return max(0.5, min(60.0, (n or 1) / (sales / days) / 2))
+    return 7.0
+
+
 def opportunities(store, weapons_by_url, index, factor=None, online_only=None, min_margin=None, min_score=None,
-                  max_price=None, min_sales=None, now=None):
-    """Rows for the table: the cheap listings, best margin first."""
+                  max_price=None, min_sales=None, now=None, include_hidden=False):
+    """Rows for the table: the cheap listings, best expected profit a day first (or best margin: setting riven_sort)."""
+    from app.trade import rivenweekly as WK
     factor = float(CFG["riven_sell_factor"]) / 100.0 if factor is None else factor
     online_only = bool(CFG["riven_online_only"]) if online_only is None else online_only
     min_margin = int(CFG["riven_min_margin"]) if min_margin is None else min_margin
@@ -511,29 +760,42 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
     max_price = int(CFG["riven_max_price"]) if max_price is None else max_price
     min_sales = int(CFG["riven_min_sales"]) if min_sales is None else min_sales
     max_age = float(CFG.get("riven_max_age_days", 14) or 0)
+    hidden_w = {R._norm(x) for x in CFG.get("riven_hidden_weapons") or []}
+    hidden_s = {str(x).lower() for x in CFG.get("riven_hidden_sellers") or []}
+    me = str(CFG.get("player_name") or "").lower()
     now_ = int(now or time.time())
     w = weights()
+    calib = store.calibration()
+    contacted = store.d.get("contacted") or {}
     rows = []
     for url, wd in store.d["weapons"].items():
         info = weapons_by_url.get(url) or {"name": wd.get("name", url), "type": ""}
+        if not include_hidden and (R._norm(info["name"]) in hidden_w or R._norm(url) in hidden_w):
+            continue
         dispo = R.DISPOSITION                    # Hotfix 44.1.3: one disposition (1.2) for every weapon
         scored, comps_all = [], []
         seen = wd.get("seen") if isinstance(wd.get("seen"), dict) else {}
-        for l in wd.get("listings") or []:
-            s, tags = stats_score(l, info["type"], dispo, index, w)
+        listings = list(wd.get("listings") or []) + [dict(b, bid=True) for b in wd.get("bids") or []]
+        for l in listings:
+            s, tags = stats_score(l, info["type"], dispo, index, w, info["name"])
             age = listing_age(l, seen, now_)
             # comparables: every seller (online or not), but listings stuck for more than twice the max age say what
-            # does NOT sell, so they are left out of the fair price
-            if not (max_age and age is not None and age > 2 * max_age):
+            # does NOT sell, so they are left out of the fair price; bids are not prices
+            if not l.get("bid") and not (max_age and age is not None and age > 2 * max_age):
                 comps_all.append((s, l, age))
             if online_only and l["status"] not in ("ingame", "online"):
                 continue
+            if l["seller"].lower() in hidden_s and not include_hidden:
+                continue
+            if me and l["seller"].lower() == me:
+                continue                           # your own listing
             scored.append((s, l, tags, age))
         sales, days = store.sales(url, now)
         sold = store.likely_sold(url, now)
-        sold_scored = [(stats_score(x, info["type"], dispo, index, w)[0], x["price"]) for x in sold]
+        sold_scored = [(stats_score(x, info["type"], dispo, index, w, info["name"])[0], x["price"]) for x in sold]
         t7, t30 = store.trend(url, 7), store.trend(url, 30)
         sell_days = statistics.median([x["age"] for x in sold]) / 86400 if sold else None
+        k = calib.get(url, calib.get("*", 1.0))
         for s, l, tags, age in scored:
             if s < min_score or (max_price and l["price"] > max_price):
                 continue
@@ -541,25 +803,73 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
                 continue                           # on sale for too long at that price: probably not a real offer
             ask = fair_price(s, [(o[0], o[1]["price"]) for o in comps_all if o[1]["id"] != l["id"]], factor)
             got = fair_price(s, sold_scored, SOLD_FACTOR)
-            if ask is None and got is None:
+            de = WK.lookup(info["name"], info["type"], l["rerolls"] > 0)
+            dfair = de_fair(de, s)
+            if ask is None and got is None and dfair is None:
                 continue
-            fair = ask if got is None else got if ask is None else int(SOLD_WEIGHT * got + (1 - SOLD_WEIGHT) * ask)
-            basis = "ask" if got is None else "sold" if ask is None else "both"
+            parts = [(SOLD_WEIGHT, got), (1 - SOLD_WEIGHT, ask), (DE_WEIGHT, dfair)]
+            parts = [(wt, v) for wt, v in parts if v is not None]
+            fair = int(sum(wt * v for wt, v in parts) / sum(wt for wt, _v in parts))
+            basis = "+".join(n for n, v in (("sold", got), ("ask", ask), ("de", dfair)) if v is not None)
             if t7 is not None and t7 < -0.05:      # falling prices: the fair price follows the fall (up to 30 %)
                 fair = int(fair * (1 + max(-0.3, t7)))
+            fair = int(fair * k)                   # what your own resales say (the flip journal)
             margin = fair - l["price"]
             if margin < min_margin:
                 continue
             if days >= 1.0 and sales < min_sales:
                 continue
             hist = wd.get("hist") or []
-            rows.append({"weapon": info["name"], "url": url, "listing": l, "score": s, "tags": tags, "fair": fair,
-                         "margin": margin, "sales": sales, "days": days, "n": wd.get("n", len(scored)),
-                         "ask": ask, "got": got, "basis": basis, "t7": t7, "t30": t30, "n_sold": len(sold),
-                         "sell_days": sell_days, "median": hist[-1][1] if hist else None, "hist_days": len(hist),
-                         "age": age})
-    rows.sort(key=lambda r: -r["margin"])
+            exp_days = expected_days(sell_days, sales, days, wd.get("n"))
+            rows.append({"weapon": info["name"], "url": url, "type": info["type"], "listing": l, "score": s, "tags": tags,
+                         "fair": fair, "margin": margin, "sales": sales, "days": days, "n": wd.get("n", len(scored)),
+                         "ask": ask, "got": got, "de": de, "de_fair": dfair, "basis": basis, "calib": k,
+                         "t7": t7, "t30": t30, "n_sold": len(sold), "sell_days": sell_days,
+                         "median": hist[-1][1] if hist else None, "hist_days": len(hist), "age": age,
+                         "exp_days": exp_days, "per_day": margin / (exp_days + 1.0),
+                         "bid": bool(l.get("bid")), "contacted": contacted.get(str(l["id"]))})
+    if str(CFG.get("riven_sort") or "day") == "margin":
+        rows.sort(key=lambda r: -r["margin"])
+    else:
+        rows.sort(key=lambda r: -r["per_day"])
     return rows
+
+
+def comparables(store, row, index, n=8):
+    """The listings and likely-sold rivens of the same weapon closest to this riven's stats score (the detail panel):
+    [(score, price, listing, "listed" | "sold")], closest first."""
+    wd = store.d["weapons"].get(row["url"]) or {}
+    out = []
+    for l in wd.get("listings") or []:
+        if l["id"] != row["listing"]["id"]:
+            out.append((stats_score(l, row["type"], R.DISPOSITION, index, None, row["weapon"])[0], l["price"], l, "listed"))
+    for x in store.likely_sold(row["url"]):
+        out.append((stats_score(x, row["type"], R.DISPOSITION, index, None, row["weapon"])[0], x["price"], x, "sold"))
+    out.sort(key=lambda o: abs(o[0] - row["score"]))
+    return out[:n]
+
+
+def backtest(store, weapons_by_url, index, factor=None):
+    """How close the fair price comes to what rivens likely sold for: every likely-sold riven is priced from the other
+    listings of its weapon and compared with its price. {"n", "mae" (median error, fraction), "bias" (median of
+    (fair - sold) / sold: + = fair price too high)} or None with fewer than 5 cases."""
+    factor = float(CFG["riven_sell_factor"]) / 100.0 if factor is None else factor
+    errs = []
+    w = weights()
+    for url, wd in store.d["weapons"].items():
+        info = weapons_by_url.get(url) or {"name": wd.get("name", url), "type": ""}
+        comps = [(stats_score(l, info["type"], R.DISPOSITION, index, w, info["name"])[0], l["price"])
+                 for l in wd.get("listings") or []]
+        for x in store.likely_sold(url):
+            if x["price"] <= 0:
+                continue
+            s = stats_score(x, info["type"], R.DISPOSITION, index, w, info["name"])[0]
+            f = fair_price(s, comps, factor)
+            if f:
+                errs.append((f - x["price"] * SOLD_FACTOR) / (x["price"] * SOLD_FACTOR))
+    if len(errs) < 5:
+        return None
+    return {"n": len(errs), "mae": statistics.median(abs(e) for e in errs), "bias": statistics.median(errs)}
 
 
 _dispo_cache = {}

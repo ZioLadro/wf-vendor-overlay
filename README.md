@@ -202,7 +202,7 @@ Mind that Quantframe's Live Scraper may list stock items for sale or place buy o
 ### Riven flip
 **Scan the market** reads the riven listings of the next weapons on warframe.market (least recently scanned first;
 *Weapons per scan* and *Only these weapons* in Settings) and lists rivens priced **below what comparable ones are
-worth**, best profit first:
+worth**, best **profit a day** first (or best profit: *Order*), with filters by riven type and weapon:
 
 - **Price**: the direct-buy price against a *fair price* = median of comparable listings of the same weapon (stats score
   within ±15, at least 3) × *Expected resale* (default 85 %). warframe.market returns at most the 100 cheapest listings
@@ -230,6 +230,32 @@ price and the sales estimate); the table shows deals from sellers in game or onl
 column shows how long a listing has been up (its creation date on warframe.market); listings older than *Hide listings
 older than (days)* (default 14) are not shown as deals, and those older than twice that are left out of the fair price
 (a price that has not sold for weeks says what does NOT sell).
+
+**What changed in 0.4.8**:
+- **DE's weekly in-game trades**: every week DE publishes, per weapon, what rivens really traded for in game (median,
+  average, range, popularity; never rolled and rolled apart), read at most once a day from
+  `www-static.warframe.com/repos/weeklyRivensPC.json` (or the community archive when that fails). Column *In game*; it
+  is a third part of the fair price (the weekly median × 0.6-1.4 by stats score, weight 0.25 next to likely sold 0.6
+  and asking 0.4).
+- **Weights by weapon**: a crit weapon (20 %+) wants crit chance and damage, one with little crit much less; a status
+  weapon (25 %+) wants status chance, elements and status duration; a slash weapon slash. A negative on a physical
+  damage type that is under 20 % of the weapon's damage costs nothing (base stats from the build planner's data).
+- **Profit a day**: profit / (days a riven of that weapon takes to sell + 1): the median time of the likely-sold ones,
+  else the listings queue divided by the sales rate.
+- **Journal**: right click → *I bought this riven*; when you list it on warframe.market under your in-game name the
+  scans see it, and when it disappears they mark it sold at that price (or set it by hand). Profit, days to sell; what
+  your rivens sold for against the fair price shown when you bought them corrects the fair price (3+ sales, per weapon
+  from 2, within -40 % / +30 %).
+- **Scan order**: watched weapons (sales, a deal this week, or rivens that trade in game) are scanned again before 2.5
+  days pass, so the sales estimate never restarts; weapons that sell, give deals or trade a lot come round sooner.
+- **Alerts**: a deal with at least *Alert from* profit (default 150p) whose seller is in game / online plays a sound and
+  is written in the Console. Optional: **auctions to bid on** (⚖, at the next bid they take); warframe.market auctions
+  have no end time, the owner closes them.
+- **Under the table**: the selected riven's fair price, part by part, the comparable rivens (listed and likely sold)
+  and the weapon's price history with DE's median. Right click: contacted (✉, a copied whisper counts), hide the
+  weapon or the seller (*Show hidden again*).
+- **Fair price check**: every likely-sold riven is priced from the other listings of its weapon and compared with its
+  price; the line above the table says how far off the fair price is (median) and in which direction.
 
 **Live check of the best deals**: the best deals of the table (10 by default) are checked again on warframe.market one
 after another, each about every 3 minutes (`/v1/auctions/entry/<id>`: one request per deal, with the seller's status
@@ -364,6 +390,7 @@ system notification sound, or a `.wav` of yours).
 | Pictures (builds, syndicate logos), Baro's list, Incarnon perk names | [wiki.warframe.com](https://wiki.warframe.com) |
 | Item pictures (Builds first, then when warframe.market has none) | [cdn.warframestat.us](https://cdn.warframestat.us) (WFCD images, file names bundled by `tools/build_images.py`) |
 | Where you are (Relay, Cetus, Orbiter, mission…) | the game's own log, `EE.log`, read only |
+| Riven trades in game, weekly | DE's `weeklyRivensPC.json` (www-static.warframe.com), else the [community archive](https://github.com/CloudeaSoft/warframe-weekly-rivens-archive), once a day |
 | Weapon base stats, mod polarity / drain / Exilus (build planner) | [WFCD/warframe-items](https://github.com/WFCD/warframe-items), bundled (`tools/build_loadouts.py`) |
 | World state (fissures, cycles, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave and 1999 Calendar | DE's public world state (`api.warframe.com`), every 10 min |
@@ -373,7 +400,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.4.7)
+## Updates (current version 0.4.8)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

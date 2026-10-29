@@ -3,6 +3,21 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.4.8
+Riven flip:
+- **DE's weekly in-game riven trades** (official `weeklyRivensPC.json`, checked: still published every week; community
+  archive as fallback): new *In game* column and a third part of the fair price.
+- **Stat weights by weapon**: crit, status and slash weapons value their own stats; harmless negatives on minor
+  physical damage types.
+- **Profit a day** column and order (profit / expected days to sell).
+- **Journal** of your flips: bought, listed (seen by the scans), sold (seen when your listing disappears, or by hand),
+  profit and days; your resales correct the fair price.
+- **Smarter scan order**: watched weapons rescanned within 2.5 days; weapons that sell, give deals or trade a lot sooner.
+- **Alerts** (sound + Console) for deals above a profit whose seller is online; optional auctions to bid on.
+- **Detail panel** (fair price parts, comparable rivens, price history chart), type / weapon filters, contacted mark,
+  hide weapon / seller.
+- **Fair price check**: how far off the fair price is on rivens that likely sold.
+
 ## 0.4.7
 - **Where you are, from the game's log** (`EE.log`, read only): a vendor that lives in one place (Cetus, Fortuna, the
   Necralisk / Sanctum, the Chrysalith, Höllvania, Iron Wake, Duviri, the Drifter's camp, Simaris and Baro at a Relay) is

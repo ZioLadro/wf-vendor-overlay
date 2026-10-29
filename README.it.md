@@ -220,7 +220,8 @@ stock o piazzare ordini d'acquisto, secondo le sue impostazioni.
 ### Riven flip
 **Scansiona il mercato** legge gli annunci di riven delle armi successive su warframe.market (prima quelle scansionate
 meno di recente; *Armi per scansione* e *Solo queste armi* nelle Impostazioni) ed elenca i riven messi in vendita **sotto
-il valore di quelli comparabili**, dal profitto migliore:
+il valore di quelli comparabili**, dal miglior **profitto al giorno** (o dal profitto migliore: *Ordine*), con filtri per
+tipo di riven e arma:
 
 - **Prezzo**: il prezzo di acquisto diretto contro un *prezzo equo* = mediana degli annunci comparabili della stessa arma
   (punteggio statistiche entro ±15, almeno 3) × *Rivendita attesa* (default 85 %). warframe.market restituisce al massimo
@@ -248,6 +249,34 @@ per il prezzo equo e la stima delle vendite); la tabella mostra come affari solo
 (impostazione). La colonna *In vendita da* dice da quanto è pubblicata un'asta (data di creazione su warframe.market); le
 inserzioni più vecchie di *Nascondi inserzioni più vecchie di (giorni)* (default 14) non vengono mostrate come affari, e
 quelle più vecchie del doppio sono escluse dal prezzo equo (un prezzo che non vende da settimane dice cosa NON si vende).
+
+**Novità della 0.4.8**:
+- **Scambi in gioco settimanali di DE**: ogni settimana DE pubblica, per arma, a quanto si sono davvero scambiati i riven
+  in gioco (mediana, media, intervallo, popolarità; mai rollati e rollati separati), letti al massimo una volta al giorno
+  da `www-static.warframe.com/repos/weeklyRivensPC.json` (o dall'archivio della comunità se non risponde). Colonna *In
+  gioco*; è una terza parte del prezzo equo (la mediana settimanale × 0,6-1,4 secondo il punteggio, peso 0,25 accanto a
+  probabilmente venduti 0,6 e prezzi richiesti 0,4).
+- **Pesi per arma**: un'arma critica (20 %+) vuole probabilità e danno critico, una con pochi critici molto meno;
+  un'arma da stato (25 %+) vuole probabilità di stato, elementi e durata dello stato; un'arma da taglio il taglio. Un
+  negativo su un tipo di danno fisico sotto il 20 % del danno dell'arma non costa nulla (statistiche base dai dati del
+  pianificatore).
+- **Profitto al giorno**: profitto / (giorni che un riven di quell'arma impiega a vendersi + 1): il tempo mediano dei
+  probabilmente venduti, altrimenti la coda delle inserzioni divisa per il ritmo delle vendite.
+- **Diario**: clic destro → *Ho comprato questo riven*; quando lo metti in vendita su warframe.market col tuo nome in
+  gioco le scansioni lo vedono, e quando sparisce lo segnano venduto a quel prezzo (o lo imposti a mano). Profitto,
+  giorni per vendere; quanto vendono i tuoi riven rispetto al prezzo equo mostrato quando li hai comprati corregge il
+  prezzo equo (da 3 vendite, per arma da 2, entro -40 % / +30 %).
+- **Ordine di scansione**: le armi seguite (vendite, un affare questa settimana, o riven che si scambiano in gioco)
+  vengono riscansionate prima che passino 2,5 giorni, così la stima delle vendite non riparte mai; le armi che vendono,
+  danno affari o si scambiano molto tornano prima.
+- **Avvisi**: un affare con almeno il profitto di *Avviso da* (default 150p) il cui venditore è in gioco / online fa
+  suonare un suono e viene scritto nella Console. Facoltative: le **aste su cui fare offerte** (⚖, al prezzo della
+  prossima offerta accettata); le aste di warframe.market non hanno scadenza, le chiude il proprietario.
+- **Sotto la tabella**: il prezzo equo del riven selezionato parte per parte, i riven confrontabili (in vendita e
+  probabilmente venduti) e lo storico dei prezzi dell'arma con la mediana di DE. Clic destro: contattato (✉, anche un
+  whisper copiato), nascondi l'arma o il venditore (*Mostra di nuovo i nascosti*).
+- **Verifica del prezzo equo**: ogni riven probabilmente venduto viene prezzato dalle altre inserzioni della sua arma e
+  confrontato col suo prezzo; la riga sopra la tabella dice di quanto sbaglia il prezzo equo (mediana) e in che verso.
 
 **Controllo dal vivo degli affari migliori**: gli affari migliori della tabella (10 di default) vengono ricontrollati su
 warframe.market uno dopo l'altro, ognuno circa ogni 3 minuti (`/v1/auctions/entry/<id>`: una richiesta per affare, con
@@ -391,6 +420,7 @@ sistema, o un tuo `.wav`).
 | Immagini (build, logo dei sindacati), lista di Baro, nomi dei perk Incarnon | [wiki.warframe.com](https://wiki.warframe.com) |
 | Immagini degli oggetti (prima per le Build, poi quando warframe.market non ne ha) | [cdn.warframestat.us](https://cdn.warframestat.us) (immagini WFCD, nomi dei file inclusi da `tools/build_images.py`) |
 | Dove ti trovi (Relay, Cetus, Orbiter, missione…) | il log del gioco, `EE.log`, solo in lettura |
+| Scambi di riven in gioco, settimanali | `weeklyRivensPC.json` di DE (www-static.warframe.com), altrimenti l'[archivio della comunità](https://github.com/CloudeaSoft/warframe-weekly-rivens-archive), una volta al giorno |
 | Statistiche base delle armi, polarità / consumo / Exilus delle mod (pianificatore) | [WFCD/warframe-items](https://github.com/WFCD/warframe-items), inclusi (`tools/build_loadouts.py`) |
 | Stato del mondo (fessure, cicli, Baro…) | [api.warframestat.us](https://api.warframestat.us) |
 | Nightwave e Calendario 1999 | world state pubblico di DE (`api.warframe.com`), ogni 10 min |
@@ -400,7 +430,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.4.7)
+## Aggiornamenti (versione attuale 0.4.8)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche
