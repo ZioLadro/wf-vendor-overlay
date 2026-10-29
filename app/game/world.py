@@ -6,10 +6,21 @@ URL = "https://api.warframestat.us/pc"
 UA = "WFVendorOverlay/1.6"
 
 
+_last = {"t": 0.0, "ws": None}
+
+
 def fetch_world(lang="en", timeout=20.0) -> dict:
+    import time
     r = requests.get(URL, params={"language": lang}, headers={"User-Agent": UA}, timeout=timeout)
     r.raise_for_status()
-    return r.json()
+    ws = r.json()
+    _last.update(t=time.time(), ws=ws)              # the last world state read (World tab, strip, tracked activities)
+    return ws
+
+
+def last():
+    """(time read, world state) of the last download by anyone, or (0, None)."""
+    return _last["t"], _last["ws"]
 
 
 def _g(d, *keys, default=""):

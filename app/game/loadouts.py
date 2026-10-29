@@ -18,7 +18,7 @@ from app.core.paths import DATA
 
 DATA_FILE = DATA / "loadout_data.json"
 CATEGORIES = (("Suits", "warframe"), ("LongGuns", "primary"), ("Pistols", "secondary"), ("Melee", "melee"),
-              ("SpaceSuits", "archwing"), ("SpaceGuns", "archgun"), ("MechSuits", "necramech"),
+              ("SpaceSuits", "archwing"), ("SpaceGuns", "archgun"), ("SpaceMelee", "archmelee"), ("MechSuits", "necramech"),
               ("Sentinels", "companion"), ("KubrowPets", "companion"), ("MoaPets", "companion"), ("HoundPets", "companion"),
               ("SentinelWeapons", "compweapon"), ("SpecialItems", "exalted"))
 # SpecialItems also holds the beast companions' claws (read as companion weapons) and summoned "suits" (Sevagoth's Shadow,
@@ -30,7 +30,7 @@ LAYOUT = {
     "warframe": ["general"] * 8 + ["aura", "exilus", "arcane", "arcane"],
     "primary": ["general"] * 8 + ["exilus", "arcane"],
     "secondary": ["general"] * 8 + ["exilus", "arcane"],
-    "archgun": ["general"] * 8 + ["exilus", "arcane"],
+    "archgun": ["general"] * 8 + ["arcane", "arcane"],          # two Arcane slots (an Exilus mod there is read as one)
     "melee": ["general"] * 8 + ["stance", "exilus", "arcane"],
 }
 LETTERS = "ABCDEFGH"
@@ -178,11 +178,12 @@ def read(inv: dict, market=None) -> list:
                 longest = max((len(c.get("Upgrades") or []) for c in cfgs if isinstance(c, dict)), default=8)
                 roles = ["general"] * 8 + (["stance"] if longest >= 9 else [])     # the Posture mod, like a stance
             elif kind == "exalted":
-                if not path.startswith("/Lotus/Powersuits/") or EXALTED_SKIP.search(path):
+                mech = "/NechroTech/" in path                  # a Necramech's own weapon (Bonewidow's Ironbride, Voidrig's Arquebex)
+                if not mech and (not path.startswith("/Lotus/Powersuits/") or EXALTED_SKIP.search(path)):
                     continue
                 if not names:                                  # no name in the game data: from the path
                     item_name = _words(path.rsplit("/", 1)[-1])
-                owner = exalted_owner(path)
+                owner = ("Bonewidow" if "Sword" in path else "Voidrig") if mech else exalted_owner(path)
                 # melee ones have a stance slot (11 entries), ranged ones an Exilus and an Arcane (10), older ones 8 slots
                 longest = max((len(c.get("Upgrades") or []) for c in cfgs if isinstance(c, dict)), default=8)
                 roles = LAYOUT["melee"] if longest >= 11 else (LAYOUT["primary"] if longest == 10 else ["general"] * 8)
@@ -219,6 +220,11 @@ def read(inv: dict, market=None) -> list:
                         filled += role != "arcane"
                         continue
                     name, mx = mod_name(mod_path)
+                    arcane = "/CosmeticEnhancers/" in str(mod_path)
+                    if arcane and role != "arcane":
+                        role = "arcane"                        # what the slot holds says what it is
+                    elif not arcane and role == "arcane" and kind == "archgun":
+                        role = "exilus"                        # an arch-gun slot holding a mod: an Exilus slot
                     slots.append({"role": role, "name": name, "rank": lvl, "max": mx})
                     if role != "arcane":
                         filled += 1

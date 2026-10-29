@@ -98,6 +98,10 @@ ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elen
   acquistabili entro il reset*);
 - le **offerte settimanali dei vendor che segui** (acquistate / limite, conto alla rovescia del reset; vedi la scheda
   Settimanali);
+- le **attività del Mondo che segui** (scheda Mondo > *Segui*): cicli degli open world, Baro Ki'Teer, Sortita, Caccia
+  all'Arconte, l'Arbitrato attuale o il prossimo di un tier, un tipo di Fenditura del Vuoto (ognuna aperta col suo tempo
+  rimasto), invasioni che danno una ricompensa; i conti alla rovescia scorrono ogni secondo e prendono il colore "entro
+  il reset" negli ultimi 10 minuti;
 - **Nightwave**: le giornaliere di oggi (☼) e le sfide della settimana (elite ★), con standing, obiettivo e avanzamento
   (es. 14/15); quelle completate sono spuntate ✔ (dai contatori delle sfide nel file di gioco, *ChallengeProgress*);
 - **Calendario 1999**: le sfide della stagione corrente, quella in corso e quante sono fatte (fatte = i giorni fino
@@ -304,8 +308,8 @@ I tuoi loadout di gioco, mostrati come nella schermata dei loadout, da `lastData
 AlecaFrame l'ha aggiornato).
 
 - **Loadout di gioco** (vista predefinita): i tuoi loadout con Warframe, armi, arma exalted, compagno e la sua arma (l'arma di
-  una Sentinella / MOA / Hound, o gli artigli di una bestia con lo slot Postura), Archwing e
-  Necramech; clicca una riga per la build di quell'oggetto. **Per oggetto**: le configurazioni di ogni oggetto,
+  una Sentinella / MOA / Hound, o gli artigli di una bestia con lo slot Postura), Archwing con la sua arch-gun (due
+  slot Arcano) e arch-melee, Necramech con la sua arma (Ironbride, Arquebex); clicca una riga per la build di quell'oggetto. **Per oggetto**: le configurazioni di ogni oggetto,
   raggruppate per tipo, con miniature e filtro per nome/tipo. Scuola Focus e K-Drive non sono mostrati.
 - **Disposta come la schermata potenziamenti del gioco**: *POTENZIAMENTI / OGGETTO [rank]* con il numero di Forma, le
   schede delle configurazioni (Config A, B, C… o i nomi che hai dato: clic per cambiare), a sinistra la **capacità**
@@ -378,7 +382,11 @@ Steel Essence e Pathos Clamp vanno nella barra del giocatore.
 Le offerte dei vendor con un limite di acquisto (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…), quanto hai
 comprato in questo periodo e quando si azzera. Il file di gioco registra ogni acquisto limitato ma non quale offerta
 fosse, quindi il programma lo ricava da ciò che il `deltas.dat` di AlecaFrame ha registrato come guadagnato e
-dall'inventario rispetto alla sync precedente; quando è ambiguo ti chiede di sceglierla (★ = candidate probabili). Prima di
+dall'inventario rispetto alla sync precedente; quando è ambiguo ti chiede di sceglierla (★ = candidate probabili). Sopra la lista: i **tipi di offerte** da mostrare
+(Kuva, riven, Arcani, mod, Endo / crediti, reliquie, adattatori / Forma, progetti, armi, cosmetici, incarichi, risorse;
+anche più insieme), una ricerca per nome, e più offerte si possono **selezionare** (Ctrl / Maiusc + clic) per seguirle o
+smettere di seguirle in una volta. Le offerte il cui prezzo il vendor sceglie da una lista (Acrithis, l'Hivemind del
+Necralisk…) lo mostrano: un prezzo unico (10 Pathos Clamp) o "uno tra: …". Prima di
 chiedere usa tutto ciò che sa già: un'offerta col limite sotto il numero acquistato, già presa da un altro acquisto dello
 stesso vendor in questo periodo (il gioco tiene una voce per offerta) o mostrata in vendita dalla schermata del vendor
 dopo l'acquisto è esclusa (✗); gli acquisti di un vendor con lo stesso numero che possono essere solo un insieme di
@@ -444,7 +452,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.4.9)
+## Aggiornamenti (versione attuale 0.4.10)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

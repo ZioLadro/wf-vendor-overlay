@@ -419,13 +419,41 @@ class Weekly:
                 b = bought.get(k, 0)
                 # bought out according to the vendor screen, the game file not there yet: shown bought ("OCR")
                 ocr = k in gone and b < i["limit"]
-                out.append(dict(i, vendor=vend, vendor_name=v["name"], bought=i["limit"] if ocr else b, ocr=ocr,
+                out.append(dict(i, vendor=vend, vendor_name=v["name"], bought=i["limit"] if ocr else b, ocr=ocr, cat=category(i),
                                 expiry=expiry.get(k), tracked=k in self.tracked, key=k, active=active.get(vend)))
         return out
 
 
 # vendors that only exist during an event (time gated): shown as active only while the event runs
 EVENT_HINT = ("/Events/", "/Prequel/Triad")
+
+
+# offer categories (the Weekly tab's filter): (key, test on the item path / name), first match wins
+CATEGORIES = (
+    ("kuva", lambda p, n: p.endswith("/MiscItems/Kuva")),
+    ("riven", lambda p, n: "/Randomized/" in p or "Riven" in n or p.endswith("/SentientSecretItem")),
+    ("arcane", lambda p, n: "/CosmeticEnhancers/" in p),
+    ("mod", lambda p, n: "/Upgrades/Mods/" in p and "/FusionBundles/" not in p),
+    ("endo_credits", lambda p, n: "/FusionBundles/" in p or "/CreditBundles/" in p or "/FusionTreasures/" in p),
+    ("relic", lambda p, n: "/Projections/" in p),
+    ("upgrade", lambda p, n: any(x in p for x in ("ArcaneUnlocker", "UtilityUnlocker", "/MiscItems/Forma", "Catalyst", "Reactor",
+                                                  "/Focus/", "/NarmerSorties/ArchonCrystal")) or "Adapter" in n),
+    ("blueprint", lambda p, n: "/Recipes/" in p or n.endswith("Blueprint")),
+    ("weapon", lambda p, n: p.startswith("/Lotus/Weapons/") or "/Powersuits/" in p),
+    ("cosmetic", lambda p, n: any(x in p for x in ("/Skins/", "/ShipDecos/", "/AvatarImages/", "/PhotoBooth", "Photobooth",
+                                                  "/SongItems/", "/Guild/", "/DangerRoom/"))),
+    ("task", lambda p, n: "/Packages/Tasks/" in p or "/CrewMember" in p),
+    ("resource", lambda p, n: "/Resources/" in p or "/MiscItems/" in p or "/Gameplay/" in p or "/SyndicateDogTags/" in p
+                              or "Pack" in n),
+)
+
+
+def category(item: dict) -> str:
+    p, n = str(item.get("path") or ""), str(item.get("name") or "")
+    for key, test in CATEGORIES:
+        if test(p, n):
+            return key
+    return "other"
 
 
 def event_keyword(vendor: str) -> str:

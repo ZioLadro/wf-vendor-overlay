@@ -6,8 +6,8 @@ import time
 
 from PyQt6.QtCore import Qt, QTimer, QUrl
 from PyQt6.QtWidgets import (
-    QCheckBox, QComboBox, QFrame, QHBoxLayout, QHeaderView, QLabel, QPushButton, QTableWidget, QTableWidgetItem,
-    QVBoxLayout, QWidget,
+    QAbstractItemView, QCheckBox, QComboBox, QFrame, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QMenu, QPushButton,
+    QTableWidget, QTableWidgetItem, QToolButton, QVBoxLayout, QWidget,
 )
 
 from app.game import aleca
@@ -22,8 +22,14 @@ def left(seconds) -> str:
     return f"{d}d {h}h" if d else (f"{h}h {m:02d}m" if h else f"{m}m")
 
 
-def cost_text(cost) -> str:
-    return " + ".join(f"{thousands(n)} {name}" for n, name in cost) if cost else "–"
+def cost_text(cost, any_cost=None) -> str:
+    """"10 Pathos Clamp"; a price drawn from a list (any_cost: [[lowest, highest, currency]]): "one of: 80 Kovnik, …"."""
+    if cost:
+        return " + ".join(f"{thousands(n)} {name}" for n, name in cost)
+    if any_cost:
+        parts = [(f"{thousands(lo)}" if lo == hi else f"{thousands(lo)}-{thousands(hi)}") + f" {name}" for lo, hi, name in any_cost]
+        return t("weekly.cost.any", items=", ".join(parts[:3]) + (f", … ({len(parts)})" if len(parts) > 3 else ""))
+    return "–"
 
 
 class WeeklyTab(QWidget):
@@ -54,6 +60,30 @@ class WeeklyTab(QWidget):
         bar.addWidget(self.weekly_only)
         bar.addWidget(self.only_tracked)
         bar.addWidget(self.show_inactive)
+        # offer categories (several at once) and a name filter
+        from app.core.config import CFG
+        self.cats = QToolButton()
+        self.cats.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.cats.setToolTip(t("weekly.cat.tip"))
+        menu = QMenu(self.cats)
+        on = set(CFG.get("weekly_categories") or [])
+        self.cat_actions = {}
+        for key, _test in WK.CATEGORIES + (("other", None),):
+            a = menu.addAction(t("weekly.cat." + key))
+            a.setCheckable(True)
+            a.setChecked(key in on)
+            a.toggled.connect(lambda _c: self._cats_changed())
+            self.cat_actions[key] = a
+        menu.addSeparator()
+        menu.addAction(t("weekly.cat.all"), self._cats_clear)
+        self.cats.setMenu(menu)
+        self._cats_label()
+        self.search = QLineEdit()
+        self.search.setPlaceholderText(t("weekly.search"))
+        self.search.setClearButtonEnabled(True)
+        self.search.textChanged.connect(lambda _s: self.refresh(force=True))
+        bar.insertWidget(2, self.cats)
+        bar.insertWidget(3, self.search, 1)
         self.btn_qf = QPushButton(t("rec.qf"))
         self.btn_qf.setToolTip(t("rec.qf.tip"))
         self.btn_qf.clicked.connect(self.send_to_quantframe)
@@ -64,6 +94,22 @@ class WeeklyTab(QWidget):
         self.table.setSortingEnabled(True)
         self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)    # several offers at once
+        self.table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.table.customContextMenuRequested.connect(self._menu)
+        self.sel_bar = QHBoxLayout()
+        self.sel_info = QLabel("")
+        role(self.sel_info, "muted")
+        self.btn_track = QPushButton(t("weekly.sel.track"))
+        self.btn_untrack = QPushButton(t("weekly.sel.untrack"))
+        self.btn_track.clicked.connect(lambda: self._track_selected(True))
+        self.btn_untrack.clicked.connect(lambda: self._track_selected(False))
+        self.sel_bar.addWidget(self.sel_info, 1)
+        self.sel_bar.addWidget(self.btn_track)
+        self.sel_bar.addWidget(self.btn_untrack)
+        self.table.itemSelectionChanged.connect(self._selection_changed)
+        self._selection_changed()
         hint = QLabel(t("weekly.hint"))
         hint.setWordWrap(True)
         role(hint, "hint")
@@ -73,6 +119,7 @@ class WeeklyTab(QWidget):
         lay.addWidget(self.summary)
         lay.addWidget(self.wallet)
         lay.addWidget(self.table, 1)
+        lay.addLayout(self.sel_bar)
         lay.addWidget(hint)
         self.vendor.currentIndexChanged.connect(lambda _i: self.refresh(force=True))
         self.weekly_only.toggled.connect(lambda _c: self.refresh(force=True))
@@ -110,8 +157,10 @@ class WeeklyTab(QWidget):
 
     # ---------- showing ----------
     def refresh(self, force=False):
+        cats = {k for k, a in self.cat_actions.items() if a.isChecked()}
+        text = self.search.text().strip().lower()
         sig = (self.w.version, self.vendor.currentData(), self.weekly_only.isChecked(), self.only_tracked.isChecked(),
-               self.show_inactive.isChecked(),
+               self.show_inactive.isChecked(), tuple(sorted(cats)), text,
                int(time.time() // 60))
         if not force and sig == self._shown:
             return
@@ -122,24 +171,31 @@ class WeeklyTab(QWidget):
         rows = [o for o in self.w.offers(self.weekly_only.isChecked())
                 if (not self.vendor.currentData() or o["vendor"] == self.vendor.currentData())
                 and (not self.only_tracked.isChecked() or o["tracked"])
-                and (self.show_inactive.isChecked() or o.get("active") is not False)]
+                and (self.show_inactive.isChecked() or o.get("active") is not False)
+                and (not cats or o.get("cat") in cats)
+                and (not text or text in o["name"].lower() or text in o["vendor_name"].lower())]
         tb = self.table
         tb.blockSignals(True)
         tb.setSortingEnabled(False)
         tb.setRowCount(len(rows))
         for r, o in enumerate(rows):
-            reset = o["expiry"] or (WK.next_reset(now) if o["hours"] == 168 else None)
+            reset = o["expiry"] or (WK.next_reset(now) if o["hours"] == 168 else
+                                    (int(now // 86400) + 1) * 86400 if o["hours"] == 24 else None)
             done = o["bought"] >= o["limit"]
             vname = o["vendor_name"] + ("  " + t("weekly.ev.on") if o.get("active") else "  " + t("weekly.ev.off")
                                         if o.get("active") is False else "")
             cells = [Cell(vname, o["vendor_name"].lower(), center=False),
                      Cell(o["name"] + (f" ×{thousands(o['qty'])}" if o["qty"] > 1 else ""), o["name"].lower(), center=False),
-                     Cell(cost_text(o["cost"]), cost_text(o["cost"]).lower(), center=False),
+                     Cell(cost_text(o["cost"], o.get("cost_any")), cost_text(o["cost"], o.get("cost_any")).lower(), center=False),
                      Cell(f"{o['bought']}/{o['limit']}" + ("  ✔" if done else "") + ("  " + t("weekly.ocr") if o.get("ocr") else ""),
                           o["bought"] / max(1, o["limit"])),
                      Cell(left(reset - now) if reset else "–", reset or 0)]
             if o.get("ocr"):
                 cells[3].setToolTip(t("weekly.ocr.tip"))
+            if o.get("cost_any"):
+                cells[2].setToolTip(t("weekly.cost.any.tip") + "\n" + "\n".join(
+                    (f"{lo}" if lo == hi else f"{lo}-{hi}") + f" {n}" for lo, hi, n in o["cost_any"]))
+            cells[1].setToolTip(t("weekly.cat." + o.get("cat", "other")))
             for c, cell in enumerate(cells):
                 tb.setItem(r, c, cell)
             tr = Cell("", 1 if o["tracked"] else 0)
@@ -205,6 +261,52 @@ class WeeklyTab(QWidget):
             img = f"<img src='{QUrl.fromLocalFile(icon).toString()}' height='16'> " if icon else ""
             parts.append(f"{img}{n.title() if n.isupper() else n}: <b>{thousands(q) if q is not None else '–'}</b>")
         self.wallet.setText(t("weekly.wallet") + " " + " &nbsp;·&nbsp; ".join(parts))
+
+    # ---------- categories and several offers at once ----------
+    def _cats_label(self):
+        on = [k for k, a in self.cat_actions.items() if a.isChecked()]
+        self.cats.setText((t("weekly.cat.label", n=len(on)) if on else t("weekly.cat.all")) + " ▾")
+
+    def _cats_changed(self):
+        from app.core.config import save_config
+        save_config({"weekly_categories": [k for k, a in self.cat_actions.items() if a.isChecked()]})
+        self._cats_label()
+        self.refresh(force=True)
+
+    def _cats_clear(self):
+        for a in self.cat_actions.values():
+            a.blockSignals(True)
+            a.setChecked(False)
+            a.blockSignals(False)
+        self._cats_changed()
+
+    def _selected_offers(self):
+        rows = sorted({i.row() for i in self.table.selectedIndexes()})
+        out = []
+        for r in rows:
+            it = self.table.item(r, 5)
+            if it is not None and it.data(Qt.ItemDataRole.UserRole) is not None:
+                out.append(tuple(it.data(Qt.ItemDataRole.UserRole)))
+        return out
+
+    def _selection_changed(self):
+        n = len(self._selected_offers())
+        self.sel_info.setText(t("weekly.sel.n", n=n) if n else t("weekly.sel.hint"))
+        self.btn_track.setEnabled(bool(n))
+        self.btn_untrack.setEnabled(bool(n))
+
+    def _track_selected(self, on):
+        for vendor, offer in self._selected_offers():
+            self.w.track(vendor, offer, on)
+        self.refresh(force=True)
+
+    def _menu(self, pos):
+        if not self._selected_offers():
+            return
+        m = QMenu(self)
+        m.addAction(t("weekly.sel.track"), lambda: self._track_selected(True))
+        m.addAction(t("weekly.sel.untrack"), lambda: self._track_selected(False))
+        m.exec(self.table.viewport().mapToGlobal(pos))
 
     def _track_changed(self, item):
         if item.column() != 5 or item.data(Qt.ItemDataRole.UserRole) is None:

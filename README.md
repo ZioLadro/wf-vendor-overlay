@@ -88,6 +88,9 @@ A small always-on-top window over the game, styled like a quest tracker, movable
   what your rank holds) pays for more copies or the next item: *Before the reset: buy 2× Martyr Symbiosis (earn 13,000
   more)*, with the time left to 00:00 UTC (setting *Activities: items buyable before the reset*);
 - the **weekly vendor offers you follow** (bought / limit, reset countdown; see the Weekly tab);
+- the **World activities you follow** (World tab > *Follow*): open-world cycles, Baro Ki'Teer, Sortie, Archon Hunt,
+  the Arbitration now or the next one of a tier, a kind of Void Fissure (every open one with its time left), invasions
+  giving a reward; the countdowns move every second, and they turn to the "soon" colour in their last 10 minutes;
 - **Nightwave**: today's daily (☼) and this week's challenges (elite ones ★), with their standing, goal and progress
   (e.g. 14/15); completed ones are ticked ✔ (from the challenge counters in your game file, *ChallengeProgress*);
 - **1999 Calendar**: the current season's challenges, the one in progress and how many are done (done = days up to the
@@ -281,7 +284,8 @@ Your in-game loadouts, shown like the game's loadout screen, from `lastData.dat`
 refreshed it).
 
 - **Game loadouts** (default view): your named loadouts with Warframe, weapons, Exalted weapon, companion and its weapon
-  (a Sentinel's / MOA's / Hound's weapon, or a beast's claws with their Posture slot), Archwing and Necramech; click a row for that item's build. **By item**: every item's configurations, grouped by kind, with
+  (a Sentinel's / MOA's / Hound's weapon, or a beast's claws with their Posture slot), Archwing with its arch-gun (two
+  Arcane slots) and arch-melee, Necramech with its weapon (Ironbride, Arquebex); click a row for that item's build. **By item**: every item's configurations, grouped by kind, with
   thumbnails and a name/kind filter. Focus school and K-Drive are not shown.
 - **Laid out like the game's upgrade screen**: *UPGRADES / ITEM [rank]* with the Forma count, the configuration tabs
   (Config A, B, C… or the names you gave them: click to switch), on the left the **capacity** (left / total, as the game
@@ -351,7 +355,11 @@ Archon Shard and Helminth headings; Steel Essence and Pathos Clamp pictures go t
 The vendor offers with a purchase limit (Teshin, Ironwake, Nightcap, Archimedean, Acrithis…), what you bought this
 period and when it resets. The game file records each limited purchase but not which offer it was, so the program works
 it out from what AlecaFrame's `deltas.dat` recorded as gained and from your inventory against the previous sync; when it
-is ambiguous you are asked to pick it (★ = likely candidates). Before asking, everything already known is used: an offer
+is ambiguous you are asked to pick it (★ = likely candidates). Above the list: the **kinds of offers** to show (Kuva,
+rivens, Arcanes, mods, Endo / credits, relics, adapters / Forma, blueprints, weapons, cosmetics, tasks, resources;
+several at once), a name search, and several offers can be **selected** (Ctrl / Shift + click) to track or untrack them
+at once. Offers whose price the vendor draws from a list (Acrithis, the Necralisk's Hivemind…) show it: a single price
+(10 Pathos Clamps) or "one of: …". Before asking, everything already known is used: an offer
 whose limit is below the number bought, already taken by another purchase of that vendor this period (the game keeps one
 entry per offer) or shown on sale by the vendor screen after the purchase is ruled out (✗); purchases of a vendor with
 the same number bought that can only be a set of offers are assigned at once (4 purchases of 10 at Palladino = the four
@@ -412,7 +420,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.4.9)
+## Updates (current version 0.4.10)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

@@ -89,6 +89,27 @@ class WorldTab(QWidget):
         self.sub.insertTab(3, aw, t("world.sec.arbi"))
         self._arbi_timer = QTimer(self, interval=30_000, timeout=lambda: self.show_arbitrations() if aw.isVisible() else None)
         self._arbi_timer.start()
+        # every activity of the world that can be followed in the Activities overlay
+        self.follow = QTableWidget(0, 3)
+        self.follow.setHorizontalHeaderLabels([t("wt.col.follow"), t("wt.col.what"), t("wt.col.now")])
+        self.follow.verticalHeader().setVisible(False)
+        self.follow.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.follow.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        self.follow.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        self.follow.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self.follow.itemChanged.connect(self._follow_changed)
+        fw = QWidget()
+        fl = QVBoxLayout(fw)
+        fnote = QLabel(t("wt.note"))
+        fnote.setWordWrap(True)
+        role(fnote, "hint")
+        fl.addWidget(fnote)
+        fl.addWidget(self.follow, 1)
+        self.sub.insertTab(0, fw, t("wt.tab"))
+        self.sub.setCurrentIndex(1)
+        self._follow_rows = []
+        self._follow_timer = QTimer(self, interval=1000, timeout=lambda: self._tick_follow() if fw.isVisible() else None)
+        self._follow_timer.start()
         lay = QVBoxLayout(self)
         lay.addLayout(top)
         lay.addWidget(self.sub, 1)
@@ -172,7 +193,47 @@ class WorldTab(QWidget):
             self.arbi.setRowCount(1)
             self.arbi.setItem(0, 0, QTableWidgetItem(t("world.arbi.none")))
 
+    def show_follow(self, ws):
+        """Every activity that can be followed, the followed ones first (ticked)."""
+        from app.game import worldtrack as WT
+        followed = WT.tracked()
+        rows = WT.items(ws)
+        have = {e["key"] for e in rows}
+        rows += [{"key": k, "missing": True} for k in followed if k not in have]
+        rows.sort(key=lambda e: (e["key"] not in followed, {"events": 0, "cycles": 1, "fissures": 2, "invasions": 3}
+                                 .get(e.get("group"), 4), WT.title(e)))
+        self._follow_rows = rows
+        tb = self.follow
+        tb.blockSignals(True)
+        tb.setRowCount(len(rows))
+        for r, e in enumerate(rows):
+            cb = QTableWidgetItem("")
+            cb.setFlags(cb.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+            cb.setCheckState(Qt.CheckState.Checked if e["key"] in followed else Qt.CheckState.Unchecked)
+            cb.setData(Qt.ItemDataRole.UserRole, e["key"])
+            tb.setItem(r, 0, cb)
+            tb.setItem(r, 1, QTableWidgetItem(WT.title(e)))
+            tb.setItem(r, 2, QTableWidgetItem(WT.text(e)[len(WT.title(e)) + 2:]))
+        tb.blockSignals(False)
+
+    def _tick_follow(self):
+        from app.game import worldtrack as WT
+        now = time.time()
+        for r, e in enumerate(self._follow_rows):
+            it = self.follow.item(r, 2)
+            if it is not None:
+                txt = WT.text(e, now)[len(WT.title(e)) + 2:]
+                if it.text() != txt:
+                    it.setText(txt)
+
+    def _follow_changed(self, item):
+        if item.column() != 0 or item.data(Qt.ItemDataRole.UserRole) is None:
+            return
+        from app.game import worldtrack as WT
+        WT.set_tracked(item.data(Qt.ItemDataRole.UserRole), item.checkState() == Qt.CheckState.Checked)
+
     def show_world(self, ws):
+        self.show_follow(ws)
         self.show_arbitrations()
         for key, rows in parse_world(ws):
             tb = self.tables[key]

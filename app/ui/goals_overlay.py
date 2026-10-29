@@ -146,6 +146,9 @@ class GoalsOverlay(QWidget):
             scr = QApplication.primaryScreen().availableGeometry()
             self.setGeometry(scr.right() - 380, scr.top() + 140, 340, 420)
         self._apply_fold()
+        self._live = []                                # [(label, activity)]: World countdowns updated every second
+        self._live_timer = QTimer(self, interval=1000, timeout=self._tick_live)
+        self._live_timer.start()
         self._timer = QTimer(self, interval=3000, timeout=self.refresh)
         # shown when you want it (hotkey / ✕) and no vendor is on screen: over a vendor it steps aside
         self._wanted = bool(CFG.get("goals_visible", False))
@@ -427,7 +430,9 @@ class GoalsOverlay(QWidget):
             self._style()
             self.update()
             force = True
+        from app.game import world as _world
         sig = (self.store.version, self.inv.imported, len(self.inv.items), int(time.time() // 60), WK.get().version,
+               repr(CFG.get("world_tracked")), _world.last()[0],
                Q._state["fetched"], repr(CFG.get("goals_untracked")),
                tuple(CFG.get(k) for k in ("goals_items", "goals_per_vendor", "goals_repeat", "goals_activities",
                                           "goals_only_short", "goals_where", "goals_weekly", "goals_quests",
@@ -446,6 +451,7 @@ class GoalsOverlay(QWidget):
         shown = repr((data["groups"], [d["name"] for d in data["done"][-3:]], CFG.get("goals_activities"),
                       WK.get().version, CFG.get("goals_untracked"), CFG.get("goals_weekly"), int(time.time() // 60),
                       Q._state["fetched"], CFG.get("goals_quests"), CFG.get("goals_where"), CFG.get("goals_routine"), repr(CFG.get("goals_manual_done")),
+                      repr(CFG.get("world_tracked")), _world.last()[0],
                       self.inv.imported,
                       CFG.get("goals_only_short")))
         if shown == self._shown_sig and not force:
@@ -454,6 +460,7 @@ class GoalsOverlay(QWidget):
         self._draw(data)
 
     def _clear(self):
+        self._live = []
         while self.rows.count():
             it = self.rows.takeAt(0)
             w = it.widget()
@@ -519,6 +526,7 @@ class GoalsOverlay(QWidget):
             self._draw_quests()
         if CFG.get("goals_routine", True):
             self._draw_routine()
+        self._draw_world()
         recent = [d for d in data["done"] if time.time() - d.get("t", 0) < 86400][-3:]
         if recent:
             self.rows.addSpacing(6)
@@ -734,6 +742,47 @@ class GoalsOverlay(QWidget):
             lab.setToolTip((tip + "\n" if tip else "") + t("quests.rt.tip"))
             self._menu_on(lab, lambda pos, w=lab, r=r, d=done: self._routine_menu(w, pos, r, d))
             self.rows.addWidget(lab)
+
+    def _draw_world(self):
+        """The World activities you follow (World tab > Follow): cycles, Baro, Sortie, Archon Hunt, Arbitration, kinds of
+        fissures, invasion rewards, each with its live countdown (updated every second). Right click: stop following."""
+        from app.game import world
+        from app.game import worldtrack as WT
+        if not WT.tracked():
+            return
+        WT.ensure_fresh()
+        _t, ws = world.last()
+        rows = WT.followed(ws)
+        self.rows.addSpacing(6)
+        self.rows.addWidget(self._title("world", "◎  " + t("wt.section")))
+        if self._folded("world"):
+            return
+        if not ws:
+            self.rows.addWidget(self._label("   " + t("wt.loading"), "act"))
+        for e in rows:
+            lab = self._label("   - " + WT.text(e), "wait" if WT.soon(e) else ("act" if e.get("missing") else "obj"))
+            self._menu_on(lab, lambda pos, w=lab, k=e["key"]: self._world_menu(w, pos, k))
+            self.rows.addWidget(lab)
+            self._live.append((lab, e))
+
+    def _tick_live(self):
+        if not self._live or not self.isVisible():
+            return
+        from app.game import worldtrack as WT
+        now = time.time()
+        for lab, e in self._live:
+            try:
+                txt = "   - " + WT.text(e, now)
+                if lab.text() != txt:
+                    lab.setText(txt)
+            except RuntimeError:                       # the label was deleted by a rebuild
+                pass
+
+    def _world_menu(self, w, pos, key):
+        from app.game import worldtrack as WT
+        m = QMenu(self)
+        m.addAction(t("wt.unfollow"), lambda: (WT.set_tracked(key, False), self.refresh(force=True)))
+        m.exec(w.mapToGlobal(pos))
 
     def _routine_menu(self, w, pos, r, done):
         cur = {k: v for k, v in (CFG.get("goals_manual_done") or {}).items() if v > time.time()}

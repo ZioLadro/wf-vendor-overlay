@@ -99,6 +99,7 @@ DEFAULTS = {
     "goals_ready_color": "#40ff40",  # Activities: ready / done
     "goals_hint_color": "#a0a0a0",   # Activities: hints (activities, goals)
     "goals_soon_color": "#7fd7ff",   # Activities: items you can buy with the standing still earnable before the reset
+    "weekly_categories": [],         # Weekly tab: offer categories shown (empty = all)
     "weekly_ocr": True,              # Weekly: check the limited offers listed on the vendor screen (bought out = gone)
     "goals_by_reset": True,
     "goals_folded": [],              # Activities: categories folded by a click on their title (syndicate tags, weekly…)          # Activities: show what today's earnable standing (until 00:00 UTC) still pays for
@@ -161,6 +162,7 @@ DEFAULTS = {
     # profile and world state
     "open_list_on_start": True,  # open the price-list window when the program starts
     "profile_reload_s": 10,      # re-read the imported AlecaFrame file (standing, inventory) when it changed (0 = never)
+    "world_tracked": [],         # World activities followed in the Activities overlay (World tab > Follow)
     "world_arbi_min": "",        # World > Arbitrations: show only this tier or better ("" = all)
     "world_refresh_s": 60,       # world state refresh period while its tab is open (seconds)
     # inventory

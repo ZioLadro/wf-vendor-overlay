@@ -3,6 +3,19 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.4.10
+- **Overlay Attività: attività del Mondo** che segui (scheda Mondo > *Segui*): cicli, Baro, Sortita, Caccia all'Arconte,
+  l'Arbitrato attuale / il prossimo di un tier, tipi di Fenditure del Vuoto, ricompense delle invasioni, con conti alla
+  rovescia aggiornati ogni secondo.
+- **Settimanali**: filtro per tipo di offerta (anche più insieme) e per nome; seleziona più offerte per seguirle / smettere
+  di seguirle in una volta.
+- **Prezzi di Acrithis** (10 Pathos Clamp) e degli altri vendor il cui prezzo è scelto da una lista (Hivemind del
+  Necralisk, equipaggio Railjack, commissioni Archimedean…) ora visibili: i dati del gioco li tengono per "bin", non per
+  offerta. Le offerte giornaliere mostrano il loro reset.
+- **Build**: le arch-melee non venivano lette (i loro loadout mancavano); le mod dei Necramech ora contano nella capacità;
+  compaiono le armi dei Necramech (Ironbride, Arquebex); le arch-gun hanno due slot Arcano (il secondo Arcano del
+  Mausolon appariva come Exilus) — uno slot che contiene un Arcano viene sempre letto come tale.
+
 ## 0.4.9
 - **Settimanali, acquisti da identificare**: prima di chiedere viene usato ciò che si sa già. Le offerte col limite sotto
   il numero acquistato, già prese da un altro acquisto del vendor o mostrate in vendita dopo l'acquisto vengono escluse

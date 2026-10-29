@@ -3,6 +3,17 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.4.10
+- **Activities overlay: World activities** you follow (World tab > *Follow*): cycles, Baro, Sortie, Archon Hunt, the
+  Arbitration now / the next one of a tier, kinds of Void Fissures, invasion rewards, with countdowns updated every second.
+- **Weekly**: filter by kind of offer (several at once) and by name; select several offers to track / untrack them at once.
+- **Acrithis' prices** (10 Pathos Clamps) and the other vendors whose price is drawn from a list (Necralisk's Hivemind,
+  Railjack crew, Archimedean commissions…) are shown: the game data keeps them per "bin", not per offer. Daily offers
+  show their reset.
+- **Builds**: arch-melee weapons were not read at all (their loadouts missed); Necramech mods now count in the capacity;
+  the Necramechs' own weapons (Ironbride, Arquebex) are shown; arch-guns have two Arcane slots (Mausolon's second Arcane
+  was shown as an Exilus) — a slot holding an Arcane is always read as one.
+
 ## 0.4.9
 - **Weekly, purchases to identify**: what is already known is used before asking. Offers whose limit is below the number
   bought, already taken by another purchase of the vendor, or shown on sale after the purchase are ruled out (✗); a group

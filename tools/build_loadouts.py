@@ -38,7 +38,7 @@ STAT_KEYS = {"Health": "health", "Shield Capacity": "shield", "Armor": "armor", 
              "Ability Range": "range", "Ability Strength": "strength"}
 MOD_TYPES = {"Warframe Mod": "W", "Primary Mod": "P", "Shotgun Mod": "G", "Secondary Mod": "S", "Melee Mod": "M",
              "Stance Mod": "T", "Companion Mod": "C", "Archwing Mod": "A", "Arch-Gun Mod": "R", "Arch-Melee Mod": "X",
-             "Posture Mod": "Y"}
+             "Posture Mod": "Y", "Necramech Mod": "N"}
 
 
 DT_NAMES = {"FIRE": "Heat", "FREEZE": "Cold", "ELECTRICITY": "Electricity", "POISON": "Toxin", "EXPLOSION": "Blast",

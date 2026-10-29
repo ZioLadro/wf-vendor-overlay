@@ -4,7 +4,9 @@
 Source: https://github.com/calamity-inc/warframe-public-export-plus (ExportVendors and names).
 Usage:  python tools/build_weekly.py [--out data/weekly.json] [--cache download_folder]
   vendors: manifest path -> {"name": vendor name, "items": [{"store": store item, "path": item path, "name": English name,
-           "qty": quantity, "limit": purchases per period, "hours": period length, "cost": [[count, currency]]}]}
+           "qty": quantity, "limit": purchases per period, "hours": period length, "cost": [[count, currency]],
+           "cost_any": [[lowest, highest, currency]] (vendors whose prices are drawn per offer from a list, like
+           Acrithis: one of these; a single entry is the price, e.g. 10 Pathos Clamps)}]}
 Nightwave's seasonal vendors are left out."""
 import argparse
 import json
@@ -33,7 +35,8 @@ def main():
 
     def name_of(path):
         if path in names:
-            return names[path]
+            n = names[path]
+            return n.title() if n.isupper() else n             # "PRIMARY ARCANE ADAPTER" -> "Primary Arcane Adapter"
         rec = recipes.get(path)
         if isinstance(rec, dict) and rec.get("resultType") in names:
             return names[rec["resultType"]] + " Blueprint"
@@ -43,6 +46,7 @@ def main():
     for key, v in fetch("ExportVendors", cache).items():
         if "/RadioLegion" in key:
             continue
+        bins = v.get("randomItemPricesPerBin") or []
         items = []
         for it in v.get("items", []):
             if not it.get("purchaseLimit") or not isinstance(it.get("durationHours", 0), (int, float)):
@@ -56,8 +60,21 @@ def main():
                     c = c.get("minValue")
                 if c:
                     cost.append([int(c), label])
-            items.append({"store": store, "path": path, "name": name_of(path), "qty": int(it.get("quantity") or 1),
-                          "limit": int(it["purchaseLimit"]), "hours": int(it.get("durationHours") or 0), "cost": cost})
+            row = {"store": store, "path": path, "name": name_of(path), "qty": int(it.get("quantity") or 1),
+                   "limit": int(it["purchaseLimit"]), "hours": int(it.get("durationHours") or 0), "cost": cost}
+            b = it.get("bin")
+            if not cost and isinstance(b, int) and b < len(bins) and bins[b]:
+                # the price is drawn from the bin's list: one entry = that price (Acrithis: 10 Pathos Clamps)
+                anyc = []
+                for p in bins[b]:
+                    c = p.get("count") or {}
+                    lo, hi = (int(c.get("minValue") or 0), int(c.get("maxValue") or 0)) if isinstance(c, dict) else (int(c), int(c))
+                    anyc.append([lo, hi, name_of(p.get("type", ""))])
+                if len(anyc) == 1 and anyc[0][0] == anyc[0][1]:
+                    row["cost"] = [[anyc[0][0], anyc[0][2]]]
+                else:
+                    row["cost_any"] = anyc
+            items.append(row)
         if items:
             out[key] = {"name": vendor_name(key) if key.startswith(VENDOR_PREFIX) else words(key.rsplit("/", 1)[-1]),
                         "items": items}
