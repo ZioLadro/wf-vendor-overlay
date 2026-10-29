@@ -10,6 +10,8 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Acrithis' prices** (10 Pathos Clamps) and the other vendors whose price is drawn from a list (Necralisk's Hivemind,
   Railjack crew, Archimedean commissions…) are shown: the game data keeps them per "bin", not per offer. Daily offers
   show their reset.
+- **Riven flip, live check**: an auction that no longer exists (warframe.market answers 400 "not_exist", not 404) is
+  marked *no longer listed* instead of being asked again every 30 seconds; a check that fails waits its turn.
 - **Builds**: arch-melee weapons were not read at all (their loadouts missed); Necramech mods now count in the capacity;
   the Necramechs' own weapons (Ironbride, Arquebex) are shown; arch-guns have two Arcane slots (Mausolon's second Arcane
   was shown as an Exilus) — a slot holding an Arcane is always read as one.

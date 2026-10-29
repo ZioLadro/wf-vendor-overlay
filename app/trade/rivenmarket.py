@@ -163,7 +163,8 @@ def get_json(url, limiter, params=None, cancel=None, timeout=12):
             continue
         if r.status_code >= 400:
             log(f"  answer: {r.text[:300]!r}")
-            raise RivenError(f"HTTP {r.status_code}")
+            # warframe.market answers 400 "app.form.not_exist" for an auction that no longer exists
+            raise RivenError(f"HTTP {r.status_code}" + (" not_exist" if "not_exist" in r.text else ""))
         limiter.ok()
         try:
             return r.json()
@@ -979,7 +980,7 @@ def check_listing(listing, limiter, cancel=None):
     try:
         j = get_json(f"{V1}/auctions/entry/{listing['id']}", limiter, cancel=cancel)
     except RivenError as e:
-        if "HTTP 404" in str(e):                      # removed (sold, withdrawn)
+        if "HTTP 404" in str(e) or "not_exist" in str(e):   # removed (sold, withdrawn)
             out = {"status": "", "gone": True, "price": None, "t": now, "last_seen": ""}
             with _live_lock:
                 LIVE[str(listing["id"])] = out
@@ -1010,6 +1011,7 @@ class LiveChecker:
         self.stop = threading.Event()
         self.thread = None
         self.paused_until = 0.0
+        self.failed = {}                          # listing id -> time of a failed check: not asked again for a while
 
     def start(self):
         if self.thread is None or not self.thread.is_alive():
@@ -1029,6 +1031,8 @@ class LiveChecker:
             x = LIVE.get(str(l["id"]))
             if x and x.get("gone"):
                 continue
+            if now - self.failed.get(str(l["id"]), 0) < every:
+                continue                                # it failed a moment ago: the others first
             if not x or now - x["t"] >= every:
                 due.append((x["t"] if x else 0, l))
         return min(due, key=lambda d: d[0])[1] if due else None
@@ -1051,7 +1055,8 @@ class LiveChecker:
                 continue
             except RivenError as e:
                 log(f"live check of {l.get('id')}: {e}")
-                self.stop.wait(30)
+                self.failed[str(l["id"])] = time.time()
+                self.stop.wait(5)
                 continue
             if self.on_change and (before.get("status") != now["status"] or before.get("gone") != now["gone"]):
                 self.on_change(l, now, before)

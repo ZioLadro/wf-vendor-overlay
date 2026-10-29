@@ -12,6 +12,8 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 - **Prezzi di Acrithis** (10 Pathos Clamp) e degli altri vendor il cui prezzo è scelto da una lista (Hivemind del
   Necralisk, equipaggio Railjack, commissioni Archimedean…) ora visibili: i dati del gioco li tengono per "bin", non per
   offerta. Le offerte giornaliere mostrano il loro reset.
+- **Riven flip, controllo dal vivo**: un'asta che non esiste più (warframe.market risponde 400 "not_exist", non 404)
+  viene segnata *non più in vendita* invece di essere richiesta ogni 30 secondi; un controllo fallito aspetta il suo turno.
 - **Build**: le arch-melee non venivano lette (i loro loadout mancavano); le mod dei Necramech ora contano nella capacità;
   compaiono le armi dei Necramech (Ironbride, Arquebex); le arch-gun hanno due slot Arcano (il secondo Arcano del
   Mausolon appariva come Exilus) — uno slot che contiene un Arcano viene sempre letto come tale.
