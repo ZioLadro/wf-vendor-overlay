@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import (
 )
 
 from app.game import aleca
+from app.ui import abilitybar as AB
 from app.ui import icons
 from app.ui import previews
 from app.ui.buildcards import Scaler
@@ -197,6 +198,7 @@ class LoadoutView(QWidget):
              "slots": lo["slots"], "capacity": lo.get("capacity"), "capacity_none": lo.get("capacity") is None,
              "level": lo.get("level", 30), "reactor": lo.get("reactor", True), "wf_stats": lo.get("stats") or {},
              "wf_base": wf_base_stats(lo["item"]) if lo["kind"] == "warframe" else {},
+             "abilities": AB.model(lo["item"], lo.get("helminth")) if lo["kind"] == "warframe" else [],
              "weapon": BC.weapon_stats(lo["kind"], lo["item"], lo.get("bonus") or {}, lo.get("elements") or [], ex.get("valence"),
                              lo.get("flat"), _perk_stats(lo))
              if lo["kind"] in weapons else None,

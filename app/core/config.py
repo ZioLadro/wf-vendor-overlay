@@ -115,6 +115,7 @@ DEFAULTS = {
     "goals_interact": "hotkey",      # Activities and the mouse: "hotkey" = clicks go through to the game until
                                      # key_goals_interact unlocks it, "cursor" = while a cursor is shown, "always"
     "goals_unlock_s": 8,
+    "build_figure": True,            # Builds / planner / shared pictures: the item's figure in the background
     "mod_frames": True,              # Builds: the game's card frames (wiki Mod/Assets), downloaded once             # unlocked with the key: locked again after this many seconds without the mouse on it
     "hide_operational_supply": True, # leave out the event syndicate (Plague Star…) while no event runs
     "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)

@@ -10,6 +10,10 @@ Usage:  python tools/build_loadouts.py [--out data/loadout_data.json] [--cache d
   abilities: ability path -> English name (every Warframe's abilities)
   suits:     Warframe path -> [its 4 ability paths, in order]
   helminth:  generic Helminth ability path -> English name
+  abil:      ability path -> [description, icon address (content.warframe.com), energy cost]
+  passive:   Warframe path -> its passive's description
+  suitpath:  Warframe name -> its path
+  figure:    item name -> DE's picture of it (content.warframe.com; the Builds screen's background)
 With --wfcd <folder of WFCD/warframe-items data/json> it also writes (used for polarity, drain, capacity and stats):
   mst:       mod name -> [polarity, base drain, max rank, compatibility, type, {stat: value at max rank}, Exilus (1/0)]
              (Warframe mods: stat keys; weapon mods: labels)
@@ -234,13 +238,40 @@ def main():
             r = {"COMMON": "C", "UNCOMMON": "U", "RARE": "R", "LEGENDARY": "L"}.get(u.get("rarity"))
             if r:
                 arcrar[nm(u["name"])] = r
+    images = fetch("ExportImages", cache)
+
+    def icon_url(icon):
+        h = (images.get(icon) or {}).get("contentHash") if icon else None
+        return f"https://content.warframe.com/PublicExport{icon}!{h}" if h else ""
+
+    def text(key):                                     # a description: markup out, placeholders (|DAMAGE|) kept
+        return re.sub(r"<[^>]+>", "", lang.get(key, "") or "").strip()
+    abil, passive, suitpath = {}, {}, {}
     for path, w in fetch("ExportWarframes", cache).items():
         ab = [x for x in (w.get("abilities") or []) if isinstance(x, dict) and x.get("uniqueName")]
         if len(ab) >= 4 and w.get("productCategory") == "Suits":
             suits[path] = [x["uniqueName"] for x in ab[:4]]
+            if nm(w.get("name", "")):
+                suitpath.setdefault(nm(w["name"]), path)
+            if w.get("passiveDescription"):
+                passive[path] = text(w["passiveDescription"])
         for x in ab:
             if nm(x.get("name", "")):
                 abilities[x["uniqueName"]] = nm(x["name"])
+                # ability -> [description, icon address, energy cost]
+                abil[x["uniqueName"]] = [text(x.get("description", "")), icon_url(x.get("icon")),
+                                         x.get("energyRequiredToActivate")]
+    figure = {}                                        # item name -> DE's render of it (the full Warframe, the weapon…)
+    for fn in ("ExportWarframes", "ExportWeapons", "ExportSentinels"):
+        for path, w in fetch(fn, cache).items():
+            n = nm(w.get("name", "")) if isinstance(w, dict) else ""
+            url = icon_url(w.get("icon")) if n else ""
+            if url and n not in figure:
+                figure[n] = url
+    for path, x in fetch("ExportAbilities", cache).items():   # the Helminth's own abilities (and a few others)
+        if "/Helminth" in path and nm(x.get("name", "")):
+            abilities[path] = nm(x["name"])
+            abil[path] = [text(x.get("description", "")), icon_url(x.get("icon")), x.get("energyRequiredToActivate")]
     helminth = {}
     for key, val in lang.items():
         m = re.fullmatch(r"/Lotus/Language/Suits/(Helminth\w+)Name", key)
@@ -248,7 +279,8 @@ def main():
             helminth[m.group(1)] = nm(key)
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
            "source": "calamity-inc/warframe-public-export-plus", "mods": mods, "rarity": rarity, "arcrar": arcrar, "arcanes": arcanes,
-           "abilities": abilities, "suits": suits, "helminth": helminth}
+           "abilities": abilities, "suits": suits, "helminth": helminth,
+           "abil": abil, "passive": passive, "suitpath": suitpath, "figure": figure}
     genesis = sorted({re.sub(r"\s+Incarnon Genesis$", "", nm(k)) for k in lang
                       if re.fullmatch(r"[\w&' -]+ Incarnon Genesis", nm(k))})
     if a.wfcd:

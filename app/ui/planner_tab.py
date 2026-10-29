@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
 from app.game import buildcalc as BC
 from app.game import incarnon as INC
 from app.game import loadouts as LO
+from app.ui import abilitybar as AB
 from app.ui import icons
 from app.ui.buildcards import Scaler
 from app.ui.buildscreen import BuildScreen, ModLibrary, incarnon_model, land_width, wf_base_stats
@@ -380,6 +381,9 @@ class PlannerView(QWidget):
             sh = [{"color": x.get("color"), "key": x.get("key"), "tauforged": bool(x.get("tauforged"))}
                   for x in (lo.get("shards") or [])[:5]]
             p["shards"] = sh + [None] * (5 - len(sh))
+            hm = lo.get("helminth")
+            if hm and hm.get("path"):
+                p["helminth"] = {"slot": int(hm["slot"]), "path": hm["path"]}
         return p
 
     def _copy(self):
@@ -489,7 +493,9 @@ class PlannerView(QWidget):
             return
         fits = [i for i in range(len(self.roles)) if name in self._candidates(i) and not self._locked(i)]
         if slot is None:                               # an Exilus mod goes to the free Exilus slot first
-            empty = sorted((i for i in fits if not self.mods[i]), key=lambda i: self.roles[i] != "exilus")
+            # on screen the general slots go from the last (top left) to the first: filled in that order, as the game
+            empty = sorted((i for i in fits if not self.mods[i]),
+                           key=lambda i: (self.roles[i] != "exilus", -i if self.roles[i] == "general" else i))
             # a slot you picked yourself wins; one the planner moved to after the last mod does not, when the mod has a
             # better place (an Exilus mod, the Exilus slot)
             mine = self.selected in fits and not (self._auto and empty and self.roles[empty[0]] == "exilus")
@@ -506,7 +512,11 @@ class PlannerView(QWidget):
         self.mods[slot] = (name, mx)
         # the next empty slot of the same kind gets selected: clicking mods one after the other fills the build
         same = [i for i in range(len(self.roles)) if self.roles[i] == self.roles[slot] and not self.mods[i] and not self._locked(i)]
-        self.selected = next((i for i in same if i > slot), same[0] if same else slot)
+        if self.roles[slot] == "general":                  # screen order: from the last slot down
+            same.sort(reverse=True)
+            self.selected = next((i for i in same if i < slot), same[0] if same else slot)
+        else:
+            self.selected = next((i for i in same if i > slot), same[0] if same else slot)
         self._auto = True
         self._say("")
         self._draw()
@@ -728,6 +738,7 @@ class PlannerView(QWidget):
                "capacity": {k: calc[k] for k in ("total", "used", "free")}, "level": p.get("level"),
                "reactor": p.get("reactor"), "forma": BC.forma_count(kind, item, roles, p["forma"]),
                "wf_stats": calc["stats"], "wf_base": wf_base_stats(item) if kind == "warframe" else {},
+               "abilities": AB.model(item, p.get("helminth")) if kind == "warframe" else [],
                "weapon": weapon, "bonus": calc["bonus"], "valence": valence, "locked": locked, "selected": self.selected,
                "unique": bool(valence), "upgrades": upgrade_icons(kind, p.get("reactor", True), p.get("exilus", True)
                                                                   if "exilus" in roles else None,
@@ -822,7 +833,49 @@ class PlannerView(QWidget):
         v.setSpacing(4)
         v.addWidget(w)
         v.addWidget(self._shard_row())
+        v.addWidget(self._helminth_row())
         return outer
+
+    def _helminth_row(self) -> QWidget:
+        """The Helminth: which of the four abilities is replaced and by what (the Helminth's own abilities or another
+        Warframe's). Shown in the ability row under the stats, with its tooltip."""
+        hm = self.p.get("helminth") or {}
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(6)
+        lab = QLabel(t("plan.helminth"))
+        lab.setToolTip(t("plan.helminth.tip"))
+        h.addWidget(lab)
+        slot = QComboBox()
+        slot.addItem(t("plan.helminth.none"), 0)
+        own = AB.model(self.item, None)
+        for a in own[1:]:
+            slot.addItem(t("plan.helminth.slot", n=a["slot"], name=a["name"]), a["slot"])
+        slot.setCurrentIndex(max(0, slot.findData(int(hm.get("slot") or 0))))
+        ab = QComboBox()
+        ab.setEditable(True)
+        ab.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        ab.completer().setFilterMode(Qt.MatchFlag.MatchContains)
+        ab.completer().setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        ab.setMinimumWidth(220)
+        for name, path in AB.helminth_choices():
+            ab.addItem(name, path)
+        ab.setCurrentIndex(max(0, ab.findData(hm.get("path"))) if hm.get("path") else 0)
+        ab.setEnabled(bool(hm.get("slot")))
+
+        def changed(_x=None):
+            n = int(slot.currentData() or 0)
+            ab.setEnabled(bool(n))
+            path = ab.currentData() if ab.findText(ab.currentText()) >= 0 else None
+            self.p["helminth"] = {"slot": n, "path": path or ab.itemData(0)} if n else None
+            self._draw()
+        slot.currentIndexChanged.connect(changed)
+        ab.currentIndexChanged.connect(changed)
+        h.addWidget(slot)
+        h.addWidget(ab)
+        h.addStretch(1)
+        return w
 
     def _shard_row(self) -> QWidget:
         """The Warframe's 5 Archon Shards: a shard per slot and Tauforged or not (strength, duration, health, shields,

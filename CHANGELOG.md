@@ -3,6 +3,19 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.7
+- **Warframe abilities** under the stats (Builds and planner), as on the game's screen: the passive and the four
+  abilities with DE's icons; the tooltip gives the description, the energy cost with the build's efficiency (Seek 25 ->
+  38.75 at 45 %) and the build's strength, duration and range. The Helminth ability shows in the slot it replaces.
+- **Planner: Helminth**: pick the ability to replace and the Helminth / subsumed ability (copied from your loadouts and
+  kept in shared builds); new mods fill the slots from the top left, as in the game.
+- **Incarnon evolutions**: a tooltip on every perk with its effect (from the weapon's wiki page) and whether it is
+  chosen or not unlocked yet.
+- **The item's figure in the background** of the Builds and planner screen (the whole Warframe, the weapon…), also in
+  shared pictures: DE's picture, downloaded once. Setting *Builds: the item's figure in the background* (Theme).
+- Drop-down menus have their arrow again (gone since 0.5.0: Type and Item in the planner looked like text fields).
+- Card frames: the art fills the frame to its edges.
+
 ## 0.5.6
 - **Card frames at the right size**: each part is cut to its visible area before it is stretched to the card's width
   (most sit on a larger transparent canvas, Galvanized and Peculiar on twice the size): the frames are as wide as the

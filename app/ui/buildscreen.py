@@ -30,6 +30,11 @@ ACCENT = "#5fd7e6"                     # Incarnon / selection glow
 UP, DOWN = "#7ee08f", "#ff7b72"
 
 
+def figure_on() -> bool:
+    from app.core.config import CFG
+    return bool(CFG.get("build_figure", True))
+
+
 def rarity(name: str, arcane=False) -> str:
     d = LO.data()
     return (d.get("arcrar") if arcane else d.get("rarity", {})).get(name, "") if name else ""
@@ -606,6 +611,10 @@ def stats_panel(m: dict) -> QFrame:
                 r += 1
         lay.addLayout(g)
         _ = fmt
+    if m.get("abilities"):                               # passive + the four abilities (Helminth in its slot)
+        from app.ui.abilitybar import AbilityBar
+        lay.addWidget(_head(t("abil.title")))
+        lay.addWidget(AbilityBar(m["abilities"], wf))
     ws = m.get("weapon")
     if ws:
         lay.addWidget(_head(t("bs.sec." + ("melee" if ws["melee"] else "gun"))))
@@ -673,8 +682,9 @@ class IncarnonPath(QWidget):
 
     COL_W, NODE, ROW_H = 150, 14, 56
 
-    def __init__(self, tiers, chosen, unlocked, editable=False, count=None):
+    def __init__(self, tiers, chosen, unlocked, editable=False, count=None, effects=None):
         super().__init__()
+        self.effects = effects or {}                       # perk name -> its effect (the wiki page)
         self.tiers = [list(x) for x in (tiers or [])]
         # as many tiers as the weapon has: Evolution V only where it exists (Incarnon built in)
         n = count or max(len(self.tiers), 4)
@@ -770,9 +780,38 @@ class IncarnonPath(QWidget):
 
     def mouseMoveEvent(self, e):
         hit = self._hit(e.position())
-        if hit and hit[2]:
-            QToolTip.showText(e.globalPosition().toPoint(), hit[2], self)
+        if hit:
+            QToolTip.showText(e.globalPosition().toPoint(), self._tip(*hit), self)
         self.setCursor(Qt.CursorShape.PointingHandCursor if hit and self.editable else Qt.CursorShape.ArrowCursor)
+
+    def event(self, e):
+        from PyQt6.QtCore import QEvent
+        if e.type() == QEvent.Type.ToolTip:                 # a perk's own tooltip; elsewhere the general one
+            hit = self._hit(QPointF(e.pos()))
+            text = self._tip(*hit) if hit else getattr(self, "general_tip", "")
+            if text:
+                QToolTip.showText(e.globalPos(), text, self)
+            else:
+                QToolTip.hideText()
+            return True
+        return super().event(e)
+
+    def _tip(self, ti, k, name) -> str:
+        """The perk's tooltip: tier, name, its effect (from the weapon's wiki page), chosen / locked."""
+        label = name or (t("inc.form") if ti == 0 else "?")
+        eff = self.effects.get(name) if name else ""
+        tier = t("bs.inc.tier", n=["I", "II", "III", "IV", "V"][ti] if ti < 5 else ti + 1)
+        state = []
+        if ti >= self.unlocked:
+            state.append(f"<span style='color:#ff7b72'>{t('inc.tip.locked')}</span>")
+        elif self.chosen[ti] == k:
+            state.append(f"<span style='color:{ACCENT}'>✦ {t('inc.tip.chosen')}</span>")
+        elif self.editable:
+            state.append(f"<span style='color:#8b93a3'>{t('inc.tip.click')}</span>")
+        body = escape_html(eff).replace("\n", "<br>") if eff else ""
+        return (f"<div style='max-width:360px'><span style='color:#8b93a3'>{tier}</span><br>"
+                f"<b style='font-size:13px'>{escape_html(label)}</b>"
+                + (f"<p>{body}</p>" if body else "") + ("<br>".join(state)) + "</div>")
 
     def mouseReleaseEvent(self, e):
         hit = self._hit(e.position())
@@ -928,12 +967,48 @@ class BuildScreen(QWidget):
     def clear(self):
         _clear(self.lay)
 
+    def _figure(self):
+        """DE's picture of the item (the whole Warframe), once on disk; asked for in the background otherwise."""
+        url = getattr(self, "_figure_url", "")
+        if not url:
+            return None
+        if self._figure_pm is None:
+            from app.ui import abilitybar
+            f = abilitybar.icon_path(url)
+            if f is None:
+                if not getattr(self, "_fig_hooked", False):
+                    self._fig_hooked = True
+                    abilitybar.notifier().ready.connect(self.update)
+                return None
+            from PyQt6.QtGui import QPixmap
+            self._figure_pm = QPixmap(str(f))
+        return self._figure_pm if not self._figure_pm.isNull() else None
+
+    def paintEvent(self, _e):
+        """The item's figure behind the screen, on the right, faded into the background (also in shared pictures)."""
+        pm = self._figure()
+        if pm is None:
+            return
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        W, H = self.width(), self.height()
+        h = min(H * 0.98, max(420.0, W * 0.55))
+        w = pm.width() * h / pm.height()
+        if w > W * 0.6:
+            w = W * 0.6
+            h = pm.height() * w / pm.width()
+        p.setOpacity(0.22)
+        p.drawPixmap(QRectF(W - w - W * 0.02, 0, w, h), pm, QRectF(pm.rect()))
+        p.end()
+
     def show_model(self, m: dict, cw: int, extra_top=None):
         """m: {"kind","item","title","rank","forma","configs": [{"label","active","tip"}], "slots", "capacity",
         "wf_stats","wf_base","weapon","bonus","valence","incarnon": {"tiers","chosen","unlocked","head","pic"},
         "locked": {"exilus","arcane"}, "selected", "subtitle"}. extra_top: a widget put under the configuration tabs
         (the planner's options)."""
         self.setUpdatesEnabled(False)
+        self._figure_url = (LO.data().get("figure") or {}).get(m.get("item") or "") if figure_on() else ""
+        self._figure_pm = None
         try:
             self.clear()
             self._title(m)
@@ -1111,9 +1186,10 @@ class BuildScreen(QWidget):
             role(n, "hint")
             self.lay.addWidget(n)
         if inc.get("show_path", True):
+            from app.game import incarnon as INC
             path = IncarnonPath(inc.get("tiers"), inc.get("chosen"), inc.get("unlocked", 0), editable=self.editable,
-                                count=inc.get("count"))
-            path.setToolTip(t("inc.tip"))
+                                count=inc.get("count"), effects=INC.effects(inc.get("page") or ""))
+            path.general_tip = t("inc.tip")
             if self.editable:
                 path.picked.connect(self.perk_picked.emit)
             sc = QScrollArea()

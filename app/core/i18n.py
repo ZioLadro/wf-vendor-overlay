@@ -1405,6 +1405,23 @@ EN = {
     # ---- 0.4.0 ----
     "set.mod_frames": "Builds: the game's card frames",
     "set.mod_frames.tip": "Draws the mods in Builds with the parts of the game's own cards (borders, lights, rank pips by rarity), downloaded once from the Warframe wiki (Mod/Assets). Off, or without a connection: the simple cards",
+    # ---- 0.4.0 ----
+    "abil.title": "Abilities",
+    "abil.passive": "Passive",
+    "abil.cost": "Energy cost",
+    "abil.helminth": "Helminth, in place of {replaced}",
+    "abil.note": "The ability's own numbers are not in the game's public data: they scale with these values.",
+    "plan.helminth": "Helminth",
+    "plan.helminth.tip": "Replace one of the four abilities with a Helminth ability or another Warframe's subsumed ability (the game allows one ability per Warframe: the list has them all)",
+    "plan.helminth.none": "No Helminth",
+    "plan.helminth.slot": "Replace {n}: {name}",
+    "inc.tip.effect": "Effect",
+    "inc.tip.chosen": "chosen",
+    "inc.tip.locked": "evolution not unlocked",
+    "inc.tip.click": "Click to choose it",
+    # ---- 0.4.0 ----
+    "set.build_figure": "Builds: the item's figure in the background",
+    "set.build_figure.tip": "Behind the Builds and planner screen (and in the pictures you share), the whole Warframe or the weapon, faded: DE's own picture, downloaded once",
 }
 
 IT = {
@@ -2797,6 +2814,23 @@ IT = {
     # ---- 0.4.0 ----
     "set.mod_frames": "Build: cornici delle carte del gioco",
     "set.mod_frames.tip": "Disegna le mod nei Build con i pezzi delle carte del gioco (bordi, luci, tacche di rank per rarità), scaricati una volta dalla wiki di Warframe (Mod/Assets). Spento, o senza connessione: le carte semplici",
+    # ---- 0.4.0 ----
+    "abil.title": "Abilità",
+    "abil.passive": "Passiva",
+    "abil.cost": "Costo energia",
+    "abil.helminth": "Helminth, al posto di {replaced}",
+    "abil.note": "I numeri propri dell'abilità non sono nei dati pubblici del gioco: scalano con questi valori.",
+    "plan.helminth": "Helminth",
+    "plan.helminth.tip": "Sostituisci una delle quattro abilità con un'abilità dell'Helminth o quella assorbita da un altro Warframe (il gioco ne consente una per Warframe: l'elenco le ha tutte)",
+    "plan.helminth.none": "Nessun Helminth",
+    "plan.helminth.slot": "Sostituisci {n}: {name}",
+    "inc.tip.effect": "Effetto",
+    "inc.tip.chosen": "scelto",
+    "inc.tip.locked": "evoluzione non sbloccata",
+    "inc.tip.click": "Clicca per sceglierlo",
+    # ---- 0.4.0 ----
+    "set.build_figure": "Build: la figura dell'oggetto sullo sfondo",
+    "set.build_figure.tip": "Dietro la schermata dei Build e del pianificatore (e nelle immagini che condividi), il Warframe intero o l'arma, sfumati: l'immagine di DE, scaricata una volta",
 }
 
 STRINGS = {"en": EN, "it": IT}

@@ -109,7 +109,7 @@ def helminth(cfg: dict, suit_path: str):
     idx = int(ov.get("Index") or 0)
     own = (data()["suits"].get(suit_path) or [])
     replaced = ability_name(own[idx]) if 0 <= idx < len(own) else ""
-    return {"slot": idx + 1, "replaced": replaced, "ability": ability_name(ov["Ability"])}
+    return {"slot": idx + 1, "replaced": replaced, "ability": ability_name(ov["Ability"]), "path": ov["Ability"]}
 
 
 ELEMENTS = {"Heat": "Heat", "Freeze": "Cold", "Electricity": "Electricity", "Toxin": "Toxin", "Impact": "Impact",

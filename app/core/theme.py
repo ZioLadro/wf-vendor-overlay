@@ -107,6 +107,38 @@ def palette(theme_id: str) -> dict:
     return PRESETS.get(theme_id) or PRESETS["classic"]
 
 
+def arrow_mark(color: str, up=False) -> str:
+    """A small chevron (PNG, once per colour) for the combo boxes' and spin boxes' arrows; "" when it cannot be drawn."""
+    try:
+        from PyQt6.QtGui import QGuiApplication
+        if QGuiApplication.instance() is None:
+            return ""
+        from PyQt6.QtCore import QPointF, Qt
+        from PyQt6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen
+        from app.core.config import APP_DIR
+        out = APP_DIR / "backdrop" / f"arrow{'up' if up else ''}_{color.lstrip('#')}.png"
+        if not out.exists():
+            out.parent.mkdir(parents=True, exist_ok=True)
+            img = QImage(24, 24, QImage.Format.Format_ARGB32)
+            img.fill(Qt.GlobalColor.transparent)
+            g = QPainter(img)
+            g.setRenderHint(QPainter.RenderHint.Antialiasing)
+            pen = QPen(QColor(color), 2.6)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+            g.setPen(pen)
+            y0, y1 = (15, 9) if up else (9, 15)
+            path = QPainterPath(QPointF(6, y0))
+            path.lineTo(QPointF(12, y1))
+            path.lineTo(QPointF(18, y0))
+            g.drawPath(path)
+            g.end()
+            img.save(str(out), "PNG")
+        return out.as_posix()
+    except Exception:
+        return ""
+
+
 def check_mark(color: str) -> str:
     """A small tick (PNG, drawn once per colour) for the ticked boxes; "" when it cannot be drawn."""
     try:
@@ -148,6 +180,7 @@ def build_style(theme_id="classic", font=None, size=13) -> str:
     size = max(9, min(24, int(size)))
     hs = size + 2
     tick = check_mark(p["bg"])
+    arrow, arrow_up = arrow_mark(p["text"]), arrow_mark(p["text"], up=True)
     tick_rule = f'image: url("{tick}");' if tick else ""
     return f"""
 QWidget {{ background: {p['bg']}; color: {p['text']}; font-family: "{fam}"; font-size: {size}px; }}
@@ -157,6 +190,9 @@ QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit, QFont
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus, QPlainTextEdit:focus {{ border: 1px solid {p['accent']}; }}
 QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover {{ border: 1px solid {_mix(p['border'], p['accent'], 0.5)}; }}
 QComboBox::drop-down {{ border: none; width: 22px; }}
+{f"QComboBox::down-arrow {{ image: url({arrow}); width: 12px; height: 12px; }}" if arrow else ""}
+{f"QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {{ image: url({arrow}); width: 9px; height: 9px; }}" if arrow else ""}
+{f"QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {{ image: url({arrow_up}); width: 9px; height: 9px; }}" if arrow_up else ""}
 QComboBox QAbstractItemView {{ background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 6px;
     selection-background-color: {p['select']}; outline: 0; padding: 4px; }}
 QSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {{ width: 16px; border: none; }}

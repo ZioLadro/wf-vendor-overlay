@@ -143,6 +143,7 @@ GROUPS = [
             ("ui_font", "font", None, False),
             ("ui_font_size", "int", (9, 24), False),
             ("mod_frames", "bool", None, False),
+            ("build_figure", "bool", None, False),
         ]),
     ]),
     ("performance", [

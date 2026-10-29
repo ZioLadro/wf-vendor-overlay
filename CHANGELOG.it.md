@@ -3,6 +3,22 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.7
+- **Abilità dei Warframe** sotto le statistiche (Build e pianificatore), come nella schermata del gioco: la passiva e le
+  quattro abilità con le icone di DE; il tooltip dà la descrizione, il costo in energia con l'efficienza della build
+  (Seek 25 -> 38,75 al 45 %) e potenza, durata e raggio della build. L'abilità dell'Helminth compare nello slot che
+  sostituisce.
+- **Pianificatore: Helminth**: scegli l'abilità da sostituire e l'abilità dell'Helminth / assorbita (copiata dai tuoi
+  loadout e mantenuta nelle build condivise); le nuove mod riempiono gli slot dall'alto a sinistra, come nel gioco.
+- **Evoluzioni Incarnon**: un tooltip su ogni perk con il suo effetto (dalla pagina wiki dell'arma) e se è scelto o non
+  ancora sbloccato.
+- **La figura dell'oggetto sullo sfondo** della schermata dei Build e del pianificatore (il Warframe intero, l'arma…),
+  anche nelle immagini condivise: l'immagine di DE, scaricata una volta. Impostazione *Build: la figura dell'oggetto
+  sullo sfondo* (Tema).
+- I menu a tendina hanno di nuovo la freccia (sparita dalla 0.5.0: Tipo e Oggetto nel pianificatore sembravano campi di
+  testo).
+- Cornici delle carte: l'immagine riempie la cornice fino ai bordi.
+
 ## 0.5.6
 - **Cornici delle carte della misura giusta**: ogni pezzo viene ritagliato alla sua parte visibile prima di essere
   steso sulla larghezza della carta (quasi tutti stanno su una tela trasparente più grande, Galvanized e Peculiar al

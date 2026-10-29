@@ -316,7 +316,7 @@ def _bbox(pm):
 def inner(W, H):
     """The inside of the frame (where the background and the art go)."""
     from PyQt6.QtCore import QRectF
-    return QRectF(W * 0.045, H * 0.06, W * 0.91, H * 0.8)
+    return QRectF(W * 0.02, H * 0.035, W * 0.96, H * 0.86)
 
 
 def paint_back(p, W, H, rar: str) -> bool:
