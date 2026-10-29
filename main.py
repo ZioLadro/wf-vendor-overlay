@@ -58,6 +58,7 @@ def main():
         update_found = pyqtSignal(object)
         status = pyqtSignal(str)
         goals = pyqtSignal()
+        goals_interact = pyqtSignal()
 
     if sys.platform == "win32":                  # own taskbar identity: the taskbar shows our icon, not python's
         try:
@@ -107,6 +108,7 @@ def main():
     from app.game.standing import get_store
     goals = GoalsOverlay(market, pricelist.inventory, get_store())
     bridge.goals.connect(goals.toggle)
+    bridge.goals_interact.connect(goals.toggle_interact)
     bridge.results.connect(lambda items: goals.vendor_shown(bool(items)))     # a vendor recognised: the plan switches off
     QTimer.singleShot(1500, goals.start)
     from app.game import weekly as WK
@@ -181,6 +183,9 @@ def main():
         CFG["key_clear"]: scanner.stop,
         CFG["key_quit"]: bridge.quit.emit,
         CFG["key_goals"]: bridge.goals.emit,
+        **({CFG["key_goals_interact"]: bridge.goals_interact.emit}
+           if CFG.get("key_goals_interact") and CFG["key_goals_interact"] not in
+           (CFG["key_menu"], CFG["key_scan"], CFG["key_clear"], CFG["key_quit"], CFG["key_goals"]) else {}),
     })
     hotkeys.start()
     wheel = WheelListener(scanner.on_scroll)

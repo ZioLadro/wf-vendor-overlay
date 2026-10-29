@@ -3,6 +3,15 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.2
+- **Activities no longer takes stray clicks**: the mouse goes through it to the game until you press **Ctrl+F5** (as in
+  AlecaFrame). Unlocked, it is outlined and shows its buttons; Ctrl+F5 again, or a few seconds after the mouse leaves it
+  (never while one of its menus is open), it locks again. Pressed while Activities is hidden, the key shows it unlocked.
+  Settings: *Activities and the mouse* (key combination / while a cursor is shown / always, also in ⚙ → Mouse),
+  *Activities: unlock key*, *Activities: lock again after*. Who had turned off "clickable only with the cursor" keeps
+  "always clickable".
+- Settings refuse a hotkey that contains another one (Ctrl+F6 would also press F6).
+
 ## 0.5.1
 - **Fix**: 0.5.0 did not start (it closed at once, without a message): the new fonts were loaded before the
   program's window system existed, which makes Qt crash. They are now loaded once it is ready.

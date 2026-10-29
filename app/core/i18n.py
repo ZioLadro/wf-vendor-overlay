@@ -1386,6 +1386,22 @@ EN = {
     "share.import.prompt": "Paste a build code (WFVO1:…) or the text of a .wfbuild file:",
     "share.bad": "This is not a build that can be read: {err}",
     "share.imported": "Build imported: {item}. Save it with Save to keep it.",
+    # ---- 0.4.0 ----
+    "goals.interact.hotkey": "With a key combination",
+    "goals.interact.cursor": "While a cursor is shown",
+    "goals.interact.always": "Always clickable",
+    "goals.opt.interact": "Mouse",
+    "goals.locked": "Locked: clicks go through to the game. {key} unlocks it",
+    "goals.unlocked": "Unlocked: {key} locks it again (it also locks itself a few seconds after the mouse leaves it)",
+    "goals.lockhint": "{key} to use",
+    "set.key_goals_interact": "Activities: unlock key",
+    "set.key_goals_interact.tip": "Makes the Activities overlay usable with the mouse (with \"Activities and the mouse\" set to a key combination); pressed again, or a few seconds after the mouse leaves it, clicks go through to the game again. Do not reuse a key of another hotkey (Ctrl+F6 would also press F6). Format: <ctrl>+<f5>, <alt>+x, …",
+    "set.goals_interact": "Activities and the mouse",
+    "set.goals_interact.tip": "With a key combination (like AlecaFrame): clicks always go through to the game until you press the unlock key, so in a mission you never click it by mistake. While a cursor is shown: as before, usable in menus and consoles. Always clickable: never lets clicks through",
+    "set.goals_unlock_s": "Activities: lock again after (s)",
+    "set.goals_unlock_s.tip": "Unlocked with the key, it locks itself again this many seconds after the mouse left it (never while one of its menus is open)",
+    # ---- 0.4.0 ----
+    "settings.key_overlap": "{a} contains {b}, used by another key: pressing {a} would also press {b}. Choose a different one",
 }
 
 IT = {
@@ -2759,6 +2775,22 @@ IT = {
     "share.import.prompt": "Incolla un codice di build (WFVO1:…) o il testo di un file .wfbuild:",
     "share.bad": "Questa non è una build leggibile: {err}",
     "share.imported": "Build importata: {item}. Salvala con Salva per tenerla.",
+    # ---- 0.4.0 ----
+    "goals.interact.hotkey": "Con una combinazione di tasti",
+    "goals.interact.cursor": "Quando si vede un cursore",
+    "goals.interact.always": "Sempre cliccabile",
+    "goals.opt.interact": "Mouse",
+    "goals.locked": "Bloccato: i clic passano al gioco. {key} lo sblocca",
+    "goals.unlocked": "Sbloccato: {key} lo blocca di nuovo (si blocca anche da solo pochi secondi dopo che il mouse esce)",
+    "goals.lockhint": "{key} per usarlo",
+    "set.key_goals_interact": "Attività: tasto di sblocco",
+    "set.key_goals_interact.tip": "Rende l'overlay Attività utilizzabile col mouse (con «Attività e mouse» su combinazione di tasti); premuto di nuovo, o pochi secondi dopo che il mouse esce, i clic tornano a passare al gioco. Non riusare un tasto di un'altra scorciatoia (Ctrl+F6 premerebbe anche F6). Formato: <ctrl>+<f5>, <alt>+x, …",
+    "set.goals_interact": "Attività e mouse",
+    "set.goals_interact.tip": "Con una combinazione di tasti (come AlecaFrame): i clic passano sempre al gioco finché non premi il tasto di sblocco, così in missione non lo clicchi mai per sbaglio. Quando si vede un cursore: come prima, utilizzabile in menu e console. Sempre cliccabile: non lascia mai passare i clic",
+    "set.goals_unlock_s": "Attività: blocca di nuovo dopo (s)",
+    "set.goals_unlock_s.tip": "Sbloccato col tasto, si blocca di nuovo da solo questi secondi dopo che il mouse è uscito (mai mentre è aperto un suo menu)",
+    # ---- 0.4.0 ----
+    "settings.key_overlap": "{a} contiene {b}, usato da un altro tasto: premendo {a} si premerebbe anche {b}. Scegline un altro",
 }
 
 STRINGS = {"en": EN, "it": IT}

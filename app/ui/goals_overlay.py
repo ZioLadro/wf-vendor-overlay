@@ -2,7 +2,9 @@
 (the Recommendations' picks), how much standing is still missing and what to do to earn it.
 
 It can be moved (drag the title bar), resized (corner grip), collapsed, made more or less transparent, and shown/hidden
-with a hotkey (Settings: key_goals, F6 by default). It is interactive: tick an item you bought (it stays until the game
+with a hotkey (Settings: key_goals, F6 by default). The mouse goes through it to the game until you unlock it with a
+second key combination (key_goals_interact, Ctrl+F5 by default; it locks again on its own a few seconds after the mouse
+leaves it), so a click in a mission never lands on it. Other modes: clickable while a cursor shows, or always. It is interactive: tick an item you bought (it stays until the game
 file confirms the purchase), right-click an item to hide it or open it on warframe.market. It is read again every time
 AlecaFrame rewrites lastData.dat. The OCR never reads its area (it would see item names in it)."""
 import sys
@@ -72,6 +74,14 @@ from app.core.i18n import t
 from app.core.uiutil import market_url, thousands
 
 
+def _keyname(k) -> str:
+    """'<ctrl>+<f5>' -> 'Ctrl+F5'."""
+    if not k:
+        return "–"
+    return "+".join(p.strip("<>").capitalize() if len(p.strip("<>")) > 1 else p.strip("<>").upper()
+                    for p in str(k).split("+"))
+
+
 def _left(seconds) -> str:
     s = max(0, int(seconds))
     d, h, m = s // 86400, s % 86400 // 3600, s % 3600 // 60
@@ -130,6 +140,9 @@ class GoalsOverlay(QWidget):
         self.status = QLabel("")
         self.status.setObjectName("goalsfoot")
         foot.addWidget(self.status, 1)
+        self.lockhint = QLabel("")                     # locked: which key unlocks it
+        self.lockhint.setObjectName("goalsfoot")
+        foot.addWidget(self.lockhint, 0)
         foot.addWidget(self.grip, 0, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(1, 1, 1, 1)
@@ -152,8 +165,10 @@ class GoalsOverlay(QWidget):
         self._timer = QTimer(self, interval=3000, timeout=self.refresh)
         # shown when you want it (hotkey / ✕) and no vendor is on screen: over a vendor it steps aside
         self._wanted = bool(CFG.get("goals_visible", False))
-        # clickable only while the cursor is visible (menus, consoles): in a mission clicks go through to the game
+        # clicks go through to the game unless it is unlocked (goals_interact: key combination / cursor shown / always)
         self._clickable = True
+        self._unlocked = False                         # unlocked with key_goals_interact
+        self._mouse_at = 0.0                           # last time the mouse was over it while unlocked
         self._last_pos, self._moved_at = None, 0.0
         self._cursor_timer = QTimer(self, interval=150, timeout=self._check_cursor)
         self._save_timer = QTimer(self, singleShot=True, interval=600, timeout=self._save_geom)
@@ -216,6 +231,10 @@ class GoalsOverlay(QWidget):
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(grad)
         p.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 6, 6)
+        if self._unlocked and self._clickable:            # unlocked with the key: an outline says it takes the mouse now
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.setPen(QPen(QColor(CFG.get("goals_title_color") or "#ffd100"), 1.5))
+            p.drawRoundedRect(self.rect().adjusted(1, 1, -2, -2), 6, 6)
 
     @staticmethod
     def _shadow(w):
@@ -294,9 +313,11 @@ class GoalsOverlay(QWidget):
         choice(t("goals.opt.opacity"), "goals_opacity", [40, 60, 75, 82, 90, 100], lambda v: f"{v}%")
         choice(t("goals.opt.font"), "goals_font", [10, 11, 12, 13, 14, 16, 18], lambda v: f"{v}px")
         choice(t("goals.opt.items"), "goals_items", [3, 5, 8, 12, 20], str)
+        choice(t("goals.opt.interact"), "goals_interact", ["hotkey", "cursor", "always"],
+               lambda v: t("goals.interact." + v) + (f" ({_keyname(CFG.get('key_goals_interact'))})" if v == "hotkey" else ""))
         for key, label in (("goals_per_vendor", "goals.opt.pervendor"), ("goals_activities", "goals.opt.activities"),
                            ("goals_only_short", "goals.opt.onlyshort"),
-                           ("goals_click_only_cursor", "goals.opt.cursor"), ("goals_weekly", "goals.opt.weekly"),
+                           ("goals_weekly", "goals.opt.weekly"),
                            ("goals_quests", "goals.opt.quests"), ("goals_where", "goals.opt.where"), ("goals_routine", "goals.opt.routine"),
                            ("goals_repeat", "goals.opt.repeat"), ("goals_by_reset", "goals.opt.byreset")):
             a = QAction(t(label), m, checkable=True)
@@ -336,6 +357,11 @@ class GoalsOverlay(QWidget):
 
     def _set(self, key, value):
         save_config({key: value})
+        if key == "goals_interact":                    # chosen from its own menu: stays usable until the mouse leaves
+            self._unlocked = value == "hotkey"
+            self._mouse_at = time.monotonic()
+            self._clickable = None
+            self._check_cursor()
         self._style()
         self.update()
         self.refresh(force=True)
@@ -347,6 +373,22 @@ class GoalsOverlay(QWidget):
         self._wanted = not self._wanted
         save_config({"goals_visible": self._wanted})
         self._apply_visibility()
+
+    def toggle_interact(self):
+        """key_goals_interact: unlocks it for the mouse (shown first if hidden); pressed again, locks it."""
+        if CFG.get("goals_interact", "hotkey") != "hotkey":
+            return
+        if not self._wanted:
+            self._wanted = True
+            save_config({"goals_visible": True})
+            self._unlocked = True
+            self._apply_visibility()
+        else:
+            self._unlocked = not self._unlocked
+        self._mouse_at = time.monotonic()
+        if self._unlocked:
+            self.raise_()
+        self._check_cursor()
 
     def start(self):
         self._apply_visibility()
@@ -373,7 +415,7 @@ class GoalsOverlay(QWidget):
         super().showEvent(e)
         self.refresh(force=True)
         self._timer.start()
-        self._clickable = True
+        self._clickable = None                          # forces the first check to apply its state
         self._check_cursor()
         self._cursor_timer.start()
 
@@ -381,11 +423,29 @@ class GoalsOverlay(QWidget):
         super().hideEvent(e)
         self._timer.stop()
         self._cursor_timer.stop()
+        self._unlocked = False
 
     def _check_cursor(self):
-        """In a mission (no cursor) the plan lets every click through to the game and its buttons fade; as soon as the
-        cursor comes back (menu, console, vendor) it can be used again. Setting goals_click_only_cursor."""
-        on = (not CFG.get("goals_click_only_cursor", True)) or self._cursor_free()
+        """Whether the mouse can use it, by goals_interact: "hotkey" (default) only while unlocked with key_goals_interact,
+        locked again goals_unlock_s seconds after the mouse left it (not while one of its menus is open); "cursor" while a
+        cursor shows (menus, consoles, vendors); "always". Locked, every click goes through to the game and the buttons
+        go away."""
+        mode = CFG.get("goals_interact", "hotkey")
+        if mode == "always":
+            on = True
+        elif mode == "cursor":
+            on = self._cursor_free()
+        else:
+            if self._unlocked:
+                now = time.monotonic()
+                _s, pos, _p = cursor_info()
+                r = self.screen_rect_px()
+                over = pos is None or (bool(r) and r[0] <= pos[0] < r[0] + r[2] and r[1] <= pos[1] < r[1] + r[3])
+                if over or self._drag is not None or QApplication.activePopupWidget() is not None:
+                    self._mouse_at = now
+                elif now - self._mouse_at > max(2, int(CFG.get("goals_unlock_s", 8))):
+                    self._unlocked = False
+            on = self._unlocked
         if on == self._clickable:
             return
         self._clickable = on
@@ -393,6 +453,23 @@ class GoalsOverlay(QWidget):
         for b in (self.btn_refresh, self.btn_menu, self.btn_fold, self.btn_close):
             b.setVisible(on)                              # no buttons to aim at while they cannot be clicked
         self.head.setCursor(Qt.CursorShape.SizeAllCursor if on else Qt.CursorShape.ArrowCursor)
+        self._show_lock()
+        self.update()
+
+    def _show_lock(self):
+        """The title says how to use it: 🔓 while unlocked (and how to lock it), the key to unlock it otherwise."""
+        base = t("goals.title").upper()
+        if CFG.get("goals_interact", "hotkey") == "hotkey":
+            key = _keyname(CFG.get("key_goals_interact", ""))
+            self.title.setText(f"🔓 {base}" if self._clickable else base)
+            self.lockhint.setText(t("goals.lockhint", key=key) if not self._clickable else "")
+            self.status.setVisible(self._clickable or not self.lockhint.text())
+            self.title.setToolTip(t("goals.locked", key=key) if not self._clickable else t("goals.unlocked", key=key))
+        else:
+            self.title.setText(base)
+            self.title.setToolTip("")
+            self.lockhint.setText("")
+            self.status.setVisible(True)
 
     def _cursor_free(self) -> bool:
         """True when you are using a cursor, Windows' or the game's own: Windows shows its cursor, OR the cursor is over

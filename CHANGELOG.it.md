@@ -3,6 +3,15 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.2
+- **Attività non prende più clic per sbaglio**: il mouse passa attraverso fino al gioco finché non premi **Ctrl+F5** (come
+  in AlecaFrame). Sbloccata, si contorna e mostra i pulsanti; di nuovo Ctrl+F5, o pochi secondi dopo che il mouse esce
+  (mai mentre è aperto un suo menu), si riblocca. Premuto con Attività nascosta, il tasto la mostra già sbloccata.
+  Impostazioni: *Attività e mouse* (combinazione di tasti / quando si vede un cursore / sempre, anche in ⚙ → Mouse),
+  *Attività: tasto di sblocco*, *Attività: blocca di nuovo dopo*. Chi aveva spento «cliccabile solo col cursore» resta su
+  «sempre cliccabile».
+- Le impostazioni rifiutano una scorciatoia che ne contiene un'altra (Ctrl+F6 premerebbe anche F6).
+
 ## 0.5.1
 - **Correzione**: la 0.5.0 non partiva (si chiudeva subito, senza messaggi): i nuovi font venivano caricati prima che il
   sistema grafico del programma esistesse, cosa che fa andare in crash Qt. Ora vengono caricati quando è pronto.

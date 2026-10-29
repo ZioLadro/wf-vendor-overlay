@@ -32,6 +32,7 @@ AlecaFrame l'overlay dei prezzi e le funzioni di mercato funzionano comunque.
 | Tasto | Azione |
 |---|---|
 | **F6** | mostra/nasconde **Attività** |
+| **Ctrl+F5** | sblocca **Attività** per il mouse (si riblocca da solo) |
 | **F7** | apre/chiude la finestra del **listino** |
 | **F8** | scansiona subito (e riprende se in pausa) |
 | **F9** | pausa |
@@ -114,9 +115,10 @@ ridimensionabile (angolo). ⚙ regola opacità, dimensione del testo e cosa elen
 **Clic** sul titolo di una categoria (un sindacato, Settimanali, Nightwave, Calendario, Giornaliere e settimanali…) per
 ridurla al solo titolo (▸) o riaprirla (▾); la scelta viene ricordata.
 **Clic destro** su un oggetto per nasconderlo o aprirlo su warframe.market, sul titolo di un sindacato o su un'attività
-per smettere di seguirla (*Segui di nuovo tutte le attività* in ⚙). Con *Attività: cliccabile solo col cursore* (attiva
-di default) la finestra lascia passare i clic quando Warframe nasconde il cursore (in missione), così non dà mai
-fastidio. Quando viene riconosciuta la schermata di un vendor, Attività si spegne (subentrano le etichette dei prezzi)
+per smettere di seguirla (*Segui di nuovo tutte le attività* in ⚙). **Il mouse passa attraverso la finestra fino al gioco** finché non premi
+**Ctrl+F5** (come AlecaFrame): allora si contorna, mostra i suoi pulsanti e prende i clic; di nuovo Ctrl+F5, o pochi
+secondi dopo che il mouse esce, si riblocca (*Attività: tasto di sblocco*, *Attività: blocca di nuovo dopo*).
+*Attività e mouse* (anche in ⚙ → Mouse) offre le modalità di prima: cliccabile quando si vede un cursore, o sempre. Quando viene riconosciuta la schermata di un vendor, Attività si spegne (subentrano le etichette dei prezzi)
 finché non premi F6. Impostazioni: *Tasto attività*, *Attività: Nightwave e Calendario 1999*, *Attività: dove comprare*, *Nascondi Operational
 Supply* (il sindacato degli eventi è escluso finché non c'è un evento).
 
@@ -470,7 +472,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.5.1)
+## Aggiornamenti (versione attuale 0.5.2)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche
@@ -505,6 +507,8 @@ Chiavi principali di `config.json` (tutte sono nelle Impostazioni, con spiegazio
 |---|---|
 | `language` | `en` o `it` |
 | `key_goals` / `key_menu` / `key_scan` / `key_clear` / `key_quit` | tasti (`<f6>` `<f7>` `<f8>` `<f9>` `<f10>`) |
+| `key_goals_interact` | sblocca Attività per il mouse (`<ctrl>+<f5>`) |
+| `goals_interact` / `goals_unlock_s` | Attività e mouse: `hotkey`, `cursor`, `always`; secondi prima che si riblocchi (8) |
 | `start_active` / `auto_detect` | parte già attivo / riconosce i vendor da solo (true) |
 | `refresh_interval` | secondi tra gli aggiornamenti automatici (180) |
 | `open_max_age` | all'apertura di un vendor, aggiorna i dati più vecchi di N s (30) |

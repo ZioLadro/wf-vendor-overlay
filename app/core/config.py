@@ -25,6 +25,7 @@ DEFAULTS = {
     "key_clear": "<f9>",         # pause: hides prices and stops automatic detection
     "key_quit": "<f10>",         # quit
     "key_goals": "<f6>",         # shows/hides the in-game Activities overlay
+    "key_goals_interact": "<ctrl>+<f5>",  # unlocks the Activities overlay for the mouse (locked again on its own)
     # startup and automatic vendor detection
     "start_active": True,        # True = starts already active (no need to press F8)
     "auto_detect": True,         # detect a vendor being opened / the list changing by itself
@@ -110,7 +111,10 @@ DEFAULTS = {
     "goals_weekly": True,            # show the weekly vendor offers you track (Weekly tab)
     "goals_track_interact": True,    # right-click lines of the plan to track / untrack them
     "goals_untracked": [],           # activities left out of the plan: "<syndicate tag>|<n>" or "<tag>|*"
-    "goals_click_only_cursor": True, # usable only while the mouse cursor is visible (in a mission clicks go to the game)
+    "goals_click_only_cursor": True, # (before 0.5.2) usable only while the mouse cursor is visible
+    "goals_interact": "hotkey",      # Activities and the mouse: "hotkey" = clicks go through to the game until
+                                     # key_goals_interact unlocks it, "cursor" = while a cursor is shown, "always"
+    "goals_unlock_s": 8,             # unlocked with the key: locked again after this many seconds without the mouse on it
     "hide_operational_supply": True, # leave out the event syndicate (Plague Star…) while no event runs
     "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)
     "inv_min_volume": 0,             # Inventory: hide items traded fewer times than this in 24 h (0 = off)
@@ -176,7 +180,7 @@ DEFAULTS = {
     "rec_top": 200,              # maximum rows in the recommendations table
     "cfg_rev": 0,                # settings written by an older version get the new defaults of what changed
 }
-CFG_REV = 2
+CFG_REV = 3
 
 
 def _migrate(cfg: dict, data: dict) -> dict:
@@ -186,6 +190,8 @@ def _migrate(cfg: dict, data: dict) -> dict:
         cfg["vendor_min_share"] = DEFAULTS["vendor_min_share"]           # 0.4.7: stricter vendor recognition
     if rev < 2 and data.get("ui_font") in ("Segoe UI", "", None):
         cfg["ui_font"] = DEFAULTS["ui_font"]                             # 0.5.0: the game's font, bundled
+    if rev < 3 and data.get("goals_click_only_cursor") is False:
+        cfg["goals_interact"] = "always"                                  # 0.5.2: keep "always clickable" if chosen
     cfg["cfg_rev"] = CFG_REV
     return cfg
 

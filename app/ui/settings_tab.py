@@ -40,6 +40,7 @@ GROUPS = [
             ("key_clear", "text", None, True),
             ("key_quit", "text", None, True),
             ("key_goals", "text", None, True),
+            ("key_goals_interact", "text", None, True),
         ]),
     ]),
     ("sounds", [
@@ -76,7 +77,8 @@ GROUPS = [
             ("goals_ready_color", "color", None, False),
             ("goals_hint_color", "color", None, False),
             ("goals_soon_color", "color", None, False),
-            ("goals_click_only_cursor", "bool", None, False),
+            ("goals_interact", "choice", "goals_interact", False),
+            ("goals_unlock_s", "int", (2, 120), False),
             ("goals_track_interact", "bool", None, False),
         ]),
         ("ov_goals_content", [                           # … and what it lists
@@ -357,6 +359,10 @@ class SettingsTab(QWidget):
                     kind_txt = theme.PRESETS[tid]["kind"]
                     w.addItem(t("theme." + tid) + (f"  ({t('theme.' + kind_txt)})" if kind_txt else ""), tid)
                 return w
+            if opt == "goals_interact":
+                for v in ("hotkey", "cursor", "always"):
+                    w.addItem(t("goals.interact." + v), v)
+                return w
             for value, label in opt:
                 w.addItem(label, value)
             return w
@@ -537,12 +543,19 @@ class SettingsTab(QWidget):
 
     def save(self, restart: bool):
         new = {k: self._get(k) for k in self.widgets}
-        for k in ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals"):
+        for k in ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals", "key_goals_interact"):
             new[k] = new[k].lower()
-        for k in ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals"):
+        for k in ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals", "key_goals_interact"):
             if not _valid_hotkey(new[k]):
                 self.msg.setText(t("settings.bad_key", key=new[k] or "∅"))
                 return
+        keys = ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals", "key_goals_interact")
+        sets = {k: set(new[k].split("+")) for k in keys}
+        for a in keys:                       # pynput fires a hotkey whose keys are all held, extra keys or not
+            for b in keys:
+                if a != b and sets[b] <= sets[a]:
+                    self.msg.setText(t("settings.key_overlap", a=new[a], b=new[b]))
+                    return
         if new["volume_high"] <= new["volume_low"]:
             self.msg.setText(t("settings.bad_volume"))
             return

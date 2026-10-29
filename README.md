@@ -30,6 +30,7 @@ without AlecaFrame the price overlay and the market features still work.
 | Key | Action |
 |---|---|
 | **F6** | show/hide **Activities** |
+| **Ctrl+F5** | unlock **Activities** for the mouse (locks again by itself) |
 | **F7** | open/close the **price list** window |
 | **F8** | scan now (and resume if paused) |
 | **F9** | pause |
@@ -101,9 +102,10 @@ A small always-on-top window over the game, styled like a quest tracker, movable
 
 **Click** a category's title (a syndicate, Weekly, Nightwave, Calendar, Daily and weekly…) to fold it to its title (▸) or unfold it (▾); the choice is remembered.
 **Right-click** an item to hide it or open it on warframe.market, a syndicate's title or an activity to stop following
-it (*Track again every activity* in ⚙). With *Activities: clickable only
-with the cursor* (on by default) the window lets clicks through while Warframe hides the cursor (in missions), so it never gets in
-the way. When a vendor screen is recognised, Activities switches off (the price labels take over) until you press F6.
+it (*Track again every activity* in ⚙). **The mouse goes through it to the game** until you press **Ctrl+F5** (like AlecaFrame): then it is
+outlined, shows its buttons and takes clicks; Ctrl+F5 again, or a few seconds after the mouse leaves it, it locks again
+(*Activities: unlock key*, *Activities: lock again after*). *Activities and the mouse* (also in ⚙ → Mouse) offers the
+older modes: clickable while a cursor is shown, or always. When a vendor screen is recognised, Activities switches off (the price labels take over) until you press F6.
 Settings: *Activities key*, *Activities: Nightwave and 1999 Calendar*, *Activities: where to buy*, *Hide Operational Supply* (the event syndicate
 is left out while no event runs).
 
@@ -436,7 +438,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.5.1)
+## Updates (current version 0.5.2)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.
@@ -470,6 +472,8 @@ Main keys of `config.json` (all of them are in Settings, with explanations):
 |---|---|
 | `language` | `en` or `it` |
 | `key_goals` / `key_menu` / `key_scan` / `key_clear` / `key_quit` | hotkeys (`<f6>` `<f7>` `<f8>` `<f9>` `<f10>`) |
+| `key_goals_interact` | unlocks Activities for the mouse (`<ctrl>+<f5>`) |
+| `goals_interact` / `goals_unlock_s` | Activities and the mouse: `hotkey`, `cursor`, `always`; seconds before it locks again (8) |
 | `start_active` / `auto_detect` | start scanning at once / detect vendors by itself (true) |
 | `refresh_interval` | seconds between automatic refreshes (180) |
 | `open_max_age` | when a vendor opens, refresh data older than N s (30) |
