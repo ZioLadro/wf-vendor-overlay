@@ -3,6 +3,10 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.1
+- **Correzione**: la 0.5.0 non partiva (si chiudeva subito, senza messaggi): i nuovi font venivano caricati prima che il
+  sistema grafico del programma esistesse, cosa che fa andare in crash Qt. Ora vengono caricati quando è pronto.
+
 ## 0.5.0
 - **Nuovo aspetto**: le sezioni sono una barra laterale a sinistra (come AlecaFrame), riquadri con angoli arrotondati,
   schede piatte sottolineate nel colore d'accento, barre di scorrimento sottili, caselle spuntate nell'accento; il

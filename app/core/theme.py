@@ -17,6 +17,12 @@ _fonts = {"loaded": None}
 def load_fonts() -> set:
     """Registers the bundled fonts once; returns the families now available."""
     if _fonts["loaded"] is None:
+        try:
+            from PyQt6.QtGui import QGuiApplication
+            if QGuiApplication.instance() is None:
+                return set()                   # no application yet (a module built a style at import): Qt would crash
+        except Exception:
+            return set()
         fams = set()
         try:
             from PyQt6.QtGui import QFontDatabase
@@ -104,6 +110,9 @@ def palette(theme_id: str) -> dict:
 def check_mark(color: str) -> str:
     """A small tick (PNG, drawn once per colour) for the ticked boxes; "" when it cannot be drawn."""
     try:
+        from PyQt6.QtGui import QGuiApplication
+        if QGuiApplication.instance() is None:
+            return ""
         from PyQt6.QtCore import QPointF, Qt
         from PyQt6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen
         from app.core.config import APP_DIR

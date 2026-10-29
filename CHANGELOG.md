@@ -3,6 +3,10 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.1
+- **Fix**: 0.5.0 did not start (it closed at once, without a message): the new fonts were loaded before the
+  program's window system existed, which makes Qt crash. They are now loaded once it is ready.
+
 ## 0.5.0
 - **New look**: the sections are a sidebar on the left (like AlecaFrame), cards with rounded corners, flat tabs
   underlined in the accent, slim scroll bars, ticked boxes in the accent; the game's text font **Noto Sans** and
