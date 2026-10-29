@@ -425,7 +425,7 @@ system notification sound, or a `.wav` of yours).
 | Prices, volumes, item catalog, sell orders, riven listings | [warframe.market](https://warframe.market) (v1 and v2 API, max 3 requests/s) |
 | Your standing, inventory, loadouts, purchases, challenges | AlecaFrame's `lastData.dat` / `deltas.dat` on your PC |
 | Vendors, standing costs, names, weekly offers, challenge names | public game data, bundled (`tools/build_*.py`) |
-| Pictures (builds, syndicate logos), Baro's list, Incarnon perk names | [wiki.warframe.com](https://wiki.warframe.com) |
+| Pictures (builds, syndicate logos), the mod card frames ([Mod/Assets](https://wiki.warframe.com/w/Mod/Assets)), Baro's list, Incarnon perk names | [wiki.warframe.com](https://wiki.warframe.com) |
 | Item pictures (Builds first, then when warframe.market has none) | [cdn.warframestat.us](https://cdn.warframestat.us) (WFCD images, file names bundled by `tools/build_images.py`) |
 | Where you are (Relay, Cetus, Orbiter, mission…) | the game's own log, `EE.log`, read only |
 | Riven trades in game, weekly | DE's `weeklyRivensPC.json` (www-static.warframe.com), else the [community archive](https://github.com/CloudeaSoft/warframe-weekly-rivens-archive), once a day |
@@ -438,7 +438,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.5.2)
+## Updates (current version 0.5.3)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.

@@ -1402,6 +1402,9 @@ EN = {
     "set.goals_unlock_s.tip": "Unlocked with the key, it locks itself again this many seconds after the mouse left it (never while one of its menus is open)",
     # ---- 0.4.0 ----
     "settings.key_overlap": "{a} contains {b}, used by another key: pressing {a} would also press {b}. Choose a different one",
+    # ---- 0.4.0 ----
+    "set.mod_frames": "Builds: the game's card frames",
+    "set.mod_frames.tip": "Draws the mods in Builds with the parts of the game's own cards (borders, lights, rank pips by rarity), downloaded once from the Warframe wiki (Mod/Assets). Off, or without a connection: the simple cards",
 }
 
 IT = {
@@ -2791,6 +2794,9 @@ IT = {
     "set.goals_unlock_s.tip": "Sbloccato col tasto, si blocca di nuovo da solo questi secondi dopo che il mouse è uscito (mai mentre è aperto un suo menu)",
     # ---- 0.4.0 ----
     "settings.key_overlap": "{a} contiene {b}, usato da un altro tasto: premendo {a} si premerebbe anche {b}. Scegline un altro",
+    # ---- 0.4.0 ----
+    "set.mod_frames": "Build: cornici delle carte del gioco",
+    "set.mod_frames.tip": "Disegna le mod nei Build con i pezzi delle carte del gioco (bordi, luci, tacche di rank per rarità), scaricati una volta dalla wiki di Warframe (Mod/Assets). Spento, o senza connessione: le carte semplici",
 }
 
 STRINGS = {"en": EN, "it": IT}

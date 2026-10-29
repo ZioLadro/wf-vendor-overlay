@@ -3,6 +3,19 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.3
+- **Build: mod nell'ordine del gioco.** Il gioco numera gli otto slot dal basso a destra (l'ultimo slot del file è in
+  alto a sinistra): le carte erano disegnate ruotate. Verificato su una build reale (Cyte-09). Il primo Arcano ora è
+  all'altezza della riga di Aura / Stance, come nel gioco.
+- **Capacità**: 39 mod mancavano dai dati (contavano 0 di drain): Cull the Weak e le altre nuove mod degli artigli, i
+  Bane e i Primed Bane, Mark of the Beast… Polarità, drain base e rank massimo ora vengono dall'export del gioco (DE
+  Public Export tramite public-export-plus): Quick Thinking (10 / rank 5), Maglev (rank 5) e Pressure Point (rank 5)
+  erano sbagliati.
+- **Le cornici delle carte del gioco** nei Build: bordi, sfondo, luci, il riquadro del drain e le tacche di rank per
+  rarità (Common … Legendary, Riven, Galvanized, Amalgam, Peculiar), scaricati una volta dalla pagina
+  [Mod/Assets](https://wiki.warframe.com/w/Mod/Assets) della wiki. Impostazione *Build: cornici delle carte del gioco*
+  (Tema); senza, restano le carte semplici.
+
 ## 0.5.2
 - **Attività non prende più clic per sbaglio**: il mouse passa attraverso fino al gioco finché non premi **Ctrl+F5** (come
   in AlecaFrame). Sbloccata, si contorna e mostra i pulsanti; di nuovo Ctrl+F5, o pochi secondi dopo che il mouse esce

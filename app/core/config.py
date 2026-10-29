@@ -114,7 +114,8 @@ DEFAULTS = {
     "goals_click_only_cursor": True, # (before 0.5.2) usable only while the mouse cursor is visible
     "goals_interact": "hotkey",      # Activities and the mouse: "hotkey" = clicks go through to the game until
                                      # key_goals_interact unlocks it, "cursor" = while a cursor is shown, "always"
-    "goals_unlock_s": 8,             # unlocked with the key: locked again after this many seconds without the mouse on it
+    "goals_unlock_s": 8,
+    "mod_frames": True,              # Builds: the game's card frames (wiki Mod/Assets), downloaded once             # unlocked with the key: locked again after this many seconds without the mouse on it
     "hide_operational_supply": True, # leave out the event syndicate (Plague Star…) while no event runs
     "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)
     "inv_min_volume": 0,             # Inventory: hide items traded fewer times than this in 24 h (0 = off)

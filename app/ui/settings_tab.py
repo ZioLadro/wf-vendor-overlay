@@ -142,6 +142,7 @@ GROUPS = [
             ("backdrop_strength", "int", (0, 100), False),
             ("ui_font", "font", None, False),
             ("ui_font_size", "int", (9, 24), False),
+            ("mod_frames", "bool", None, False),
         ]),
     ]),
     ("performance", [

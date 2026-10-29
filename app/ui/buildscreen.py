@@ -2,7 +2,7 @@
 
 Laid out like the game's: the title (UPGRADES / ITEM [rank]) with the Forma count, the configuration tabs (A, B, C…), on
 the left the capacity bar and the stats, in the middle the slots (Aura / Stance / Exilus on top, the eight mods in two
-rows of four), on the right the Arcanes (and the Exilus of guns), under them the Incarnon evolution path and, in the
+rows of four, in the game's order: its last slot top left), on the right the Arcanes (and the Exilus of guns), under them the Incarnon evolution path and, in the
 planner, the mod library (search, polarity filter, sort, two rows of cards to click or drag onto a slot).
 
 The screen only shows a model (see BuildScreen.show) and reports what the user does through signals; the planner keeps
@@ -88,6 +88,11 @@ class Card(QWidget):
         arcane = slot.get("role") == "arcane"
         rv = slot.get("riven")
         self.frame = RARITY_COLOR["riven"] if rv else RARITY_COLOR.get(rarity(self.name, arcane), "")
+        from app.ui import modframes
+        # the game's own card parts (wiki Mod/Assets), when they are on disk
+        self.wiki_rar = modframes.rarity_of(self.name, rarity(self.name), bool(rv)) if self.name and not arcane else ""
+        if not modframes.available(self.wiki_rar):
+            self.wiki_rar = ""
         self.pic = None
         if self.name and not rv:
             if arcane:
@@ -171,12 +176,16 @@ class Card(QWidget):
             for k, alpha in ((5, 40), (3, 90)):
                 p.setPen(QPen(QColor(95, 215, 230, alpha), k * 2))
                 p.drawRoundedRect(r, 7, 7)
+        from app.ui import modframes
+        wiki = self.wiki_rar
         grad = __import__("PyQt6.QtGui", fromlist=["QLinearGradient"]).QLinearGradient(0, 0, 0, H)
         grad.setColorAt(0, QColor("#252c38" if name else "#161a21"))
         grad.setColorAt(1, QColor("#14171d" if name else "#111419"))
         p.fillPath(path, QBrush(grad))
         p.save()
         p.setClipPath(path)
+        if wiki:
+            modframes.paint_back(p, W, H, wiki)
         if self.pic is not None and not self.pic.isNull():
             pm = self.pic
             if s.get("role") == "arcane":                  # an Arcane: its picture on the left, whole
@@ -193,12 +202,19 @@ class Card(QWidget):
             shade.setColorAt(1, QColor(0, 0, 0, 170))
             p.fillRect(self.rect(), QBrush(shade))
         p.restore()
-        col = QColor(ACCENT if self.selected else (self.frame or ("#3a4250" if name else "#2c323c")))
-        pen = QPen(col, 2 if (self.frame or self.selected) else 1)
-        if not name and not self.selected:
-            pen.setStyle(Qt.PenStyle.DashLine)
-        p.setPen(pen)
-        p.drawPath(path)
+        backer = None
+        if wiki:                                           # the game's frame: borders, lights, backer, rank pips
+            backer = modframes.paint_front(p, W, H, wiki, s.get("rank"), s.get("max"))
+            if self.selected:
+                p.setPen(QPen(QColor(ACCENT), 2))
+                p.drawPath(path)
+        else:
+            col = QColor(ACCENT if self.selected else (self.frame or ("#3a4250" if name else "#2c323c")))
+            pen = QPen(col, 2 if (self.frame or self.selected) else 1)
+            if not name and not self.selected:
+                pen.setStyle(Qt.PenStyle.DashLine)
+            p.setPen(pen)
+            p.drawPath(path)
         big = max(10, int(H * 0.15))
         small = max(8, int(H * 0.11))
         f = QFont(self.font())
@@ -230,9 +246,12 @@ class Card(QWidget):
             mp = icons.polarity(s.get("mpol") or "", max(12, int(H * 0.16))) if s.get("mpol") else None
             bw = fm.horizontalAdvance(txt) + (mp.width() + 4 if mp is not None else 0) + 12
             box = QRectF(W - bw - 6, 5, bw, big + 6)
-            p.setPen(Qt.PenStyle.NoPen)
-            p.setBrush(QColor(0, 0, 0, 150))
-            p.drawRoundedRect(box, 4, 4)
+            if backer is not None:                         # on the game's backer, centred on it
+                box = QRectF(backer.center().x() - bw / 2, backer.center().y() - (big + 6) / 2, bw, big + 6)
+            else:
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(QColor(0, 0, 0, 150))
+                p.drawRoundedRect(box, 4, 4)
             p.setPen(QColor({"match": "#7ee08f", "mismatch": "#ff7b72"}.get(state, "#ffffff")))
             p.drawText(box.adjusted(6, 0, 0, 0), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, txt)
             if mp is not None:
@@ -261,7 +280,7 @@ class Card(QWidget):
                 area = QRectF(W * 0.06 + self.pic.width() + 6, H * 0.2, W - W * 0.06 - self.pic.width() - 12, H * 0.5)
             p.drawText(area, Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, label)
             mx = s.get("max")
-            if mx:
+            if mx and not (wiki and modframes.has_pips(wiki)):
                 f.setPixelSize(max(8, int(H * 0.11)))
                 p.setFont(f)
                 p.setPen(QColor("#5fb8ff"))
@@ -1026,7 +1045,9 @@ class BuildScreen(QWidget):
         special = [i for i, s in enumerate(slots) if s["role"] in ("aura", "stance") or (s["role"] == "exilus" and not guns)]
         right = [i for i, s in enumerate(slots) if s["role"] == "arcane"] + \
                 [i for i, s in enumerate(slots) if s["role"] == "exilus" and guns]
-        general = [i for i, s in enumerate(slots) if s["role"] == "general"]
+        # the game numbers its general slots from the bottom right: the last one is top left (checked on a real build:
+        # file slots 7 6 5 4 on the top row, 3 2 1 0 under them)
+        general = [i for i, s in enumerate(slots) if s["role"] == "general"][::-1]
         cols = 5 if len(general) == 10 else 4
         out = QHBoxLayout()
         out.setSpacing(14)
@@ -1053,8 +1074,7 @@ class BuildScreen(QWidget):
             col = QVBoxLayout()
             col.setSpacing(8)
             col.setAlignment(Qt.AlignmentFlag.AlignTop)
-            if special or m.get("unique"):                  # level with the first row of mods
-                col.addSpacing(int(cw * CARD_ASPECT) + 8 if special else 30)
+            # as in the game: the first Arcane level with the top row (Aura / Stance / UNIQUE TRAIT), not the mods
             for i in right:
                 col.addWidget(self._card(m, i, cw))
             out.addLayout(col)

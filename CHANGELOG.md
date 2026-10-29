@@ -3,6 +3,19 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.3
+- **Builds: mods in the game's order.** The game numbers the eight slots from the bottom right (its file's last slot is
+  top left): the cards were drawn turned round. Checked on a real build (Cyte-09). The first Arcane is now level with
+  the Aura / Stance row, as in the game.
+- **Capacity**: 39 mods were missing from the data (they counted 0 drain): Cull the Weak and the other new claw mods,
+  the Banes and Primed Banes, Mark of the Beast… Polarity, base drain and max rank now come from the game's own export
+  (DE Public Export via public-export-plus): Quick Thinking (10 / rank 5), Maglev (rank 5) and Pressure Point (rank 5)
+  were wrong.
+- **The game's card frames** in Builds: borders, background, lights, the drain's backer and the rank pips per rarity
+  (Common … Legendary, Riven, Galvanized, Amalgam, Peculiar), downloaded once from the wiki's
+  [Mod/Assets](https://wiki.warframe.com/w/Mod/Assets) page. Setting *Builds: the game's card frames* (Theme); without
+  them the simple cards stay.
+
 ## 0.5.2
 - **Activities no longer takes stray clicks**: the mouse goes through it to the game until you press **Ctrl+F5** (as in
   AlecaFrame). Unlocked, it is outlined and shows its buttons; Ctrl+F5 again, or a few seconds after the mouse leaves it

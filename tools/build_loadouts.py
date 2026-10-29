@@ -68,15 +68,62 @@ def _stat_text(level: dict) -> str:
     return "\n".join(out)
 
 
-def wfcd(folder: Path) -> dict:
-    """Polarity, drain and stats from the community-maintained WFCD/warframe-items data."""
+DE_POL = {"AP_ATTACK": "madurai", "AP_DEFENSE": "vazarin", "AP_TACTIC": "naramon", "AP_POWER": "zenurik",
+          "AP_WARD": "unairu", "AP_UMBRA": "umbra", "AP_PRECEPT": "penjaga", "AP_ANY": "universal"}   # AP_UNIVERSAL: kept as WFCD has it
+DE_SKIP_TYPES = ("PARAZON", "---", "HELMINTH CHARGER", None)          # Parazon, K-Drive and Helminth "mods": no slots here
+
+
+def _de_kind(u: dict) -> str:
+    """The mst type letter of a mod from DE's export (its type and what it fits)."""
+    t, c = u.get("type"), (u.get("compatName") or "")
+    if t in ("WARFRAME", "AURA"):
+        return "N" if c.lower() == "necramech" else "W"
+    if t == "PRIMARY":
+        return "G" if c.lower() == "shotgun" else "P"
+    if t == "STANCE":
+        return "Y" if c == "Claws" else "T"
+    if t == "MELEE" and c == "Claws":
+        return "C"
+    return {"SECONDARY": "S", "MELEE": "M", "SENTINEL": "C", "KAVAT": "C", "KUBROW": "C", "ARCHWING": "A",
+            "ARCH-GUN": "R", "ARCH-MELEE": "X"}.get(t, "")
+
+
+def de_mods(upgrades: dict, nm) -> dict:
+    """name -> the game's own [polarity, base drain, max rank, compatibility, type, exilus] from DE's export: the real mod
+    of each name (not the Beginner / starter copy, not the left-over "frivolous" one). Polarity, drain and rank come from
+    here, so they are the game's (WFCD sometimes keeps a starter copy's numbers: Quick Thinking 4 / 3 instead of 10 / 5)."""
+    out, pri_of = {}, {}
+    for path, u in upgrades.items():
+        if not isinstance(u, dict) or u.get("type") in DE_SKIP_TYPES or "baseDrain" not in u:
+            continue
+        name = nm(u.get("name", ""))
+        kind = _de_kind(u)
+        if not name or not kind or "/CosmeticEnhancers/" in path and u.get("type") not in ("WARFRAME",):
+            continue
+        pri = (0 if u.get("isStarter") else 1, 0 if u.get("isFrivolous") else 1,
+               0 if re.search(r"/(Beginner|Expert|Intermediate)/", path) else 1, 0 if u.get("excludeFromCodex") else 1,
+               int(u.get("fusionLimit") or 0))
+        if name in out and pri_of[name] >= pri:
+            continue
+        pri_of[name] = pri
+        out[name] = [DE_POL.get(u.get("polarity"), ""), int(u["baseDrain"]), int(u.get("fusionLimit") or 0),
+                     u.get("compatName") or "", kind, 1 if u.get("isUtility") else 0]
+    return out
+
+
+def wfcd(folder: Path, skip=frozenset()) -> dict:
+    """Polarity, drain and stats from the community-maintained WFCD/warframe-items data. skip: paths of mods the game keeps
+    only as starter / left-over copies (their stats are not the real mod's)."""
     def load(name):
         return json.loads((folder / f"{name}.json").read_text(encoding="utf-8"))
     mst, mtext, pri_of = {}, {}, {}
+    # a starter / left-over copy is only skipped when the same name has another entry (else it is all there is)
+    others = {m.get("name") for m in load("Mods") if m.get("uniqueName") not in skip}
+    skip = {p for p in skip}
     for m in load("Mods"):
         kind = MOD_TYPES.get(m.get("type"))
         name = m.get("name")
-        if not kind or not name or "baseDrain" not in m:
+        if not kind or not name or "baseDrain" not in m or (m.get("uniqueName") in skip and name in others):
             continue
         lim = int(m.get("fusionLimit") or 0)
         # several mods share a name (Vital Sense: the normal one, a Beginner and an Expert variant): the normal one wins,
@@ -203,8 +250,22 @@ def main():
     genesis = sorted({re.sub(r"\s+Incarnon Genesis$", "", nm(k)) for k in lang
                       if re.fullmatch(r"[\w&' -]+ Incarnon Genesis", nm(k))})
     if a.wfcd:
-        out.update(wfcd(Path(a.wfcd)))
+        upg = fetch("ExportUpgrades", cache)
+        out.update(wfcd(Path(a.wfcd), skip=frozenset(p for p, u in upg.items() if isinstance(u, dict)
+                                                       and (u.get("isStarter") or u.get("isFrivolous")))))
         out["source"] += " + WFCD/warframe-items"
+        # polarity, drain and max rank as the game has them; mods WFCD does not list are added (no stats for the recap)
+        fixed, added = 0, 0
+        for name, (pol, base, lim, compat, kind, util) in de_mods(upg, nm).items():
+            row = out["mst"].get(name)
+            if row is None:
+                out["mst"][name] = [pol, base, lim, compat, kind, {}, util]
+                added += 1
+            elif row[:3] != [pol or row[0], base, lim]:
+                row[0], row[1], row[2] = pol or row[0], base, lim
+                row[6] = row[6] or util
+                fixed += 1
+        print(f"mods: {fixed} corrected from the game's export, {added} added")
         out["incarnon"] = {"genesis": genesis, "builtin": out.pop("incarnon_builtin")}
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     print(f"{len(mods)} mods, {len(arcanes)} arcanes, {len(abilities)} abilities, {len(suits)} warframes -> {a.out}")

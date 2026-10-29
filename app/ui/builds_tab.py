@@ -506,6 +506,8 @@ class BuildsTab(QWidget):
         if not self.loadouts:
             self._tried_auto = True
             self.reload_file(silent=True)
+        from app.ui import modframes
+        modframes.ensure()                             # the game's card frames (wiki), once
         previews.prefetch(prefetch_names(self.loadouts, self.presets))
 
     def _list_pick(self, cur, _prev=None):
