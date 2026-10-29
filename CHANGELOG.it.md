@@ -3,6 +3,19 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.0
+- **Nuovo aspetto**: le sezioni sono una barra laterale a sinistra (come AlecaFrame), riquadri con angoli arrotondati,
+  schede piatte sottolineate nel colore d'accento, barre di scorrimento sottili, caselle spuntate nell'accento; il
+  carattere dei testi del gioco **Noto Sans** e **Rajdhani** per titoli, schede e intestazioni, entrambi inclusi (SIL Open
+  Font License). Il "Segoe UI" salvato diventa Noto Sans.
+- **27 temi** (erano 13), ognuno con un accento e un secondo accento: nuovi per la Lotus, il Vuoto, il Drifter, Arbiters
+  of Hexis, Cephalon Suda, la Perrin Sequence, Solaris United, gli Holdfasts, Duviri, Höllvania, le Lich Kuva, il
+  Mormorio, Scaldra e lo Stalker.
+- **Condividi le build** (scheda Build e pianificatore): un codice della build da incollare, un file `.wfbuild`,
+  un'immagine della schermata della build (salva o copia); importa un codice o un file nel pianificatore.
+- **Riven flip, da Quantframe**: gli scambi di riven letti dal log del gioco entrano da soli nel diario (comprato /
+  venduto, col platino); combinazioni di statistiche richieste per arma (★, pannello di dettaglio, filtro).
+
 ## 0.4.10
 - **Overlay Attività: attività del Mondo** che segui (scheda Mondo > *Segui*): cicli, Baro, Sortita, Caccia all'Arconte,
   l'Arbitrato attuale / il prossimo di un tier, tipi di Fenditure del Vuoto, ricompense delle invasioni, con conti alla

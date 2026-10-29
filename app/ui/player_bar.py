@@ -40,7 +40,8 @@ def badge(tag: str) -> QPixmap:
         p.drawEllipse(QRectF(3, 3, SIZE * 2 - 6, SIZE * 2 - 6))
         words = [w for w in syndicate_name(tag).replace("'", "").split() if w[0].isalpha()]
         initials = "".join(w[0] for w in words[:2]).upper() or "?"
-        f = QFont("Segoe UI", 20, QFont.Weight.Bold)
+        from app.core import theme
+        f = QFont(theme.heading_family(), 20, QFont.Weight.Bold)
         p.setFont(f)
         p.drawText(QRectF(0, 0, SIZE * 2, SIZE * 2), Qt.AlignmentFlag.AlignCenter, initials)
         p.end()
@@ -66,6 +67,7 @@ class PlayerBar(QFrame):
         self.market, self.store = market, get_store()
         self._shown = None
         self.setFrameShape(QFrame.Shape.StyledPanel)
+        self.setObjectName("playerbar")
         self.info = QLabel("")                       # the name (a click changes it)
         self.info.setToolTip(t("bar.name.tip"))
         self.info.setCursor(Qt.CursorShape.PointingHandCursor)

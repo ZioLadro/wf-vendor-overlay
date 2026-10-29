@@ -3,6 +3,18 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.0
+- **New look**: the sections are a sidebar on the left (like AlecaFrame), cards with rounded corners, flat tabs
+  underlined in the accent, slim scroll bars, ticked boxes in the accent; the game's text font **Noto Sans** and
+  **Rajdhani** for titles, tabs and headers, both bundled (SIL Open Font License). Saved "Segoe UI" becomes Noto Sans.
+- **27 themes** (was 13), each with an accent and a second accent: new ones for the Lotus, the Void, the Drifter, Arbiters
+  of Hexis, Cephalon Suda, the Perrin Sequence, Solaris United, the Holdfasts, Duviri, Höllvania, Kuva Liches, the
+  Murmur, Scaldra and the Stalker.
+- **Share builds** (Builds tab and planner): a build code to paste, a `.wfbuild` file, a picture of the build screen
+  (save or copy); import a code or a file into the planner.
+- **Riven flip, from Quantframe**: riven trades read from the game's log go into the journal by themselves (bought /
+  sold, with the platinum); wanted stat combinations per weapon (★, detail panel, filter).
+
 ## 0.4.10
 - **Activities overlay: World activities** you follow (World tab > *Follow*): cycles, Baro, Sortie, Archon Hunt, the
   Arbitration now / the next one of a tier, kinds of Void Fissures, invasion rewards, with countdowns updated every second.

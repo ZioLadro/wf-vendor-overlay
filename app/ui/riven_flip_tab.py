@@ -123,6 +123,7 @@ class RivenFlipTab(QWidget):
 
         self.btn_scan = QPushButton(t("rflip.scan"))
         self.btn_scan.setToolTip(t("rflip.scan.tip"))
+        role(self.btn_scan, "primary")
         self.btn_stop = QPushButton(t("job.stop"))
         self.btn_stop.setEnabled(False)
         self.btn_open = QPushButton(t("rflip.open"))
@@ -184,15 +185,20 @@ class RivenFlipTab(QWidget):
             fl2.addWidget(QLabel(t("rflip.tf." + key)), n // 5, (n % 5) * 2, Qt.AlignmentFlag.AlignRight)
             fl2.addWidget(sb, n // 5, (n % 5) * 2 + 1)
             self.f_num[key] = sb
+        self.f_combo = QCheckBox(t("rflip.tf.combo"))
+        self.f_combo.setToolTip(t("rflip.tf.combo.tip"))
+        self.f_combo.setChecked(bool(saved.get("combo_only")))
+        self.f_combo.toggled.connect(lambda _c: self._filters_changed())
+        fl2.addWidget(self.f_combo, 1, 8)
         self.f_online = QCheckBox(t("rflip.tf.online"))
         self.f_online.setToolTip(t("rflip.tf.online.tip"))
         self.f_online.setChecked(bool(saved.get("online_now")))
         self.f_online.toggled.connect(lambda _c: self._filters_changed())
-        fl2.addWidget(self.f_online, 1, 8)
+        fl2.addWidget(self.f_online, 1, 9)
         reset = QPushButton(t("rflip.tf.reset"))
         reset.clicked.connect(self._filters_reset)
-        fl2.addWidget(reset, 1, 9)
-        fl2.setColumnStretch(10, 1)
+        fl2.addWidget(reset, 1, 10)
+        fl2.setColumnStretch(11, 1)
         self.f_type.currentIndexChanged.connect(lambda _i: self._fill())
         self.f_text.textChanged.connect(lambda _s: self._fill())
         self.f_contacted.toggled.connect(lambda _c: self._fill())
@@ -344,6 +350,26 @@ class RivenFlipTab(QWidget):
     def _live_tick(self):
         self._apply_live()
         self._alerts()
+        self._trades()
+
+    def _trades(self):
+        """Riven trades the game's log saw (EE.log, like Quantframe): bought / sold go into the journal by themselves."""
+        try:
+            from app.game.eelog import LOCATION
+            new = LOCATION.trades_since(getattr(self, "_trade_seq", 0))
+        except Exception:
+            return
+        if not new:
+            return
+        self._trade_seq = new[-1]["seq"]
+        from app.core import logbus
+        changed = False
+        for tr in new:
+            for line in self.store.journal_trade(tr, self._rows, self._weapons):
+                logbus.add("riven", line, "ok")
+                changed = True
+        if changed:
+            self.refresh(force=True)
 
     def _alerts(self):
         """A sound (Settings > Sounds) and a Console line when a deal with at least riven_alert_margin of profit has
@@ -528,6 +554,7 @@ class RivenFlipTab(QWidget):
     def _filters_changed(self):
         vals = {k: sb.value() for k, sb in self.f_num.items()}
         vals["online_now"] = self.f_online.isChecked()
+        vals["combo_only"] = self.f_combo.isChecked()
         save_config({"riven_table_filters": vals})
         self._fill()
 
@@ -537,6 +564,7 @@ class RivenFlipTab(QWidget):
             sb.setValue(sb.minimum())
             sb.blockSignals(False)
         self.f_online.setChecked(False)
+        self.f_combo.setChecked(False)
         self._filters_changed()
 
     def _visible_rows(self):
@@ -551,6 +579,8 @@ class RivenFlipTab(QWidget):
                     or (f["sales_min"] and (r["days"] < 1 or r["sales"] < f["sales_min"])) \
                     or (f["rerolls_max"] >= 0 and l["rerolls"] > f["rerolls_max"]) \
                     or (f["age_max"] and r.get("age") is not None and r["age"] > f["age_max"]):
+                continue
+            if self.f_combo.isChecked() and not r.get("combo"):
                 continue
             if self.f_online.isChecked():
                 x = M.live(l)
@@ -583,7 +613,8 @@ class RivenFlipTab(QWidget):
             mark = "✉ " if r.get("contacted") else ""
             price_text = f"{l['price']}p" + (" ⚖" if r.get("bid") else "")
             vals = [
-                (r["weapon"], r["weapon"].lower(), None), (l["name"], l["name"].lower(), None),
+                (r["weapon"], r["weapon"].lower(), None),
+                (("★ " if r.get("combo") else "") + l["name"], l["name"].lower(), AMBER if r.get("combo") else None),
                 (describe_listing(l, self._index), None, None),
                 (f"{l['rank']} · {l['rerolls']}↻", (l["rank"], l["rerolls"]), None),
                 (price_text, l["price"], PRICE_COLOR),
@@ -605,6 +636,9 @@ class RivenFlipTab(QWidget):
             self.table.item(i, COLS.index("seller")).setData(Qt.ItemDataRole.UserRole, dict(l))
             self.table.item(i, COLS.index("fair")).setToolTip(self._fair_tip(r))
             self.table.item(i, COLS.index("de")).setToolTip(self._de_tip(r))
+            if r.get("combo"):
+                self.table.item(i, 1).setToolTip(t("rflip.combo.tip", combo=self._combo_text(r["combo"][0]),
+                                                   p=f"{r['combo'][1]:.0f}", n=r["combo"][2]))
             self.table.item(i, COLS.index("perday")).setToolTip(t("rflip.tip.perday", d=f"{r['exp_days']:.1f}",
                                                                  m=r["margin"]))
             self.table.item(i, COLS.index("trend")).setToolTip(self._trend_tip(r))
@@ -664,7 +698,10 @@ class RivenFlipTab(QWidget):
             f"<b>{r['weapon']} {l['name']}</b> · {l['price']}p → {t('rflip.col.fair').lower()} <b>{r['fair']}p</b>{calib}<br>"
             + " · ".join(parts) + "<br>"
             + t("rflip.detail.sell", d=f"{r['exp_days']:.1f}", pd=f"{r['per_day']:.0f}", m=r["margin"]) + "<br>"
-            + self._graded(l, r["type"]))
+            + self._graded(l, r["type"])
+            + (("<br>" + t("rflip.combos") + " " + ", ".join(
+                f"{'<b>' if c[3] else ''}{self._combo_text(c[0])} {c[1]:.0f}p ({c[2]}){'</b>' if c[3] else ''}"
+                for c in r["combos"][:4])) if r.get("combos") else ""))
         comps = M.comparables(self.store, r, self._index)
         self.comps.setRowCount(len(comps))
         for i, (s, p, x, kind) in enumerate(comps):
@@ -673,6 +710,13 @@ class RivenFlipTab(QWidget):
                 self.comps.setItem(i, c, cell)
         hist = (self.store.d["weapons"].get(r["url"]) or {}).get("hist") or []
         self.chart.set_data(hist, (r.get("de") or {}).get("median") if (r.get("de") or {}).get("own") else None)
+
+    def _combo_text(self, pair):
+        names = {}
+        for typ in R.data()["types"].values():
+            for k, v in typ.items():
+                names.setdefault(k, v[4])
+        return " + ".join(names.get(tg, str(tg).replace("_", " ")) for tg in pair)
 
     def _graded(self, l, wtype):
         """The stats with how well each rolled (S best … D worst of the game's 90-110 % range; ? = not known)."""

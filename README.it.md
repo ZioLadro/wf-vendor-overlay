@@ -254,6 +254,14 @@ per il prezzo equo e la stima delle vendite); la tabella mostra come affari solo
 inserzioni più vecchie di *Nascondi inserzioni più vecchie di (giorni)* (default 14) non vengono mostrate come affari, e
 quelle più vecchie del doppio sono escluse dal prezzo equo (un prezzo che non vende da settimane dice cosa NON si vende).
 
+**0.5.0** (idee da Quantframe): **scambi letti dal log del gioco** — quando compri un riven per platino in uno
+scambio, il diario lo registra da solo (con il prezzo equo della sua riga in tabella, quando c'è), e quando ne vendi uno
+viene segnato venduto al platino ricevuto (la finestra di conferma e "The trade was successful!" in EE.log, come li legge
+Quantframe; gli scambi falliti o annullati sono ignorati); **combinazioni richieste** — le coppie di statistiche con cui
+i riven di un'arma si vendono più cari (1,3 volte la mediana dell'arma o più, da 3 riven visti), i "good roll" di
+Quantframe imparati dalle tue scansioni: ★ nella colonna Riven, elencate nel pannello di dettaglio, e un filtro *solo
+combo richieste ★*.
+
 **0.4.9**: più filtri sopra la tabella (prezzo, prezzo equo, profitto, profitto al giorno, punteggio, popolarità
 dell'arma in gioco, vendite, re-roll, giorni in vendita, venditore online adesso; ricordati tra una sessione e l'altra;
 *Azzera filtri*); il prezzo equo confronta prima i riven con la stessa combinazione di statistiche (2 statistiche positive
@@ -346,6 +354,11 @@ AlecaFrame l'ha aggiornato).
   ricavati dai dati del gioco (ogni numero sale in linea retta dal rank 0), usati anche finché la wiki non è stata letta.
 - **Simula nel pianificatore** apre l'oggetto mostrato (tutte le sue configurazioni, Forma, adattatori, Incarnon,
   elemento bonus) nel pianificatore.
+- **⇪ Condividi** (qui e nel pianificatore): **copia il codice della build** (`WFVO1:…`, qualche centinaio di caratteri da
+  incollare in chat o su Discord), **salva un file `.wfbuild`** (la stessa build in JSON leggibile), **salva o copia
+  un'immagine** della schermata della build (mod, capacità, riepilogo statistiche, percorso Incarnon) con una barra del
+  titolo. Nel pianificatore, *Condividi > Importa un codice / un file* riporta una build (tutte le configurazioni, Forma,
+  adattatori, Incarnon, elemento bonus, Frammenti Archon).
 - I **Riven** mostrano nome, statistiche, polarità e consumo e contano nel riepilogo; i **Riven spliced** sono mostrati
   congelati (❄) con la statistica spliced come "?".
 - **Pianificatore build** (terza vista): un **simulatore della schermata potenziamenti**, per singoli oggetti o **loadout
@@ -425,9 +438,14 @@ Una sotto-scheda per categoria, divisa in riquadri con un nome (Generali: il pro
 **valute mostrate** sotto il tuo nome; Rilevamento: riconoscimento del vendor, *dove ti trovi*, controllo dello schermo;
 Riven flip: scansione, quali affari, controllo dal vivo). **Salva** applica e memorizza in `config.json`; **Salva e riavvia** riavvia anche il
 programma; le impostazioni segnate ⟳ (lingua, tasti, OCR…) richiedono un riavvio. **Ripristina predefiniti** carica i
-valori predefiniti (premi Salva per applicarli). **Tema e carattere**: temi colore ispirati a fazioni, alleati e nemici di
-Warframe (più *Classico*), ognuno con il suo motivo di sfondo, un altro motivo, una tua immagine o niente; famiglia e
-dimensione del carattere. Anteprima immediata, mantenuta solo quando premi Salva. **Overlay** (una sola scheda per i due overlay in
+valori predefiniti (premi Salva per applicarli). **Tema e carattere**: 27 temi colore ispirati a fazioni, sindacati e luoghi di
+Warframe (Tenno, la Lotus, il Vuoto, il Drifter, i sindacati dei Relay, Ostron, Solaris United, Entrati, gli Holdfasts,
+Duviri, Höllvania, Grineer, Lich Kuva, Corpus, Infested, Orokin, Sentient, Narmer, il Mormorio, Scaldra, lo Stalker… più
+*Classico*), ognuno con il suo accento e un secondo accento, il suo motivo di sfondo, un altro motivo, una tua immagine
+o niente; famiglia e dimensione del carattere. Il programma usa il carattere dei testi del gioco, **Noto Sans**, e
+**Rajdhani** per titoli, schede e intestazioni (entrambi inclusi, SIL Open Font License, `assets/fonts`). Dalla 0.5.0 le
+sezioni sono una barra laterale a sinistra (come in AlecaFrame), con riquadri arrotondati, schede piatte sottolineate
+nel colore d'accento e barre di scorrimento sottili. Anteprima immediata, mantenuta solo quando premi Salva. **Overlay** (una sola scheda per i due overlay in
 gioco): i prezzi sopra la schermata del vendor (etichetta del volume e i suoi colori, dimensioni, sfondo, colori del
 prezzo e della stella, oggetti nascosti) e l'overlay Attività, il suo aspetto (sfondo, carattere, colori) e cosa elenca
 (anche dal suo menu ⚙). **Suoni**: un suono quando parte una scansione dei vendor, delle riven o dei prezzi (il suono di notifica di
@@ -452,7 +470,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.4.10)
+## Aggiornamenti (versione attuale 0.5.0)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

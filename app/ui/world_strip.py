@@ -77,6 +77,7 @@ class WorldStrip(QFrame):
     def __init__(self):
         super().__init__()
         self.setFrameShape(QFrame.Shape.StyledPanel)
+        self.setObjectName("worldstrip")
         self.data, self._fetched, self._busy, self._err = None, 0.0, False, ""
         self.lay = QGridLayout(self)
         self.lay.setContentsMargins(8, 4, 8, 4)

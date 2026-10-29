@@ -144,7 +144,7 @@ DEFAULTS = {
     "riven_whisper": "/w {seller} Hi, I would like to buy {weapon} {riven} for {price} platinum",        # Riven flip: scan by itself every N hours while the program runs (0 = only by hand)
     "riven_min_sales": 0,         # listings gone in 7 days (estimated sales) from which a weapon is shown, once observed for a day
     "theme": "classic",           # colour theme (see theme.py): classic, or a faction: tenno, grineer, corpus, infested, orokin...
-    "ui_font": "Segoe UI",        # font family of the windows
+    "ui_font": "Noto Sans",        # font family of the windows
     "ui_font_size": 13,           # font size (pixels)
     "rec_best_per_vendor": False,  # Recommendations tab: only the best item of each vendor
     "skip_update_version": "",   # a version the user chose not to be reminded about
@@ -176,7 +176,7 @@ DEFAULTS = {
     "rec_top": 200,              # maximum rows in the recommendations table
     "cfg_rev": 0,                # settings written by an older version get the new defaults of what changed
 }
-CFG_REV = 1
+CFG_REV = 2
 
 
 def _migrate(cfg: dict, data: dict) -> dict:
@@ -184,6 +184,8 @@ def _migrate(cfg: dict, data: dict) -> dict:
     rev = int(data.get("cfg_rev") or 0)
     if rev < 1 and data.get("vendor_min_share") == 0.6:
         cfg["vendor_min_share"] = DEFAULTS["vendor_min_share"]           # 0.4.7: stricter vendor recognition
+    if rev < 2 and data.get("ui_font") in ("Segoe UI", "", None):
+        cfg["ui_font"] = DEFAULTS["ui_font"]                             # 0.5.0: the game's font, bundled
     cfg["cfg_rev"] = CFG_REV
     return cfg
 

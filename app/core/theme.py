@@ -8,93 +8,210 @@ import os
 
 from app.core.config import CFG
 
-DEFAULT_FONT = "Segoe UI"
+DEFAULT_FONT = "Noto Sans"              # bundled (assets/fonts): the font of the game's own interface text
+HEADING_FONT = "Rajdhani"               # bundled: titles, tabs and headers (the game's wide, technical headings)
+FONT_FILES = ("NotoSans-Variable.ttf", "Rajdhani-Medium.ttf", "Rajdhani-SemiBold.ttf", "Rajdhani-Bold.ttf")
+_fonts = {"loaded": None}
 
-# id -> palette. bg: window; panel: inputs and buttons; alt: alternate table rows; border; text; muted/hint: secondary
-# text; accent: prices, progress bar, selected tab line; select: selected rows and hovered buttons.
-# ally = friendly faction, enemy = enemy faction (only used to label the choice).
-PRESETS = {
-    "classic": dict(kind="", bg="#161a22", panel="#1f2430", alt="#1a1f29", head="#232938", border="#343b4d",
-                    text="#e6e6e6", muted="#9aa4bd", hint="#7d869e", accent="#78c8ff", select="#2d3650",
-                    maxrank="#ffcd6e", standing="#bea0ff"),
-    "tenno": dict(kind="ally", bg="#10151d", panel="#19212e", alt="#141b26", head="#1f2a3b", border="#2f4058",
-                  text="#e8eef7", muted="#a3b3c9", hint="#7d8ea6", accent="#5ec8f2", select="#27405e",
-                  maxrank="#e8c25a", standing="#b3a3ff"),
-    "ostron": dict(kind="ally", bg="#111917", panel="#192622", alt="#141f1c", head="#1f332d", border="#31504a",
-                   text="#e9f1ec", muted="#a2bdb2", hint="#7f998f", accent="#4fd1b0", select="#27493f",
-                   maxrank="#e6c36a", standing="#c4a6f5"),
-    "entrati": dict(kind="ally", bg="#16111d", panel="#221a2e", alt="#1b1425", head="#2b2139", border="#473761",
-                    text="#efe8f6", muted="#b8a6cc", hint="#9482aa", accent="#c08af0", select="#3d2c5a",
-                    maxrank="#f0c978", standing="#8fe0d6"),
-    "steel_meridian": dict(kind="ally", bg="#16171a", panel="#212328", alt="#1b1d21", head="#2a2d33", border="#44484f",
-                           text="#ececec", muted="#adb1b8", hint="#8a8f97", accent="#e0cf8a", select="#383c44",
-                           maxrank="#f0d98c", standing="#a9b8ff"),
-    "red_veil": dict(kind="ally", bg="#1a1112", panel="#291a1c", alt="#211517", head="#331f22", border="#573438",
-                     text="#f3e8e8", muted="#c9a8aa", hint="#a38487", accent="#ff7b72", select="#4a2a2e",
-                     maxrank="#ffcf7a", standing="#d9a8ff"),
-    "new_loka": dict(kind="ally", bg="#121a14", panel="#1a2a1e", alt="#15211a", head="#213526", border="#355a3d",
-                     text="#ebf4ec", muted="#a6c4ab", hint="#83a089", accent="#7ee08f", select="#2a4a31",
-                     maxrank="#e9d27a", standing="#b5b0ff"),
-    "grineer": dict(kind="enemy", bg="#1b1711", panel="#2a2318", alt="#211c14", head="#352c1d", border="#5a4a30",
-                    text="#eee4d3", muted="#c1b190", hint="#9c8e72", accent="#e8892c", select="#4d3c22",
-                    maxrank="#f2c76a", standing="#c9b0ff"),
-    "corpus": dict(kind="enemy", bg="#0e1822", panel="#162838", alt="#112030", head="#1b3247", border="#2c5272",
-                   text="#e6f3fc", muted="#9fc0d8", hint="#7a9bb3", accent="#42c6ff", select="#22476a",
-                   maxrank="#ffd27a", standing="#b8a8ff"),
-    "infested": dict(kind="enemy", bg="#11170f", panel="#1a2517", alt="#151e13", head="#223020", border="#3b5434",
-                     text="#e9f2e3", muted="#a9c19d", hint="#869d7b", accent="#a6e35a", select="#2e4a28",
-                     maxrank="#e8d56a", standing="#d58bf0"),
-    "orokin": dict(kind="enemy", bg="#14120c", panel="#201c12", alt="#1a170f", head="#2b2616", border="#554a26",
-                   text="#f4ecd4", muted="#c9bc94", hint="#a39870", accent="#e8bd4a", select="#463c1e",
-                   maxrank="#fff0a8", standing="#d0b8ff"),
-    "sentient": dict(kind="enemy", bg="#0c0f1f", panel="#151a35", alt="#10142a", head="#1c2347", border="#323b78",
-                     text="#e7e9ff", muted="#a5abdb", hint="#8189bd", accent="#8393ff", select="#283370",
-                     maxrank="#ffd98a", standing="#e0a8ff"),
-    "narmer": dict(kind="enemy", bg="#1a1112", panel="#291a1b", alt="#201415", head="#331f20", border="#5c3a36",
-                   text="#f3e6e1", muted="#cfaaa0", hint="#a98881", accent="#ef6a4c", select="#4d2d29",
-                   maxrank="#ffd47a", standing="#d6adff"),
+
+def load_fonts() -> set:
+    """Registers the bundled fonts once; returns the families now available."""
+    if _fonts["loaded"] is None:
+        fams = set()
+        try:
+            from PyQt6.QtGui import QFontDatabase
+            from app.core.paths import ASSETS
+            for name in FONT_FILES:
+                fid = QFontDatabase.addApplicationFont(str(ASSETS / "fonts" / name))
+                if fid >= 0:
+                    fams.update(QFontDatabase.applicationFontFamilies(fid))
+        except Exception:
+            pass
+        _fonts["loaded"] = fams
+    return _fonts["loaded"]
+
+
+def body_family() -> str:
+    fam = str(CFG.get("ui_font") or DEFAULT_FONT)
+    return fam
+
+
+def heading_family() -> str:
+    load_fonts()
+    return HEADING_FONT if HEADING_FONT in (_fonts["loaded"] or set()) else body_family()
+
+
+def current_id() -> str:
+    return str(CFG.get("theme") or "classic")
+
+
+def _mix(a: str, b: str, t: float) -> str:
+    """The colour t of the way from a to b (#rrggbb)."""
+    a, b = a.lstrip("#"), b.lstrip("#")
+    ca = [int(a[i:i + 2], 16) for i in (0, 2, 4)]
+    cb = [int(b[i:i + 2], 16) for i in (0, 2, 4)]
+    return "#" + "".join(f"{round(x + (y - x) * t):02x}" for x, y in zip(ca, cb))
+
+
+def make_palette(kind, bg, surface, accent, accent2, text, maxrank="#ffcd6e", standing="#bea0ff") -> dict:
+    """A full palette from five colours: the window (bg), cards and inputs (surface), the accent (prices, the selected
+    tab, progress), a second accent (highlights, the build screen's gold) and the text colour."""
+    return dict(kind=kind, bg=bg, panel=surface, alt=_mix(bg, surface, 0.55), head=_mix(surface, accent, 0.07),
+                border=_mix(surface, text, 0.13), text=text, muted=_mix(text, bg, 0.30), hint=_mix(text, bg, 0.47),
+                accent=accent, accent2=accent2, select=_mix(surface, accent, 0.30), maxrank=maxrank, standing=standing,
+                glow=_mix(bg, accent, 0.18))
+
+
+# id -> (kind, bg, surface, accent, second accent, text): inspired by Warframe's factions, syndicates and places.
+# kind: ally / syndicate / place / enemy (only used to label the choice).
+SPECS = {
+    "classic": ("", "#12151c", "#1b202b", "#6ec3ff", "#ffcd6e", "#e8ecf3"),
+    "tenno": ("ally", "#0f141c", "#172130", "#5ec8f2", "#e8c25a", "#e8eef7"),
+    "lotus": ("ally", "#0d1615", "#15231f", "#6fe3c8", "#f2ead2", "#eaf5f2"),
+    "void": ("ally", "#0a0a14", "#14142a", "#8c7bff", "#e8e4ff", "#ecebff"),
+    "drifter": ("ally", "#14150f", "#212318", "#b9c46a", "#e88a3c", "#eef0e4"),
+    "steel_meridian": ("syndicate", "#16171a", "#212328", "#e0cf8a", "#d0503c", "#ececec"),
+    "arbiters": ("syndicate", "#14161a", "#21252b", "#e8eef4", "#8fb4d8", "#f2f4f7"),
+    "suda": ("syndicate", "#0c1420", "#132236", "#4aa8ff", "#9ef0ff", "#e8f2fc"),
+    "perrin": ("syndicate", "#0f1819", "#172628", "#46d6c8", "#e8c25a", "#e6f4f2"),
+    "red_veil": ("syndicate", "#190f12", "#29181c", "#ff6b6b", "#c46bff", "#f5e8ea"),
+    "new_loka": ("syndicate", "#101912", "#19271c", "#7ee08f", "#f2e3a0", "#ebf4ec"),
+    "ostron": ("place", "#12181a", "#1b2629", "#4fd1b0", "#f0a656", "#e9f1ec"),
+    "solaris": ("place", "#14161b", "#20242c", "#f0a020", "#5ac8e8", "#eceff3"),
+    "entrati": ("place", "#15111d", "#211a2e", "#c08af0", "#f0c978", "#efe8f6"),
+    "holdfasts": ("place", "#11141f", "#1a1f31", "#e6d6a8", "#7ad6e8", "#eef0f6"),
+    "duviri": ("place", "#16110f", "#241b17", "#e7b24c", "#e0577f", "#f6ece4"),
+    "hollvania": ("place", "#140e1b", "#21172d", "#ff4fa3", "#43e8ff", "#f3eaf8"),
+    "grineer": ("enemy", "#1a160f", "#292217", "#e8892c", "#a9c24f", "#eee4d3"),
+    "kuva": ("enemy", "#170b0d", "#261316", "#ff3d4d", "#ffb070", "#f6e6e6"),
+    "corpus": ("enemy", "#0c1621", "#132636", "#42c6ff", "#ffd27a", "#e6f3fc"),
+    "infested": ("enemy", "#10160e", "#192416", "#a6e35a", "#d58bf0", "#e9f2e3"),
+    "orokin": ("enemy", "#14120b", "#201c11", "#e8bd4a", "#f4ecd4", "#f4ecd4"),
+    "sentient": ("enemy", "#0b0e1e", "#141a35", "#8393ff", "#ff8ad8", "#e7e9ff"),
+    "narmer": ("enemy", "#191012", "#28191a", "#ef6a4c", "#e6c08a", "#f3e6e1"),
+    "murmur": ("enemy", "#0f0f13", "#1a1a22", "#b8b8dc", "#7a63ff", "#ececf4"),
+    "scaldra": ("enemy", "#16100b", "#251b13", "#ff7a1a", "#c0c8d0", "#f2ebe4"),
+    "stalker": ("enemy", "#0b0a0a", "#181313", "#e02434", "#b8b8b8", "#efe6e6"),
 }
-ORDER = ["classic", "tenno", "ostron", "entrati", "steel_meridian", "red_veil", "new_loka",
-         "grineer", "corpus", "infested", "orokin", "sentient", "narmer"]
+PRESETS = {k: make_palette(*v) for k, v in SPECS.items()}
+ORDER = list(SPECS)
 
 
 def palette(theme_id: str) -> dict:
     return PRESETS.get(theme_id) or PRESETS["classic"]
 
 
+def check_mark(color: str) -> str:
+    """A small tick (PNG, drawn once per colour) for the ticked boxes; "" when it cannot be drawn."""
+    try:
+        from PyQt6.QtCore import QPointF, Qt
+        from PyQt6.QtGui import QColor, QImage, QPainter, QPainterPath, QPen
+        from app.core.config import APP_DIR
+        out = APP_DIR / "backdrop" / f"check_{color.lstrip('#')}.png"
+        if not out.exists():
+            out.parent.mkdir(parents=True, exist_ok=True)
+            img = QImage(32, 32, QImage.Format.Format_ARGB32)
+            img.fill(Qt.GlobalColor.transparent)
+            g = QPainter(img)
+            g.setRenderHint(QPainter.RenderHint.Antialiasing)
+            pen = QPen(QColor(color), 4.2)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
+            g.setPen(pen)
+            path = QPainterPath(QPointF(8, 17))
+            path.lineTo(QPointF(14, 23))
+            path.lineTo(QPointF(25, 10))
+            g.drawPath(path)
+            g.end()
+            img.save(str(out), "PNG")
+        return out.as_posix()
+    except Exception:
+        return ""
+
+
 def build_style(theme_id="classic", font=None, size=13) -> str:
+    """The program's look: dark cards with rounded corners on the theme's background, a sidebar of sections (see
+    menu.NavTabs), flat tabs underlined in the accent, the game's fonts (Noto Sans for text, Rajdhani for titles)."""
+    load_fonts()
     p = palette(theme_id)
     fam = (font or DEFAULT_FONT).replace('"', "")
+    head = heading_family().replace('"', "")
     size = max(9, min(24, int(size)))
+    hs = size + 2
+    tick = check_mark(p["bg"])
+    tick_rule = f'image: url("{tick}");' if tick else ""
     return f"""
 QWidget {{ background: {p['bg']}; color: {p['text']}; font-family: "{fam}"; font-size: {size}px; }}
-QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit {{ background: {p['panel']}; border: 1px solid {p['border']};
-                                                 border-radius: 4px; padding: 4px 8px; }}
-QComboBox QAbstractItemView {{ background: {p['panel']}; selection-background-color: {p['select']}; }}
-QListWidget {{ background: {p['panel']}; border: 1px solid {p['border']}; }}
-QListWidget::item:selected {{ background: {p['select']}; color: #ffffff; }}
-QTableWidget {{ background: {p['bg']}; alternate-background-color: {p['alt']}; border: 1px solid {p['border']};
-               selection-background-color: {p['select']}; selection-color: #ffffff; }}
-QHeaderView::section {{ background: {p['head']}; color: {p['muted']}; border: none; border-right: 1px solid {p['border']};
-                       padding: 5px 8px; font-weight: bold; }}
-QPushButton {{ background: {p['head']}; border: 1px solid {p['border']}; border-radius: 4px; padding: 5px 12px; }}
-QPushButton:hover {{ background: {p['select']}; }}
-QPushButton:disabled {{ color: {p['hint']}; background: {p['alt']}; }}
-QProgressBar {{ background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 4px; text-align: center; height: 14px; }}
-QProgressBar::chunk {{ background: {p['accent']}; }}
-QTabWidget::pane {{ border: 1px solid {p['border']}; top: -1px; }}
-QTabBar::tab {{ background: {p['alt']}; border: 1px solid {p['border']}; padding: 7px 18px; margin-right: 2px; }}
-QTabBar::tab:selected {{ background: {p['head']}; color: #ffffff; font-weight: bold; border-bottom: 2px solid {p['accent']}; }}
-QGroupBox {{ border: 1px solid {p['border']}; border-radius: 6px; margin-top: 14px; padding-top: 8px; }}
-QGroupBox::title {{ subcontrol-origin: margin; left: 10px; padding: 0 6px; color: {p['muted']}; }}
-QCheckBox {{ spacing: 8px; }}
-QScrollBar:vertical {{ background: {p['bg']}; width: 12px; }}
-QScrollBar::handle:vertical {{ background: {p['border']}; border-radius: 5px; min-height: 24px; }}
-QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
-QToolTip {{ background: {p['panel']}; color: {p['text']}; border: 1px solid {p['border']}; }}
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit, QFontComboBox {{
+    background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 7px; padding: 5px 9px;
+    selection-background-color: {p['select']}; }}
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus, QPlainTextEdit:focus {{ border: 1px solid {p['accent']}; }}
+QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QDoubleSpinBox:hover {{ border: 1px solid {_mix(p['border'], p['accent'], 0.5)}; }}
+QComboBox::drop-down {{ border: none; width: 22px; }}
+QComboBox QAbstractItemView {{ background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 6px;
+    selection-background-color: {p['select']}; outline: 0; padding: 4px; }}
+QSpinBox::up-button, QSpinBox::down-button, QDoubleSpinBox::up-button, QDoubleSpinBox::down-button {{ width: 16px; border: none; }}
+QListWidget, QTreeWidget {{ background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 8px; outline: 0; }}
+QListWidget::item, QTreeWidget::item {{ padding: 4px 6px; border-radius: 5px; }}
+QListWidget::item:hover, QTreeWidget::item:hover {{ background: {p['alt']}; }}
+QListWidget::item:selected, QTreeWidget::item:selected {{ background: {p['select']}; color: #ffffff; }}
+QTableWidget, QTableView {{ background: {p['panel']}; alternate-background-color: {p['alt']}; border: 1px solid {p['border']};
+    border-radius: 8px; gridline-color: {p['border']}; selection-background-color: {p['select']}; selection-color: #ffffff; outline: 0; }}
+QTableWidget::item {{ padding: 2px 4px; }}
+QHeaderView {{ background: transparent; }}
+QHeaderView::section {{ background: {p['head']}; color: {p['muted']}; border: none; border-bottom: 1px solid {p['border']};
+    padding: 6px 8px; font-family: "{head}"; font-size: {hs}px; font-weight: 600; }}
+QTableCornerButton::section {{ background: {p['head']}; border: none; }}
+QPushButton, QToolButton {{ background: {p['head']}; border: 1px solid {p['border']}; border-radius: 7px; padding: 6px 14px;
+    font-family: "{head}"; font-size: {hs}px; font-weight: 600; }}
+QPushButton:hover, QToolButton:hover {{ background: {p['select']}; border: 1px solid {p['accent']}; }}
+QPushButton:pressed, QToolButton:pressed {{ background: {_mix(p['select'], p['accent'], 0.25)}; }}
+QPushButton:checked {{ background: {p['select']}; border: 1px solid {p['accent']}; color: #ffffff; }}
+QPushButton:disabled, QToolButton:disabled {{ color: {p['hint']}; background: {p['alt']}; border: 1px solid {p['alt']}; }}
+QPushButton[role="primary"] {{ background: {p['accent']}; color: {p['bg']}; border: 1px solid {p['accent']}; }}
+QPushButton[role="primary"]:hover {{ background: {_mix(p['accent'], '#ffffff', 0.2)}; }}
+QProgressBar {{ background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 6px; text-align: center; height: 12px; }}
+QProgressBar::chunk {{ background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 {p['accent']}, stop:1 {p['accent2']}); border-radius: 5px; }}
+QTabWidget::pane {{ border: 1px solid {p['border']}; border-radius: 10px; top: -1px; background: {p['bg']}; }}
+QTabBar {{ background: transparent; }}
+QTabBar::tab {{ background: transparent; color: {p['muted']}; border: none; border-bottom: 2px solid transparent;
+    padding: 7px 16px; margin-right: 4px; font-family: "{head}"; font-size: {hs}px; font-weight: 600; }}
+QTabBar::tab:hover {{ color: {p['text']}; border-bottom: 2px solid {p['border']}; }}
+QTabBar::tab:selected {{ color: #ffffff; border-bottom: 2px solid {p['accent']}; }}
+QGroupBox {{ background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 10px; margin-top: 20px; padding: 12px 8px 8px 8px;
+    font-family: "{head}"; font-size: {hs + 2}px; font-weight: 700; }}
+QGroupBox::title {{ subcontrol-origin: margin; left: 12px; padding: 0 6px; color: {p['accent']}; font-family: "{head}";
+    font-size: {hs + 1}px; font-weight: 700; }}
+QCheckBox, QRadioButton {{ spacing: 8px; background: transparent; }}
+QCheckBox::indicator, QTreeWidget::indicator, QTableWidget::indicator {{ width: 15px; height: 15px; border-radius: 4px;
+    border: 1px solid {_mix(p['border'], p['text'], 0.25)}; background: {p['bg']}; }}
+QCheckBox::indicator:hover {{ border: 1px solid {p['accent']}; }}
+QCheckBox::indicator:checked, QTreeWidget::indicator:checked, QTableWidget::indicator:checked {{
+    background: {p['accent']}; border: 1px solid {p['accent']}; {tick_rule} }}
+QScrollBar:vertical {{ background: transparent; width: 10px; margin: 2px; }}
+QScrollBar:horizontal {{ background: transparent; height: 10px; margin: 2px; }}
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {{ background: {p['border']}; border-radius: 4px; min-height: 28px; min-width: 28px; }}
+QScrollBar::handle:hover {{ background: {p['accent']}; }}
+QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::sub-page {{ height: 0; width: 0; background: none; }}
+QSplitter::handle {{ background: transparent; }}
+QSplitter::handle:hover {{ background: {p['border']}; }}
+QMenu {{ background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 8px; padding: 5px; }}
+QMenu::item {{ padding: 6px 22px 6px 14px; border-radius: 5px; }}
+QMenu::item:selected {{ background: {p['select']}; }}
+QMenu::separator {{ height: 1px; background: {p['border']}; margin: 4px 8px; }}
+QToolTip {{ background: {p['panel']}; color: {p['text']}; border: 1px solid {p['accent']}; border-radius: 6px; padding: 6px; }}
+QLabel {{ background: transparent; }}
 QLabel[role="muted"] {{ color: {p['muted']}; }}
 QLabel[role="hint"] {{ color: {p['hint']}; font-size: {max(9, size - 2)}px; }}
 QLabel[role="small"] {{ color: {p['muted']}; font-size: {max(8, size - 3)}px; }}
+QLabel[role="heading"] {{ font-family: "{head}"; font-size: {size + 6}px; font-weight: 700; color: {p['text']}; }}
+QLabel[role="section"] {{ font-family: "{head}"; font-size: {hs + 1}px; font-weight: 700; color: {p['accent']}; }}
+QFrame#playerbar, QFrame#worldstrip {{ background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 10px; }}
+QListWidget#nav {{ background: {_mix(p['bg'], p['panel'], 0.6)}; border: 1px solid {p['border']}; border-radius: 12px;
+    padding: 8px 6px; font-family: "{head}"; font-size: {size + 3}px; font-weight: 600; }}
+QListWidget#nav::item {{ padding: 9px 12px; margin: 2px 0; border-radius: 8px; color: {p['muted']}; border-left: 3px solid transparent; }}
+QListWidget#nav::item:hover {{ background: {p['alt']}; color: {p['text']}; }}
+QListWidget#nav::item:selected {{ background: {p['select']}; color: #ffffff; border-left: 3px solid {p['accent']}; }}
 """
 
 
@@ -103,9 +220,12 @@ BACKDROP_TILE = 560
 
 # background patterns (original drawings in the spirit of each faction's look) and the one each theme uses by default
 BACKDROPS = ["lattice", "curves", "plates", "circuit", "cells", "waves", "rings"]
-THEME_BACKDROP = {"classic": "lattice", "tenno": "curves", "ostron": "waves", "entrati": "rings",
-                  "steel_meridian": "plates", "red_veil": "curves", "new_loka": "cells", "grineer": "plates",
-                  "corpus": "circuit", "infested": "cells", "orokin": "lattice", "sentient": "waves", "narmer": "rings"}
+THEME_BACKDROP = {"classic": "lattice", "tenno": "curves", "lotus": "curves", "void": "rings", "drifter": "plates",
+                  "steel_meridian": "plates", "arbiters": "lattice", "suda": "circuit", "perrin": "circuit",
+                  "red_veil": "curves", "new_loka": "cells", "ostron": "waves", "solaris": "plates", "entrati": "rings",
+                  "holdfasts": "rings", "duviri": "waves", "hollvania": "circuit", "grineer": "plates", "kuva": "curves",
+                  "corpus": "circuit", "infested": "cells", "orokin": "lattice", "sentient": "waves", "narmer": "rings",
+                  "murmur": "rings", "scaldra": "plates", "stalker": "curves"}
 
 
 def backdrop_for(theme_id: str) -> str:
@@ -296,6 +416,7 @@ def apply(app=None, theme_id=None, font=None, size=None):
     theme_id = CFG["theme"] if theme_id is None else theme_id
     font = CFG["ui_font"] if font is None else font
     size = CFG["ui_font_size"] if size is None else size
+    load_fonts()
     style = build_style(theme_id, font, size)
     p = palette(theme_id)
     if CFG.get("backdrop", True):

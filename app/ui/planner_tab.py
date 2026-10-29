@@ -64,6 +64,41 @@ def upgrade_icons(kind, reactor, exilus=None, arcane=None) -> list:
     return [(k, on, tip + " · " + t("bs.up.on" if on else "bs.up.off")) for k, on, tip in out]
 
 
+def share_actions(menu, parent, get_piece, get_screen, get_title):
+    """Adds the four ways to share a build to a menu: copy the code, save a .wfbuild file, save / copy the picture.
+    get_piece() -> (kind, piece); get_screen() -> the build screen widget; get_title() -> (title, subtitle)."""
+    from app.ui import buildshare as S
+
+    def code():
+        k, p = get_piece()
+        S.copy_text(S.encode(k, p))
+        QMessageBox.information(parent, t("share.code"), t("share.code.done"))
+
+    def file():
+        from PyQt6.QtWidgets import QFileDialog
+        k, p = get_piece()
+        path, _ = QFileDialog.getSaveFileName(parent, t("share.file"), f"{p['item']}.wfbuild", S.FILE_FILTER)
+        if path:
+            with open(path, "w", encoding="utf-8") as fh:
+                json.dump(S.to_json(k, p), fh, ensure_ascii=False, indent=1)
+
+    def picture(save):
+        title, sub = get_title()
+        img = S.image(get_screen(), title, sub)
+        if not save:
+            S.copy_image(img)
+            QMessageBox.information(parent, t("share.image"), t("share.image.done"))
+            return
+        from PyQt6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getSaveFileName(parent, t("share.image"), f"{title}.png", "PNG (*.png)")
+        if path:
+            img.save(path if path.lower().endswith(".png") else path + ".png", "PNG")
+    menu.addAction(t("share.code"), code)
+    menu.addAction(t("share.file"), file)
+    menu.addAction(t("share.image"), lambda: picture(True))
+    menu.addAction(t("share.image.copy"), lambda: picture(False))
+
+
 def mod_family(name: str) -> str:
     """Mods the game does not let you equip together share this: Vitality, Primed Vitality, Umbral / Archon Vitality."""
     return _PREFIX.sub("", name or "").strip().lower()
@@ -128,8 +163,11 @@ class PlannerView(QWidget):
         self.item_box.completer().setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self.btn_copy = QPushButton(t("plan.copy"))
         self.btn_clear = QPushButton(t("plan.new"))
+        self.btn_share = QPushButton(t("share.btn"))
+        self.btn_share.setToolTip(t("share.btn.tip"))
         top = QHBoxLayout()
-        for w in (QLabel(t("plan.kind")), self.kind_box, QLabel(t("plan.item")), self.item_box, self.btn_copy, self.btn_clear):
+        for w in (QLabel(t("plan.kind")), self.kind_box, QLabel(t("plan.item")), self.item_box, self.btn_copy, self.btn_clear,
+                  self.btn_share):
             top.addWidget(w)
         top.addStretch(1)
         self.name = QLineEdit()
@@ -137,6 +175,7 @@ class PlannerView(QWidget):
         self.saved = QComboBox()
         self.saved.setMinimumWidth(180)
         self.btn_save = QPushButton(t("plan.save"))
+        role(self.btn_save, "primary")
         self.btn_del = QPushButton(t("plan.delete"))
         top.addWidget(self.name, 1)
         top.addWidget(self.btn_save)
@@ -180,6 +219,7 @@ class PlannerView(QWidget):
         self.item_box.lineEdit().editingFinished.connect(self._item_typed)
         self.btn_copy.clicked.connect(self._copy)
         self.btn_clear.clicked.connect(self._clear)
+        self.btn_share.clicked.connect(self._share_menu)
         self.btn_save.clicked.connect(self._save)
         self.btn_del.clicked.connect(self._delete)
         self.saved.activated.connect(lambda _i: self._load())
@@ -477,6 +517,49 @@ class PlannerView(QWidget):
 
     def _say(self, text):
         self.status.setText(text)
+
+    # ---------- sharing: code, file, picture ----------
+    def _share_menu(self):
+        m = QMenu(self)
+        m.addAction(t("share.import.code"), self._import_code)
+        m.addAction(t("share.import.file"), self._import_file)
+        if self.p and self.p.get("item"):
+            m.addSeparator()
+            share_actions(m, self, lambda: (self.kind, self.p), lambda: self.screen,
+                          lambda: (self.p["item"], t("builds.kind." + self.kind) + " · " + (self.name.text() or "")))
+        m.exec(self.btn_share.mapToGlobal(self.btn_share.rect().bottomLeft()))
+
+    def import_text(self, text):
+        from app.ui import buildshare as S
+        try:
+            kind, piece = S.decode(text)
+        except (ValueError, json.JSONDecodeError) as e:
+            QMessageBox.warning(self, t("share.import.code"), t("share.bad", err=str(e)))
+            return False
+        self._store_piece()
+        self.pieces[kind] = piece
+        self._show_piece(kind, piece)
+        self._say(t("share.imported", item=piece["item"]))
+        return True
+
+    def _import_code(self):
+        from PyQt6.QtGui import QGuiApplication
+        clip = QGuiApplication.clipboard().text() or ""
+        text, ok = QInputDialog.getMultiLineText(self, t("share.import.code"), t("share.import.prompt"),
+                                                 clip if "WFVO1:" in clip else "")
+        if ok and text.strip():
+            self.import_text(text)
+
+    def _import_file(self):
+        from PyQt6.QtWidgets import QFileDialog
+        from app.ui import buildshare as S
+        path, _ = QFileDialog.getOpenFileName(self, t("share.import.file"), "", S.FILE_FILTER)
+        if path:
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    self.import_text(fh.read())
+            except OSError as e:
+                QMessageBox.warning(self, t("share.import.file"), str(e))
 
     def _slot_menu(self, i, pos):
         m = QMenu(self)

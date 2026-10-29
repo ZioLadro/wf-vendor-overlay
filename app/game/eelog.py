@@ -102,6 +102,76 @@ def parse_line(line: str):
     return None
 
 
+_PLAT = re.compile(r"^Platinum x (\d+)$", re.I)
+_ITEM = re.compile(r"^(.+?)(?: x (\d+))?$")
+_RIVEN = re.compile(r"^(?P<weapon>.+) (?P<name>[A-Za-z]+-[a-z]+(?:-[a-z]+)?)(?: \((?P<var>[^)]*)\))?$")
+
+
+class TradeParser:
+    """A trade in the game's log (the way Quantframe reads it): the confirmation dialog
+      Script [Info]: Dialog.lua: Dialog::CreateOkCancel(description=Are you sure you want to accept this trade? You are offering
+      <item lines>
+      and will receive from <player> the following:
+      <item lines>
+      , leftItem=/Menu/Confirm_Item_Ok, rightItem=/Menu/Confirm_Item_Cancel)
+    then "description=The trade was successful!" (or failed / was cancelled). feed() takes the log lines one by one and
+    returns {"player","offered","received","plat_in","plat_out","rivens_in","rivens_out"} when a trade succeeded."""
+    START = "Are you sure you want to accept this trade? You are offering"
+    RECEIVE = "and will receive from "
+    END = "leftItem=/Menu/Confirm_Item_Ok"
+
+    def __init__(self):
+        self.lines, self.collecting, self.pending = [], False, None
+
+    def feed(self, line: str):
+        if self.START in line:
+            self.collecting, self.lines = True, [line.split(self.START, 1)[1]]
+            if self.END in line:
+                self._close()
+            return None
+        if self.collecting:
+            self.lines.append(line)
+            if self.END in line or len(self.lines) > 60:
+                self._close()
+            return None
+        if self.pending and "Dialog::CreateOk" in line:
+            if "The trade was successful" in line:
+                done, self.pending = self.pending, None
+                return done
+            if "The trade failed" in line or "The trade was cancelled" in line:
+                self.pending = None
+        return None
+
+    def _close(self):
+        self.collecting = False
+        text = "\n".join(self.lines).split(", leftItem=", 1)[0].split(", title=", 1)[0]
+        if self.RECEIVE not in text:
+            self.pending = None
+            return
+        give, rest = text.split(self.RECEIVE, 1)
+        player, _sep, get = rest.partition(" the following:")
+        player = "".join(c for c in player if not 0xE000 <= ord(c) <= 0xF8FF).strip()
+        offered = [x.strip() for x in give.split("\n") if x.strip()]
+        received = [x.strip() for x in get.split("\n") if x.strip()]
+        self.pending = {"player": player, "offered": offered, "received": received,
+                        "plat_out": self._plat(offered), "plat_in": self._plat(received),
+                        "rivens_out": self._rivens(offered), "rivens_in": self._rivens(received)}
+
+    @staticmethod
+    def _plat(items):
+        return sum(int(m.group(1)) for m in (_PLAT.match(x) for x in items) if m)
+
+    @staticmethod
+    def _rivens(items):
+        """[(weapon, riven name)] of the revealed rivens among the items ("Torid Crita-visitis (RIVEN RANK 8)")."""
+        out = []
+        for x in items:
+            m = _RIVEN.match(x)
+            if m and not _PLAT.match(x):
+                out.append((m.group("weapon").strip(), m.group("name")))
+        return out
+
+
 class Location:
     def __init__(self):
         self.lock = threading.Lock()
@@ -109,12 +179,27 @@ class Location:
         self.place, self.what, self.t = "", "", 0.0
         self.mtime = 0.0
         self.history = []                 # [(time, place, what)] of the places loaded (the last 60)
+        self.trades = []                  # completed trades seen in the log (see TradeParser), the last 100
+        self.trade_seq = 0
+        self._trade = TradeParser()
+        self._first = True                # the first read (the end of an old log): its trades are not new
         self.store_hits = []              # [(time, /Lotus/StoreItems/… path)] named in the log (the last 300)
 
     def _feed(self, text: str, quiet=False):
         before = self.place
         now = time.time()
         for line in text.splitlines():
+            tr = self._trade.feed(line)
+            if tr and not quiet:
+                self.trade_seq += 1
+                tr.update(seq=self.trade_seq, t=now)
+                self.trades = (self.trades + [tr])[-100:]
+                try:
+                    from app.core import logbus
+                    logbus.add("eelog", f"trade with {tr['player']}: gave {', '.join(tr['offered']) or '–'}; "
+                                        f"got {', '.join(tr['received']) or '–'}", "ok")
+                except Exception:
+                    pass
             if "/Lotus/StoreItems/" in line:
                 for m in _STORE.finditer(line):
                     self.store_hits.append((now, m.group(1)))
@@ -144,6 +229,7 @@ class Location:
                 self.place, self.what, self.mtime = "", "", 0.0
                 return
             if p != self.path or st.st_size < self.pos:        # another file, or the game started over (new log)
+                self._first = self.path is None                # a new log of a running program: its trades are new
                 self.path, self.pos = p, max(0, st.st_size - MAX_FIRST)
                 self.place, self.what = "", ""
             self.mtime = st.st_mtime
@@ -159,7 +245,8 @@ class Location:
             if cut < 0:
                 return
             self.pos += cut + 1
-            self._feed(data[:cut + 1].decode("utf-8", "replace"))
+            first, self._first = self._first, False
+            self._feed(data[:cut + 1].decode("utf-8", "replace"), quiet=first)
 
     def current(self) -> str:
         """The place you are in ("" = not known: no log, an old log, or a place we do not recognise)."""
@@ -191,6 +278,11 @@ class Location:
         """Shop items (/Lotus/StoreItems/…) the game's log named since the program started reading it."""
         self.poll()
         return {p for _t, p in self.store_hits}
+
+    def trades_since(self, seq: int) -> list:
+        """Completed trades seen in the log after that number (TradeParser), oldest first."""
+        self.poll()
+        return [x for x in self.trades if x["seq"] > seq]
 
     def in_mission(self) -> bool:
         return self.current() == "mission"

@@ -252,7 +252,7 @@ class PriceList(QWidget):
         if CFG.get("window_on_top"):
             flags |= Qt.WindowType.WindowStaysOnTopHint
         self.setWindowFlags(flags)
-        self.resize(1080, 680)
+        self.resize(1280, 760)
         theme.ensure_applied()
 
         self.refresher = Refresher(market, self)
@@ -274,7 +274,8 @@ class PriceList(QWidget):
         self.console = ConsoleTab()
         from app.ui.weekly_tab import WeeklyTab
         self.weekly = WeeklyTab(self.inventory, market)
-        self.tabs = QTabWidget()
+        from app.ui.navtabs import NavTabs
+        self.tabs = NavTabs()                          # a sidebar of sections (the old tab bar)
         # price list and recommendations share one tab: the list on top, the recommendations below (splitter remembered)
         self.market_tab = QSplitter(Qt.Orientation.Vertical)
         for title, w in ((t("tab.prices"), self.prices), (t("tab.recommend"), self.recommend)):
@@ -285,14 +286,14 @@ class PriceList(QWidget):
         sizes = CFG.get("market_split") or [3, 2]
         self.market_tab.setSizes([int(x) * 1000 if sum(sizes) < 20 else int(x) for x in sizes])
         self.market_tab.splitterMoved.connect(lambda *_: save_config({"market_split": self.market_tab.sizes()}))
-        self.tabs.addTab(self.market_tab, t("tab.market"))
-        self.tabs.addTab(self.inv_tab, t("tab.inventory"))
-        self.tabs.addTab(self.builds, t("tab.builds"))
-        self.tabs.addTab(self.weekly, t("tab.weekly"))
-        self.tabs.addTab(self.riven_flip, t("tab.rflip"))
-        self.tabs.addTab(self.world, t("tab.world"))
-        self.tabs.addTab(self.console, t("tab.console"))
-        self.tabs.addTab(self.settings, t("tab.settings"))
+        self.tabs.addTab(self.market_tab, t("tab.market"), "◆")
+        self.tabs.addTab(self.inv_tab, t("tab.inventory"), "▦")
+        self.tabs.addTab(self.builds, t("tab.builds"), "⬢")
+        self.tabs.addTab(self.weekly, t("tab.weekly"), "⟳")
+        self.tabs.addTab(self.riven_flip, t("tab.rflip"), "✧")
+        self.tabs.addTab(self.world, t("tab.world"), "◎")
+        self.tabs.addTab(self.console, t("tab.console"), "≡")
+        self.tabs.addTab(self.settings, t("tab.settings"), "⚙")
         # your standing and mastery (read from AlecaFrame's file, editable): a page of the Settings
         self.settings.subtabs.insertTab(1, self.profile, t("tab.profile"))
         self.settings.subtabs.currentChanged.connect(lambda _i: self._tick(force=True))

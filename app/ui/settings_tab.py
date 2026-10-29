@@ -274,6 +274,7 @@ class SettingsTab(QWidget):
              else w.valueChanged).connect(self._preview)
 
         self.btn_save = QPushButton(t("settings.save"))
+        role(self.btn_save, "primary")
         self.btn_restart = QPushButton(t("settings.save_restart"))
         self.btn_defaults = QPushButton(t("settings.defaults"))
         self.msg = QLabel("")

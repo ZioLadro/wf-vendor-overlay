@@ -616,6 +616,43 @@ class Store:
             self.version += 1
         self.save()
 
+    def journal_trade(self, trade, rows=(), weapons_by_url=None):
+        """A completed trade read from the game's log (eelog.TradeParser): a riven received for platinum is a purchase
+        (the journal gets it, with the fair price of its row in the table when it is there), a riven given for platinum
+        a sale (the journal's riven of that name is marked sold at that price). Returns log lines."""
+        out = []
+        now = int(time.time())
+        norm = lambda s: R._norm(str(s or ""))
+        if len(trade.get("rivens_in") or []) == 1 and trade.get("plat_out") and not trade.get("rivens_out"):
+            weapon, name = trade["rivens_in"][0]
+            if any(norm(e["riven"]) == norm(name) and e["state"] in ("held", "listed") and now - e["t_buy"] < 86400
+                   for e in self.journal()):
+                return out                                     # already recorded (by hand, say)
+            row = next((r for r in rows if norm(r["listing"]["name"]) == norm(name)
+                        and norm(weapon).startswith(norm(r["weapon"]))), None)
+            if row:
+                self.journal_buy(row, trade["plat_out"])
+            else:
+                url = next((u for u, w in (weapons_by_url or {}).items() if norm(weapon).startswith(norm(w["name"]))), "")
+                with self.lock:
+                    self.journal().append({"id": "", "url": url, "weapon": weapon, "riven": name, "rerolls": 0, "rank": 0,
+                                           "attrs": [], "buy": int(trade["plat_out"]), "fair": 0, "t_buy": now,
+                                           "state": "held", "list": None, "t_list": None, "sold": None, "t_sold": None,
+                                           "auction": None, "from_log": True})
+                    self.version += 1
+                self.save()
+            out.append(f"journal: bought {weapon} {name} for {trade['plat_out']}p from {trade['player']} (game log)")
+        if len(trade.get("rivens_out") or []) == 1 and trade.get("plat_in") and not trade.get("rivens_in"):
+            weapon, name = trade["rivens_out"][0]
+            j = self.journal()
+            for i in range(len(j) - 1, -1, -1):
+                e = j[i]
+                if norm(e["riven"]) == norm(name) and e["state"] in ("held", "listed"):
+                    self.journal_set(i, state="sold", sold=int(trade["plat_in"]), auto=True, buyer=trade["player"])
+                    out.append(f"journal: sold {weapon} {name} for {trade['plat_in']}p to {trade['player']} (game log)")
+                    break
+        return out
+
     def journal_set(self, idx, **kw):
         with self.lock:
             j = self.journal()
@@ -847,12 +884,15 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
         t7, t30 = store.trend(url, 7), store.trend(url, 30)
         sell_days = statistics.median([x["age"] for x in sold]) / 86400 if sold else None
         k = calib.get(url, calib.get("*", 1.0))
+        combos = valued_combos(wd, index, sold)
+        wanted = [c for c in combos if c[3]]
         for s, l, tags, age in scored:
             if s < min_score or (max_price and l["price"] > max_price):
                 continue
             if max_age and age is not None and age > max_age:
                 continue                           # on sale for too long at that price: probably not a real offer
             mine = positives(l, index)
+            combo = next((c for c in wanted if set(c[0]) <= set(mine)), None)
             ask = fair_price(s, [(o[0], o[1]["price"], o[3], o[1]["seller"]) for o in comps_all if o[1]["id"] != l["id"]],
                              factor, tags=mine)
             got = fair_price(s, sold_scored, SOLD_FACTOR, tags=mine)
@@ -881,12 +921,33 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
                          "median": hist[-1][1] if hist else None, "hist_days": len(hist), "age": age,
                          "exp_days": exp_days, "per_day": margin / (exp_days + 1.0),
                          "bid": bool(l.get("bid")), "contacted": contacted.get(str(l["id"])),
-                         "pop": WK.popularity(info["name"])})
+                         "pop": WK.popularity(info["name"]), "combo": combo, "combos": combos})
     if str(CFG.get("riven_sort") or "day") == "margin":
         rows.sort(key=lambda r: -r["margin"])
     else:
         rows.sort(key=lambda r: -r["per_day"])
     return rows
+
+
+def valued_combos(wd, index, sold=(), top=5, min_n=3):
+    """The pairs of positive stats this weapon's rivens are priced highest with (the "god roll" patterns Quantframe keeps
+    per weapon, here learned from what the scans saw: listings and likely-sold rivens): [(pair of tags, median price,
+    how many, wanted)], best first. wanted = the pair's median is at least 1.3x the weapon's median."""
+    from itertools import combinations
+    prices, every = {}, []
+    for l in list(wd.get("listings") or []) + list(sold):
+        p = l.get("price")
+        if not p:
+            continue
+        every.append(p)
+        for pair in combinations(sorted(set(positives(l, index))), 2):
+            prices.setdefault(pair, []).append(p)
+    if not every:
+        return []
+    med = statistics.median(every)
+    out = [(pair, statistics.median(v), len(v)) for pair, v in prices.items() if len(v) >= min_n]
+    out.sort(key=lambda x: -x[1])
+    return [(pair, m, n, m >= 1.3 * med) for pair, m, n in out[:top]]
 
 
 def comparables(store, row, index, n=8):

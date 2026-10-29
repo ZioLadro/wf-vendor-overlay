@@ -101,6 +101,7 @@ class LoadoutView(QWidget):
         self.lay.addStretch(1)
         self.lookup = {}                                 # (item id, config index) -> loadout, set by the owner (config buttons)
         self.on_simulate = None                          # set by the Builds tab: opens a loadout in the planner
+        self.to_piece = None                             # set by the Builds tab: a loadout as a planned piece (sharing)
         self._lo = None
         self.scaler = Scaler(self, lambda: self.show_loadout(self._lo), fn=land_width, start=200)
         # kept for the callers that set a text when nothing is shown
@@ -243,6 +244,16 @@ class LoadoutView(QWidget):
             c.setToolTip(t("bs.copydata.tip"))
             c.clicked.connect(lambda: self._copy_data(lo))
             row.addWidget(c)
+            if self.to_piece:                                # share: code, file, picture
+                from PyQt6.QtWidgets import QMenu
+                from app.ui.planner_tab import share_actions
+                sh = QPushButton(t("share.btn"))
+                sh.setToolTip(t("share.btn.tip.builds"))
+                menu = QMenu(sh)
+                share_actions(menu, self, lambda: (lo["kind"], self.to_piece(lo)), lambda: self.screen,
+                              lambda: (lo["item"], t("builds.kind." + lo["kind"]) + " · " + (lo.get("cfg_name") or lo["config"])))
+                sh.setMenu(menu)
+                row.addWidget(sh)
             row.addStretch(1)
             self.body.addLayout(row)
         if lo["kind"] == "warframe":
@@ -447,6 +458,8 @@ class BuildsTab(QWidget):
         self.stack.addWidget(split)
         self.planner = PlannerView(lambda: self.loadouts, lambda: self.presets, lambda: self.owned)
         self.view.on_simulate = self.simulate
+        self.view.to_piece = self.planner.piece_from_loadout
+        self.pview.detail.to_piece = self.planner.piece_from_loadout
         self.pview.detail.on_simulate = self.simulate
         self.stack.addWidget(self.planner)
         lay = QVBoxLayout(self)

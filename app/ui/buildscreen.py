@@ -907,6 +907,7 @@ class BuildScreen(QWidget):
             self._title(m)
             self._configs(m)
             if extra_top is not None:
+                extra_top.setObjectName("bs_extra")          # the planner's switches: left out of shared pictures
                 self.lay.addWidget(extra_top)
             body = QHBoxLayout()
             body.setSpacing(14)
@@ -931,7 +932,8 @@ class BuildScreen(QWidget):
             row.addWidget(lab)
         title = QLabel(f"{t('bs.upgrades')} / {m.get('title') or m.get('item', '')}"
                        + (f"  [{m['rank']}]" if m.get("rank") is not None else ""))
-        title.setStyleSheet("font-size: 22px; font-weight: 300; letter-spacing: 3px;")
+        from app.core import theme
+        title.setStyleSheet(f"font-family: '{theme.heading_family()}'; font-size: 26px; font-weight: 600; letter-spacing: 3px;")
         row.addWidget(title)
         if m.get("forma") is not None:
             pm = icons.build("forma", 26)

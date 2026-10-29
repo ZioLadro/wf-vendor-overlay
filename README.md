@@ -234,6 +234,13 @@ column shows how long a listing has been up (its creation date on warframe.marke
 older than (days)* (default 14) are not shown as deals, and those older than twice that are left out of the fair price
 (a price that has not sold for weeks says what does NOT sell).
 
+**0.5.0** (ideas from Quantframe): **trades read from the game's log** — when you buy a riven for platinum in a
+trade, the journal gets it by itself (with the fair price of its row in the table when it is there), and when you sell
+one it is marked sold at the platinum you got (the confirmation dialog and "The trade was successful!" in EE.log, the
+way Quantframe reads them; failed or cancelled trades are ignored); **wanted stat combinations** — the pairs of stats a
+weapon's rivens sell highest with (1.3x the weapon's median or more, from 3 rivens seen), Quantframe's "good rolls"
+learned from your own scans: ★ in the Riven column, listed in the detail panel, and a *★ wanted combos only* filter.
+
 **0.4.9**: more filters above the table (price, fair price, profit, profit a day, score, the weapon's in-game
 popularity, sales, re-rolls, days on sale, seller online now; kept between sessions; *Clear filters*); the fair price
 compares rivens with the same stat combination first (2 of the same positive stats, as riven snipers price "god rolls";
@@ -321,6 +328,10 @@ refreshed it).
   wiki has been read.
 - **Simulate in the planner** opens the item shown (all its configurations, Forma, adapters, Incarnon, bonus element)
   in the build planner.
+- **⇪ Share** (here and in the planner): **copy the build code** (`WFVO1:…`, a few hundred characters to paste in a chat
+  or on Discord), **save a `.wfbuild` file** (the same build as readable JSON), **save or copy a picture** of the build
+  screen (mods, capacity, stats recap, Incarnon path) with a title bar. In the planner, *Share > Import a code / a file*
+  brings a build back (all its configurations, Forma, adapters, Incarnon, bonus element, Archon Shards).
 - **Rivens** show name, stats, polarity and drain and count in the recap; **spliced Rivens** are shown frozen (❄) with
   their spliced stat as "?".
 - **Build planner** (third view): a **simulator of the upgrade screen**, for single items or **whole loadouts**
@@ -394,8 +405,13 @@ One sub-tab per category, each split in named boxes (General: the program and th
 **currencies shown** under your name; Detection: vendor recognition, *where you are*, screen watching; Riven flip:
 scanning, which deals, live check). **Save** applies and stores them in `config.json`; **Save and restart** also relaunches the
 program; settings marked ⟳ (language, hotkeys, OCR…) need a restart. **Restore defaults** loads the defaults (press Save
-to apply). **Theme and font**: colour themes inspired by Warframe's factions, allies and enemies (plus *Classic*), each
-with its background pattern, another pattern, your own picture or none; font family and size. Previewed at once, kept
+to apply). **Theme and font**: 27 colour themes inspired by Warframe's factions, syndicates and places (Tenno, the
+Lotus, the Void, the Drifter, the Relay syndicates, Ostron, Solaris United, Entrati, the Holdfasts, Duviri, Höllvania,
+Grineer, Kuva Liches, Corpus, Infested, Orokin, Sentients, Narmer, the Murmur, Scaldra, the Stalker… plus *Classic*),
+each with its own accent and second accent, its background pattern, another pattern, your own picture or none; font
+family and size. The program uses the game's own text font, **Noto Sans**, and **Rajdhani** for titles, tabs and
+headers (both bundled, SIL Open Font License, `assets/fonts`). Since 0.5.0 the sections are a sidebar on the left (as in
+AlecaFrame), with rounded cards, flat tabs underlined in the accent and slim scroll bars. Previewed at once, kept
 only when you press Save. **Overlays** (one tab for both in-game overlays): the prices over the vendor screen (volume
 label and its colours, label sizes, background, price and star colours, hidden items) and the Activities overlay, its
 look (background, font, colours) and what it lists (also in its ⚙ menu). **Sounds**: a sound when a vendor scan, a riven scan or a price scan starts (the
@@ -420,7 +436,7 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.4.10)
+## Updates (current version 0.5.0)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.
