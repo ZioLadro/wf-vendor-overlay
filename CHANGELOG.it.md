@@ -3,7 +3,7 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
-## 0.6.2
+## 0.6.3
 - **Statistiche delle armi calcolate come nel gioco** (verificate sugli screenshot di Kompressa Prime, Tenet Glaxion,
   Praedos): il bonus Kuva / Tenet / Coda fa parte della base su cui si calcolano gli elementi delle mod (Viral 97.8 della
   Tenet Glaxion); *Totale* è un colpo con tutto il multicolpo (Kompressa Prime 70.7); schianto, scivolata e attacco

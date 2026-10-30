@@ -3,7 +3,7 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
-## 0.6.2
+## 0.6.3
 - **Weapon stats as the game computes them** (checked on Kompressa Prime, Tenet Glaxion, Praedos screenshots): the
   Kuva / Tenet / Coda bonus is part of the base the mods' elements are a percentage of (Tenet Glaxion's Viral 97.8);
   *Total* is one shot with all its multishot (Kompressa Prime 70.7); slam, slide and heavy attacks get every mod,
