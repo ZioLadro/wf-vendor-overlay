@@ -13,8 +13,12 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 - **Capacità**: una polarità diversa aggiunge il 25 % arrotondato, non per eccesso (il gioco: Point Strike 9 -> 11).
 - **Pianificatore**: clic destro su uno slot o una carta della libreria: *Cerca su warframe.market* (un Riven: le aste di
   Riven per la sua arma); il tooltip dice se possiedi la mod / l'Arcano (quando è stato letto il file del gioco).
-- **Settimanali ▸ Tenet / Coda**: il gruppo di armi Coda di Eleanor era l'altro (verificato nel gioco); gli elementi
-  bonus non vengono più mostrati: la ricostruzione non dà i valori del gioco e nessun dato pubblico li ha.
+- **Settimanali ▸ Tenet / Coda**: il gruppo di armi Coda di Eleanor era l'altro (verificato nel gioco); elementi e
+  percentuali bonus sono quelli riportati dai giocatori sulla wiki ("Tenet Weapons", "Coda Weapons", lette ogni 3 ore)
+  per il ciclo attuale, con la data; dove nessuno li ha ancora riportati, "vedi in gioco".
+- **Pianificatore, statistiche Riven da immagine**: clic destro su uno slot ▸ *Statistiche Riven da un'immagine* (o
+  *dagli appunti*): la carta o il tooltip del Riven del gioco (uno screenshot, un fotogramma di video) riempie lo slot
+  con quel Riven: nome, statistiche (una fazione "x0.62" è -38 %), MR e reroll; le statistiche dell'arma si aggiornano.
 
 ## 0.6.0
 - **Pianificatore: importa una build da un'immagine** (Condividi ▸ *Importa da un'immagine…* o *Importa l'immagine negli

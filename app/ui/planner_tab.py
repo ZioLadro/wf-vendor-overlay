@@ -607,6 +607,77 @@ class PlannerView(QWidget):
         import threading
         threading.Thread(target=work, daemon=True, name="build-image").start()
 
+    def _ocr_picture(self, from_clipboard: bool, title: str, done):
+        """Reads a picture's text with the OCR in the background; done((lines, w, h, path)) or done(error text) in the
+        GUI thread."""
+        from PyQt6.QtWidgets import QFileDialog
+        from PyQt6.QtGui import QGuiApplication
+        if from_clipboard:
+            img = QGuiApplication.clipboard().image()
+            if img.isNull():
+                return
+            path = str(APP_DIR / "import_picture.png")
+            img.save(path, "PNG")
+        else:
+            path, _ = QFileDialog.getOpenFileName(self, title, "", "Images (*.png *.jpg *.jpeg *.webp *.bmp)")
+            if not path:
+                return
+        self._say(t("share.image.reading"))
+        from PyQt6.QtCore import QObject, pyqtSignal as _sig
+
+        class _Done(QObject):
+            sig = _sig(object)
+        holder = _Done()
+        holder.sig.connect(lambda res: (done(res), setattr(self, "_ocr_holder", None)))
+        self._ocr_holder = holder                       # kept alive until the answer arrives
+
+        def work():
+            try:
+                import app.scan.ocr_worker as OW
+                if OW.CLIENT is not None:
+                    lines, w, h = OW.CLIENT.read_image(path)
+                else:
+                    import numpy as np
+                    from PIL import Image
+                    from app.scan.ocr import make_engine, read_lines
+                    im = Image.open(path).convert("RGB")
+                    ls = read_lines(np.array(im)[:, :, ::-1].copy(), make_engine())
+                    lines, w, h = [(x.text, x.x, x.y, x.w, x.h, x.score) for x in ls], im.width, im.height
+                holder.sig.emit((lines, w, h, path))
+            except Exception as e:
+                holder.sig.emit(f"{type(e).__name__}: {e}")
+        import threading
+        threading.Thread(target=work, daemon=True, name="picture-ocr").start()
+
+    def _riven_image(self, i, from_clipboard: bool):
+        """Slot i becomes the Riven of the picture (its name, stats, MR, rerolls); a Riven already there keeps its
+        polarity and, when the picture's name is close to it, its name."""
+        def done(res):
+            from app.game import rivenocr
+            if isinstance(res, str):
+                self._say(t("share.image.bad", err=res))
+                return
+            cur = self.mods[i] if i < len(self.mods) else None
+            old = cur[2] if cur and len(cur) > 2 and isinstance(cur[2], dict) else {}
+            try:
+                rv = rivenocr.parse(res[0], cur[0] if old else "")
+            except ValueError as e:
+                self._say(t("share.image.bad", err=str(e)))
+                return
+            riven = dict(old)
+            riven.update(mod_name=rv["mod_name"] or old.get("mod_name") or "Riven", attributes=rv["attributes"],
+                         weapon=rv["weapon"] or old.get("weapon", ""), rank=old.get("rank", 8),
+                         polarity=old.get("polarity") or "madurai")
+            if rv.get("rerolls") is not None:
+                riven["rerolls"] = rv["rerolls"]
+            if rv.get("mr") is not None:
+                riven["mr"] = rv["mr"]
+            self.mods[i] = (riven["mod_name"] + " (Riven)", riven["rank"], riven)
+            self._draw()
+            self._say(t("bs.riven.done", name=riven["mod_name"], stats="; ".join(
+                f"{a['value']:+g}{'%' if a['pct'] else ''} {a['label']}" for a in rv["attributes"])))
+        self._ocr_picture(from_clipboard, t("bs.riven.image"), done)
+
     def _image_read(self, res):
         from app.game import buildocr
         if res[0] != "ok":
@@ -677,6 +748,12 @@ class PlannerView(QWidget):
             from PyQt6.QtCore import QUrl
             m.addAction(t("bs.market.riven" if riven else "bs.market"),
                         lambda: QDesktopServices.openUrl(QUrl(market_link(name, riven or None))))
+        if r == "general":                             # a Riven's stats from a picture of its card / tooltip
+            m.addSeparator()
+            m.addAction(t("bs.riven.image"), lambda: self._riven_image(i, False))
+            from PyQt6.QtGui import QGuiApplication
+            a = m.addAction(t("bs.riven.clip"), lambda: self._riven_image(i, True))
+            a.setEnabled(not QGuiApplication.clipboard().image().isNull())
         if r != "arcane":
             sub = m.addMenu(t("bs.menu.polarity"))
             base = BC.innate(self.kind, self.item, self.roles)[i]

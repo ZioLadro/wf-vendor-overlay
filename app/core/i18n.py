@@ -1476,6 +1476,13 @@ EN = {
     "bs.market": "Search on warframe.market",
     "bs.market.riven": "Rivens for this weapon on warframe.market",
     "bs.notowned": "You do not own it",
+    # ---- 0.4.0 ----
+    "bs.riven.image": "Riven stats from a picture…",
+    "bs.riven.clip": "Riven stats from the picture in the clipboard",
+    "bs.riven.done": "{name}: {stats} (read from the picture: check the values).",
+    # ---- 0.4.0 ----
+    "rot.tip.wiki": "{name}: bonus {pct}% {el}, reported by players on the wiki ({day}); check it at the vendor. A Valence Fusion can change it",
+    "rot.note.wiki": "Which weapons is DE's vendor data (Ergo Glast: always all five; Eleanor: two groups of seven in turn, every 4 days at 00:00 UTC). The bonus elements are those players reported for this cycle on the wiki pages \"Tenet Weapons\" and \"Coda Weapons\" (read every 3 hours); where nobody reported one yet, see it in game.",
 }
 
 IT = {
@@ -2939,6 +2946,13 @@ IT = {
     "bs.market": "Cerca su warframe.market",
     "bs.market.riven": "Riven di quest'arma su warframe.market",
     "bs.notowned": "Non la possiedi",
+    # ---- 0.4.0 ----
+    "bs.riven.image": "Statistiche Riven da un'immagine…",
+    "bs.riven.clip": "Statistiche Riven dall'immagine negli appunti",
+    "bs.riven.done": "{name}: {stats} (letti dall'immagine: controlla i valori).",
+    # ---- 0.4.0 ----
+    "rot.tip.wiki": "{name}: bonus {pct}% {el}, riportato dai giocatori sulla wiki ({day}); verificalo dal venditore. La Valence Fusion può cambiarlo",
+    "rot.note.wiki": "Quali armi viene dai dati dei venditori di DE (Ergo Glast: sempre tutte e cinque; Eleanor: due gruppi di sette a turno, ogni 4 giorni alle 00:00 UTC). Gli elementi bonus sono quelli riportati dai giocatori per questo ciclo sulle pagine della wiki \"Tenet Weapons\" e \"Coda Weapons\" (lette ogni 3 ore); dove nessuno l'ha ancora riportato, guardalo in gioco.",
 }
 
 STRINGS = {"en": EN, "it": IT}

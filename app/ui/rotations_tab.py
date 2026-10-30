@@ -4,7 +4,7 @@ next weeks). The data: app/game/rotations.py. The pictures are DE's (data "figur
 import time
 from datetime import datetime, timezone
 
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QObject, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QPixmap
 from PyQt6.QtWidgets import (
     QAbstractItemView, QFrame, QHBoxLayout, QHeaderView, QLabel, QScrollArea, QTableWidget,
@@ -147,28 +147,51 @@ class _Page(QWidget):
         return w
 
 
+class _WikiNote(QObject):
+    arrived = pyqtSignal()
+
+
 class NemesisWeaponsPage(_Page):
-    """Ergo Glast's Tenet weapons and Eleanor's Coda weapons now and in the next cycle."""
+    """Ergo Glast's Tenet weapons and Eleanor's Coda weapons now and in the next cycle, with the bonuses players
+    reported on the wiki for this cycle."""
+
+    def __init__(self):
+        super().__init__()
+        self._wiki = _WikiNote()
+        self._wiki.arrived.connect(self.rebuild, Qt.ConnectionType.QueuedConnection)
 
     def rebuild(self):
+        from app.game import wikireports as WR
         lay = self._body()
         now = time.time()
         for vendor in ("tenet", "coda"):
             cur = R.offers(vendor, now)
             if not cur:
                 continue
-            who = (R.data().get("vendors") or {}).get(vendor, {}).get("who", "")
+            v = (R.data().get("vendors") or {}).get(vendor, {})
+            who = v.get("who", "")
+            WR.refresh(vendor, [i["name"] for i in v.get("items") or []], self._wiki.arrived.emit)
+            seen = WR.current(vendor, cur["start"], cur["end"])
             self._head(lay, t("rot." + vendor, who=who),
                        t("rot.cycle." + vendor, end=_day(cur["end"]), left=_left(cur["end"] - now)))
-            lay.addWidget(self._row([ItemCard(i["name"], t("rot.bonus.game"), None, 96, t("rot.tip2", name=i["name"]))
-                                     for i in cur["items"]]))
+            cards = []
+            for i in cur["items"]:
+                r = seen.get(i["name"])
+                if r:
+                    day = datetime.fromtimestamp(r["date"], timezone.utc).strftime("%d/%m")
+                    cards.append(ItemCard(i["name"], f"{r['pct']:g}% {r['element']}", None, 96,
+                                          t("rot.tip.wiki", name=i["name"], pct=f"{r['pct']:g}", el=r["element"],
+                                            day=day)))
+                else:
+                    cards.append(ItemCard(i["name"], t("rot.bonus.game"), None, 96, t("rot.tip2", name=i["name"])))
+            lay.addWidget(self._row(cards))
             nxt = R.offers(vendor, cur["end"] + 60)
             if nxt and vendor == "coda":                   # Ergo Glast always has the same five
                 sub = QLabel(t("rot.next", start=_day(nxt["start"])) + "  " + ", ".join(i["name"] for i in nxt["items"]))
                 sub.setWordWrap(True)
                 role(sub, "hint")
                 lay.addWidget(sub)
-        note = QLabel(t("rot.note"))
+        note = QLabel(t("rot.note.wiki"))
         note.setWordWrap(True)
         role(note, "hint")
         lay.addWidget(note)

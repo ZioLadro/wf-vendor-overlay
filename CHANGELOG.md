@@ -13,7 +13,11 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Planner**: right click on a slot or a library card: *Search on warframe.market* (a Riven: the Riven auctions for
   its weapon); the tooltip says whether you own the mod / Arcane (when the game file was read).
 - **Weekly ▸ Tenet / Coda**: Eleanor's group of Coda weapons was the other one (checked in the game); the bonus
-  elements are no longer shown: the reconstruction does not give the game's values and no public data has them.
+  elements and percentages are the ones players report on the wiki ("Tenet Weapons", "Coda Weapons", read every 3
+  hours) for the current cycle, with their date; where nobody reported one yet, "see in game".
+- **Planner, Riven stats from a picture**: right click on a slot ▸ *Riven stats from a picture* (or *from the
+  clipboard*): the game's Riven card or tooltip (a screenshot, a video frame) fills the slot with that Riven: name,
+  stats (a faction "x0.62" is -38 %), MR and rerolls; the weapon's stats follow.
 
 ## 0.6.0
 - **Planner: import a build from a picture** (Share ▸ *Import from a picture…* or *Import the picture in the clipboard*):
