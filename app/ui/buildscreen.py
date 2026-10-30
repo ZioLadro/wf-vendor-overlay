@@ -1132,6 +1132,7 @@ class BuildScreen(QWidget):
     def __init__(self, editable=False):
         super().__init__()
         self.editable = editable
+        self.read_menu = None                           # read only: a slot's right click -> read_menu(i, global pos)
         self.setObjectName("buildscreen")
         self.lay = QVBoxLayout(self)
         self.lay.setContentsMargins(0, 0, 0, 0)
@@ -1320,6 +1321,10 @@ class BuildScreen(QWidget):
             c.clicked.connect(lambda i=i: self.slot_clicked.emit(i))
             c.menu.connect(lambda pos, i=i: self.slot_menu.emit(i, pos))
             c.dropped.connect(lambda name, i=i: self.slot_dropped.emit(i, name))
+        elif self.read_menu and s.get("name") and s["role"] != "arcane":
+            # read only (Builds): right click on a mod / Riven -> the owner's menu (warframe.market, Riven stats)
+            c.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            c.customContextMenuRequested.connect(lambda p, i=i, c=c: self.read_menu(i, c.mapToGlobal(p)))
         return c
 
     def _slots(self, m, cw):

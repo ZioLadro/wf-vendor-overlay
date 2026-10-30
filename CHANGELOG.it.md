@@ -9,6 +9,15 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
   Kubrow / Kavat / Predasite / Vulpaphyla) e nel pianificatore, che li elenca uno per uno (Sunika Claws, Medjay Claws…).
   Le mod degli artigli (Maul, Bite, Radon Claws…) ora contano nelle statistiche. Non contata: la conversione degli
   elementi di Burning / Sepsis Claws.
+- **Build, Riven da immagine**: clic destro su un Riven di un loadout del gioco (anche uno velato) ▸ *Statistiche Riven
+  da un'immagine* / *dagli appunti*: le statistiche vengono lette dalla carta o dal tooltip del gioco, tenute per quel
+  Riven (anche quando il file del gioco viene riletto), e capacità e statistiche si aggiornano. Clic destro su una mod:
+  warframe.market.
+- **Esportazione di loadout completi**: Build ▸ loadout del gioco ▸ *Esporta loadout*, e il menu di condivisione del
+  pianificatore quando il piano ha più di un oggetto: un codice da incollare, un file `.wfloadout`, o un'unica immagine
+  con tutti gli oggetti (Warframe, armi, companion…). Il pianificatore importa codici e file di loadout completi.
+- **Settimanali ▸ Tenet / Coda**: l'icona dell'elemento bonus accanto al valore della wiki.
+- **Build**: rileggere il file del gioco con meno loadout di prima non si ferma più con un errore.
 
 ## 0.6.5
 - **Aggiornamenti**: le cartelle dei vecchi aggiornamenti (`wfupdate_…` nella cartella AppData del programma, circa

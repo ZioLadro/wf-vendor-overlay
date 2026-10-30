@@ -140,6 +140,51 @@ def extras(item: dict) -> dict:
     return out
 
 
+from app.core.config import APP_DIR  # noqa: E402
+
+RIVEN_STATS_FILE = APP_DIR / "riven_stats.json"
+_riven_stats = None
+
+
+def riven_stats() -> dict:
+    """{Riven id in the game file: {"mod_name", "weapon", "attributes", "mr", "rerolls", "polarity"}}: the stats read
+    from a picture of a Riven of your loadouts (one the file shows veiled, or to correct it)."""
+    global _riven_stats
+    if _riven_stats is None:
+        try:
+            _riven_stats = json.loads(RIVEN_STATS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            _riven_stats = {}
+    return _riven_stats
+
+
+def save_riven_stats(ref: str, riven: dict):
+    keep = {k: riven[k] for k in ("mod_name", "weapon", "attributes", "mr", "rerolls", "polarity", "imported")
+            if k in riven}
+    riven_stats()[str(ref)] = keep
+    try:
+        RIVEN_STATS_FILE.write_text(json.dumps(_riven_stats, ensure_ascii=False), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def recompute(lo: dict) -> dict:
+    """A loadout's capacity and stats again after one of its Rivens changed (its slots and their polarities kept)."""
+    from app.game import buildcalc as BC
+    slots = lo["slots"]
+    roles = [s["role"] for s in slots]
+    mods = [((s["name"], s["rank"], s["riven"]) if s.get("riven") and not s["riven"].get("unrevealed")
+             else (s["name"], s["rank"])) if s.get("name") else None for s in slots]
+    pols = [s.get("pol", "") for s in slots]
+    calc = BC.evaluate(lo["kind"], lo["item"], roles, mods, pols, lo.get("reactor", True), lo.get("level", 30))
+    for s, c in zip(slots, calc["slots"]):
+        s.update(drain=c["drain"], state=c["state"], mpol=c["mpol"])
+    if lo.get("capacity") is not None:
+        lo["capacity"] = {k: calc[k] for k in ("total", "used", "free")}
+    lo.update(bonus=calc["bonus"], elements=calc.get("elements") or [], flat=calc.get("flat") or {})
+    return lo
+
+
 def read(inv: dict, market=None) -> list:
     """[{"item","kind","config","forma","slots","shards","helminth"}] for every loadout with at least MIN_MODS mods.
     slots: [{"role": general|aura|exilus|stance|arcane, "name": str|"", "rank": int|None, "max": int|None}]"""
@@ -212,12 +257,18 @@ def read(inv: dict, market=None) -> list:
                         slots.append({"role": role, "name": "", "rank": None, "max": None})
                         continue
                     rv = rivens.get(ref)
+                    ov = riven_stats().get(str(ref)) if rv else None
+                    if ov:                                     # stats read from a picture of this Riven (Builds)
+                        rv = dict({} if rv.get("unrevealed") else rv, **ov)
+                        rv.setdefault("rank", lvl if lvl is not None else 8)
                     if rv and rv.get("unrevealed"):
-                        slots.append({"role": role, "name": "Riven", "rank": lvl, "max": 8, "riven": {"unrevealed": True}})
+                        slots.append({"role": role, "name": "Riven", "rank": lvl, "max": 8, "riven": {"unrevealed": True},
+                                      "ref": str(ref)})
                         filled += role != "arcane"
                         continue
                     if rv:
-                        slots.append({"role": role, "name": rv["mod_name"] if rv.get("spliced") else rv["mod_name"] + " (Riven)", "rank": rv["rank"], "max": 8, "riven": rv})
+                        slots.append({"role": role, "name": rv["mod_name"] if rv.get("spliced") else rv["mod_name"] + " (Riven)",
+                                      "rank": rv["rank"], "max": 8, "riven": rv, "ref": str(ref)})
                         filled += role != "arcane"
                         continue
                     name, mx = mod_name(mod_path)

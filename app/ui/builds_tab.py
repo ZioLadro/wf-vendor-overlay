@@ -95,8 +95,14 @@ class LoadoutView(QWidget):
         role(self.empty, "muted")
         self.screen = BuildScreen(editable=False)
         self.screen.config_selected.connect(self._config_clicked)
+        self.screen.read_menu = self._slot_menu
         self.body = QVBoxLayout()
+        self.status = QLabel("")                          # the result of a Riven read from a picture
+        self.status.setWordWrap(True)
+        role(self.status, "hint")
+        self.status.hide()
         self.lay.addWidget(self.empty)
+        self.lay.addWidget(self.status)
         self.lay.addWidget(self.screen)
         self.lay.addLayout(self.body)
         self.lay.addStretch(1)
@@ -133,6 +139,60 @@ class LoadoutView(QWidget):
         row.addWidget(lab)
         row.addStretch(1)
         self.body.addLayout(row)
+
+    def _slot_menu(self, i, pos):
+        """Right click on a slot of a game loadout: warframe.market, and for a Riven its stats from a picture."""
+        from PyQt6.QtGui import QDesktopServices, QGuiApplication
+        from PyQt6.QtCore import QUrl
+        from PyQt6.QtWidgets import QMenu
+        from app.ui.buildscreen import market_link
+        lo = self._lo
+        if not lo or i >= len(lo["slots"]):
+            return
+        s = lo["slots"][i]
+        rv = s.get("riven")
+        m = QMenu(self)
+        if not (rv and rv.get("unrevealed")):
+            m.addAction(t("bs.market.riven" if rv else "bs.market"),
+                        lambda: QDesktopServices.openUrl(QUrl(market_link(s["name"], rv or None))))
+        if rv and s.get("ref"):
+            m.addSeparator()
+            m.addAction(t("bs.riven.image"), lambda: self._riven_image(i, False))
+            a = m.addAction(t("bs.riven.clip"), lambda: self._riven_image(i, True))
+            a.setEnabled(not QGuiApplication.clipboard().image().isNull())
+        if m.actions():
+            m.exec(pos)
+
+    def _riven_image(self, i, from_clipboard: bool):
+        """A Riven of this loadout gets the stats of its picture (the game's card or tooltip): kept for this Riven (also
+        when the game file is read again), the capacity and stats computed again."""
+        from app.ui.planner_tab import ocr_picture
+        lo = self._lo
+
+        def say(text):
+            self.status.setText(text)
+            self.status.setVisible(bool(text))
+
+        def done(res):
+            from app.game import rivenocr
+            if isinstance(res, str):
+                say(t("share.image.bad", err=res))
+                return
+            s = lo["slots"][i]
+            old = s.get("riven") or {}
+            try:
+                parsed = rivenocr.parse(res[0], "" if old.get("unrevealed") else s["name"])
+            except ValueError as e:
+                say(t("share.image.bad", err=str(e)))
+                return
+            riven = rivenocr.merge(parsed, old)
+            riven["rank"] = s.get("rank") if s.get("rank") is not None else riven.get("rank", 8)
+            LO.save_riven_stats(s["ref"], riven)
+            s.update(riven=riven, name=riven["mod_name"] + " (Riven)", rank=riven["rank"], max=8)
+            LO.recompute(lo)
+            self.show_loadout(lo)
+            say(t("bs.riven.done", name=riven["mod_name"], stats=rivenocr.summary(riven)))
+        ocr_picture(self, from_clipboard, t("bs.riven.image"), done, say)
 
     def _copy_data(self, lo):
         """The item as the game file has it and as the program reads it, to the clipboard (to report a capacity that
@@ -230,6 +290,8 @@ class LoadoutView(QWidget):
         return m
 
     def _show(self, lo):
+        if lo is not self._lo:
+            self.status.hide()
         self._lo = lo
         self._clear(self.body)
         if not lo:
@@ -307,10 +369,19 @@ class PresetView(QWidget):
         self.lay.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.title = QLabel("")
         self.title.setStyleSheet("font-size: 17px; font-weight: bold;")
+        head = QHBoxLayout()
+        head.addWidget(self.title)
+        head.addStretch(1)
+        self.export = QPushButton(t("share.loadout.btn"))     # the whole loadout: code, file, one picture
+        self.export.setToolTip(t("share.loadout.tip"))
+        self.export.clicked.connect(self._export_menu)
+        self.export.hide()
+        head.addWidget(self.export)
+        self._preset = None
         self.rows = QHBoxLayout()                       # three columns: Warframe + weapons | companion + Archwing | Necramech
         self.rows.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.detail = LoadoutView()
-        self.lay.addWidget(self.title)
+        self.lay.addLayout(head)
         self.lay.addLayout(self.rows)
         self.lay.addWidget(self.detail, 1)
         self._lookup, self._buttons = {}, []
@@ -367,6 +438,51 @@ class PresetView(QWidget):
         self._buttons.append((btn, r))
         return btn
 
+    ROLE_KIND = {"warframe": "warframe", "primary": "primary", "secondary": "secondary", "melee": "melee",
+                 "companion": "companion", "companion_weapon": "compweapon", "archwing": "archwing",
+                 "archgun": "archgun", "archmelee": "archmelee"}
+
+    def _pieces(self) -> dict:
+        """{kind: planned piece} of every item of the loadout that has mods (one per kind)."""
+        out = {}
+        if not self.detail.to_piece:
+            return out
+        for _btn, r in self._buttons:
+            kind = self.ROLE_KIND.get(r.get("role"))
+            lo = self._lookup.get((r["oid"], r["idx"]))
+            if kind and lo and kind not in out:
+                try:
+                    out[kind] = self.detail.to_piece(dict(lo, kind=kind))
+                except Exception:
+                    pass
+        return out
+
+    def _images(self) -> list:
+        """A picture of every item of the loadout, each shown below in turn (the selected one comes back)."""
+        from PyQt6.QtWidgets import QApplication
+        from app.ui import buildshare as S
+        back = next((r for b, r in self._buttons if b.isChecked()), None)
+        out, seen = [], set()
+        name = (self._preset or {}).get("name", "")
+        for _btn, r in self._buttons:
+            lo = self._lookup.get((r["oid"], r["idx"]))
+            if not lo or (r["oid"], r["idx"]) in seen:
+                continue
+            seen.add((r["oid"], r["idx"]))
+            self.detail.show_loadout(lo)
+            QApplication.processEvents()
+            out.append(S.image(self.detail.screen, lo["item"], t("builds.kind." + lo["kind"]) + " · " + name))
+        if back:
+            self._pick(back)
+        return out
+
+    def _export_menu(self):
+        from PyQt6.QtWidgets import QMenu
+        from app.ui.planner_tab import loadout_share_actions
+        m = QMenu(self)
+        sub = loadout_share_actions(m, self, lambda: ((self._preset or {}).get("name", ""), self._pieces()), self._images)
+        sub.exec(self.export.mapToGlobal(self.export.rect().bottomLeft()))
+
     def _pick(self, r):
         lo = self._lookup.get((r["oid"], r["idx"]))
         if lo:
@@ -383,6 +499,8 @@ class PresetView(QWidget):
             self.group.deleteLater()
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
+        self._preset = preset
+        self.export.setVisible(bool(preset) and self.detail.to_piece is not None)
         if not preset:
             self.title.setText("")
             self.detail.show_loadout(None)
@@ -410,6 +528,7 @@ class BuildsTab(QWidget):
         super().__init__()
         self.market, self.refresher, self.inventory = market, refresher, inventory
         self.loadouts, self.presets, self.source, self.when = [], {"presets": [], "tenno": {}}, "", 0
+        self._shown = []                                  # the loadouts the list's rows point into
         self.owned = {}                               # mods and Arcanes you own (the planner's library)
         self._mtime = 0
         self._shown = None
@@ -682,12 +801,15 @@ class BuildsTab(QWidget):
         """The list on the left, grouped by kind (Warframes, primaries, secondaries, melee, companions…) with a header per
         group and the item's picture when it is there."""
         cur = None
-        if keep and self.list.currentItem() is not None and self.list.currentItem().data(Qt.ItemDataRole.UserRole) is not None:
-            lo = self.loadouts[self.list.currentItem().data(Qt.ItemDataRole.UserRole)]
+        idx = self.list.currentItem().data(Qt.ItemDataRole.UserRole) if self.list.currentItem() is not None else None
+        # the list still shows the loadouts read before: its index may be past the new ones
+        if keep and isinstance(idx, int) and 0 <= idx < len(self._shown):
+            lo = self._shown[idx]
             cur = (lo.get("oid"), lo.get("idx"), lo["item"], lo["config"])
         text, kind = self.filter.text().strip().lower(), self.kind.currentData()
         self.list.blockSignals(True)
         self.list.clear()
+        self._shown = self.loadouts
         sel_row = first = -1
         order = {k: n for n, k in enumerate(KINDS)}
         shown = sorted((i for i, lo in enumerate(self.loadouts)

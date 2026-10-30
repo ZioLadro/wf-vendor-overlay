@@ -99,3 +99,22 @@ def parse(lines, current_name: str = "") -> dict:
     if not attrs:
         raise ValueError("no Riven stats in the picture")
     return {"mod_name": name, "weapon": weapon, "attributes": attrs[:4], "mr": mr, "rerolls": rerolls}
+
+
+def merge(parsed: dict, old: dict | None) -> dict:
+    """The slot's Riven with the picture's name, stats, MR and rerolls (its rank and polarity kept: Madurai when
+    unknown)."""
+    old = dict(old or {})
+    old.pop("unrevealed", None)
+    riven = dict(old)
+    riven.update(mod_name=parsed["mod_name"] or old.get("mod_name") or "Riven", attributes=parsed["attributes"],
+                 weapon=parsed["weapon"] or old.get("weapon", ""), rank=old.get("rank", 8),
+                 polarity=old.get("polarity") or "madurai", imported=True)
+    for k in ("rerolls", "mr"):
+        if parsed.get(k) is not None:
+            riven[k] = parsed[k]
+    return riven
+
+
+def summary(riven: dict) -> str:
+    return "; ".join(f"{a['value']:+g}{'%' if a['pct'] else ''} {a['label']}" for a in riven.get("attributes") or [])

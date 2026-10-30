@@ -1492,6 +1492,12 @@ EN = {
     "bs.stat.total.tip": "As in the game: the damage of one shot, every projectile of its multishot included; no critical hits, no status.",
     # ---- 0.4.0 ----
     "dmg.untyped": "Damage (type not known)",
+    # ---- 0.4.0 ----
+    "share.loadout": "Whole loadout",
+    "share.loadout.btn": "Export loadout ▾",
+    "share.loadout.tip": "The whole loadout (Warframe, weapons, companion…): a code to paste, a .wfloadout file the planner imports, or one picture of every item",
+    "share.file.loadout": "Save as file (.wfloadout)…",
+    "share.imported.loadout": "Loadout \"{name}\" imported: {n} items (the bar above switches between them).",
 }
 
 IT = {
@@ -2971,6 +2977,12 @@ IT = {
     "bs.stat.total.tip": "Come nel gioco: il danno di un colpo, compresi tutti i proiettili del multicolpo; senza critici né status.",
     # ---- 0.4.0 ----
     "dmg.untyped": "Danno (tipo non noto)",
+    # ---- 0.4.0 ----
+    "share.loadout": "Loadout completo",
+    "share.loadout.btn": "Esporta loadout ▾",
+    "share.loadout.tip": "Tutto il loadout (Warframe, armi, companion…): un codice da incollare, un file .wfloadout che il pianificatore importa, o un'unica immagine con tutti gli oggetti",
+    "share.file.loadout": "Salva come file (.wfloadout)…",
+    "share.imported.loadout": "Loadout \"{name}\" importato: {n} oggetti (la barra in alto passa dall'uno all'altro).",
 }
 
 STRINGS = {"en": EN, "it": IT}

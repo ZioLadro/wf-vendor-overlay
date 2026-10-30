@@ -8,6 +8,14 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
   *Claws (Beast)* table and each companion's page: shown in Builds (the claws of your Kubrow / Kavat / Predasite /
   Vulpaphyla) and in the planner, which lists them one by one (Sunika Claws, Medjay Claws…). The claw mods (Maul, Bite,
   Radon Claws…) now count in the stats. Not counted: Burning / Sepsis Claws' conversion of the elements.
+- **Builds, Rivens from a picture**: right click on a Riven of a game loadout (a veiled one too) ▸ *Riven stats from a
+  picture* / *from the clipboard*: its stats are read from the game's card or tooltip, kept for that Riven (also when
+  the game file is read again), and the capacity and stats follow. Right click on a mod: warframe.market.
+- **Export whole loadouts**: Builds ▸ game loadouts ▸ *Export loadout*, and the planner's share menu when the plan has
+  more than one item: a code to paste, a `.wfloadout` file, or one picture with every item (Warframe, weapons,
+  companion…). The planner imports codes and files of whole loadouts.
+- **Weekly ▸ Tenet / Coda**: the bonus element's icon next to the wiki's value.
+- **Builds**: reading the game file again with fewer loadouts than before no longer stops with an error.
 
 ## 0.6.5
 - **Updates**: the folders of past updates (`wfupdate_…` in the program's AppData folder, about 100 MB each) are deleted

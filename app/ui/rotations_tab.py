@@ -65,6 +65,7 @@ class ItemCard(QFrame):
         if sub:
             s = QLabel((icons_html(sub_icon) if sub_icon else "") + sub)
             s.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            s.setWordWrap(True)
             lay.addWidget(s)
         self.setFixedWidth(size + 40)
         if tip:
@@ -80,7 +81,8 @@ class ItemCard(QFrame):
 
 
 def icons_html(path) -> str:
-    return f"<img src='{path}' width='16' height='16'> " if path else ""
+    from PyQt6.QtCore import QUrl
+    return f"<img src='{QUrl.fromLocalFile(str(path)).toString()}' width='16' height='16'> " if path else ""
 
 
 class _Page(QWidget):
@@ -179,7 +181,8 @@ class NemesisWeaponsPage(_Page):
                 r = seen.get(i["name"])
                 if r:
                     day = datetime.fromtimestamp(r["date"], timezone.utc).strftime("%d/%m")
-                    cards.append(ItemCard(i["name"], f"{r['pct']:g}% {r['element']}", None, 96,
+                    cards.append(ItemCard(i["name"], f"{r['pct']:g}% {t('dmg.' + r['element'].lower())}",
+                                          icons.damage_path(r["element"]), 96,
                                           t("rot.tip.wiki", name=i["name"], pct=f"{r['pct']:g}", el=r["element"],
                                             day=day)))
                 else:

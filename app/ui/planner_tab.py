@@ -100,6 +100,89 @@ def share_actions(menu, parent, get_piece, get_screen, get_title):
     menu.addAction(t("share.image.copy"), lambda: picture(False))
 
 
+def ocr_picture(parent, from_clipboard: bool, title: str, done, say=lambda _t: None):
+    """Reads a picture's text with the OCR in the background (a file chosen, or the clipboard's picture);
+    done((lines, w, h, path)) or done(error text), in the GUI thread."""
+    from PyQt6.QtCore import QObject, pyqtSignal as _sig
+    from PyQt6.QtGui import QGuiApplication
+    from PyQt6.QtWidgets import QFileDialog
+    if from_clipboard:
+        img = QGuiApplication.clipboard().image()
+        if img.isNull():
+            return
+        path = str(APP_DIR / "import_picture.png")
+        img.save(path, "PNG")
+    else:
+        path, _ = QFileDialog.getOpenFileName(parent, title, "", "Images (*.png *.jpg *.jpeg *.webp *.bmp)")
+        if not path:
+            return
+    say(t("share.image.reading"))
+
+    class _Done(QObject):
+        sig = _sig(object)
+    holder = _Done()
+    holder.sig.connect(lambda res: (done(res), setattr(parent, "_ocr_holder", None)))
+    parent._ocr_holder = holder                         # kept alive until the answer arrives
+
+    def work():
+        try:
+            import app.scan.ocr_worker as OW
+            if OW.CLIENT is not None:
+                lines, w, h = OW.CLIENT.read_image(path)
+            else:
+                import numpy as np
+                from PIL import Image
+                from app.scan.ocr import make_engine, read_lines
+                im = Image.open(path).convert("RGB")
+                ls = read_lines(np.array(im)[:, :, ::-1].copy(), make_engine())
+                lines, w, h = [(x.text, x.x, x.y, x.w, x.h, x.score) for x in ls], im.width, im.height
+            holder.sig.emit((lines, w, h, path))
+        except Exception as e:
+            holder.sig.emit(f"{type(e).__name__}: {e}")
+    import threading
+    threading.Thread(target=work, daemon=True, name="picture-ocr").start()
+
+
+def loadout_share_actions(menu, parent, get_loadout, get_images):
+    """A whole loadout (Warframe, weapons, companion…): code, .wfloadout file, one picture of every piece.
+    get_loadout() -> (name, {kind: piece}); get_images() -> [QImage of each piece] (buildshare.image)."""
+    from app.ui import buildshare as S
+    from PyQt6.QtWidgets import QFileDialog
+
+    def code():
+        name, pieces = get_loadout()
+        S.copy_text(S.encode_loadout(name, pieces))
+        QMessageBox.information(parent, t("share.loadout"), t("share.code.done"))
+
+    def file():
+        name, pieces = get_loadout()
+        path, _ = QFileDialog.getSaveFileName(parent, t("share.file"), f"{name or 'loadout'}.wfloadout", S.LOADOUT_FILTER)
+        if path:
+            with open(path if path.lower().endswith((".wfloadout", ".json")) else path + ".wfloadout", "w",
+                      encoding="utf-8") as fh:
+                json.dump(S.loadout_json(name, pieces), fh, ensure_ascii=False, indent=1)
+
+    def picture(save):
+        name, _pieces = get_loadout()
+        img = S.stack(get_images())
+        if img.isNull():
+            return
+        if not save:
+            S.copy_image(img)
+            QMessageBox.information(parent, t("share.image"), t("share.image.done"))
+            return
+        path, _ = QFileDialog.getSaveFileName(parent, t("share.image"), f"{name or 'loadout'}.png", "PNG (*.png)")
+        if path:
+            img.save(path if path.lower().endswith(".png") else path + ".png", "PNG")
+    sub = menu.addMenu(t("share.loadout"))
+    sub.setToolTipsVisible(True)
+    sub.addAction(t("share.code"), code)
+    sub.addAction(t("share.file.loadout"), file)
+    sub.addAction(t("share.image"), lambda: picture(True))
+    sub.addAction(t("share.image.copy"), lambda: picture(False))
+    return sub
+
+
 def mod_family(name: str) -> str:
     """Mods the game does not let you equip together share this: Vitality, Primed Vitality, Umbral / Archon Vitality."""
     return _PREFIX.sub("", name or "").strip().lower()
@@ -541,16 +624,45 @@ class PlannerView(QWidget):
             m.addSeparator()
             share_actions(m, self, lambda: (self.kind, self.p), lambda: self.screen,
                           lambda: (self.p["item"], t("builds.kind." + self.kind) + " · " + (self.name.text() or "")))
+        self._store_piece()
+        if sum(1 for p in self.pieces.values() if p and p.get("item")) > 1:
+            m.addSeparator()
+            loadout_share_actions(m, self, lambda: (self.name.text().strip(), dict(self.pieces)), self._loadout_images)
         m.exec(self.btn_share.mapToGlobal(self.btn_share.rect().bottomLeft()))
+
+    def _loadout_images(self) -> list:
+        """A picture of every piece of the loadout, each drawn on the screen in turn (the shown one comes back)."""
+        from app.ui import buildshare as S
+        from PyQt6.QtWidgets import QApplication
+        self._store_piece()
+        back, out = self.kind, []
+        for k in KINDS:
+            p = self.pieces.get(k)
+            if not p or not p.get("item"):
+                continue
+            self.switch_to(k)
+            QApplication.processEvents()
+            out.append(S.image(self.screen, p["item"], t("builds.kind." + k) + " · " + (self.name.text() or "")))
+        self.switch_to(back)
+        return out
 
     def import_text(self, text):
         from app.ui import buildshare as S
         try:
-            kind, piece = S.decode(text)
+            what, kind, piece = S.decode_any(text)
         except (ValueError, json.JSONDecodeError) as e:
             QMessageBox.warning(self, t("share.import.code"), t("share.bad", err=str(e)))
             return False
         self._store_piece()
+        if what == "loadout":                          # a whole loadout: every piece, the name as the plan's
+            name, pieces = kind, piece
+            self.pieces = pieces
+            if name:
+                self.name.setText(name)
+            first = next((k for k in KINDS if k in self.pieces), "warframe")
+            self._show_piece(first, self.pieces.get(first))
+            self._say(t("share.imported.loadout", name=name or "—", n=len(pieces)))
+            return True
         self.pieces[kind] = piece
         self._show_piece(kind, piece)
         self._say(t("share.imported", item=piece["item"]))
@@ -608,46 +720,7 @@ class PlannerView(QWidget):
         threading.Thread(target=work, daemon=True, name="build-image").start()
 
     def _ocr_picture(self, from_clipboard: bool, title: str, done):
-        """Reads a picture's text with the OCR in the background; done((lines, w, h, path)) or done(error text) in the
-        GUI thread."""
-        from PyQt6.QtWidgets import QFileDialog
-        from PyQt6.QtGui import QGuiApplication
-        if from_clipboard:
-            img = QGuiApplication.clipboard().image()
-            if img.isNull():
-                return
-            path = str(APP_DIR / "import_picture.png")
-            img.save(path, "PNG")
-        else:
-            path, _ = QFileDialog.getOpenFileName(self, title, "", "Images (*.png *.jpg *.jpeg *.webp *.bmp)")
-            if not path:
-                return
-        self._say(t("share.image.reading"))
-        from PyQt6.QtCore import QObject, pyqtSignal as _sig
-
-        class _Done(QObject):
-            sig = _sig(object)
-        holder = _Done()
-        holder.sig.connect(lambda res: (done(res), setattr(self, "_ocr_holder", None)))
-        self._ocr_holder = holder                       # kept alive until the answer arrives
-
-        def work():
-            try:
-                import app.scan.ocr_worker as OW
-                if OW.CLIENT is not None:
-                    lines, w, h = OW.CLIENT.read_image(path)
-                else:
-                    import numpy as np
-                    from PIL import Image
-                    from app.scan.ocr import make_engine, read_lines
-                    im = Image.open(path).convert("RGB")
-                    ls = read_lines(np.array(im)[:, :, ::-1].copy(), make_engine())
-                    lines, w, h = [(x.text, x.x, x.y, x.w, x.h, x.score) for x in ls], im.width, im.height
-                holder.sig.emit((lines, w, h, path))
-            except Exception as e:
-                holder.sig.emit(f"{type(e).__name__}: {e}")
-        import threading
-        threading.Thread(target=work, daemon=True, name="picture-ocr").start()
+        ocr_picture(self, from_clipboard, title, done, self._say)
 
     def _riven_image(self, i, from_clipboard: bool):
         """Slot i becomes the Riven of the picture (its name, stats, MR, rerolls); a Riven already there keeps its
@@ -664,18 +737,10 @@ class PlannerView(QWidget):
             except ValueError as e:
                 self._say(t("share.image.bad", err=str(e)))
                 return
-            riven = dict(old)
-            riven.update(mod_name=rv["mod_name"] or old.get("mod_name") or "Riven", attributes=rv["attributes"],
-                         weapon=rv["weapon"] or old.get("weapon", ""), rank=old.get("rank", 8),
-                         polarity=old.get("polarity") or "madurai")
-            if rv.get("rerolls") is not None:
-                riven["rerolls"] = rv["rerolls"]
-            if rv.get("mr") is not None:
-                riven["mr"] = rv["mr"]
+            riven = rivenocr.merge(rv, old)
             self.mods[i] = (riven["mod_name"] + " (Riven)", riven["rank"], riven)
             self._draw()
-            self._say(t("bs.riven.done", name=riven["mod_name"], stats="; ".join(
-                f"{a['value']:+g}{'%' if a['pct'] else ''} {a['label']}" for a in rv["attributes"])))
+            self._say(t("bs.riven.done", name=riven["mod_name"], stats=rivenocr.summary(riven)))
         self._ocr_picture(from_clipboard, t("bs.riven.image"), done)
 
     def _image_read(self, res):
