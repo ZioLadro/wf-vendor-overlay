@@ -18,6 +18,7 @@ API = "https://wiki.warframe.com/api.php"
 PAGES = {"tenet": "Tenet Weapons", "coda": "Coda Weapons"}
 CACHE = APP_DIR / "wiki_reports.json"
 MAX_AGE = 3 * 3600
+FORMAT = 2                      # the cache's parser version: a copy read by an older parser is read again
 ELEMENTS = {"impact": "Impact", "heat": "Heat", "fire": "Heat", "cold": "Cold", "freeze": "Cold",
             "electricity": "Electricity", "electric": "Electricity", "toxin": "Toxin", "magnetic": "Magnetic",
             "radiation": "Radiation"}
@@ -97,7 +98,13 @@ def parse_html(html: str, weapons: list) -> list:
         table_date = parse_date(_text(cap.group(1))) if cap else None
         if table_date is None and heads:
             table_date = parse_date(_text(heads[-1]))
-        if table_date is None:
+        # "Current Valence Bonuses" (above the table, its caption or its header): the cycle running now, no date
+        head_txt = _text(cap.group(1)) if cap else ""
+        first_row = re.search(r"<tr\b.*?</tr>", table, re.S | re.I)
+        context = " ".join((head_txt, _text(heads[-1]) if heads else "", H.unescape(before[-400:]),
+                            _text(first_row.group(0)) if first_row else "")).lower()
+        is_current = "current" in context
+        if table_date is None and not is_current:
             table_date = parse_date(H.unescape(before[-300:]))
         rows = re.findall(r"<tr\b.*?</tr>", table, re.S | re.I)
         cols = {}
@@ -111,13 +118,23 @@ def parse_html(html: str, weapons: list) -> list:
                 continue
             row_date = next((d for d in (parse_date(c) for c in cells) if d), None) or table_date
             row_weapon = next((w for w in row_weapons if w), None)
-            for i, c in enumerate(cells):
+            n_weapons = sum(1 for x in row_weapons if x)
+            found = False
+            for i, c in enumerate(cells):              # element and percentage in one cell (one weapon per column)
                 el, pct = _element(c), _pct(c)
                 if not el or pct is None:
                     continue
-                w = row_weapons[i] or cols.get(i) or (row_weapon if sum(1 for x in row_weapons if x) <= 1 else None)
+                w = row_weapons[i] or cols.get(i) or (row_weapon if n_weapons <= 1 else None)
                 if w:
-                    out.append({"weapon": w, "element": el, "pct": pct, "date": row_date})
+                    out.append({"weapon": w, "element": el, "pct": pct, "date": row_date, "current": is_current})
+                    found = True
+            if not found and n_weapons == 1:           # a row per weapon: element and percentage in their own columns
+                rest = [c for c, w in zip(cells, row_weapons) if not w]
+                el = next((e for e in map(_element, rest) if e), None)
+                pct = next((v for v in map(_pct, rest) if v is not None), None)
+                if el and pct is not None:
+                    out.append({"weapon": row_weapon, "element": el, "pct": pct, "date": row_date,
+                                "current": is_current})
     return out
 
 
@@ -130,10 +147,13 @@ def _load() -> dict:
     return _state["d"]
 
 
-def refresh(vendor: str, weapons: list, done=None):
-    """Reads the vendor's wiki page in the background when the copy is 3 hours old; done() afterwards (any thread)."""
+def refresh(vendor: str, weapons: list, done=None, since: float = 0):
+    """Reads the vendor's wiki page in the background when the copy is 3 hours old (1 hour in the first 12 hours of a
+    cycle starting at `since`, while players update the page), or was read before the cycle; done() afterwards."""
     d = _load().get(vendor) or {}
-    if time.time() - float(d.get("t") or 0) < MAX_AGE:
+    now, t = time.time(), float(d.get("t") or 0)
+    age = 3600 if since and now - since < 12 * 3600 else MAX_AGE
+    if d.get("v") == FORMAT and (now - t < age and t >= since or now < float(d.get("retry") or 0)):
         return
     with _lock:
         if vendor in _state["busy"]:
@@ -150,7 +170,7 @@ def refresh(vendor: str, weapons: list, done=None):
             r.raise_for_status()
             reports = parse_html((r.json().get("parse") or {}).get("text", {}).get("*", ""), weapons)
             with _lock:
-                _load()[vendor] = {"t": time.time(), "reports": reports}
+                _load()[vendor] = {"t": time.time(), "v": FORMAT, "reports": reports}
                 try:
                     CACHE.write_text(json.dumps(_state["d"]), encoding="utf-8")
                 except OSError:
@@ -159,7 +179,7 @@ def refresh(vendor: str, weapons: list, done=None):
         except Exception as e:
             logbus.add("weekly", f"wiki {PAGES[vendor]}: {type(e).__name__}: {e}", "warn")
             with _lock:
-                _load()[vendor] = dict(_load().get(vendor) or {}, t=time.time() - MAX_AGE + 1800)   # again in 30 min
+                _load()[vendor] = dict(_load().get(vendor) or {}, v=FORMAT, retry=time.time() + 1800)  # in 30 min
         finally:
             _state["busy"].discard(vendor)
             if done:
@@ -171,13 +191,19 @@ def refresh(vendor: str, weapons: list, done=None):
 
 
 def current(vendor: str, start: float, end: float) -> dict:
-    """{weapon: {"element", "pct", "date"}} reported for the cycle [start, end) (a report dated the day before the
-    cycle counts: time zones), the latest per weapon."""
+    """{weapon: {"element", "pct", "date"}} reported for the cycle [start, end), the latest per weapon: a dated report of
+    that cycle (the day before counts: time zones), or the page's "current" table when it was read during the cycle."""
     out = {}
-    for r in (_load().get(vendor) or {}).get("reports") or []:
+    entry = _load().get(vendor) or {}
+    read_at = float(entry.get("t") or 0)
+    for r in entry.get("reports") or []:
         d = r.get("date")
-        if d is None or not (start - 86400 <= d < end):
+        if d is not None and start - 86400 <= d < end:
+            pass
+        elif r.get("current") and start <= read_at < end:
+            r = dict(r, date=read_at)
+        else:
             continue
-        if r["weapon"] not in out or (out[r["weapon"]].get("date") or 0) < d:
+        if r["weapon"] not in out or (out[r["weapon"]].get("date") or 0) < r["date"]:
             out[r["weapon"]] = r
     return out

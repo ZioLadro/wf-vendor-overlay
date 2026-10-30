@@ -170,7 +170,7 @@ class NemesisWeaponsPage(_Page):
                 continue
             v = (R.data().get("vendors") or {}).get(vendor, {})
             who = v.get("who", "")
-            WR.refresh(vendor, [i["name"] for i in v.get("items") or []], self._wiki.arrived.emit)
+            WR.refresh(vendor, [i["name"] for i in v.get("items") or []], self._wiki.arrived.emit, cur["start"])
             seen = WR.current(vendor, cur["start"], cur["end"])
             self._head(lay, t("rot." + vendor, who=who),
                        t("rot.cycle." + vendor, end=_day(cur["end"]), left=_left(cur["end"] - now)))
