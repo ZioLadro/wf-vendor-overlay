@@ -3,6 +3,13 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.9
+- **The Warframe's figure is whole**: the picture was not cut by the screen but is itself a close-up (DE's store icon
+  of Cyte-09 is a piece of helmet). The Warframe's figure is now looked for among the pictures of its wiki article:
+  those named after it (not icons, abilities, skins, helmets…), the tallest standing one. A close-up is never used
+  for a Warframe: no picture rather than a cut one.
+- **Mod names easier to read** over the art: slightly bolder, on a soft dark band, with a dark outline.
+
 ## 0.5.8
 - **The Warframe's whole figure** in the background: the wiki article's main picture (DE's store icon, a close-up for
   some Warframes, stays the fallback and the picture of weapons and companions).

@@ -3,6 +3,14 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.9
+- **La figura del Warframe è intera**: l'immagine non era tagliata dalla schermata, è proprio un primo piano (l'icona
+  del negozio di DE di Cyte-09 è un pezzo di elmo). Ora la figura del Warframe viene cercata tra le immagini del suo
+  articolo della wiki: quelle col suo nome (non icone, abilità, skin, elmi…), la più alta in piedi. Per un Warframe non
+  si usa mai un primo piano: meglio nessuna immagine che una tagliata.
+- **Nomi delle mod più leggibili** sopra l'immagine: un po' più marcati, su una banda scura sfumata, con un contorno
+  scuro.
+
 ## 0.5.8
 - **La figura intera del Warframe** sullo sfondo: l'immagine principale dell'articolo della wiki (l'icona del negozio di
   DE, un primo piano per alcuni Warframe, resta la riserva e l'immagine di armi e compagni).

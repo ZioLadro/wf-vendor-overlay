@@ -69,6 +69,44 @@ def _start():
         _worker.start()
 
 
+FIG_SKIP = re.compile(r"icon|abilit|glyph|sigil|skin|helmet|signature|collage|augment|mod|passive|emblem|syandana|"
+                      r"deluxe|tennogen|banner|codex|profile|blueprint|chassis|neuroptic|systems|prime_?access|"
+                      r"\d{3,}x|thumb|portrait|head", re.I)
+
+
+def _wiki_figure(requests, h, name: str) -> str:
+    """The address of a Warframe's whole figure on the wiki: among the pictures of its article named after it, the
+    tallest portrait one (a standing render is much taller than wide; icons and close-ups are not). "" if none."""
+    api = "https://wiki.warframe.com/api.php"
+    key = re.sub(r"[^a-z0-9]", "", name.lower())
+    files = []
+    try:
+        q = requests.get(api, headers=h, timeout=15, params={"action": "parse", "page": name, "prop": "images",
+                                                              "format": "json", "redirects": 1})
+        files = [f for f in (q.json().get("parse") or {}).get("images") or []
+                 if re.sub(r"[^a-z0-9]", "", f.lower()).startswith(key) and not FIG_SKIP.search(f[len(name):])
+                 and f.lower().endswith((".png", ".webp"))]
+    except Exception:
+        files = []
+    for guess in (name + ".png", name.replace(" ", "") + ".png"):   # the usual names, when the page lists none
+        if guess.replace(" ", "_") not in files:
+            files.append(guess.replace(" ", "_"))
+    best, best_h = "", 0
+    for i in range(0, min(len(files), 40), 20):
+        try:
+            q = requests.get(api, headers=h, timeout=15, params={
+                "action": "query", "format": "json", "prop": "imageinfo", "iiprop": "url|size",
+                "titles": "|".join("File:" + f for f in files[i:i + 20])})
+            for p in ((q.json().get("query") or {}).get("pages") or {}).values():
+                info = (p.get("imageinfo") or [{}])[0]
+                w, ht = int(info.get("width") or 0), int(info.get("height") or 0)
+                if info.get("url") and w and ht >= 1.35 * w and ht > best_h:
+                    best, best_h = info["url"], ht
+        except Exception:
+            pass
+    return best
+
+
 def _run():
     import time
     import requests
@@ -82,12 +120,8 @@ def _run():
         try:
             h = {"User-Agent": HEADERS["User-Agent"]}
             src = url
-            if url.startswith("wiki:"):                    # the main picture of a wiki article, full size
-                q = requests.get("https://wiki.warframe.com/api.php", headers=h, timeout=15, params={
-                    "action": "query", "format": "json", "titles": url[5:], "redirects": 1, "prop": "pageimages",
-                    "piprop": "original"})
-                pages = (q.json().get("query") or {}).get("pages") or {}
-                src = next((p.get("original", {}).get("source") for p in pages.values() if p.get("original")), "")
+            if url.startswith("wiki"):                     # a Warframe's full figure from its wiki article
+                src = _wiki_figure(requests, h, url.split(":", 1)[1])
                 if not src:                                # none: the caller falls back on the next picture
                     DIR.mkdir(parents=True, exist_ok=True)
                     _file(url).with_suffix(".none").write_bytes(b"")

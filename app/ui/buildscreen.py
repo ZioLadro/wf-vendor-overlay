@@ -322,14 +322,28 @@ class Card(QWidget):
                            QFontMetrics(f).elidedText(txt, Qt.TextElideMode.ElideRight, W - 16))
                 y += H * 0.14
         if name:
-            f.setPixelSize(max(10, int(H * 0.17)))
+            f.setPixelSize(max(10, int(H * 0.175)))
             f.setBold(False)
+            f.setWeight(QFont.Weight.DemiBold)
             p.setFont(f)
-            p.setPen(QColor("#ffffff"))
             label = name.replace(" (Riven)", "")
             area = QRectF(8, H * (0.62 if rv and rv.get("attributes") else 0.36), W - 16, H * 0.36)
             if s.get("role") == "arcane" and self.pic is not None:
                 area = QRectF(W * 0.06 + self.pic.width() + 6, H * 0.2, W - W * 0.06 - self.pic.width() - 12, H * 0.5)
+            if self.pic is not None or wiki:               # over the art: a soft dark band, then an outline
+                from PyQt6.QtGui import QLinearGradient
+                band = QLinearGradient(0, area.top(), 0, area.bottom())
+                band.setColorAt(0.0, QColor(0, 0, 0, 0))
+                band.setColorAt(0.5, QColor(0, 0, 0, 120))
+                band.setColorAt(1.0, QColor(0, 0, 0, 0))
+                p.fillRect(QRectF(W * 0.06, area.top() - H * 0.04, W * 0.88, area.height() + H * 0.08), QBrush(band))
+                flags = Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap
+                p.setPen(QColor(0, 0, 0, 210))
+                for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)):
+                    p.drawText(area.translated(dx, dy), flags, label)
+                p.setPen(QColor(0, 0, 0, 120))
+                p.drawText(area.translated(0, 2), flags, label)
+            p.setPen(QColor("#ffffff"))
             p.drawText(area, Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, label)
             mx = s.get("max")
             if mx and not (wiki and modframes.has_pips(wiki)):
@@ -1022,6 +1036,10 @@ class BuildScreen(QWidget):
                 return None
             from PyQt6.QtGui import QPixmap
             self._figure_pm = QPixmap(str(f))
+            pm = self._figure_pm
+            # a Warframe's DE icon is often a close-up (a cut helmet): only a standing, tall picture is used
+            if self._figure_kind == "warframe" and not pm.isNull() and pm.height() < 1.2 * pm.width():
+                self._figure_pm = QPixmap()
         return self._figure_pm if not self._figure_pm.isNull() else None
 
     def paintEvent(self, _e):
@@ -1051,9 +1069,10 @@ class BuildScreen(QWidget):
         # a Warframe: the wiki article's main picture (the whole figure); DE's store icon is only a fallback (for some
         # Warframes it is a close-up), and the picture of weapons and companions
         self._figure_urls = []
+        self._figure_kind = m.get("kind")
         if figure_on() and who:
             if m.get("kind") == "warframe":
-                self._figure_urls.append("wiki:" + who)
+                self._figure_urls.append("wikifig:" + who)
             de = (LO.data().get("figure") or {}).get(who)
             if de:
                 self._figure_urls.append(de)
