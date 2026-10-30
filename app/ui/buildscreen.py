@@ -834,7 +834,7 @@ def stats_panel(m: dict) -> QFrame:
             g.addWidget(val, r, 1)
         lay.addLayout(g)
     note = QLabel(t("bs.note." + ("comp" if wf and m.get("kind") == "companion" else "wf" if wf else
-                                  "weapon" if ws else "claws" if m.get("item") == "Claws" else "other")))
+                                  "claws" if BC.item_type(m.get("item") or "") == "Claws" else "weapon" if ws else "other")))
     note.setWordWrap(True)
     role(note, "hint")
     note.setStyleSheet("margin-top: 6px;")

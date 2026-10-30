@@ -3,6 +3,12 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.6.6
+- **Beasts' claws**: each beast's claws have their own stats (damage and type, critical, status), from the wiki's
+  *Claws (Beast)* table and each companion's page: shown in Builds (the claws of your Kubrow / Kavat / Predasite /
+  Vulpaphyla) and in the planner, which lists them one by one (Sunika Claws, Medjay Claws…). The claw mods (Maul, Bite,
+  Radon Claws…) now count in the stats. Not counted: Burning / Sepsis Claws' conversion of the elements.
+
 ## 0.6.5
 - **Updates**: the folders of past updates (`wfupdate_…` in the program's AppData folder, about 100 MB each) are deleted
   when the program starts; after an update its whole folder is deleted, the download included.

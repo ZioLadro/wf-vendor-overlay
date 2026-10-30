@@ -362,7 +362,7 @@ def weapon_stats(kind: str, item: str, bonus: dict, elements: list, valence: dic
             for lab, v in perks["pct"].items():
                 bonus[lab] = bonus.get(lab, 0) + v
     b = lambda *labels: sum(bonus.get(lab, 0) for lab in labels) / 100
-    melee = kind in ("melee", "archmelee") or "rng" in ws
+    melee = kind in ("melee", "archmelee") or "rng" in ws or bool(ws.get("claws"))
     mult = 1 + (b("Melee Damage") if melee else b("Damage"))
     vel = (valence or {}).get("element") if valence else None
     vpct = float((valence or {}).get("pct") or 0) / 100 if vel else 0.0
@@ -485,6 +485,12 @@ def items(kind: str) -> list:
     if kind == "archwing":
         return sorted(d.get("archwings", {}))
     return sorted(n for n, w in d.get("weapons", {}).items() if w[0] == kind)
+
+
+def claws_of(owner: str) -> str:
+    """The claws of a beast companion ("Sunika Kubrow" -> "Sunika Claws"), "Claws" when their stats are not known."""
+    name = (owner or "").split(" ")[0] + " Claws"
+    return name if owner and name in LO.data().get("wstats", {}) else "Claws"
 
 
 def item_type(item: str) -> str:

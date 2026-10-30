@@ -3,6 +3,13 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.6.6
+- **Artigli delle bestie**: gli artigli di ogni bestia hanno le loro statistiche (danno e tipo, critico, status), dalla
+  tabella *Claws (Beast)* della wiki e dalla pagina di ogni companion: mostrate nelle Build (gli artigli del tuo
+  Kubrow / Kavat / Predasite / Vulpaphyla) e nel pianificatore, che li elenca uno per uno (Sunika Claws, Medjay Claws…).
+  Le mod degli artigli (Maul, Bite, Radon Claws…) ora contano nelle statistiche. Non contata: la conversione degli
+  elementi di Burning / Sepsis Claws.
+
 ## 0.6.5
 - **Aggiornamenti**: le cartelle dei vecchi aggiornamenti (`wfupdate_…` nella cartella AppData del programma, circa
   100 MB l'una) vengono cancellate all'avvio; dopo un aggiornamento viene cancellata tutta la sua cartella, download

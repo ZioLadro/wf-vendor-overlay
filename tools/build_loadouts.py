@@ -52,6 +52,30 @@ DT_NAMES = {"FIRE": "Heat", "FREEZE": "Cold", "ELECTRICITY": "Electricity", "POI
             "CORROSIVE": "Corrosive", "GAS": "Gas", "MAGNETIC": "Magnetic", "TAU": "Tau", "VOID": "Void"}
 
 
+# beasts' claws (no public data of the game has them): the wiki's "Claws (Beast)" table and each companion's page
+# (Update 37 values), {owner: ({damage type: value}, crit chance, crit multiplier, status chance}. "untyped": the wiki
+# gives the total but not its type. Attack speed 1.0 (the wiki gives none).
+CLAW_STATS = {
+    "Chesa Kubrow": ({"impact": 275}, 0.15, 1.5, 0.15), "Huras Kubrow": ({"slash": 350}, 0.20, 3.5, 0.05),
+    "Raksa Kubrow": ({"puncture": 250}, 0.075, 2.5, 0.20), "Sahasa Kubrow": ({"impact": 300}, 0.10, 3.0, 0.05),
+    "Sunika Kubrow": ({"slash": 550}, 0.075, 3.5, 0.075),
+    "Helminth Charger": ({"slash": 200, "toxin": 50}, 0.075, 2.5, 0.25),
+    "Vizier Predasite": ({"impact": 150, "corrosive": 150}, 0.05, 3.0, 0.30),
+    "Pharaoh Predasite": ({"puncture": 162, "gas": 162}, 0.075, 2.5, 0.25),
+    "Medjay Predasite": ({"slash": 175, "viral": 175}, 0.10, 3.0, 0.20),
+    "Adarza Kavat": ({"puncture": 45, "slash": 45}, 0.30, 2.5, 0.05), "Smeeta Kavat": ({"slash": 80}, 0.20, 2.0, 0.075),
+    "Vasca Kavat": ({"untyped": 110}, 0.15, 2.0, 0.25),
+    "Sly Vulpaphyla": ({"impact": 40, "magnetic": 40}, 0.20, 2.0, 0.20),
+    "Crescent Vulpaphyla": ({"puncture": 50, "electricity": 50}, 0.225, 2.0, 0.175),
+    "Panzer Vulpaphyla": ({"untyped": 90}, 0.25, 2.0, 0.125),
+}
+
+
+def claw_name(owner: str) -> str:
+    """"Sunika Kubrow" -> "Sunika Claws", as the game names them."""
+    return owner.split()[0] + " Claws"
+
+
 def _plain(line: str) -> str:
     """A stat line without markup; the damage-type tags become their names ("<DT_SLASH_COLOR>" -> "Slash")."""
     s = str(line)
@@ -146,7 +170,8 @@ def wfcd(folder: Path, skip=frozenset()) -> dict:
                 if hit and hit.group(3).strip() in STAT_KEYS:
                     key = STAT_KEYS[hit.group(3).strip()]
                     stats[key] = round(stats.get(key, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
-        if kind in "PGSM" and levels:                    # weapon mods: percentage stats by (plain) label, for the bonus recap
+        if (kind in "PGSM" or kind == "C" and m.get("compatName") == "Claws") and levels:
+            # weapon mods (and beasts' claw mods: Maul, Bite…): percentage stats by (plain) label, for the bonus recap
             for line in levels[-1].get("stats", []):
                 hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)%\s*(.+)", _plain(line).strip())
                 if hit:
@@ -189,6 +214,8 @@ def wfcd(folder: Path, skip=frozenset()) -> dict:
     # beasts' claws: no public data has their slots; the game shows an innate Penjaga on the Posture slot and one
     # Madurai slot (checked on Panzer Vulpaphyla and Predasite claws: 2/70 with 2 Forma, 5/70 with 3)
     weapons["Claws"] = ["compweapon", "Claws", ["madurai"], "", "penjaga"]
+    for owner, row in CLAW_STATS.items():             # each beast's own claws, by their game name
+        weapons[claw_name(owner)] = ["compweapon", "Claws", ["madurai"], "", "penjaga"]
     r4 = lambda v: round(float(v), 4) if isinstance(v, (int, float)) else None
     wstats = {}
     for fn in ("Primary", "Secondary", "Melee", "Arch-Gun", "Arch-Melee", "SentinelWeapons"):
@@ -222,6 +249,8 @@ def wfcd(folder: Path, skip=frozenset()) -> dict:
                 st.update(ms=r4(w.get("multishot")), mag=w.get("magazineSize"), rl=r4(w.get("reloadTime")),
                           acc=r4(w.get("accuracy")), trig=w.get("trigger") or "")
             wstats[w["name"]] = {k: v for k, v in st.items() if v not in (None, "", {})}
+    for owner, (dmg, cc, cd, sc) in CLAW_STATS.items():
+        wstats[claw_name(owner)] = {"cc": cc, "cd": cd, "sc": sc, "fr": 1.0, "dmg": dmg, "claws": 1}
     builtin = sorted(w["name"] for fn in ("Primary", "Secondary", "Melee") for w in load(fn)
                      if w.get("name") and "Incarnon" in (w.get("tags") or []))
     arc = {a["name"]: a.get("type", "") for a in load("Arcanes") if a.get("name")}

@@ -202,7 +202,8 @@ class LoadoutView(QWidget):
              "wf_base": wf_base_stats(lo["item"]) if lo["kind"] == "warframe" else
              (BC.companion_base(lo["item"]) if lo["kind"] == "companion" else {}),
              "abilities": AB.model(lo["item"], lo.get("helminth")) if lo["kind"] == "warframe" else [],
-             "weapon": BC.weapon_stats(lo["kind"], lo["item"], lo.get("bonus") or {}, lo.get("elements") or [], ex.get("valence"),
+             "weapon": BC.weapon_stats(lo["kind"], BC.claws_of(claws_of) if lo["item"] == "Claws" else lo["item"],
+                                       lo.get("bonus") or {}, lo.get("elements") or [], ex.get("valence"),
                              lo.get("flat"), _perk_stats(lo))
              if lo["kind"] in weapons else None,
              "bonus": lo.get("bonus") or {}, "valence": ex.get("valence"), "unique": bool(ex.get("valence")),

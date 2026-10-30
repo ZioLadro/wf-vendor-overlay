@@ -1424,7 +1424,7 @@ EN = {
     "set.build_figure.tip": "Behind the Builds and planner screen (and in the pictures you share), the whole Warframe or the weapon, faded: DE's own picture, downloaded once",
     # ---- 0.4.0 ----
     "bs.note.comp": "Stats at rank 30 (the game's own values) with the mods' full effect on health, shields and armor. Not counted: Link mods (they copy your Warframe's), set bonuses, conditional effects.",
-    "bs.note.claws": "Each beast's claws have their own damage, critical and status values, which are in no public data of the game: only the capacity is computed.",
+    "bs.note.claws": "Each beast's claws have their own damage, critical and status values: from the wiki (Claws (Beast) and each companion's page), attack speed 1. Not counted: the claw mods' conversions (Burning Claws…) and conditional effects.",
     # ---- 0.4.0 ----
     "share.import.image": "Import from a picture…",
     "share.import.clip": "Import the picture in the clipboard",
@@ -1490,6 +1490,8 @@ EN = {
     "bs.stat.falloff": "Damage falloff",
     "bs.stat.radius": "Radius",
     "bs.stat.total.tip": "As in the game: the damage of one shot, every projectile of its multishot included; no critical hits, no status.",
+    # ---- 0.4.0 ----
+    "dmg.untyped": "Damage (type not known)",
 }
 
 IT = {
@@ -2901,7 +2903,7 @@ IT = {
     "set.build_figure.tip": "Dietro la schermata dei Build e del pianificatore (e nelle immagini che condividi), il Warframe intero o l'arma, sfumati: l'immagine di DE, scaricata una volta",
     # ---- 0.4.0 ----
     "bs.note.comp": "Statistiche al rank 30 (i valori del gioco) con l'effetto pieno delle mod su salute, scudi e armatura. Non contati: le mod Link (copiano quelle del tuo Warframe), bonus dei set, effetti condizionali.",
-    "bs.note.claws": "Gli artigli di ogni bestia hanno danno, critico e status propri, che non sono in nessun dato pubblico del gioco: viene calcolata solo la capacità.",
+    "bs.note.claws": "Gli artigli di ogni bestia hanno danno, critico e status propri: dalla wiki (Claws (Beast) e la pagina di ogni companion), velocità d'attacco 1. Non contati: le conversioni delle mod degli artigli (Burning Claws…) e gli effetti condizionali.",
     # ---- 0.4.0 ----
     "share.import.image": "Importa da un'immagine…",
     "share.import.clip": "Importa l'immagine negli appunti",
@@ -2967,6 +2969,8 @@ IT = {
     "bs.stat.falloff": "Calo del danno",
     "bs.stat.radius": "Raggio",
     "bs.stat.total.tip": "Come nel gioco: il danno di un colpo, compresi tutti i proiettili del multicolpo; senza critici né status.",
+    # ---- 0.4.0 ----
+    "dmg.untyped": "Danno (tipo non noto)",
 }
 
 STRINGS = {"en": EN, "it": IT}
