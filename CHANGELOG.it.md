@@ -3,6 +3,19 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.6.1
+- **Importazione di build da immagine, polarità e Riven**: il colore del drain di ogni carta dà la polarità dello slot
+  (verde: quella della mod, rosso: un'altra, bianco: nessuna) e la bolla verde del gioco una Omni Forma; quando il numero
+  del drain si legge, il rank (e la polarità) che lo danno. I Riven sono riconosciuti dal nome ("Kuva Bramma
+  Acri-critacan"), con le statistiche quando l'immagine è di questo programma. Funziona anche con fotogrammi di video:
+  su sette screenshot del gioco la capacità viene come nel gioco in sei (il settimo sbaglia di 1, un numero non
+  leggibile).
+- **Capacità**: una polarità diversa aggiunge il 25 % arrotondato, non per eccesso (il gioco: Point Strike 9 -> 11).
+- **Pianificatore**: clic destro su uno slot o una carta della libreria: *Cerca su warframe.market* (un Riven: le aste di
+  Riven per la sua arma); il tooltip dice se possiedi la mod / l'Arcano (quando è stato letto il file del gioco).
+- **Settimanali ▸ Tenet / Coda**: il gruppo di armi Coda di Eleanor era l'altro (verificato nel gioco); gli elementi
+  bonus non vengono più mostrati: la ricostruzione non dà i valori del gioco e nessun dato pubblico li ha.
+
 ## 0.6.0
 - **Pianificatore: importa una build da un'immagine** (Condividi ▸ *Importa da un'immagine…* o *Importa l'immagine negli
   appunti*): uno screenshot della schermata potenziamenti del gioco, o un'immagine condivisa da questo programma. L'OCR

@@ -1380,7 +1380,7 @@ EN = {
     "share.file": "Save as a file…",
     "share.image": "Save a picture…",
     "share.image.copy": "Copy the picture",
-    "share.image.done": "{item}: {n} mods / Arcanes read from the picture, at their maximum rank (ranks, Forma and Rivens are not read: check them).",
+    "share.image.done": "{item}: {n} mods / Arcanes read from the picture (ranks from the drain when it can be read, else the maximum).",
     "share.import.code": "Import a code…",
     "share.import.file": "Import a file…",
     "share.import.prompt": "Paste a build code (WFVO1:…) or the text of a .wfbuild file:",
@@ -1440,7 +1440,7 @@ EN = {
     "rot.cycle": "Until {end} (in {left}); a weapon each, bought with Corrupted Holokeys / Coda currency.",
     "rot.tip": "{name}: bonus {pct}% {el} (Valence Fusion can change it)",
     "rot.next": "Next, from {start}:",
-    "rot.note": "Computed, not read from the game: which weapons is DE's vendor data; the bonus element and percentage come from each offer's seed, drawn with the game's random generator as reconstructed by the open-source OpenWF server. If the game shows something else, the game is right (and please say so).",
+    "rot.note": "Which weapons is DE's vendor data (Ergo Glast: always all five; Eleanor: two groups of seven in turn, every 4 days at 00:00 UTC). Each one's bonus element is drawn by the game and is in no public data: it is not shown.",
     "rot.circuit.normal": "Circuit · Warframes this week",
     "rot.circuit.hard": "Steel Path Circuit · Incarnon Genesis",
     "rot.circuit.ends": "Until {end} (in {left})",
@@ -1465,6 +1465,17 @@ EN = {
     "wall.note": "DE's wallpapers, as the Warframe wiki publishes them: only the one you choose is downloaded (into the program's data folder), dimmed by the Theme's background strength.",
     # ---- 0.4.0 ----
     "wall.cancel": "Cancel",
+    # ---- 0.4.0 ----
+    "rot.bonus.game": "bonus: see in game",
+    "rot.tip2": "{name}: its bonus element and percentage (25–60 %) are shown by the vendor in the game; a Valence Fusion can change them",
+    # ---- 0.4.0 ----
+    "share.image.pols": "Polarities from the drains' colours: {n} slots ({omni} Omni Forma).",
+    "share.image.mismatch": "Drain in red (another polarity, not readable: set to one that does not match): {names}.",
+    "share.image.rivens": "Rivens: {names} (stats only from pictures shared by this program; in the game's screen they are not shown: add them by hand).",
+    # ---- 0.4.0 ----
+    "bs.market": "Search on warframe.market",
+    "bs.market.riven": "Rivens for this weapon on warframe.market",
+    "bs.notowned": "You do not own it",
 }
 
 IT = {
@@ -2832,7 +2843,7 @@ IT = {
     "share.file": "Salva come file…",
     "share.image": "Salva un'immagine…",
     "share.image.copy": "Copia l'immagine",
-    "share.image.done": "{item}: {n} mod / Arcani letti dall'immagine, al rank massimo (rank, Forma e Riven non vengono letti: controllali).",
+    "share.image.done": "{item}: {n} mod / Arcani letti dall'immagine (rank dal drain quando si legge, altrimenti il massimo).",
     "share.import.code": "Importa un codice…",
     "share.import.file": "Importa un file…",
     "share.import.prompt": "Incolla un codice di build (WFVO1:…) o il testo di un file .wfbuild:",
@@ -2892,7 +2903,7 @@ IT = {
     "rot.cycle": "Fino a {end} (tra {left}); un'arma ciascuna, con le Corrupted Holokey / la valuta Coda.",
     "rot.tip": "{name}: bonus {pct}% {el} (la Valence Fusion può cambiarlo)",
     "rot.next": "Prossime, da {start}:",
-    "rot.note": "Calcolato, non letto dal gioco: quali armi viene dai dati dei venditori di DE; elemento e percentuale del bonus vengono dal seed di ogni offerta, estratto col generatore casuale del gioco come ricostruito dal server open source OpenWF. Se il gioco mostra altro, ha ragione il gioco (e dimmelo).",
+    "rot.note": "Quali armi viene dai dati dei venditori di DE (Ergo Glast: sempre tutte e cinque; Eleanor: due gruppi di sette a turno, ogni 4 giorni alle 00:00 UTC). L'elemento bonus di ognuna lo estrae il gioco e non è in nessun dato pubblico: non viene mostrato.",
     "rot.circuit.normal": "Circuito · Warframe di questa settimana",
     "rot.circuit.hard": "Circuito Steel Path · Incarnon Genesis",
     "rot.circuit.ends": "Fino a {end} (tra {left})",
@@ -2917,6 +2928,17 @@ IT = {
     "wall.note": "I wallpaper di DE, come li pubblica la wiki di Warframe: viene scaricato solo quello che scegli (nella cartella dati del programma), attenuato dalla forza dello sfondo del Tema.",
     # ---- 0.4.0 ----
     "wall.cancel": "Annulla",
+    # ---- 0.4.0 ----
+    "rot.bonus.game": "bonus: vedi in gioco",
+    "rot.tip2": "{name}: elemento e percentuale del bonus (25–60 %) li mostra il venditore in gioco; una Valence Fusion può cambiarli",
+    # ---- 0.4.0 ----
+    "share.image.pols": "Polarità dai colori dei drain: {n} slot ({omni} Omni Forma).",
+    "share.image.mismatch": "Drain in rosso (un'altra polarità, non leggibile: impostata una che non corrisponde): {names}.",
+    "share.image.rivens": "Riven: {names} (statistiche solo dalle immagini condivise da questo programma; nella schermata del gioco non si vedono: aggiungile a mano).",
+    # ---- 0.4.0 ----
+    "bs.market": "Cerca su warframe.market",
+    "bs.market.riven": "Riven di quest'arma su warframe.market",
+    "bs.notowned": "Non la possiedi",
 }
 
 STRINGS = {"en": EN, "it": IT}

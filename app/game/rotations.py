@@ -6,12 +6,11 @@ adapters, in fixed cycles (11 trios, 9 quintets). The live choices come from the
 duviriCycle's choices) when it is read; the cycle is then aligned on them, so the calendar of the next weeks follows the
 game even if the cycles' starting point is off.
 
-Tenet (Ergo Glast, Perrin Sequence) and Coda (Eleanor, Höllvania) weapons: offers renewed every 4 days. DE's vendor data
-(public-export-plus ExportVendors, data/rotations.json) says what can be offered: Ergo Glast always all 5 Tenet weapons,
-Eleanor one of two groups of 7 Coda weapons in turn. Each offer's bonus element and percentage come from a seed the
-vendor draws with the game client's random generator, seeded by the vendor and the 4-day cycle. Generator, seeds and
-order of draws as reconstructed by the open-source OpenWF server (SpaceNinjaServer, serversideVendorsService.ts and
-rngService.ts): a computation, not a reading of the game: the program says so where it shows them."""
+Tenet (Ergo Glast, Perrin Sequence) and Coda (Eleanor, Höllvania) weapons: offers renewed every 4 days (00:00 UTC).
+DE's vendor data (public-export-plus ExportVendors, data/rotations.json) says what is offered: Ergo Glast always all 5
+Tenet weapons, Eleanor one of two groups of 7 Coda weapons in turn. Each offer's bonus element and percentage come from
+a seed the game draws; the reconstruction of the open-source OpenWF server (bonus() below) does NOT give the game's
+values (checked against the game on 30 Oct 2026), so they are not shown."""
 import json
 import time
 from datetime import datetime, timezone
@@ -182,7 +181,9 @@ def offers(vendor: str, now=None) -> dict:
     start = int(v["offset"]) + idx * dur
     rng = SRng(mix_seeds(int(v["seed"]), idx))
     if v.get("one_bin"):
-        items = [it for it in v["items"] if it["bin"] == idx % 2]
+        # which group of the two this cycle: checked in the game (30 Oct 2026: Bassocyst, Bubonico, Caustacyst, Hirudo,
+        # Pathocyst, Synapse, Tysis, group 0, in the cycle starting 28 Oct 00:00 UTC)
+        items = [it for it in v["items"] if it["bin"] == (idx + int(v.get("phase", 0))) % 2]
     else:                                              # every offer, each new one put first: the reverse order
         items = list(reversed(v["items"]))[:int(v.get("count") or len(v["items"]))]
     out = []

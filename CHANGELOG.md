@@ -3,6 +3,18 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.6.1
+- **Build import from a picture, polarities and Rivens**: each card's drain colour gives its slot's polarity (green:
+  the mod's, red: another one, white: none) and the game's green bubble an Omni Forma; when the drain number can be
+  read, the rank (and polarity) that give it. Rivens are recognised by name ("Kuva Bramma Acri-critacan"), with their
+  stats when the picture is one of this program's. Works on video frames too: on seven screenshots of the game the
+  capacity comes out as in the game in six (the seventh is 1 off, a number not readable).
+- **Capacity**: a mismatched polarity adds 25 % rounded, not rounded up (the game: Point Strike 9 -> 11).
+- **Planner**: right click on a slot or a library card: *Search on warframe.market* (a Riven: the Riven auctions for
+  its weapon); the tooltip says whether you own the mod / Arcane (when the game file was read).
+- **Weekly ▸ Tenet / Coda**: Eleanor's group of Coda weapons was the other one (checked in the game); the bonus
+  elements are no longer shown: the reconstruction does not give the game's values and no public data has them.
+
 ## 0.6.0
 - **Planner: import a build from a picture** (Share ▸ *Import from a picture…* or *Import the picture in the clipboard*):
   a screenshot of the game's upgrade screen, or a picture shared by this program. The OCR reads it (in its own

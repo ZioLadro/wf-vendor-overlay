@@ -42,7 +42,7 @@ def _pic(name: str, size: int):
 
 
 class ItemCard(QFrame):
-    """A picture, a name and a line under it (the bonus element)."""
+    """A picture, a name and a line under it."""
 
     def __init__(self, name: str, sub: str = "", sub_icon=None, size: int = 96, tip: str = ""):
         super().__init__()
@@ -160,15 +160,11 @@ class NemesisWeaponsPage(_Page):
             who = (R.data().get("vendors") or {}).get(vendor, {}).get("who", "")
             self._head(lay, t("rot." + vendor, who=who),
                        t("rot.cycle." + vendor, end=_day(cur["end"]), left=_left(cur["end"] - now)))
-            lay.addWidget(self._row([ItemCard(i["name"], f"{i['pct']:g}% {t('dmg.' + i['element'].lower())}",
-                                              icons.damage_path(i["element"]), 96,
-                                              t("rot.tip", name=i["name"], el=t("dmg." + i["element"].lower()),
-                                                pct=i["pct"]))
+            lay.addWidget(self._row([ItemCard(i["name"], t("rot.bonus.game"), None, 96, t("rot.tip2", name=i["name"]))
                                      for i in cur["items"]]))
             nxt = R.offers(vendor, cur["end"] + 60)
-            if nxt:
-                sub = QLabel(t("rot.next", start=_day(nxt["start"])) + "  " + ", ".join(
-                    f"{i['name']} ({i['pct']:g}% {t('dmg.' + i['element'].lower())})" for i in nxt["items"]))
+            if nxt and vendor == "coda":                   # Ergo Glast always has the same five
+                sub = QLabel(t("rot.next", start=_day(nxt["start"])) + "  " + ", ".join(i["name"] for i in nxt["items"]))
                 sub.setWordWrap(True)
                 role(sub, "hint")
                 lay.addWidget(sub)

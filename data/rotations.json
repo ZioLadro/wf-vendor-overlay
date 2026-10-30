@@ -6,6 +6,7 @@
    "offset": 1744934400,
    "cycle": 345600,
    "one_bin": false,
+   "phase": 0,
    "count": 5,
    "items": [
     {
@@ -41,6 +42,7 @@
    "offset": 1740960000,
    "cycle": 345600,
    "one_bin": true,
+   "phase": 1,
    "count": 14,
    "items": [
     {

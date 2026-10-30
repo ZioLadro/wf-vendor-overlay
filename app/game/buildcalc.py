@@ -131,7 +131,8 @@ def drain(info, rank, slot_pol: str):
         return d, ""
     if slot_pol == pol or slot_pol == "universal":
         return (math.ceil(d / 2), "match") if d >= 0 else (d * 2, "match")
-    return (d + math.ceil(d / 4), "mismatch") if d >= 0 else (-(abs(d) - round(abs(d) * 0.25)), "mismatch")
+    # a different polarity: +25 %, rounded (checked in the game: Point Strike 9 -> 11)
+    return (int(math.floor(d * 1.25 + 0.5)), "mismatch") if d >= 0 else (-(abs(d) - round(abs(d) * 0.25)), "mismatch")
 
 
 def rank_factor(rank, mx) -> float:

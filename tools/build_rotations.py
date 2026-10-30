@@ -15,7 +15,7 @@ VENDORS = {
     "tenet": {"manifest": "/Lotus/Types/Game/VendorManifests/Hubs/PerrinSequenceWeaponVendorManifest",
               "oid": "60ad3b6ec96976e97d227e19", "offset": 1744934400, "who": "Ergo Glast"},
     "coda": {"manifest": "/Lotus/Types/Game/VendorManifests/TheHex/InfestedLichWeaponVendorManifest",
-             "oid": "67dadc30e4b6e0e5979c8d84", "offset": 1740960000, "who": "Eleanor"},
+             "oid": "67dadc30e4b6e0e5979c8d84", "offset": 1740960000, "who": "Eleanor", "phase": 1},
 }
 
 
@@ -38,7 +38,7 @@ def main():
             w = weapons.get(path) or {}
             items.append({"path": path, "name": nm(w.get("name", "")) or path.rsplit("/", 1)[-1], "bin": it.get("bin", 0)})
         out["vendors"][key] = {"who": v["who"], "seed": int(v["oid"][16:], 16), "offset": v["offset"],
-                               "cycle": 4 * 86400, "one_bin": bool(m.get("isOneBinPerCycle")),
+                               "cycle": 4 * 86400, "one_bin": bool(m.get("isOneBinPerCycle")), "phase": v.get("phase", 0),
                                "count": (m.get("numItems") or {}).get("minValue") or len(items), "items": items}
     Path(a.out).write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
     print({k: [i["name"] for i in v["items"]] for k, v in out["vendors"].items()})

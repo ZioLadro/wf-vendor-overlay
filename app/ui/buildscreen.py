@@ -7,6 +7,8 @@ planner, the mod library (search, polarity filter, sort, two rows of cards to cl
 
 The screen only shows a model (see BuildScreen.show) and reports what the user does through signals; the planner keeps
 the build and redraws."""
+import re
+
 from PyQt6.QtCore import QMimeData, QPoint, QPointF, QRectF, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QDrag, QFont, QFontMetrics, QPainter, QPainterPath, QPen, QRadialGradient
 from PyQt6.QtWidgets import (
@@ -58,6 +60,42 @@ def omni_bubble(p, x, y, size):
     p.drawArc(QRectF(c.x() - r, c.y() - r, 2 * r, 2 * r), 30 * 16, 150 * 16)
     p.drawArc(QRectF(c.x() - r, c.y() - r, 2 * r, 2 * r), 210 * 16, 150 * 16)
     p.restore()
+
+
+def market_link(name: str, riven=None) -> str:
+    """warframe.market for a mod / Arcane (its item page), or for a Riven the auctions of Rivens for its weapon."""
+    from urllib.parse import quote
+    if riven:
+        weapon = riven.get("weapon") or name.replace(" (Riven)", "").rsplit(" ", 1)[0]
+        slug = ""
+        try:
+            import json
+            from app.trade import rivenmarket as RM
+            for w in json.loads(RM.WEAPONS_FILE.read_text(encoding="utf-8")).get("data") or []:
+                if w.get("name", "").lower() == weapon.lower():
+                    slug = w["url_name"]
+                    break
+        except Exception:
+            pass
+        slug = slug or re.sub(r"[^a-z0-9]+", "_", weapon.lower()).strip("_")
+        return f"https://warframe.market/auctions/search?type=riven&weapon_url_name={quote(slug)}&sort_by=price_asc"
+    slug = None
+    if previews._market is not None:
+        try:
+            slug = previews._market.slug_for_name(name)
+        except Exception:
+            slug = None
+    slug = slug or re.sub(r"[^a-z0-9]+", "_", name.lower().replace("'", "").replace("&", "and")).strip("_")
+    return "https://warframe.market/items/" + quote(slug)
+
+
+def market_menu(widget, pos, name, riven=None):
+    from PyQt6.QtGui import QDesktopServices
+    from PyQt6.QtWidgets import QMenu
+    m = QMenu(widget)
+    m.addAction(t("bs.market.riven" if riven else "bs.market"),
+                lambda: QDesktopServices.openUrl(QUrl(market_link(name, riven))))
+    m.exec(pos)
 
 
 def figure_on() -> bool:
@@ -178,8 +216,12 @@ class Card(QWidget):
         f = previews.by_name(n, kind="card", fetch=not self.library) if not arcane else None
         if f:
             parts.append(f"<img src='{f.as_posix()}' width='200'>")
-        if self.owned:
-            parts.append(t("bs.owned", n=self.owned["n"], rank=self.owned.get("rank", 0)))
+        if self.owned is not None:
+            if self.owned.get("n"):
+                parts.append("<span style='color:#7ee08f'>✓ " + t("bs.owned", n=self.owned["n"],
+                                                                   rank=self.owned.get("rank", 0)) + "</span>")
+            else:
+                parts.append("<span style='color:#ff7b72'>✗ " + t("bs.notowned") + "</span>")
         return "<br>".join(parts)
 
     def event(self, e):
@@ -378,7 +420,7 @@ class Card(QWidget):
             p.setFont(f)
             p.setPen(QColor("#8b93a3"))
             p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "🔒")
-        if self.owned and self.library:
+        if self.owned and self.owned.get("n") and self.library:
             f.setPixelSize(max(8, int(H * 0.11)))
             f.setBold(True)
             p.setFont(f)
@@ -992,8 +1034,11 @@ class ModLibrary(QWidget):
         _clear(self.grid)
         cw = self.cw
         for k, (n, info, own) in enumerate(rows[:self.LIMIT]):
-            c = Card(library_slot(n, info, self.arcane), cw, library=True, owned=own)
+            c = Card(library_slot(n, info, self.arcane), cw, library=True,
+                     owned=own or ({"n": 0, "rank": 0} if self.owned else None))
             c.clicked.connect(lambda n=n: self.picked.emit(n))
+            c.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)    # right click: on warframe.market
+            c.customContextMenuRequested.connect(lambda p, n=n, c=c: market_menu(c, c.mapToGlobal(p), n))
             self.grid.addWidget(c, k % 2, k // 2)
         n = min(len(rows), self.LIMIT)                  # not resized by the scroll area: as wide as its cards
         ch = int(cw * CARD_ASPECT)
@@ -1198,7 +1243,11 @@ class BuildScreen(QWidget):
         s = m["slots"][i]
         locked = (s["role"] == "exilus" and (m.get("locked") or {}).get("exilus")) or \
                  (s["role"] == "arcane" and (m.get("locked") or {}).get("arcane"))
-        c = Card(s, cw, editable=self.editable, selected=self.editable and m.get("selected") == i, locked=bool(locked))
+        own = None
+        if "owned" in m and s.get("name") and not s.get("riven"):          # the planner: owned or not, in the tooltip
+            own = (m["owned"] or {}).get(s["name"]) or {"n": 0, "rank": 0}
+        c = Card(s, cw, editable=self.editable, selected=self.editable and m.get("selected") == i, locked=bool(locked),
+                 owned=own)
         if self.editable:
             c.clicked.connect(lambda i=i: self.slot_clicked.emit(i))
             c.menu.connect(lambda pos, i=i: self.slot_menu.emit(i, pos))

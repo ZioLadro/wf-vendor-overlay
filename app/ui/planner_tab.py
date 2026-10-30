@@ -594,7 +594,7 @@ class PlannerView(QWidget):
                     im = Image.open(path).convert("RGB")
                     ls = read_lines(np.array(im)[:, :, ::-1].copy(), make_engine())
                     lines, w, h = [(x.text, x.x, x.y, x.w, x.h, x.score) for x in ls], im.width, im.height
-                self._img_done.done.emit(("ok", lines, w, h))
+                self._img_done.done.emit(("ok", lines, w, h, path))
             except Exception as e:
                 self._img_done.done.emit(("err", f"{type(e).__name__}: {e}"))
         if not hasattr(self, "_img_done"):
@@ -613,13 +613,21 @@ class PlannerView(QWidget):
             self._say(t("share.image.bad", err=res[1]))
             return
         try:
-            b = buildocr.parse(res[1], res[2], res[3])
+            from PIL import Image
+            try:
+                img = Image.open(res[4]).convert("RGB")       # the colours: polarities, Omni Forma
+                if img.size != (res[2], res[3]):
+                    img = img.resize((res[2], res[3]))
+            except Exception:
+                img = None
+            b = buildocr.parse(res[1], res[2], res[3], image=img)
         except ValueError as e:
             self._say(t("share.image.bad", err=str(e)))
             return
         piece = new_piece(b["kind"], b["item"])
         mods = b["mods"] + [None] * (len(piece["configs"][0]["mods"]) - len(b["mods"]))
         piece["configs"][0]["mods"] = mods[:len(piece["configs"][0]["mods"])]
+        piece["forma"] = {int(k): v for k, v in (b.get("pols") or {}).items()}
         self._store_piece()
         self.pieces[b["kind"]] = piece
         self._show_piece(b["kind"], piece)
@@ -627,6 +635,14 @@ class PlannerView(QWidget):
         msg = t("share.image.done", item=b["item"], n=n)
         if b["unplaced"]:
             msg += " " + t("share.image.unplaced", names=", ".join(b["unplaced"]))
+        if b.get("pols"):
+            msg += " " + t("share.image.pols", n=sum(1 for v in b["pols"].values() if v),
+                           omni=sum(1 for v in b["pols"].values() if v == "universal"))
+        if b.get("mismatch"):
+            msg += " " + t("share.image.mismatch", names=", ".join(b["mismatch"]))
+        rv = [m for m in piece["configs"][0]["mods"] if m and len(m) > 2]
+        if rv:
+            msg += " " + t("share.image.rivens", names=", ".join(m[2]["mod_name"] for m in rv))
         self._say(msg)
 
     def _import_file(self):
@@ -656,6 +672,11 @@ class PlannerView(QWidget):
                     a.triggered.connect(lambda _c=False, k=k: self._set_rank(i, k))
                     sub.addAction(a)
             m.addAction(t("bs.menu.remove"), lambda: self._remove(i))
+            from app.ui.buildscreen import market_link
+            from PyQt6.QtGui import QDesktopServices
+            from PyQt6.QtCore import QUrl
+            m.addAction(t("bs.market.riven" if riven else "bs.market"),
+                        lambda: QDesktopServices.openUrl(QUrl(market_link(name, riven or None))))
         if r != "arcane":
             sub = m.addMenu(t("bs.menu.polarity"))
             base = BC.innate(self.kind, self.item, self.roles)[i]
@@ -813,6 +834,9 @@ class PlannerView(QWidget):
                "unique": bool(valence), "upgrades": upgrade_icons(kind, p.get("reactor", True), p.get("exilus", True)
                                                                   if "exilus" in roles else None,
                                                                   p.get("arcane", True) if "arcane" in roles else None)}
+        owned = self.get_owned() or {}
+        if owned:                                      # what you own is known (the game file was read)
+            out["owned"] = owned
         avail = INC.available(item) if kind in ("primary", "secondary", "melee") else None
         if avail:
             inc = p["incarnon"]
