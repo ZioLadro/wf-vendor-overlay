@@ -113,7 +113,18 @@ class WeeklyTab(QWidget):
         hint = QLabel(t("weekly.hint"))
         hint.setWordWrap(True)
         role(hint, "hint")
-        lay = QVBoxLayout(self)
+        # the offers are the first page; Tenet / Coda weapons and the Duviri Circuit have their own
+        from PyQt6.QtWidgets import QTabWidget
+        from app.ui.rotations_tab import CircuitPage, NemesisWeaponsPage
+        offers = QWidget()
+        lay = QVBoxLayout(offers)
+        lay.setContentsMargins(0, 6, 0, 0)
+        outer = QVBoxLayout(self)
+        self.subtabs = QTabWidget()
+        self.subtabs.addTab(offers, t("weekly.sub.offers"))
+        self.subtabs.addTab(NemesisWeaponsPage(), t("weekly.sub.nemesis"))
+        self.subtabs.addTab(CircuitPage(), t("weekly.sub.circuit"))
+        outer.addWidget(self.subtabs)
         lay.addWidget(self.unknown_box)
         lay.addLayout(bar)
         lay.addWidget(self.summary)

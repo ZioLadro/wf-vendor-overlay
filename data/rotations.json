@@ -1,0 +1,119 @@
+{
+ "vendors": {
+  "tenet": {
+   "who": "Ergo Glast",
+   "seed": 2099412505,
+   "offset": 1744934400,
+   "cycle": 345600,
+   "one_bin": false,
+   "count": 5,
+   "items": [
+    {
+     "path": "/Lotus/Weapons/Corpus/Melee/ShieldAndSword/CrpHammerShield/CrpHammerShield",
+     "name": "Tenet Agendus",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Tenno/Melee/Swords/CrpBigSlash/CrpBigSlash",
+     "name": "Tenet Exec",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Corpus/Melee/CrpBriefcase2HKatana/CrpBriefcase2HKatana",
+     "name": "Tenet Livia",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Corpus/Melee/CrpBriefcaseScythe/CrpBriefcaseScythe",
+     "name": "Tenet Grigori",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Corpus/BoardExec/Primary/CrpBEFerrox/CrpBEFerrox",
+     "name": "Tenet Ferrox",
+     "bin": 0
+    }
+   ]
+  },
+  "coda": {
+   "who": "Eleanor",
+   "seed": 2543619460,
+   "offset": 1740960000,
+   "cycle": 345600,
+   "one_bin": true,
+   "count": 14,
+   "items": [
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/1999InfShotgun/1999InfShotgunWeapon",
+     "name": "Coda Bassocyst",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaTysis",
+     "name": "Coda Tysis",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaCaustacyst/CodaCaustacyst",
+     "name": "Coda Caustacyst",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSynapse",
+     "name": "Coda Synapse",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaHirudo",
+     "name": "Coda Hirudo",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaPathocyst/CodaPathocyst",
+     "name": "Coda Pathocyst",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaBubonico/CodaBubonicoCannon",
+     "name": "Coda Bubonico",
+     "bin": 0
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaHema",
+     "name": "Coda Hema",
+     "bin": 1
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/Pistols/1999InfSporePistol/1999InfSporePistolWeapon",
+     "name": "Dual Coda Torxica",
+     "bin": 1
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/Melee/InfestedHammer/InfLichHammerWeapon",
+     "name": "Coda Motovore",
+     "bin": 1
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/LongGuns/CodaSporothrix",
+     "name": "Coda Sporothrix",
+     "bin": 1
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaCatabolyst",
+     "name": "Coda Catabolyst",
+     "bin": 1
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/Melee/CodaMire",
+     "name": "Coda Mire",
+     "bin": 1
+    },
+    {
+     "path": "/Lotus/Weapons/Infested/InfestedLich/Pistols/CodaPox",
+     "name": "Coda Pox",
+     "bin": 1
+    }
+   ]
+  }
+ }
+}

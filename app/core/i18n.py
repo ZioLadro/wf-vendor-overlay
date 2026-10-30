@@ -1380,7 +1380,7 @@ EN = {
     "share.file": "Save as a file…",
     "share.image": "Save a picture…",
     "share.image.copy": "Copy the picture",
-    "share.image.done": "Picture copied: paste it in Discord, a chat or an image editor.",
+    "share.image.done": "{item}: {n} mods / Arcanes read from the picture, at their maximum rank (ranks, Forma and Rivens are not read: check them).",
     "share.import.code": "Import a code…",
     "share.import.file": "Import a file…",
     "share.import.prompt": "Paste a build code (WFVO1:…) or the text of a .wfbuild file:",
@@ -1425,6 +1425,46 @@ EN = {
     # ---- 0.4.0 ----
     "bs.note.comp": "Stats at rank 30 (the game's own values) with the mods' full effect on health, shields and armor. Not counted: Link mods (they copy your Warframe's), set bonuses, conditional effects.",
     "bs.note.claws": "Each beast's claws have their own damage, critical and status values, which are in no public data of the game: only the capacity is computed.",
+    # ---- 0.4.0 ----
+    "share.import.image": "Import from a picture…",
+    "share.import.clip": "Import the picture in the clipboard",
+    "share.image.reading": "Reading the picture…",
+    "share.image.bad": "The picture could not be read as a build: {err}",
+    "share.image.unplaced": "Not placed: {names}.",
+    # ---- 0.4.0 ----
+    "weekly.sub.offers": "Offers",
+    "weekly.sub.nemesis": "Tenet / Coda weapons",
+    "weekly.sub.circuit": "Duviri Circuit",
+    "rot.tenet": "Tenet weapons · {who}",
+    "rot.coda": "Coda weapons · {who}",
+    "rot.cycle": "Until {end} (in {left}); a weapon each, bought with Corrupted Holokeys / Coda currency.",
+    "rot.tip": "{name}: bonus {pct}% {el} (Valence Fusion can change it)",
+    "rot.next": "Next, from {start}:",
+    "rot.note": "Computed, not read from the game: which weapons is DE's vendor data; the bonus element and percentage come from each offer's seed, drawn with the game's random generator as reconstructed by the open-source OpenWF server. If the game shows something else, the game is right (and please say so).",
+    "rot.circuit.normal": "Circuit · Warframes this week",
+    "rot.circuit.hard": "Steel Path Circuit · Incarnon Genesis",
+    "rot.circuit.ends": "Until {end} (in {left})",
+    "rot.circuit.computed": "(computed: the world state was not read yet)",
+    "rot.genesis": "Incarnon Genesis",
+    "rot.calendar": "Calendar of the next weeks",
+    "rot.col.week": "Week (Monday 00:00 UTC)",
+    "rot.col.normal": "Circuit: Warframes",
+    "rot.col.hard": "Steel Path: Incarnon Genesis",
+    "rot.circuit.note": "The Circuit's choices follow fixed cycles (11 Warframe trios, 9 Incarnon groups), aligned on this week's choices from the world state (warframestat). Rewards of each tier of the Circuit: the chosen Warframe's parts / the chosen Incarnon Genesis.",
+    # ---- 0.4.0 ----
+    "rot.cycle.tenet": "Until {end} (in {left}); 40 Corrupted Holokeys each, one of each weapon per cycle.",
+    "rot.cycle.coda": "Until {end} (in {left}); 10 Coda currency each, one of each weapon per cycle (two groups of seven in turn).",
+    # ---- 0.4.0 ----
+    "wall.title": "Warframe wallpapers (wiki)",
+    "wall.button": "Choose an official Warframe wallpaper from the wiki",
+    "wall.loading": "Asking the Warframe wiki for its wallpapers…",
+    "wall.count": "{n} wallpapers: pick one (double click, or Use).",
+    "wall.none": "No wallpapers could be read from the wiki ({err}).",
+    "wall.use": "Use",
+    "wall.downloading": "Downloading the wallpaper…",
+    "wall.note": "DE's wallpapers, as the Warframe wiki publishes them: only the one you choose is downloaded (into the program's data folder), dimmed by the Theme's background strength.",
+    # ---- 0.4.0 ----
+    "wall.cancel": "Cancel",
 }
 
 IT = {
@@ -2792,7 +2832,7 @@ IT = {
     "share.file": "Salva come file…",
     "share.image": "Salva un'immagine…",
     "share.image.copy": "Copia l'immagine",
-    "share.image.done": "Immagine copiata: incollala su Discord, in una chat o in un editor di immagini.",
+    "share.image.done": "{item}: {n} mod / Arcani letti dall'immagine, al rank massimo (rank, Forma e Riven non vengono letti: controllali).",
     "share.import.code": "Importa un codice…",
     "share.import.file": "Importa un file…",
     "share.import.prompt": "Incolla un codice di build (WFVO1:…) o il testo di un file .wfbuild:",
@@ -2837,6 +2877,46 @@ IT = {
     # ---- 0.4.0 ----
     "bs.note.comp": "Statistiche al rank 30 (i valori del gioco) con l'effetto pieno delle mod su salute, scudi e armatura. Non contati: le mod Link (copiano quelle del tuo Warframe), bonus dei set, effetti condizionali.",
     "bs.note.claws": "Gli artigli di ogni bestia hanno danno, critico e status propri, che non sono in nessun dato pubblico del gioco: viene calcolata solo la capacità.",
+    # ---- 0.4.0 ----
+    "share.import.image": "Importa da un'immagine…",
+    "share.import.clip": "Importa l'immagine negli appunti",
+    "share.image.reading": "Lettura dell'immagine…",
+    "share.image.bad": "Non è stato possibile leggere una build dall'immagine: {err}",
+    "share.image.unplaced": "Non piazzati: {names}.",
+    # ---- 0.4.0 ----
+    "weekly.sub.offers": "Offerte",
+    "weekly.sub.nemesis": "Armi Tenet / Coda",
+    "weekly.sub.circuit": "Circuito di Duviri",
+    "rot.tenet": "Armi Tenet · {who}",
+    "rot.coda": "Armi Coda · {who}",
+    "rot.cycle": "Fino a {end} (tra {left}); un'arma ciascuna, con le Corrupted Holokey / la valuta Coda.",
+    "rot.tip": "{name}: bonus {pct}% {el} (la Valence Fusion può cambiarlo)",
+    "rot.next": "Prossime, da {start}:",
+    "rot.note": "Calcolato, non letto dal gioco: quali armi viene dai dati dei venditori di DE; elemento e percentuale del bonus vengono dal seed di ogni offerta, estratto col generatore casuale del gioco come ricostruito dal server open source OpenWF. Se il gioco mostra altro, ha ragione il gioco (e dimmelo).",
+    "rot.circuit.normal": "Circuito · Warframe di questa settimana",
+    "rot.circuit.hard": "Circuito Steel Path · Incarnon Genesis",
+    "rot.circuit.ends": "Fino a {end} (tra {left})",
+    "rot.circuit.computed": "(calcolato: il world state non è ancora stato letto)",
+    "rot.genesis": "Incarnon Genesis",
+    "rot.calendar": "Calendario delle prossime settimane",
+    "rot.col.week": "Settimana (lunedì 00:00 UTC)",
+    "rot.col.normal": "Circuito: Warframe",
+    "rot.col.hard": "Steel Path: Incarnon Genesis",
+    "rot.circuit.note": "Le scelte del Circuito seguono cicli fissi (11 terne di Warframe, 9 gruppi di Incarnon), allineati alle scelte di questa settimana dal world state (warframestat). Ricompense dei livelli del Circuito: le parti del Warframe scelto / l'Incarnon Genesis scelta.",
+    # ---- 0.4.0 ----
+    "rot.cycle.tenet": "Fino a {end} (tra {left}); 40 Corrupted Holokey ciascuna, una per arma a ciclo.",
+    "rot.cycle.coda": "Fino a {end} (tra {left}); 10 valuta Coda ciascuna, una per arma a ciclo (due gruppi di sette a turno).",
+    # ---- 0.4.0 ----
+    "wall.title": "Wallpaper di Warframe (wiki)",
+    "wall.button": "Scegli un wallpaper ufficiale di Warframe dalla wiki",
+    "wall.loading": "Richiesta dei wallpaper alla wiki di Warframe…",
+    "wall.count": "{n} wallpaper: scegline uno (doppio clic, o Usa).",
+    "wall.none": "Non è stato possibile leggere wallpaper dalla wiki ({err}).",
+    "wall.use": "Usa",
+    "wall.downloading": "Scaricamento del wallpaper…",
+    "wall.note": "I wallpaper di DE, come li pubblica la wiki di Warframe: viene scaricato solo quello che scegli (nella cartella dati del programma), attenuato dalla forza dello sfondo del Tema.",
+    # ---- 0.4.0 ----
+    "wall.cancel": "Annulla",
 }
 
 STRINGS = {"en": EN, "it": IT}

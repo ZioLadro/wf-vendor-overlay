@@ -93,6 +93,17 @@ def serve(conn, pairs, cfg):
         if cmd == "catalog":
             matcher, last_hits, last_patches = Matcher(msg[1]), None, None
             continue
+        if cmd == "read":                         # a picture (a build to import): all its text with positions
+            try:
+                from PIL import Image
+                img = Image.open(msg[1]).convert("RGB")
+                arr = np.array(img)[:, :, ::-1].copy()
+                lines = read_lines(arr, engine)
+                conn.send(("read", [(ln.text, ln.x, ln.y, ln.w, ln.h, ln.score) for ln in lines],
+                           img.width, img.height))
+            except Exception as e:
+                conn.send(("err", f"{type(e).__name__}: {e}"))
+            continue
         if cmd != "scan":
             continue
         try:
@@ -139,6 +150,9 @@ def serve(conn, pairs, cfg):
         except Exception as e:
             last_fp = last_hits = last_patches = None
             conn.send(("err", f"{type(e).__name__}: {e}"))
+
+
+CLIENT = None          # the program's OCR client (main.py), for the build import from a picture
 
 
 class OcrClient:
@@ -213,6 +227,30 @@ class OcrClient:
             self.skipped = msg[5] if len(msg) > 5 else ""
             self.texts = msg[6] if len(msg) > 6 else []
             self.img_h = msg[7] if len(msg) > 7 else 0
+            return msg[1], msg[2], msg[3]
+
+    def read_image(self, path: str, timeout: float = 120.0):
+        """([(text, x, y, w, h, score)], width, height) of a picture file (a build to import)."""
+        with self._lock:
+            if self._proc.poll() is not None:
+                self._start()
+            try:
+                if not self._ready:
+                    if not self._conn.poll(timeout):
+                        self._restart()
+                        raise TimeoutError("OCR did not start")
+                    self._conn.recv()
+                    self._ready = True
+                self._conn.send(("read", str(path)))
+                if not self._conn.poll(timeout):
+                    self._restart()
+                    raise TimeoutError("OCR too slow")
+                msg = self._conn.recv()
+            except (EOFError, OSError, BrokenPipeError):
+                self._restart()
+                raise RuntimeError("OCR process died, restarting")
+            if msg[0] == "err":
+                raise RuntimeError(msg[1])
             return msg[1], msg[2], msg[3]
 
     def close(self):

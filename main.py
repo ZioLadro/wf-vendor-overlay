@@ -87,6 +87,8 @@ def main():
         "only_warframe": CFG["only_warframe"],
         "main_pid": __import__("os").getpid(),
     })
+    import app.scan.ocr_worker as _ocr_worker
+    _ocr_worker.CLIENT = ocr                     # the planner reads builds from pictures with it
     overlay.show_status(t("status.ready", menu=_k(CFG["key_menu"]), scan=_k(CFG["key_scan"]),
                           pause=_k(CFG["key_clear"]), quit=_k(CFG["key_quit"])), 6000)
 

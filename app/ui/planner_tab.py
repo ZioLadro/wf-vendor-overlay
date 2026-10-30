@@ -533,6 +533,10 @@ class PlannerView(QWidget):
         m = QMenu(self)
         m.addAction(t("share.import.code"), self._import_code)
         m.addAction(t("share.import.file"), self._import_file)
+        m.addAction(t("share.import.image"), lambda: self._import_image(False))
+        from PyQt6.QtGui import QGuiApplication
+        a = m.addAction(t("share.import.clip"), lambda: self._import_image(True))
+        a.setEnabled(not QGuiApplication.clipboard().image().isNull())
         if self.p and self.p.get("item"):
             m.addSeparator()
             share_actions(m, self, lambda: (self.kind, self.p), lambda: self.screen,
@@ -559,6 +563,71 @@ class PlannerView(QWidget):
                                                  clip if "WFVO1:" in clip else "")
         if ok and text.strip():
             self.import_text(text)
+
+    def _import_image(self, from_clipboard: bool):
+        """A build read from a picture (a screenshot of the game's upgrade screen, or a picture shared by this program):
+        the OCR reads it in its own process, buildocr places the mods by where they are."""
+        from PyQt6.QtWidgets import QFileDialog
+        from PyQt6.QtGui import QGuiApplication
+        if from_clipboard:
+            img = QGuiApplication.clipboard().image()
+            if img.isNull():
+                return
+            path = str(APP_DIR / "import_build.png")
+            img.save(path, "PNG")
+        else:
+            path, _ = QFileDialog.getOpenFileName(self, t("share.import.image"), "",
+                                                  "Images (*.png *.jpg *.jpeg *.webp *.bmp)")
+            if not path:
+                return
+        self._say(t("share.image.reading"))
+
+        def work():
+            try:
+                import app.scan.ocr_worker as OW
+                if OW.CLIENT is not None:
+                    lines, w, h = OW.CLIENT.read_image(path)
+                else:                                      # no OCR process (tests): read it here
+                    import numpy as np
+                    from PIL import Image
+                    from app.scan.ocr import make_engine, read_lines
+                    im = Image.open(path).convert("RGB")
+                    ls = read_lines(np.array(im)[:, :, ::-1].copy(), make_engine())
+                    lines, w, h = [(x.text, x.x, x.y, x.w, x.h, x.score) for x in ls], im.width, im.height
+                self._img_done.done.emit(("ok", lines, w, h))
+            except Exception as e:
+                self._img_done.done.emit(("err", f"{type(e).__name__}: {e}"))
+        if not hasattr(self, "_img_done"):
+            from PyQt6.QtCore import QObject, pyqtSignal as _sig
+
+            class _Done(QObject):
+                done = _sig(object)
+            self._img_done = _Done()
+            self._img_done.done.connect(self._image_read)
+        import threading
+        threading.Thread(target=work, daemon=True, name="build-image").start()
+
+    def _image_read(self, res):
+        from app.game import buildocr
+        if res[0] != "ok":
+            self._say(t("share.image.bad", err=res[1]))
+            return
+        try:
+            b = buildocr.parse(res[1], res[2], res[3])
+        except ValueError as e:
+            self._say(t("share.image.bad", err=str(e)))
+            return
+        piece = new_piece(b["kind"], b["item"])
+        mods = b["mods"] + [None] * (len(piece["configs"][0]["mods"]) - len(b["mods"]))
+        piece["configs"][0]["mods"] = mods[:len(piece["configs"][0]["mods"])]
+        self._store_piece()
+        self.pieces[b["kind"]] = piece
+        self._show_piece(b["kind"], piece)
+        n = sum(1 for m in piece["configs"][0]["mods"] if m)
+        msg = t("share.image.done", item=b["item"], n=n)
+        if b["unplaced"]:
+            msg += " " + t("share.image.unplaced", names=", ".join(b["unplaced"]))
+        self._say(msg)
 
     def _import_file(self):
         from PyQt6.QtWidgets import QFileDialog

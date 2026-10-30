@@ -3,6 +3,23 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.6.0
+- **Planner: import a build from a picture** (Share ▸ *Import from a picture…* or *Import the picture in the clipboard*):
+  a screenshot of the game's upgrade screen, or a picture shared by this program. The OCR reads it (in its own
+  process) and the mods and Arcanes are placed by where they are: the item from the title (a renamed weapon too), the
+  Aura / Stance / Exilus / Posture, the general slots in the game's order, the Arcanes and a gun's Exilus on the right;
+  the mod library under the game's screen and the stats panel are left out. Mods at their maximum rank; ranks, Forma
+  and Rivens are not read. Checked on six screenshots of the game (Warframe, primary, secondary, melee, companion,
+  claws) and on a shared picture.
+- **Archon mods** have a light red glow.
+- **Weekly ▸ Tenet / Coda weapons**: Ergo Glast's 5 Tenet weapons and Eleanor's 7 Coda weapons with their bonus element
+  and percentage, with pictures, the time left and the next cycle (every 4 days). Computed (DE's vendor data, the
+  game's random generator as reconstructed by OpenWF), not read from the game: the page says so.
+- **Weekly ▸ Duviri Circuit**: this week's Warframes and Incarnon Genesis adapters with pictures, and a calendar of the
+  next 12 weeks (fixed cycles, aligned on the world state's choices).
+- **Wallpapers from the Warframe wiki** as the background: Settings ▸ Theme, the button in *Background picture* opens a
+  gallery; only the wallpaper chosen is downloaded.
+
 ## 0.5.9
 - **The Warframe's figure is whole**: the picture was not cut by the screen but is itself a close-up (DE's store icon
   of Cyte-09 is a piece of helmet). The Warframe's figure is now looked for among the pictures of its wiki article:

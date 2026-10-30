@@ -251,6 +251,7 @@ class Card(QWidget):
             p.fillRect(self.rect(), QBrush(shade))
         p.restore()
         backer = None
+        archon = name.startswith("Archon ") and s.get("role") != "arcane"
         if wiki:                                           # the game's frame: borders, lights, backer, rank pips
             backer = modframes.paint_front(p, W, H, wiki, s.get("rank"), s.get("max"))
             if self.selected:
@@ -263,6 +264,16 @@ class Card(QWidget):
                 pen.setStyle(Qt.PenStyle.DashLine)
             p.setPen(pen)
             p.drawPath(path)
+        if archon:                                         # an Archon mod: a light red glow over the frame
+            from PyQt6.QtGui import QRadialGradient as _RG
+            g = _RG(QPointF(W / 2, H / 2), max(W, H) * 0.62)
+            g.setColorAt(0.55, QColor(230, 50, 40, 0))
+            g.setColorAt(1.0, QColor(230, 50, 40, 70))
+            p.fillPath(path, QBrush(g))
+            for k, alpha in ((3.5, 45), (2.0, 110), (1.0, 200)):
+                p.setPen(QPen(QColor(255, 80, 64, alpha), k))
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                p.drawRoundedRect(r.adjusted(1, 1, -1, -1), 7, 7)
         big = max(10, int(H * 0.15))
         small = max(8, int(H * 0.11))
         f = QFont(self.font())

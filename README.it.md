@@ -459,7 +459,8 @@ sistema, o un tuo `.wav`).
 | Prezzi, volumi, catalogo, ordini di vendita, annunci di riven | [warframe.market](https://warframe.market) (API v1 e v2, max 3 richieste/s) |
 | Il tuo standing, inventario, loadout, acquisti, sfide | `lastData.dat` / `deltas.dat` di AlecaFrame sul tuo PC |
 | Vendor, costi in standing, nomi, offerte settimanali, nomi delle sfide | dati pubblici del gioco, inclusi (`tools/build_*.py`) |
-| Immagini (build, logo dei sindacati), cornici delle carte mod ([Mod/Assets](https://wiki.warframe.com/w/Mod/Assets)), lista di Baro, nomi dei perk Incarnon | [wiki.warframe.com](https://wiki.warframe.com) |
+| Immagini (build, logo dei sindacati), cornici delle carte mod ([Mod/Assets](https://wiki.warframe.com/w/Mod/Assets)), figure intere dei Warframe, wallpaper (scaricati quando li scegli), lista di Baro, nomi dei perk Incarnon | [wiki.warframe.com](https://wiki.warframe.com) |
+| Offerte Tenet / Coda: seed dei venditori e generatore casuale del gioco, come ricostruiti da OpenWF; cicli del Circuito | [SpaceNinjaServer](https://github.com/spaceninjaserver/SpaceNinjaServer) (`tools/build_rotations.py`, `app/game/rotations.py`) |
 | Immagini degli oggetti (prima per le Build, poi quando warframe.market non ne ha) | [cdn.warframestat.us](https://cdn.warframestat.us) (immagini WFCD, nomi dei file inclusi da `tools/build_images.py`) |
 | Dove ti trovi (Relay, Cetus, Orbiter, missione…) | il log del gioco, `EE.log`, solo in lettura |
 | Scambi di riven in gioco, settimanali | `weeklyRivensPC.json` di DE (www-static.warframe.com), altrimenti l'[archivio della comunità](https://github.com/CloudeaSoft/warframe-weekly-rivens-archive), una volta al giorno |
@@ -472,7 +473,7 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.5.9)
+## Aggiornamenti (versione attuale 0.6.0)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche

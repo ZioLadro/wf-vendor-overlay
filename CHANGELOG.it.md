@@ -3,6 +3,23 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.6.0
+- **Pianificatore: importa una build da un'immagine** (Condividi ▸ *Importa da un'immagine…* o *Importa l'immagine negli
+  appunti*): uno screenshot della schermata potenziamenti del gioco, o un'immagine condivisa da questo programma. L'OCR
+  la legge (nel suo processo) e mod e Arcani vengono piazzati in base a dove sono: l'oggetto dal titolo (anche un'arma
+  rinominata), Aura / Stance / Exilus / Postura, gli slot generali nell'ordine del gioco, gli Arcani e l'Exilus delle
+  armi a destra; la libreria di mod sotto la schermata del gioco e il pannello statistiche sono esclusi. Mod al rank
+  massimo; rank, Forma e Riven non vengono letti. Verificato su sei screenshot del gioco (Warframe, primaria,
+  secondaria, corpo a corpo, compagno, artigli) e su un'immagine condivisa.
+- **Mod Archon** con un leggero bagliore rosso.
+- **Settimanali ▸ Armi Tenet / Coda**: le 5 armi Tenet di Ergo Glast e le 7 armi Coda di Eleanor con elemento e
+  percentuale del bonus, immagini, tempo rimasto e ciclo successivo (ogni 4 giorni). Calcolato (dati dei venditori di DE,
+  generatore casuale del gioco come ricostruito da OpenWF), non letto dal gioco: la pagina lo dice.
+- **Settimanali ▸ Circuito di Duviri**: Warframe e adattatori Incarnon Genesis della settimana con immagini, e un
+  calendario delle prossime 12 settimane (cicli fissi, allineati alle scelte del world state).
+- **Wallpaper dalla wiki di Warframe** come sfondo: Impostazioni ▸ Tema, il pulsante in *Immagine di sfondo* apre una
+  galleria; viene scaricato solo il wallpaper scelto.
+
 ## 0.5.9
 - **La figura del Warframe è intera**: l'immagine non era tagliata dalla schermata, è proprio un primo piano (l'icona
   del negozio di DE di Cyte-09 è un pezzo di elmo). Ora la figura del Warframe viene cercata tra le immagini del suo

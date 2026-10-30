@@ -417,7 +417,24 @@ class SettingsTab(QWidget):
                     if path:
                         box.setText(path)
                 act.triggered.connect(pick)
-                w.setMaximumWidth(320)
+                # a wallpaper from the Warframe wiki: chosen in a gallery, set at once
+                wall = w.addAction(w.style().standardIcon(QStyle.StandardPixmap.SP_DesktopIcon),
+                                   QLineEdit.ActionPosition.TrailingPosition)
+                wall.setToolTip(t("wall.button"))
+
+                def wiki(_c=False, box=w):
+                    from app.ui import wallpapers
+                    path = wallpapers.choose(self)
+                    if path:
+                        box.setText(path)
+                        style = self.widgets.get("backdrop_style")
+                        if style is not None and hasattr(style[0], "findData"):
+                            style[0].setCurrentIndex(max(0, style[0].findData("image")))
+                        on = self.widgets.get("backdrop")
+                        if on is not None and hasattr(on[0], "setChecked"):
+                            on[0].setChecked(True)
+                wall.triggered.connect(wiki)
+                w.setMaximumWidth(360)
             return w
         w.setMaximumWidth(140)
         return w
