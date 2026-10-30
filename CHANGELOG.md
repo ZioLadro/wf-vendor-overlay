@@ -3,6 +3,17 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.5.8
+- **The Warframe's whole figure** in the background: the wiki article's main picture (DE's store icon, a close-up for
+  some Warframes, stays the fallback and the picture of weapons and companions).
+- **Omni Forma**: a slot polarized with an Omni Forma shows the game's green bubble (in place of the polarity).
+- **Card frames**: the art is cut to the inside of each frame (under the top bar, between the solid sides, measured on
+  every rarity's pieces): nothing shows outside Galvanized, Amalgam and the others any more.
+- **Companion stats**: health, shields and armor at rank 30 (DE's values) with the companion mods (Enhanced Vitality,
+  Calculated Redirection, Metal Fiber…), checked against the game (Pharaoh Predasite 710 / 1066 / 300).
+- **Beasts' claws by owner**: "Claws (Pharaoh Predasite)" in the list and the title, and the companion's figure behind
+  them. Their damage / critical / status are in no public data: only their capacity is computed.
+
 ## 0.5.7
 - **Warframe abilities** under the stats (Builds and planner), as on the game's screen: the passive and the four
   abilities with DE's icons; the tooltip gives the description, the energy cost with the build's efficiency (Seek 25 ->

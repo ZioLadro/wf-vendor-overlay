@@ -148,6 +148,12 @@ def rank_factor(rank, mx) -> float:
 RANK_GAIN = {"health": 100, "shield": 100, "energy": 50}
 
 
+def companion_base(item: str) -> dict:
+    """A companion's stats without mods (rank 30, as the game shows them), for the base ▸ modded arrows."""
+    cs = LO.data().get("cstats", {}).get(item)
+    return {"health": cs[0], "shield": cs[1], "armor": cs[2]} if cs else {}
+
+
 def frame_base(item: str, level: int = 30) -> dict:
     """A Warframe's stats without mods at its rank (the gains spread evenly over the 30 ranks); {} if unknown."""
     fr = LO.data().get("frames", {}).get(item)
@@ -235,7 +241,7 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
             if k.endswith(" (flat)"):             # "+3 Range" (Primed Reach): added, not a percentage
                 lab = k[:-7]
                 flat[lab] = flat.get(lab, 0) + v * f
-            elif k in sums and kind == "warframe":
+            elif k in sums and kind in ("warframe", "companion"):
                 sums[k] += v * f
             elif kind != "warframe" and not riven:
                 bonus[k] = bonus.get(k, 0) + v * f
@@ -250,6 +256,11 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
     res = {"slots": out, "total": total, "used": used, "free": total - used, "stats": {}, "elements": elements,
            "flat": {k: round(v, 2) for k, v in flat.items()},
            "bonus": {k: round(v * 100, 1) for k, v in sorted(bonus.items(), key=lambda kv: -abs(kv[1])) if abs(v) > 1e-9}}
+    cs = LO.data().get("cstats", {}).get(item) if kind == "companion" else None
+    if cs:                                       # a companion: its stats at rank 30 (DE's export) with the mods
+        cut = lambda v: int(math.floor(v + 0.5))      # the game rounds here (350 x 3.045 = 1065.9 -> 1066)
+        res["stats"] = {"health": cut(cs[0] * (1 + sums["health"])), "shield": cut(cs[1] * (1 + sums["shield"])),
+                        "armor": cut(cs[2] * (1 + sums["armor"]))}
     fr = LO.data().get("frames", {}).get(item) if kind == "warframe" else None
     if fr:
         s = res["stats"]

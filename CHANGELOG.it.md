@@ -3,6 +3,17 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.5.8
+- **La figura intera del Warframe** sullo sfondo: l'immagine principale dell'articolo della wiki (l'icona del negozio di
+  DE, un primo piano per alcuni Warframe, resta la riserva e l'immagine di armi e compagni).
+- **Omni Forma**: uno slot polarizzato con una Omni Forma mostra la bolla verde del gioco (al posto della polarità).
+- **Cornici delle carte**: l'immagine è ritagliata all'interno di ogni cornice (sotto la barra in alto, tra i lati
+  pieni, misurati sui pezzi di ogni rarità): non esce più da Galvanized, Amalgam e le altre.
+- **Statistiche dei compagni**: salute, scudi e armatura al rank 30 (valori di DE) con le mod del compagno (Enhanced
+  Vitality, Calculated Redirection, Metal Fiber…), verificate sul gioco (Pharaoh Predasite 710 / 1066 / 300).
+- **Artigli delle bestie per proprietario**: «Claws (Pharaoh Predasite)» nella lista e nel titolo, e la figura del
+  compagno dietro. Danno / critico / status non sono in nessun dato pubblico: viene calcolata solo la capacità.
+
 ## 0.5.7
 - **Abilità dei Warframe** sotto le statistiche (Build e pianificatore), come nella schermata del gioco: la passiva e le
   quattro abilità con le icone di DE; il tooltip dà la descrizione, il costo in energia con l'efficienza della build

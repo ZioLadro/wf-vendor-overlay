@@ -175,6 +175,7 @@ def read(inv: dict, market=None) -> list:
                 kind = "compweapon"                            # a Kubrow's / Kavat's claws: a companion weapon
                 if not names:
                     item_name = "Claws"
+                owner = data().get("claws", {}).get(path, "")  # whose claws (each beast has its own)
                 longest = max((len(c.get("Upgrades") or []) for c in cfgs if isinstance(c, dict)), default=8)
                 roles = ["general"] * 8 + (["stance"] if longest >= 9 else [])     # the Posture mod, like a stance
             elif kind == "exalted":

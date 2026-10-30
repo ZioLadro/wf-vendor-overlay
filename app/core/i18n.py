@@ -1422,6 +1422,9 @@ EN = {
     # ---- 0.4.0 ----
     "set.build_figure": "Builds: the item's figure in the background",
     "set.build_figure.tip": "Behind the Builds and planner screen (and in the pictures you share), the whole Warframe or the weapon, faded: DE's own picture, downloaded once",
+    # ---- 0.4.0 ----
+    "bs.note.comp": "Stats at rank 30 (the game's own values) with the mods' full effect on health, shields and armor. Not counted: Link mods (they copy your Warframe's), set bonuses, conditional effects.",
+    "bs.note.claws": "Each beast's claws have their own damage, critical and status values, which are in no public data of the game: only the capacity is computed.",
 }
 
 IT = {
@@ -2831,6 +2834,9 @@ IT = {
     # ---- 0.4.0 ----
     "set.build_figure": "Build: la figura dell'oggetto sullo sfondo",
     "set.build_figure.tip": "Dietro la schermata dei Build e del pianificatore (e nelle immagini che condividi), il Warframe intero o l'arma, sfumati: l'immagine di DE, scaricata una volta",
+    # ---- 0.4.0 ----
+    "bs.note.comp": "Statistiche al rank 30 (i valori del gioco) con l'effetto pieno delle mod su salute, scudi e armatura. Non contati: le mod Link (copiano quelle del tuo Warframe), bonus dei set, effetti condizionali.",
+    "bs.note.claws": "Gli artigli di ogni bestia hanno danno, critico e status propri, che non sono in nessun dato pubblico del gioco: viene calcolata solo la capacità.",
 }
 
 STRINGS = {"en": EN, "it": IT}

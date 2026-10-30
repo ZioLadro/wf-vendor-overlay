@@ -52,6 +52,8 @@ def icon_path(url: str):
     f = _file(url)
     if f.exists():
         return f
+    if f.with_suffix(".none").exists():                    # the wiki had no picture for it
+        return None
     if url not in _pending:
         _pending.add(url)
         notifier()
@@ -78,8 +80,22 @@ def _run():
         except queue.Empty:
             break
         try:
-            r = requests.get(url, headers={"User-Agent": HEADERS["User-Agent"]}, timeout=15)
-            if r.status_code == 200 and r.content[:4] == b"\x89PNG":
+            h = {"User-Agent": HEADERS["User-Agent"]}
+            src = url
+            if url.startswith("wiki:"):                    # the main picture of a wiki article, full size
+                q = requests.get("https://wiki.warframe.com/api.php", headers=h, timeout=15, params={
+                    "action": "query", "format": "json", "titles": url[5:], "redirects": 1, "prop": "pageimages",
+                    "piprop": "original"})
+                pages = (q.json().get("query") or {}).get("pages") or {}
+                src = next((p.get("original", {}).get("source") for p in pages.values() if p.get("original")), "")
+                if not src:                                # none: the caller falls back on the next picture
+                    DIR.mkdir(parents=True, exist_ok=True)
+                    _file(url).with_suffix(".none").write_bytes(b"")
+                    got += 1
+                    continue
+            r = requests.get(src, headers=h, timeout=20)
+            if r.status_code == 200 and (r.content[:4] == b"\x89PNG" or r.content[:4] == b"RIFF"
+                                         or r.content[:3] == b"\xff\xd8\xff"):
                 DIR.mkdir(parents=True, exist_ok=True)
                 _file(url).write_bytes(r.content)
                 got += 1

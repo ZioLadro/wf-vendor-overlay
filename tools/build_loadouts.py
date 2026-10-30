@@ -14,6 +14,8 @@ Usage:  python tools/build_loadouts.py [--out data/loadout_data.json] [--cache d
   passive:   Warframe path -> its passive's description
   suitpath:  Warframe name -> its path
   figure:    item name -> DE's picture of it (content.warframe.com; the Builds screen's background)
+  cstats:    companion name -> [health, shield, armor, energy] (rank 30, as the game shows them)
+  claws:     a beast's claws path -> the companion they belong to
 With --wfcd <folder of WFCD/warframe-items data/json> it also writes (used for polarity, drain, capacity and stats):
   mst:       mod name -> [polarity, base drain, max rank, compatibility, type, {stat: value at max rank}, Exilus (1/0)]
              (Warframe mods: stat keys; weapon mods: labels)
@@ -138,7 +140,7 @@ def wfcd(folder: Path, skip=frozenset()) -> dict:
         pri_of[name] = pri
         stats = {}
         levels = m.get("levelStats") or []
-        if kind == "W" and levels:
+        if kind in "WC" and levels:                     # Warframe and companion mods: health, shields, armor…
             for line in levels[-1].get("stats", []):
                 hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)%\s*([A-Za-z ]+)", line.strip())
                 if hit and hit.group(3).strip() in STAT_KEYS:
@@ -261,6 +263,14 @@ def main():
                 # ability -> [description, icon address, energy cost]
                 abil[x["uniqueName"]] = [text(x.get("description", "")), icon_url(x.get("icon")),
                                          x.get("energyRequiredToActivate")]
+    cstats, claws = {}, {}                             # companion -> [health, shield, armor, energy]; claws path -> owner
+    for path, c in fetch("ExportSentinels", cache).items():
+        n = nm(c.get("name", "")) if isinstance(c, dict) else ""
+        if n and c.get("health") is not None and c.get("productCategory") in ("Sentinels", "KubrowPets", "MoaPets"):
+            cstats[n] = [c.get("health", 0), c.get("shield", 0), c.get("armor", 0), c.get("power", 0)]
+            for ex in c.get("exalted") or []:
+                if "BeastWeapons" in ex or "PetWeapon" in ex:
+                    claws[ex] = n
     figure = {}                                        # item name -> DE's render of it (the full Warframe, the weapon…)
     for fn in ("ExportWarframes", "ExportWeapons", "ExportSentinels"):
         for path, w in fetch(fn, cache).items():
@@ -280,7 +290,7 @@ def main():
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
            "source": "calamity-inc/warframe-public-export-plus", "mods": mods, "rarity": rarity, "arcrar": arcrar, "arcanes": arcanes,
            "abilities": abilities, "suits": suits, "helminth": helminth,
-           "abil": abil, "passive": passive, "suitpath": suitpath, "figure": figure}
+           "abil": abil, "passive": passive, "suitpath": suitpath, "figure": figure, "cstats": cstats, "claws": claws}
     genesis = sorted({re.sub(r"\s+Incarnon Genesis$", "", nm(k)) for k in lang
                       if re.fullmatch(r"[\w&' -]+ Incarnon Genesis", nm(k))})
     if a.wfcd:

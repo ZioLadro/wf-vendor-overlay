@@ -737,7 +737,8 @@ class PlannerView(QWidget):
         out = {"kind": kind, "item": item, "title": item, "rank": p.get("level"), "configs": cfgs, "slots": slots,
                "capacity": {k: calc[k] for k in ("total", "used", "free")}, "level": p.get("level"),
                "reactor": p.get("reactor"), "forma": BC.forma_count(kind, item, roles, p["forma"]),
-               "wf_stats": calc["stats"], "wf_base": wf_base_stats(item) if kind == "warframe" else {},
+               "wf_stats": calc["stats"], "wf_base": wf_base_stats(item) if kind == "warframe" else
+               (BC.companion_base(item) if kind == "companion" else {}),
                "abilities": AB.model(item, p.get("helminth")) if kind == "warframe" else [],
                "weapon": weapon, "bonus": calc["bonus"], "valence": valence, "locked": locked, "selected": self.selected,
                "unique": bool(valence), "upgrades": upgrade_icons(kind, p.get("reactor", True), p.get("exilus", True)

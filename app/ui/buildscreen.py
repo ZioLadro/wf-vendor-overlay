@@ -30,6 +30,36 @@ ACCENT = "#5fd7e6"                     # Incarnon / selection glow
 UP, DOWN = "#7ee08f", "#ff7b72"
 
 
+def omni_bubble(p, x, y, size):
+    """The game's mark of a slot polarized with an Omni Forma (it matches every polarity): a black square with a lime
+    border and a little tail, a double swirl in it."""
+    lime = QColor("#93e01f")
+    s = float(size)
+    body = QRectF(x, y, s, s * 0.8)
+    path = QPainterPath()
+    path.moveTo(body.left(), body.top())
+    path.lineTo(body.right(), body.top())
+    path.lineTo(body.right(), body.bottom())
+    path.lineTo(body.left() + s * 0.42, body.bottom())
+    path.lineTo(body.left() + s * 0.2, body.bottom() + s * 0.24)
+    path.lineTo(body.left() + s * 0.24, body.bottom())
+    path.lineTo(body.left(), body.bottom())
+    path.closeSubpath()
+    p.save()
+    p.setPen(QPen(lime, max(1.2, s * 0.07)))
+    p.setBrush(QColor(0, 0, 0, 235))
+    p.drawPath(path)
+    c = body.center()
+    r = s * 0.24
+    pen = QPen(lime, max(1.6, s * 0.11))
+    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+    p.setPen(pen)
+    p.setBrush(Qt.BrushStyle.NoBrush)
+    p.drawArc(QRectF(c.x() - r, c.y() - r, 2 * r, 2 * r), 30 * 16, 150 * 16)
+    p.drawArc(QRectF(c.x() - r, c.y() - r, 2 * r, 2 * r), 210 * 16, 150 * 16)
+    p.restore()
+
+
 def figure_on() -> bool:
     from app.core.config import CFG
     return bool(CFG.get("build_figure", True))
@@ -188,7 +218,7 @@ class Card(QWidget):
         grad.setColorAt(1, QColor("#14171d" if name else "#111419"))
         p.save()
         if wiki:                                           # the frame is the card's outline: nothing drawn outside it
-            p.setClipRect(modframes.inner(W, H))
+            p.setClipRect(modframes.inner(W, H, wiki))
             p.fillRect(self.rect(), QBrush(grad))
             modframes.paint_back(p, W, H, wiki)
         else:
@@ -200,7 +230,7 @@ class Card(QWidget):
                 p.setOpacity(0.85)
                 p.drawPixmap(int(W * 0.06), int((H - pm.height()) / 2), pm)
             elif wiki:                                     # inside the game's frame, as bright as in the game
-                ir = modframes.inner(W, H)
+                ir = modframes.inner(W, H, wiki)
                 p.save()
                 p.setClipRect(ir)
                 p.setOpacity(0.62)
@@ -239,7 +269,11 @@ class Card(QWidget):
         # slot polarity (top left) and the role (Aura, Exilus…)
         x = 8
         spol = s.get("pol") or ""
-        if spol and not self.library:
+        if spol == "universal" and not self.library:       # an Omni Forma slot: the game's green bubble
+            size = max(14, int(H * 0.2))
+            omni_bubble(p, x, 4, size)
+            x += size + 4
+        elif spol and not self.library:
             pm = icons.polarity(spol, max(12, int(H * 0.16)))
             if pm is not None:
                 p.drawPixmap(x, 6, pm)
@@ -594,7 +628,8 @@ def stats_panel(m: dict) -> QFrame:
                      icon=icons.stat_path(key))
                 r += 1
         lay.addLayout(g)
-        lay.addWidget(_head(t("bs.ability")))
+        if any(k in wf for k in BC.STAT_ORDER[5:]):
+            lay.addWidget(_head(t("bs.ability")))
         g = QGridLayout()
         g.setVerticalSpacing(1)
         r = 0
@@ -663,7 +698,8 @@ def stats_panel(m: dict) -> QFrame:
             val.setStyleSheet("font-weight: bold;")
             g.addWidget(val, r, 1)
         lay.addLayout(g)
-    note = QLabel(t("bs.note." + ("wf" if wf else "weapon" if ws else "other")))
+    note = QLabel(t("bs.note." + ("comp" if wf and m.get("kind") == "companion" else "wf" if wf else
+                                  "weapon" if ws else "claws" if m.get("item") == "Claws" else "other")))
     note.setWordWrap(True)
     role(note, "hint")
     note.setStyleSheet("margin-top: 6px;")
@@ -974,7 +1010,11 @@ class BuildScreen(QWidget):
             return None
         if self._figure_pm is None:
             from app.ui import abilitybar
-            f = abilitybar.icon_path(url)
+            f = None
+            for u in self._figure_urls:                    # the first one on disk; the others are asked for
+                f = abilitybar.icon_path(u)
+                if f is not None or not abilitybar._file(u).with_suffix(".none").exists():
+                    break
             if f is None:
                 if not getattr(self, "_fig_hooked", False):
                     self._fig_hooked = True
@@ -1007,7 +1047,17 @@ class BuildScreen(QWidget):
         "locked": {"exilus","arcane"}, "selected", "subtitle"}. extra_top: a widget put under the configuration tabs
         (the planner's options)."""
         self.setUpdatesEnabled(False)
-        self._figure_url = (LO.data().get("figure") or {}).get(m.get("item") or "") if figure_on() else ""
+        who = m.get("figure_of") or m.get("item") or ""
+        # a Warframe: the wiki article's main picture (the whole figure); DE's store icon is only a fallback (for some
+        # Warframes it is a close-up), and the picture of weapons and companions
+        self._figure_urls = []
+        if figure_on() and who:
+            if m.get("kind") == "warframe":
+                self._figure_urls.append("wiki:" + who)
+            de = (LO.data().get("figure") or {}).get(who)
+            if de:
+                self._figure_urls.append(de)
+        self._figure_url = self._figure_urls[0] if self._figure_urls else ""
         self._figure_pm = None
         try:
             self.clear()

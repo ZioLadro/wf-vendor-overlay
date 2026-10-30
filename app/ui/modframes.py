@@ -313,10 +313,87 @@ def _bbox(pm):
     return r
 
 
-def inner(W, H):
-    """The inside of the frame (where the background and the art go)."""
+def _alpha(pm):
+    """(alpha bytes, bytes per line, width, height) of a piece, cached."""
+    from PyQt6.QtGui import QImage
+    key = ("alpha", pm.cacheKey())
+    hit = _state["pix"].get(key)
+    if hit is None:
+        img = pm.toImage().convertToFormat(QImage.Format.Format_ARGB32)
+        ptr = img.constBits()
+        ptr.setsize(img.sizeInBytes())
+        hit = (bytes(ptr), img.bytesPerLine(), img.width(), img.height())
+        _state["pix"][key] = hit
+    return hit
+
+
+SOLID = 160                                                # the metal itself, not its glow
+
+
+def _sides(pm, bb, y_from, y_to):
+    """(left, right) of the frame's solid sides as fractions of the visible width, in the rows between y_from and y_to
+    (fractions of the visible height): the median of each row's first / last solid pixel."""
+    data, bpl, w, h = _alpha(pm)
+    lefts, rights = [], []
+    x0, x1 = int(bb.left()), int(bb.right())
+    for y in range(int(bb.top() + bb.height() * y_from), int(bb.top() + bb.height() * y_to)):
+        if not 0 <= y < h:
+            continue
+        row = data[y * bpl + 3: y * bpl + w * 4: 4]
+        xs = [x for x in range(x0, min(w, x1 + 1)) if row[x] > SOLID]
+        if len(xs) > 1:
+            lefts.append(xs[0])
+            rights.append(xs[-1])
+    if not lefts:
+        return 0.0, 1.0
+    lefts.sort()
+    rights.sort()
+    return ((lefts[len(lefts) // 2] - bb.left()) / bb.width(), (rights[len(rights) // 2] + 1 - bb.left()) / bb.width())
+
+
+def _bar(pm, bb):
+    """Where the top bar is solid, as a fraction of the visible height: the first solid row at a quarter and three
+    quarters of the width (the ornament in the middle stands higher)."""
+    data, bpl, w, h = _alpha(pm)
+    ys = []
+    for fx in (0.22, 0.3, 0.7, 0.78):
+        x = int(bb.left() + bb.width() * fx)
+        for y in range(int(bb.top()), int(bb.bottom()) + 1):
+            if 0 <= y < h and data[y * bpl + x * 4 + 3] > SOLID:
+                ys.append(y)
+                break
+    if not ys:
+        return 0.0
+    return (sorted(ys)[len(ys) // 2] - bb.top()) / bb.height()
+
+
+def inner(W, H, rar: str = ""):
+    """The inside of the frame, where the background and the art go: under the top bar and between the solid sides of
+    this rarity's pieces (measured on them, so nothing shows outside the frame: Galvanized, Amalgam…)."""
     from PyQt6.QtCore import QRectF
-    return QRectF(W * 0.02, H * 0.035, W * 0.96, H * 0.86)
+    if not rar:
+        return QRectF(W * 0.02, H * 0.035, W * 0.96, H * 0.86)
+    key = ("inner", rar, int(W), int(H))
+    hit = _state["pix"].get(key)
+    if hit is not None:
+        return hit
+    ps = parts(rar)
+    top, bottom = _pix(ps.get("topborder")), _pix(ps.get("bottomborder"))
+    l, r, y = 0.0, 1.0, 0.0
+    if top is not None:
+        tb = _bbox(top)
+        th = tb.height() * W / tb.width()
+        tl, tr = _sides(top, tb, 0.45, 0.95)
+        l, r = max(l, tl), min(r, tr)
+        y = min(th, H) * _bar(top, tb) + 1
+    if bottom is not None:
+        bb = _bbox(bottom)
+        bl, br = _sides(bottom, bb, 0.3, 0.7)
+        l, r = max(l, bl), min(r, br)
+    left, right = W * l + 2, W * r - 2
+    rect = QRectF(left, y, max(10.0, right - left), H * 0.93 - y)
+    _state["pix"][key] = rect
+    return rect
 
 
 def paint_back(p, W, H, rar: str) -> bool:
@@ -325,7 +402,7 @@ def paint_back(p, W, H, rar: str) -> bool:
     pm = _pix(parts(rar).get("background"))
     if pm is None:
         return False
-    p.drawPixmap(inner(W, H), pm, QRectF(pm.rect()))
+    p.drawPixmap(inner(W, H, rar), pm, QRectF(pm.rect()))
     return True
 
 

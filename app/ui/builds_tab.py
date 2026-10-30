@@ -192,12 +192,15 @@ class LoadoutView(QWidget):
         cfgs = [{"label": c.get("name") or t("builds.cfg.default", c=c["config"]), "active": c["idx"] == lo["idx"],
                  "tip": t("builds.config", c=c["config"])} for c in lo.get("configs") or []]
         weapons = ("primary", "secondary", "melee", "archgun", "archmelee", "compweapon")
-        m = {"kind": lo["kind"], "item": lo["item"], "title": lo["item"] + (f"  “{ex['custom']}”" if ex.get("custom") else ""),
+        claws_of = lo.get("owner") if lo["kind"] == "compweapon" else ""
+        m = {"kind": lo["kind"], "item": lo["item"], "figure_of": claws_of,
+             "title": lo["item"] + (f" ({claws_of})" if claws_of else "") + (f"  “{ex['custom']}”" if ex.get("custom") else ""),
              "rank": lo.get("level"), "forma": lo.get("forma"), "configs": cfgs if len(cfgs) > 1 else
              [{"label": lo.get("cfg_name") or t("builds.cfg.default", c=lo["config"]), "active": True}],
              "slots": lo["slots"], "capacity": lo.get("capacity"), "capacity_none": lo.get("capacity") is None,
              "level": lo.get("level", 30), "reactor": lo.get("reactor", True), "wf_stats": lo.get("stats") or {},
-             "wf_base": wf_base_stats(lo["item"]) if lo["kind"] == "warframe" else {},
+             "wf_base": wf_base_stats(lo["item"]) if lo["kind"] == "warframe" else
+             (BC.companion_base(lo["item"]) if lo["kind"] == "companion" else {}),
              "abilities": AB.model(lo["item"], lo.get("helminth")) if lo["kind"] == "warframe" else [],
              "weapon": BC.weapon_stats(lo["kind"], lo["item"], lo.get("bonus") or {}, lo.get("elements") or [], ex.get("valence"),
                              lo.get("flat"), _perk_stats(lo))
@@ -701,7 +704,8 @@ class BuildsTab(QWidget):
                 f.setBold(True)
                 head.setFont(f)
                 self.list.addItem(head)
-            it = QListWidgetItem(f"{lo['item']}  ·  {lo.get('cfg_name') or lo['config']}")
+            whose = f" ({lo['owner']})" if lo.get("owner") and lo["kind"] == "compweapon" else ""   # claws: whose
+            it = QListWidgetItem(f"{lo['item']}{whose}  ·  {lo.get('cfg_name') or lo['config']}")
             it.setData(Qt.ItemDataRole.UserRole, i)
             pm = thumb(lo["item"], 28)
             if pm is not None:
