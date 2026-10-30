@@ -3,6 +3,14 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.6.2
+- **Weapon stats as the game computes them** (checked on Kompressa Prime, Tenet Glaxion, Praedos screenshots): the
+  Kuva / Tenet / Coda bonus is part of the base the mods' elements are a percentage of (Tenet Glaxion's Viral 97.8);
+  *Total* is one shot with all its multishot (Kompressa Prime 70.7); slam, slide and heavy attacks get every mod,
+  elements included (Praedos slam 2809); the explosion of weapons like Kompressa, Kuva Bramma, Lenz with its own damage,
+  falloff and radius (1625.8); heavy attack section; Punch Through; numbers rounded like the game (3.8x, 1.8s, 8.33).
+- **Planner ▸ warframe.market**: for a Riven, the search uses its stats (up to 3 positive and the negative one).
+
 ## 0.6.1
 - **Build import from a picture, polarities and Rivens**: each card's drain colour gives its slot's polarity (green:
   the mod's, red: another one, white: none) and the game's green bubble an Omni Forma; when the drain number can be
@@ -18,13 +26,6 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Planner, Riven stats from a picture**: right click on a slot ▸ *Riven stats from a picture* (or *from the
   clipboard*): the game's Riven card or tooltip (a screenshot, a video frame) fills the slot with that Riven: name,
   stats (a faction "x0.62" is -38 %), MR and rerolls; the weapon's stats follow.
-- **Weapon stats as the game computes them** (checked on Kompressa Prime, Tenet Glaxion, Praedos screenshots): the
-  Kuva / Tenet / Coda bonus is part of the base the mods' elements are a percentage of (Tenet Glaxion's Viral 97.8);
-  *Total* is one shot with all its multishot (Kompressa Prime 70.7); slam, slide and heavy attacks get every mod,
-  elements included (Praedos slam 2809); the explosion of weapons like Kompressa, Kuva Bramma, Lenz with its own damage,
-  falloff and radius (1625.8); heavy attack section; Punch Through; numbers rounded like the game (3.8x, 1.8s, 8.33).
-- **Planner ▸ warframe.market**: for a Riven, the search uses its stats (up to 3 positive and the negative one).
-
 ## 0.6.0
 - **Planner: import a build from a picture** (Share ▸ *Import from a picture…* or *Import the picture in the clipboard*):
   a screenshot of the game's upgrade screen, or a picture shared by this program. The OCR reads it (in its own
