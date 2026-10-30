@@ -18,6 +18,12 @@ Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 - **Planner, Riven stats from a picture**: right click on a slot ▸ *Riven stats from a picture* (or *from the
   clipboard*): the game's Riven card or tooltip (a screenshot, a video frame) fills the slot with that Riven: name,
   stats (a faction "x0.62" is -38 %), MR and rerolls; the weapon's stats follow.
+- **Weapon stats as the game computes them** (checked on Kompressa Prime, Tenet Glaxion, Praedos screenshots): the
+  Kuva / Tenet / Coda bonus is part of the base the mods' elements are a percentage of (Tenet Glaxion's Viral 97.8);
+  *Total* is one shot with all its multishot (Kompressa Prime 70.7); slam, slide and heavy attacks get every mod,
+  elements included (Praedos slam 2809); the explosion of weapons like Kompressa, Kuva Bramma, Lenz with its own damage,
+  falloff and radius (1625.8); heavy attack section; Punch Through; numbers rounded like the game (3.8x, 1.8s, 8.33).
+- **Planner ▸ warframe.market**: for a Riven, the search uses its stats (up to 3 positive and the negative one).
 
 ## 0.6.0
 - **Planner: import a build from a picture** (Share ▸ *Import from a picture…* or *Import the picture in the clipboard*):

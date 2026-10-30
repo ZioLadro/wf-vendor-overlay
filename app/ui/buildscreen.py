@@ -62,6 +62,42 @@ def omni_bubble(p, x, y, size):
     p.restore()
 
 
+# warframe.market's names of the Riven stats in its auction search (positive_stats / negative_stats)
+WFM_STATS = {
+    "critical chance": "critical_chance", "critical damage": "critical_damage", "multishot": "multishot",
+    "damage": "base_damage_/_melee_damage", "melee damage": "base_damage_/_melee_damage",
+    "fire rate": "fire_rate_/_attack_speed", "attack speed": "fire_rate_/_attack_speed",
+    "status chance": "status_chance", "status duration": "status_duration", "heat": "heat_damage",
+    "cold": "cold_damage", "electricity": "electric_damage", "toxin": "toxin_damage", "impact": "impact_damage",
+    "puncture": "puncture_damage", "slash": "slash_damage", "magazine capacity": "magazine_capacity",
+    "ammo maximum": "ammo_maximum", "reload speed": "reload_speed", "punch through": "punch_through",
+    "projectile speed": "projectile_speed", "projectile flight speed": "projectile_speed", "zoom": "zoom",
+    "weapon recoil": "recoil", "recoil": "recoil", "range": "range", "initial combo": "channeling_damage",
+    "heavy attack efficiency": "channeling_efficiency", "combo duration": "combo_duration",
+    "additional combo count chance": "chance_to_gain_extra_combo_count",
+    "chance to gain extra combo count": "chance_to_gain_extra_combo_count",
+    "critical chance for slide attack": "critical_chance_on_slide_attack", "finisher damage": "finisher_damage",
+    "damage to corpus": "damage_vs_corpus", "damage to grineer": "damage_vs_grineer",
+    "damage to infested": "damage_vs_infested", "ammo efficiency": "ammo_maximum",
+}
+
+
+def riven_market_stats(riven) -> tuple:
+    """([up to 3 positive stats], [the negative one]) of a Riven, by warframe.market's names (a faction "x0.62" is a
+    negative "damage_vs_…"; recoil and zoom read the other way round in the game, so their sign follows the value)."""
+    pos, neg = [], []
+    for a in (riven or {}).get("attributes") or []:
+        lab = re.sub(r"\s*\(.*?\)", "", str(a.get("label") or "")).strip().lower()
+        key = WFM_STATS.get(lab)
+        if not key:
+            continue
+        good = a.get("positive") if a.get("positive") is not None else float(a.get("value") or 0) >= 0
+        if key == "recoil":
+            good = float(a.get("value") or 0) < 0
+        (pos if good else neg).append(key)
+    return list(dict.fromkeys(pos))[:3], neg[:1]
+
+
 def market_link(name: str, riven=None) -> str:
     """warframe.market for a mod / Arcane (its item page), or for a Riven the auctions of Rivens for its weapon."""
     from urllib.parse import quote
@@ -78,7 +114,10 @@ def market_link(name: str, riven=None) -> str:
         except Exception:
             pass
         slug = slug or re.sub(r"[^a-z0-9]+", "_", weapon.lower()).strip("_")
-        return f"https://warframe.market/auctions/search?type=riven&weapon_url_name={quote(slug)}&sort_by=price_asc"
+        pos, neg = riven_market_stats(riven)
+        extra = (f"&positive_stats={','.join(pos)}" if pos else "") + (f"&negative_stats={neg[0]}" if neg else "")
+        return (f"https://warframe.market/auctions/search?type=riven&weapon_url_name={quote(slug)}{extra}"
+                f"&polarity=any&sort_by=price_asc")
     slug = None
     if previews._market is not None:
         try:
@@ -561,27 +600,28 @@ def _arcane_max(name):
 
 # ---------- the stats panel on the left ----------
 def _fmt(key, v):
+    """A value as the game's recap writes it: damage and most stats with one decimal (2.805 -> 2.8, 1404.5), fire rate
+    and attack speed with two (8.33, 1.17), critical damage "3.8x", reload "1.8s", percentages "57.6%"."""
     if isinstance(v, str):
         return v
-    if key in ("crit_chance", "status"):
-        return f"{v * 100:.1f}%".replace(".0%", "%")
+    one = lambda x: f"{x:,.1f}".replace(".0", "") if abs(x - round(x)) < 0.05 else f"{x:,.1f}"
+    if key in ("crit_chance", "status", "falloff"):
+        return one(v * 100) + "%"
     if key == "crit_damage":
-        return f"{v:.2f}x".replace(".00x", "x")
+        return one(v) + "x"
     if key in ("reload",):
-        return f"{v:.2f}s"
-    if key in ("range",):
-        return f"{v:.1f}m"
+        return one(v) + "s"
+    if key in ("range", "radius"):
+        return one(v) + "m"
     if key in ("combo",):
         return f"{v:g}s"
     if key in ("follow",):
         return f"{v * 100:.0f}%"
     if key in ("magazine",):
         return f"{int(round(v))}"
-    if abs(v) >= 1000:
-        return f"{v:,.0f}"
-    if abs(v - round(v)) < 1e-6 and key not in ("crit_damage",):
-        return str(int(round(v)))
-    return f"{v:.2f}".rstrip("0").rstrip(".") if abs(v) < 100 else f"{v:.1f}"
+    if key in ("fire_rate", "attack_speed", "sprint"):
+        return f"{v:.2f}".rstrip("0").rstrip(".")
+    return one(v)
 
 
 def _icon_html(f, size=14) -> str:
@@ -736,9 +776,37 @@ def stats_panel(m: dict) -> QFrame:
             _row(g, r, t("dmg." + el.lower()), b0, b1, icon=icons.damage_path(el))
             r += 1
         _row(g, r, t("bs.stat.total"), ws["total"][0], ws["total"][1], bold=True)
+        g.itemAtPosition(r, 0).widget().setToolTip(t("bs.stat.total.tip"))
         _row(g, r + 1, t("bs.stat.dps"), ws["dps"][0], ws["dps"][1], bold=True)
         g.itemAtPosition(r + 1, 0).widget().setToolTip(t("bs.stat.dps.tip"))
         lay.addLayout(g)
+        if ws.get("heavy"):                              # melee: the heavy attack and its slam
+            lay.addWidget(_head(t("bs.sec.heavy")))
+            g = QGridLayout()
+            g.setVerticalSpacing(1)
+            for r, (key, b0, b1) in enumerate(ws["heavy"]):
+                _row(g, r, t("bs.stat.heavy" if key == "heavy" else "bs.stat.slam"), b0, b1, key,
+                     icon=icons.stat_path(key))
+            lay.addLayout(g)
+        for x in ws.get("extra") or []:                  # an explosion…: its own damage, as the game lists it
+            lay.addWidget(_head(x["name"]))
+            g = QGridLayout()
+            g.setVerticalSpacing(1)
+            r = 0
+            for key, b0, b1 in x["crit"]:
+                _row(g, r, t("bs.stat." + key), b0, b1, key, icon=icons.stat_path(key))
+                r += 1
+            for el, b0, b1 in x["damage"]:
+                _row(g, r, t("dmg." + el.lower()), b0, b1, icon=icons.damage_path(el))
+                r += 1
+            if x.get("falloff"):
+                _row(g, r, t("bs.stat.falloff"), None, x["falloff"], "falloff")
+                r += 1
+            if x.get("radius"):
+                _row(g, r, t("bs.stat.radius"), None, x["radius"], "radius")
+                r += 1
+            _row(g, r, t("bs.stat.total"), x["total"][0], x["total"][1], bold=True)
+            lay.addLayout(g)
         if ws.get("perks"):                              # the Incarnon perks counted in these stats
             pl = QLabel("✦ " + t("bs.perks.used", names=", ".join(ws["perks"])))
             pl.setWordWrap(True)

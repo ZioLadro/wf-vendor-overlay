@@ -153,8 +153,8 @@ def wfcd(folder: Path, skip=frozenset()) -> dict:
                     label = re.sub(r"\s*\(.*?\)", "", hit.group(3)).strip()
                     stats[label] = round(stats.get(label, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)) / 100, 4)
                     continue
-                hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)\s+(Range)", _plain(line).strip())
-                if hit:                                  # a flat value: Primed Reach "+3 Range" (metres)
+                hit = re.fullmatch(r"([+-])(\d+(?:\.\d+)?)m?\s+(Range|Punch Through|Beam Range)", _plain(line).strip())
+                if hit:                                  # a flat value: Primed Reach "+3 Range", Shred "+1.2 Punch Through"
                     key = hit.group(3) + " (flat)"
                     stats[key] = round(stats.get(key, 0) + (1 if hit.group(1) == "+" else -1) * float(hit.group(2)), 4)
         mst[name] = [m.get("polarity") or "", int(m["baseDrain"]), lim, m.get("compatName") or "", kind, stats,
@@ -200,8 +200,25 @@ def wfcd(folder: Path, skip=frozenset()) -> dict:
                   "fr": r4(w.get("fireRate")), "dmg": dmg}
             if fn in ("Melee", "Arch-Melee"):
                 st.update(rng=r4(w.get("range")), cdur=r4(w.get("comboDuration")), ft=r4(w.get("followThrough")),
-                          slam=r4(w.get("slamAttack")), slide=r4(w.get("slideAttack")), heavy=r4(w.get("heavyAttackDamage")))
+                          slam=r4(w.get("slamRadialDamage") or w.get("slamAttack")), slide=r4(w.get("slideAttack")),
+                          heavy=r4(w.get("heavyAttackDamage")),
+                          hslam=r4(w.get("heavySlamRadialDamage") or w.get("heavySlamAttack")))
             else:
+                # other attacks of the same trigger (Kompressa's explosion, a grenade…): name, damage, crit / status,
+                # radius and falloff, as the game's recap shows them under their own heading
+                atk = []
+                for a in (w.get("attacks") or [])[1:]:
+                    dm = {k: r4(v) for k, v in (a.get("damage") or {}).items() if isinstance(v, (int, float)) and v}
+                    if not dm or "Incarnon" in (a.get("name") or "") or not re.search(
+                            r"explo|radial|aoe|blast|area", (a.get("name") or "") + " "
+                                                + (a.get("shot_type") or ""), re.I):
+                        continue
+                    fo = a.get("falloff") or {}
+                    atk.append({"name": a.get("name") or "", "dmg": dm, "cc": r4((a.get("crit_chance") or 0) / 100),
+                                "cd": r4(a.get("crit_mult")), "sc": r4((a.get("status_chance") or 0) / 100),
+                                "rad": r4(fo.get("end")), "fall": r4(fo.get("reduction"))})
+                if atk:
+                    st["atk"] = atk
                 st.update(ms=r4(w.get("multishot")), mag=w.get("magazineSize"), rl=r4(w.get("reloadTime")),
                           acc=r4(w.get("accuracy")), trig=w.get("trigger") or "")
             wstats[w["name"]] = {k: v for k, v in st.items() if v not in (None, "", {})}

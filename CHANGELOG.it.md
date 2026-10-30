@@ -19,6 +19,13 @@ Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 - **Pianificatore, statistiche Riven da immagine**: clic destro su uno slot ▸ *Statistiche Riven da un'immagine* (o
   *dagli appunti*): la carta o il tooltip del Riven del gioco (uno screenshot, un fotogramma di video) riempie lo slot
   con quel Riven: nome, statistiche (una fazione "x0.62" è -38 %), MR e reroll; le statistiche dell'arma si aggiornano.
+- **Statistiche delle armi calcolate come nel gioco** (verificate sugli screenshot di Kompressa Prime, Tenet Glaxion,
+  Praedos): il bonus Kuva / Tenet / Coda fa parte della base su cui si calcolano gli elementi delle mod (Viral 97.8 della
+  Tenet Glaxion); *Totale* è un colpo con tutto il multicolpo (Kompressa Prime 70.7); schianto, scivolata e attacco
+  pesante prendono tutte le mod, elementi compresi (schianto Praedos 2809); l'esplosione di armi come Kompressa, Kuva
+  Bramma, Lenz con danno, calo e raggio propri (1625.8); sezione attacco pesante; Perforazione; numeri arrotondati come
+  nel gioco (3.8x, 1.8s, 8.33).
+- **Pianificatore ▸ warframe.market**: per un Riven la ricerca usa le sue statistiche (fino a 3 positive e la negativa).
 
 ## 0.6.0
 - **Pianificatore: importa una build da un'immagine** (Condividi ▸ *Importa da un'immagine…* o *Importa l'immagine negli

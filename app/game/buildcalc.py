@@ -363,42 +363,64 @@ def weapon_stats(kind: str, item: str, bonus: dict, elements: list, valence: dic
                 bonus[lab] = bonus.get(lab, 0) + v
     b = lambda *labels: sum(bonus.get(lab, 0) for lab in labels) / 100
     melee = kind in ("melee", "archmelee") or "rng" in ws
-    base = {k.title() if k != "true" else "True": float(v) for k, v in (ws.get("dmg") or {}).items()}
-    total0 = sum(base.values())
     mult = 1 + (b("Melee Damage") if melee else b("Damage"))
-    phys = {p: base.get(p, 0) * mult * (1 + b(p)) for p in ("Impact", "Puncture", "Slash") if base.get(p)}
-    innate = {el: v * mult for el, v in base.items() if el not in ("Impact", "Puncture", "Slash")}
-    if valence and valence.get("element"):
-        el, v = valence["element"], total0 * float(valence.get("pct") or 0) / 100 * mult
-        if el in ("Impact", "Puncture", "Slash"):
-            phys[el] = phys.get(el, 0) + v * (1 + b(el))
-        else:
-            innate[el] = innate.get(el, 0) + v
-    mods = [(el, total0 * mult * frac) for el, frac in elements]
-    dmg = dict(phys)
-    for el, v in combine(mods, innate).items():
-        dmg[el] = dmg.get(el, 0) + v
-    base_dmg = dict(base)
-    if valence and valence.get("element"):
-        base_dmg[valence["element"]] = base_dmg.get(valence["element"], 0) + total0 * float(valence.get("pct") or 0) / 100
-    total = sum(dmg.values())
+    vel = (valence or {}).get("element") if valence else None
+    vpct = float((valence or {}).get("pct") or 0) / 100 if vel else 0.0
+
+    def damage(dmg0: dict):
+        """(base {element: value}, modded {element: value}) of one attack, as the game computes them: the Kuva / Tenet /
+        Coda bonus is part of the base (the elements of the mods are percentages of it too: Tenet Glaxion, 34 Cold +
+        56.3 % Magnetic, Rime Rounds 60 % = 31.9 Cold), physical mods multiply their own type, elements combine in
+        slot order, then the weapon's own elements."""
+        base = {k.title() if k != "true" else "True": float(v) for k, v in dmg0.items()}
+        t0 = sum(base.values())
+        if vel:
+            base[vel] = base.get(vel, 0) + t0 * vpct
+        tb = sum(base.values())
+        phys = {p: base.get(p, 0) * mult * (1 + b(p)) for p in ("Impact", "Puncture", "Slash") if base.get(p)}
+        innate = {el: v * mult for el, v in base.items() if el not in ("Impact", "Puncture", "Slash")}
+        out = dict(phys)
+        for el, v in combine([(el, tb * mult * frac) for el, frac in elements], innate).items():
+            out[el] = out.get(el, 0) + v
+        return base, out
+
+    def ordered(base, dmg):
+        order = {el: n for n, el in enumerate(DAMAGE_ORDER)}
+        names = sorted(set(dmg) | set(base), key=lambda el: order.get(el, 99))
+        return [(el, base.get(el, 0), dmg.get(el, 0)) for el in names if dmg.get(el, 0) > 1e-9]   # used up: not shown
+
+    base_dmg, dmg = damage(ws.get("dmg") or {})
+    total0 = sum(float(v) for v in (ws.get("dmg") or {}).values())
+    per0, per = sum(base_dmg.values()), sum(dmg.values())
     cc0, cd0, sc0 = ws.get("cc", 0), ws.get("cd", 1), ws.get("sc", 0)
-    cc, cd, sc = cc0 * (1 + b("Critical Chance")), cd0 * (1 + b("Critical Damage")), sc0 * (1 + b("Status Chance"))
-    rows = []
+    crit_of = lambda c, d, st: [("crit_chance", c, c * (1 + b("Critical Chance"))),
+                                ("crit_damage", d, d * (1 + b("Critical Damage"))),
+                                ("status", st, st * (1 + b("Status Chance")))]
+    crit = crit_of(cc0, cd0, sc0)
+    cc, cd, sc = crit[0][2], crit[1][2], crit[2][2]
+    rows, heavy, extra = [], [], []
+    fl = flat or {}
     if melee:
         rate0 = ws.get("fr", 1)
         rate = rate0 * (1 + b("Attack Speed"))
         rows.append(("attack_speed", rate0, rate))
         if ws.get("rng"):
-            rows.append(("range", ws["rng"], ws["rng"] + float((flat or {}).get("Range", 0))))
+            rows.append(("range", ws["rng"], ws["rng"] + float(fl.get("Range", 0))))
+        # slam, slide, heavy: the attack's share of the weapon's damage, with every mod (elements included): Praedos,
+        # 200 damage and slam 400, modded to 1404.5 -> slam 2809
+        k = (per / per0) if per0 else 0
         if ws.get("slam"):
-            rows.append(("slam", ws["slam"], ws["slam"] * mult))
+            rows.append(("slam", ws["slam"], ws["slam"] * k * (1 + b("Slam Attack Damage"))))
         if ws.get("slide"):
-            rows.append(("slide", ws["slide"], ws["slide"] * mult))
+            rows.append(("slide", ws["slide"], ws["slide"] * k))
         if ws.get("cdur"):
             rows.append(("combo", ws["cdur"], ws["cdur"]))
         if ws.get("ft"):
             rows.append(("follow", ws["ft"], ws["ft"]))
+        if ws.get("heavy"):
+            heavy.append(("heavy", ws["heavy"], ws["heavy"] * k * (1 + b("Melee Damage on Heavy Attack"))))
+        if ws.get("hslam"):
+            heavy.append(("slam", ws["hslam"], ws["hslam"] * k * (1 + b("Slam Attack Damage"))))
         ms0 = ms = 1.0
     else:
         rate0 = ws.get("fr", 1)
@@ -413,13 +435,20 @@ def weapon_stats(kind: str, item: str, bonus: dict, elements: list, valence: dic
             rows.append(("reload", ws["rl"], ws["rl"] / max(0.05, 1 + b("Reload Speed"))))
         if ws.get("trig"):
             rows.append(("trigger", ws["trig"], ws["trig"]))
-    crit = [("crit_chance", cc0, cc), ("crit_damage", cd0, cd), ("status", sc0, sc)]
-    dps = lambda t, r, m, c, d: t * r * m * (1 + min(c, 10) * (d - 1))
-    order = {el: n for n, el in enumerate(DAMAGE_ORDER)}
-    names = sorted(set(dmg) | set(base_dmg), key=lambda el: order.get(el, 99))
-    return {"rows": rows, "crit": crit,
-            "damage": [(el, base_dmg.get(el, 0), dmg.get(el, 0)) for el in names if base_dmg.get(el) or dmg.get(el)],
-            "total": (total0, total), "dps": (dps(total0, rate0, ms0, cc0, cd0), dps(total, rate, ms, cc, cd)),
+        if fl.get("Punch Through"):
+            rows.append(("punch", 0.0, float(fl["Punch Through"])))
+        for a in ws.get("atk") or []:                 # an explosion…: its own damage with the same mods, x multishot
+            ab, ad = damage(a.get("dmg") or {})
+            extra.append({"name": a.get("name") or "", "crit": crit_of(a.get("cc", cc0), a.get("cd", cd0), a.get("sc", sc0)),
+                          "damage": ordered(ab, ad), "total": (sum(ab.values()) * ms0, sum(ad.values()) * ms),
+                          "radius": a.get("rad"), "falloff": a.get("fall")})
+    # "Total" as the game shows it: one shot's damage, every projectile of its multishot (Kompressa Prime: 6.5 x 10.8 =
+    # 70.7); critical hits and status are not in it
+    dps = lambda t, r, c, d: t * r * (1 + min(c, 10) * (d - 1))
+    _ = total0
+    return {"rows": rows, "crit": crit, "damage": ordered(base_dmg, dmg), "total": (per0 * ms0, per * ms),
+            "dps": (dps(per0 * ms0, rate0, cc0, cd0), dps(per * ms, rate, cc, cd)),
+            "heavy": heavy, "extra": extra,
             "melee": melee, "perks": list((perks or {}).get("used") or [])}
 
 

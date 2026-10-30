@@ -1474,7 +1474,7 @@ EN = {
     "share.image.rivens": "Rivens: {names} (stats only from pictures shared by this program; in the game's screen they are not shown: add them by hand).",
     # ---- 0.4.0 ----
     "bs.market": "Search on warframe.market",
-    "bs.market.riven": "Rivens for this weapon on warframe.market",
+    "bs.market.riven": "Similar Rivens on warframe.market (same weapon and stats)",
     "bs.notowned": "You do not own it",
     # ---- 0.4.0 ----
     "bs.riven.image": "Riven stats from a picture…",
@@ -1483,6 +1483,13 @@ EN = {
     # ---- 0.4.0 ----
     "rot.tip.wiki": "{name}: bonus {pct}% {el}, reported by players on the wiki ({day}); check it at the vendor. A Valence Fusion can change it",
     "rot.note.wiki": "Which weapons is DE's vendor data (Ergo Glast: always all five; Eleanor: two groups of seven in turn, every 4 days at 00:00 UTC). The bonus elements are those players reported for this cycle on the wiki pages \"Tenet Weapons\" and \"Coda Weapons\" (read every 3 hours); where nobody reported one yet, see it in game.",
+    # ---- 0.4.0 ----
+    "bs.sec.heavy": "Heavy attack",
+    "bs.stat.heavy": "Damage",
+    "bs.stat.punch": "Punch Through",
+    "bs.stat.falloff": "Damage falloff",
+    "bs.stat.radius": "Radius",
+    "bs.stat.total.tip": "As in the game: the damage of one shot, every projectile of its multishot included; no critical hits, no status.",
 }
 
 IT = {
@@ -2944,7 +2951,7 @@ IT = {
     "share.image.rivens": "Riven: {names} (statistiche solo dalle immagini condivise da questo programma; nella schermata del gioco non si vedono: aggiungile a mano).",
     # ---- 0.4.0 ----
     "bs.market": "Cerca su warframe.market",
-    "bs.market.riven": "Riven di quest'arma su warframe.market",
+    "bs.market.riven": "Riven simili su warframe.market (stessa arma e statistiche)",
     "bs.notowned": "Non la possiedi",
     # ---- 0.4.0 ----
     "bs.riven.image": "Statistiche Riven da un'immagine…",
@@ -2953,6 +2960,13 @@ IT = {
     # ---- 0.4.0 ----
     "rot.tip.wiki": "{name}: bonus {pct}% {el}, riportato dai giocatori sulla wiki ({day}); verificalo dal venditore. La Valence Fusion può cambiarlo",
     "rot.note.wiki": "Quali armi viene dai dati dei venditori di DE (Ergo Glast: sempre tutte e cinque; Eleanor: due gruppi di sette a turno, ogni 4 giorni alle 00:00 UTC). Gli elementi bonus sono quelli riportati dai giocatori per questo ciclo sulle pagine della wiki \"Tenet Weapons\" e \"Coda Weapons\" (lette ogni 3 ore); dove nessuno l'ha ancora riportato, guardalo in gioco.",
+    # ---- 0.4.0 ----
+    "bs.sec.heavy": "Attacco pesante",
+    "bs.stat.heavy": "Danno",
+    "bs.stat.punch": "Perforazione",
+    "bs.stat.falloff": "Calo del danno",
+    "bs.stat.radius": "Raggio",
+    "bs.stat.total.tip": "Come nel gioco: il danno di un colpo, compresi tutti i proiettili del multicolpo; senza critici né status.",
 }
 
 STRINGS = {"en": EN, "it": IT}
