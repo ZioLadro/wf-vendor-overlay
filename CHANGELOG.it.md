@@ -3,6 +3,11 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.6.5
+- **Aggiornamenti**: le cartelle dei vecchi aggiornamenti (`wfupdate_…` nella cartella AppData del programma, circa
+  100 MB l'una) vengono cancellate all'avvio; dopo un aggiornamento viene cancellata tutta la sua cartella, download
+  compreso.
+
 ## 0.6.4
 - **Settimanali ▸ Tenet / Coda**: i bonus della wiki vengono letti: la sua tabella "Current Valence Bonuses" non ha una
   data, ed elemento e percentuale sono in colonne separate. La pagina viene letta ogni ora nelle prime 12 ore di un ciclo.

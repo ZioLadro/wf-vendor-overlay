@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 from urllib.parse import urlparse
@@ -220,13 +221,37 @@ exit /b 1
 :done
 echo [%time%] copied, starting the new version >> "%LOG%"
 start "" "{dest}\\WFVendorOverlay.exe"
-rmdir /S /Q "{staging.parent}"
+rem the update's folder (download, files and this batch file): deleted by a separate cmd once this one has ended
+start "" /b cmd /c "ping -n 3 127.0.0.1 >nul & rmdir /S /Q "{_work_dir(staging)}""
 """
+
+
+def _work_dir(staging: Path) -> Path:
+    """The update's own folder (wfupdate_…) that holds the download, the unpacked files and the batch file."""
+    for p in (staging, *staging.parents):
+        if p.name.startswith("wfupdate_"):
+            return p
+    return staging.parent
+
+
+def cleanup(keep_hours: float = 1.0) -> int:
+    """Deletes the folders of past updates (APP_DIR/wfupdate_*: the download and its unpacked copy, ~100 MB each), but
+    one less than an hour old (an update may be installing). Returns how many were deleted."""
+    import shutil
+    n = 0
+    for p in APP_DIR.glob("wfupdate_*"):
+        try:
+            if p.is_dir() and time.time() - p.stat().st_mtime > keep_hours * 3600:
+                shutil.rmtree(p, ignore_errors=True)
+                n += not p.exists()
+        except OSError:
+            pass
+    return n
 
 
 def launch_installer(staging: Path):
     """Starts the batch file that replaces the files once this program has exited. The caller must quit."""
-    bat = staging.parent / "install_update.bat"
+    bat = _work_dir(staging) / "install_update.bat"
     bat.write_text(installer_script(staging, install_dir(), os.getpid()), encoding="utf-8")
     try:
         with open(LOG_FILE, "a", encoding="utf-8") as f:

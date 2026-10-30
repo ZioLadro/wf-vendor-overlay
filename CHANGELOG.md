@@ -3,6 +3,10 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.6.5
+- **Updates**: the folders of past updates (`wfupdate_…` in the program's AppData folder, about 100 MB each) are deleted
+  when the program starts; after an update its whole folder is deleted, the download included.
+
 ## 0.6.4
 - **Weekly ▸ Tenet / Coda**: the wiki's bonuses are read again: its "Current Valence Bonuses" table has no date and
   the element and percentage in their own columns. The page is read every hour in the first 12 hours of a cycle.

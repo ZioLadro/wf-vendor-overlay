@@ -146,6 +146,13 @@ def main():
 
     # update check at start (in the background; it only tells you, installing is up to you in Settings)
     def _update_startup():
+        try:                                       # the folders left by past updates (~100 MB each)
+            from app.core import updater, logbus
+            n = updater.cleanup()
+            if n:
+                logbus.add("update", f"{n} old update folder(s) deleted", "ok")
+        except Exception:
+            pass
         if not CFG["check_updates"]:
             return
         try:
