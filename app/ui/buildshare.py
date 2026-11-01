@@ -13,8 +13,8 @@ from PyQt6.QtCore import QRectF, Qt
 from PyQt6.QtGui import QColor, QFont, QGuiApplication, QImage, QPainter
 
 PREFIX = "WFVO1:"
-FILE_FILTER = "WF Vendor Overlay build / loadout (*.wfbuild *.wfloadout *.json)"
-LOADOUT_FILTER = "WF Vendor Overlay loadout (*.wfloadout)"
+FILE_FILTER = "TauTools build / loadout (*.wfbuild *.wfloadout *.json)"
+LOADOUT_FILTER = "TauTools loadout (*.wfloadout)"
 
 
 def _plain(piece: dict) -> dict:
@@ -152,7 +152,7 @@ def image(widget, title: str, subtitle: str = "") -> QImage:
     g.drawPixmap(pad, head, shot)
     g.setPen(QColor(p["hint"]))
     g.drawText(QRectF(pad, head + h + 4, w, foot - 8), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
-               f"WF Vendor Overlay {__version__}")
+               f"TauTools {__version__}")
     g.end()
     return img
 

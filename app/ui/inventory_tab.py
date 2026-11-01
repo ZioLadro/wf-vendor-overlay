@@ -6,7 +6,7 @@ from app.game import aleca
 import os
 import time
 
-from PyQt6.QtCore import QStringListModel, Qt
+from PyQt6.QtCore import QStringListModel, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QAbstractItemView, QApplication, QCheckBox, QComboBox, QCompleter, QDialog, QDialogButtonBox,
     QFileDialog, QFormLayout, QHBoxLayout, QHeaderView, QInputDialog, QLabel, QLineEdit, QMessageBox,
@@ -26,6 +26,54 @@ from app.core.uiutil import (
 )
 
 CATEGORIES = ["set", "warframe_part", "weapon_part", "mod", "arcane", "relic", "other"]
+# the sections of the Inventory, like AlecaFrame's: (id, market categories, glyph). "parts" = Warframe and weapon parts.
+SECTIONS = [("parts", ("warframe_part", "weapon_part"), "∞"), ("relic", ("relic",), "⬡"), ("mod", ("mod",), "◈"),
+            ("arcane", ("arcane",), "◆"), ("other", ("other",), "⚙"), ("set", ("set",), "❖"),
+            ("all", None, "≡")]
+
+
+class CategoryBar(QWidget):
+    """The Inventory's sections as a row of tabs (All parts · Relics · Mods · Arcanes · Misc · Sets · Everything) with
+    how many items and how much platinum each holds. currentData() -> the market categories of the section."""
+    currentIndexChanged = pyqtSignal(int)
+
+    def __init__(self, current="parts"):
+        super().__init__()
+        from PyQt6.QtWidgets import QButtonGroup
+        self.group = QButtonGroup(self)
+        self.group.setExclusive(True)
+        self.buttons = {}
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(6)
+        for sid, _cats, glyph in SECTIONS:
+            b = QPushButton(f"{glyph}  {t('invsec.' + sid)}")
+            b.setCheckable(True)
+            b.setObjectName("invsec")
+            b.setToolTip(t("invsec." + sid + ".tip"))
+            self.group.addButton(b)
+            self.buttons[sid] = b
+            lay.addWidget(b)
+            b.clicked.connect(lambda _c=False, x=sid: self._pick(x))
+        lay.addStretch(1)
+        self.current = current if current in self.buttons else "parts"
+        self.buttons[self.current].setChecked(True)
+
+    def _pick(self, sid):
+        if sid != self.current:
+            self.current = sid
+            save_config({"inv_category": sid})
+            self.currentIndexChanged.emit([s[0] for s in SECTIONS].index(sid))
+
+    def currentData(self):
+        return next(c for s, c, _g in SECTIONS if s == self.current)
+
+    def set_counts(self, counts: dict):
+        """{section id: (items, platinum)} shown on the tabs."""
+        for sid, _cats, glyph in SECTIONS:
+            n, v = counts.get(sid, (0, 0))
+            self.buttons[sid].setText(f"{glyph}  {t('invsec.' + sid)}  ·  {n}")
+            self.buttons[sid].setToolTip(t("invsec." + sid + ".tip") + "\n" + t("invsec.value", n=n, v=v))
 C_NAME, C_CAT, C_OWNED, C_PRICE, C_PMAX, C_VALUE, C_DUCAT, C_VOL, C_LISTED, C_UPD = range(10)
 
 
@@ -188,10 +236,7 @@ class InventoryTab(QWidget):
         self.market, self.refresher, self.inv, self.account = market, refresher, inventory, account
 
         self.search = QLineEdit(placeholderText=t("prices.search"), clearButtonEnabled=True)
-        self.category = QComboBox()
-        self.category.addItem(t("cat.all"), None)
-        for c in CATEGORIES:
-            self.category.addItem(t("cat." + c), c)
+        self.category = CategoryBar(str(CFG.get("inv_category") or "parts"))
         self.min_plat = QComboBox()
         for v in (0, 5, 10, 15):
             self.min_plat.addItem(t("inv.minplat.any") if v == 0 else t("inv.minplat", n=v), v)
@@ -214,13 +259,17 @@ class InventoryTab(QWidget):
         self.min_vol.setToolTip(t("inv.minvol.tip"))
         self.min_vol.setValue(int(CFG["inv_min_volume"]))
 
+        row0 = QHBoxLayout()                         # the sections, like AlecaFrame's: All parts, Relics, Mods…
+        row0.addWidget(self.category, 1)
         row1 = QHBoxLayout()
         row1.addWidget(self.search, 1)
-        row1.addWidget(self.category)
         row1.addWidget(self.min_plat)
         row2 = QHBoxLayout()
+        self._tri_labels = {}
         for lbl, cb in (self.part_type, self.vaulted, self.listed):
-            row2.addWidget(QLabel(lbl))
+            lab = QLabel(lbl)
+            self._tri_labels[id(cb)] = lab
+            row2.addWidget(lab)
             row2.addWidget(cb)
         row2.addWidget(self.multiple)
         row2.addWidget(self.exclude_max)
@@ -293,6 +342,7 @@ class InventoryTab(QWidget):
         hint.setWordWrap(True)
 
         lay = QVBoxLayout(self)
+        lay.addLayout(row0)
         lay.addLayout(row1)
         lay.addLayout(row2)
         lay.addLayout(actions)
@@ -300,7 +350,8 @@ class InventoryTab(QWidget):
         lay.addWidget(self.table, 1)
         lay.addWidget(hint)
 
-        for w in (self.category, self.min_plat, self.part_type[1], self.vaulted[1], self.listed[1]):
+        self.category.currentIndexChanged.connect(lambda _: self._section_changed())
+        for w in (self.min_plat, self.part_type[1], self.vaulted[1], self.listed[1]):
             w.currentIndexChanged.connect(lambda _: self.refresh(force=True))
         self.search.textChanged.connect(lambda _: self.refresh(force=True))
         self.multiple.toggled.connect(lambda _: self.refresh(force=True))
@@ -324,6 +375,29 @@ class InventoryTab(QWidget):
         self.btn_riven.clicked.connect(self.send_rivens)
         self.btn_account.clicked.connect(self.toggle_account)
         self._account_text()
+        self._section_changed(refresh=False)
+
+    def _section_changed(self, refresh=True):
+        """Each section shows the filters and columns that mean something for it (ducats for parts, max-rank prices
+        and the rank filters for mods and Arcanes, vaulted for parts, relics and sets)."""
+        sec = self.category.current
+        parts_like = sec in ("parts", "set", "all")
+        ranked = sec in ("mod", "arcane", "all")
+        for (lbl, cb), on in ((self.part_type, parts_like), (self.vaulted, sec in ("parts", "relic", "set", "all")),
+                              (self.listed, True)):
+            cb.setVisible(on)
+            self._tri_labels[id(cb)].setVisible(on)
+            if not on and cb.currentIndex() != 0:
+                cb.blockSignals(True)
+                cb.setCurrentIndex(0)
+                cb.blockSignals(False)
+        for w in (self.exclude_max, self.exclude_inst):
+            w.setVisible(ranked)
+        self.table.setColumnHidden(C_PMAX, not ranked)
+        self.table.setColumnHidden(C_DUCAT, sec not in ("parts", "all"))
+        self.table.setColumnHidden(C_CAT, sec not in ("parts", "all"))
+        if refresh:
+            self.refresh(force=True)
 
     @staticmethod
     def _tri(label, options):
@@ -434,6 +508,7 @@ class InventoryTab(QWidget):
         tb.verticalScrollBar().setValue(vpos)
         tb.setUpdatesEnabled(True)
 
+        self._section_counts()
         unpriced = sum(1 for r in rows if r["value"] is None)
         text = t("inv.summary", n=len(rows), copies=sum(r["n"] + r["m"] for r in rows), value=total)
         if unpriced:
@@ -443,6 +518,20 @@ class InventoryTab(QWidget):
         if not self.inv.items:
             text = t("inv.empty")
         self.summary.setText(text)
+
+    def _section_counts(self):
+        """Items and platinum of every section (with the same filters, except the section), on its tab."""
+        rows, _total = build_rows(
+            self.inv, self.market, query=self.search.text(), category=None,
+            min_plat=self.min_plat.currentData(), exclude_maxed=self.exclude_max.isChecked(),
+            exclude_installed=self.exclude_inst.isChecked(), multiple=self.multiple.isChecked(),
+            listed=self.listed[1].currentData(), hide_zero_volume=self.hide_zero.isChecked(),
+            min_volume=self.min_vol.value())
+        counts = {}
+        for sid, cats, _g in SECTIONS:
+            sel = [r for r in rows if cats is None or r["category"] in cats]
+            counts[sid] = (len(sel), sum(r["value"] or 0 for r in sel))
+        self.category.set_counts(counts)
 
     def _selected_slugs(self):
         tb = self.table

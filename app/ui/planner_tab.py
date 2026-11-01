@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QPushButton, QScrollArea, QSizePolicy, QSpinBox, QVBoxLayout, QWidget,
 )
 
+from app.game import arcanes as A
 from app.game import buildcalc as BC
 from app.game import incarnon as INC
 from app.game import loadouts as LO
@@ -39,10 +40,7 @@ _PREFIX = re.compile(r"^(Primed|Amalgam|Umbral|Archon|Flawed|Galvanized)\s+", re
 
 
 def arcane_max(name: str) -> int:
-    for n, mx in LO.data().get("arcanes", {}).values():
-        if n == name:
-            return mx or 5
-    return 5
+    return A.max_rank(name)
 
 
 def _icon(widget, key):
@@ -224,10 +222,11 @@ def piece_shards(p: dict, kind: str) -> list:
 
 
 class PlannerView(QWidget):
-    def __init__(self, get_loadouts, get_presets=None, get_owned=None):
+    def __init__(self, get_loadouts, get_presets=None, get_owned=None, market=None, refresher=None):
         super().__init__()
         self.get_loadouts, self.get_presets = get_loadouts, get_presets
         self.get_owned = get_owned or (lambda: {})
+        self.market, self.refresher = market, refresher      # prices of what the build needs (cost, want-to-buy)
         self.kind, self.item = "warframe", ""
         self.p = None                    # the piece shown (see new_piece)
         self.pieces = {}                 # the whole loadout: kind -> piece
@@ -256,8 +255,11 @@ class PlannerView(QWidget):
         top.addStretch(1)
         self.name = QLineEdit()
         self.name.setPlaceholderText(t("plan.name"))
-        self.saved = QComboBox()
-        self.saved.setMinimumWidth(180)
+        self.saved = QComboBox()                       # saved plans: grouped by their main item, with its picture
+        self.saved.setMinimumWidth(260)
+        self.saved.setIconSize(__import__("PyQt6.QtCore", fromlist=["QSize"]).QSize(28, 28))
+        self.saved.setMaxVisibleItems(18)
+        self.saved.setToolTip(t("plan.saved.tip"))
         self.btn_save = QPushButton(t("plan.save"))
         role(self.btn_save, "primary")
         self.btn_del = QPushButton(t("plan.delete"))
@@ -285,9 +287,15 @@ class PlannerView(QWidget):
         self.actions = QHBoxLayout()                  # bottom bar, like the game's: ACTIONS · REMOVE ALL
         self.btn_actions = QPushButton(t("bs.actions"))
         self.btn_remove = QPushButton(t("bs.remove_all"))
+        self.btn_cost = QPushButton(t("cost.btn"))
+        self.btn_cost.setToolTip(t("cost.btn.tip"))
+        self.cost_label = QLabel("")                    # what the loadout costs: Endo, platinum for what you lack
+        role(self.cost_label, "muted")
         self.status = QLabel("")
         role(self.status, "muted")
         self.actions.addWidget(self.status, 1)
+        self.actions.addWidget(self.cost_label)
+        self.actions.addWidget(self.btn_cost)
         self.actions.addWidget(self.btn_actions)
         self.actions.addWidget(self.btn_remove)
         lay = QVBoxLayout(self)
@@ -308,6 +316,7 @@ class PlannerView(QWidget):
         self.btn_del.clicked.connect(self._delete)
         self.saved.activated.connect(lambda _i: self._load())
         self.btn_remove.clicked.connect(self._remove_all)
+        self.btn_cost.clicked.connect(self.show_cost)
         self.btn_actions.clicked.connect(self._actions_menu)
         self.screen.slot_clicked.connect(self._select)
         self.screen.slot_menu.connect(self._slot_menu)
@@ -322,6 +331,7 @@ class PlannerView(QWidget):
     def showEvent(self, e):
         super().showEvent(e)
         self.scaler.attach()
+        self._fill_saved(self.saved.currentData() or "")     # pictures downloaded meanwhile
 
     # ---------- plans on disk ----------
     def _read_plans(self) -> dict:
@@ -337,14 +347,56 @@ class PlannerView(QWidget):
         except OSError:
             pass
 
+    @staticmethod
+    def plan_main(plan: dict) -> tuple:
+        """(kind, item) a saved plan is filed under: its Warframe, else its first piece in the game's order."""
+        pieces = plan.get("pieces") or ({plan.get("kind", "warframe"): plan} if plan.get("item") else {})
+        for k in KINDS:
+            if (pieces.get(k) or {}).get("item"):
+                return k, pieces[k]["item"]
+        return "", ""
+
     def _fill_saved(self, select=""):
+        """The saved plans in the drop-down: grouped by the kind of their main item (Warframe, primary…), each with
+        the picture of that item and the other items of the loadout in its tooltip."""
+        from PyQt6.QtGui import QFont
+        from app.ui import previews
+        from app.ui.builds_tab import thumb
         self.saved.blockSignals(True)
         self.saved.clear()
-        self.saved.addItem("—", "")
-        for n in sorted(self.plans, key=str.lower):
-            self.saved.addItem(n, n)
+        self.saved.addItem(t("plan.saved.none", n=len(self.plans)), "")
+        groups = {}
+        for n, plan in self.plans.items():
+            k, item = self.plan_main(plan)
+            groups.setdefault(k, []).append((n, item, plan))
+        model = self.saved.model()
+        names = []
+        for k in list(KINDS) + [""]:
+            rows = groups.get(k)
+            if not rows:
+                continue
+            self.saved.addItem(f"— {t('builds.kind.' + k) if k else t('plan.saved.other')} —", None)
+            head = model.item(self.saved.count() - 1)
+            head.setFlags(head.flags() & ~Qt.ItemFlag.ItemIsSelectable & ~Qt.ItemFlag.ItemIsEnabled)
+            f = QFont(self.font())
+            f.setBold(True)
+            head.setFont(f)
+            for n, item, plan in sorted(rows, key=lambda r: (r[1].lower(), r[0].lower())):
+                pieces = plan.get("pieces") or {}
+                others = [v.get("item") for kk, v in pieces.items() if v.get("item") and v.get("item") != item]
+                label = n if not item or item.lower() in n.lower() else f"{n}  ·  {item}"
+                pm = thumb(item, 28) if item else None
+                if pm is not None:
+                    self.saved.addItem(QIcon(pm), label, n)
+                else:
+                    self.saved.addItem(label, n)
+                    names.append(item)
+                tip = item + ("\n" + ", ".join(others) if others else "")
+                self.saved.setItemData(self.saved.count() - 1, tip, Qt.ItemDataRole.ToolTipRole)
         self.saved.setCurrentIndex(max(0, self.saved.findData(select)))
         self.saved.blockSignals(False)
+        if names:
+            previews.prefetch(names)
 
     # ---------- the piece shown ----------
     @property
@@ -534,13 +586,16 @@ class PlannerView(QWidget):
         for k, v in self.pieces.items():
             pieces[k] = dict(v, forma={str(i): p for i, p in v["forma"].items()},
                              configs=[dict(c, mods=[list(m) if m else None for m in c["mods"]]) for c in v["configs"]])
-        self.plans[name] = {"v": 2, "kind": self.kind, "pieces": pieces}
+        import time as _time
+        self.plans[name] = {"v": 2, "kind": self.kind, "pieces": pieces, "saved": int(_time.time())}
         self._write_plans()
         self._fill_saved(name)
         QMessageBox.information(self, t("tab.builds"), t("plan.saved", name=name))
 
     def _load(self):
         name = self.saved.currentData()
+        if name is None:                                # a group's title: nothing to load
+            return
         p = self.plans.get(name) if name else None
         if not p:
             return
@@ -561,9 +616,14 @@ class PlannerView(QWidget):
             self._fill_saved()
 
     # ---------- what the game lets you do ----------
+    def _arc_ordinal(self, i) -> int:
+        """Which Arcane slot of the item slot i is (0 = the first): an Arch-gun's second takes Secondary Arcanes."""
+        return sum(1 for j in range(i) if self.roles[j] == "arcane")
+
     def _candidates(self, i):
         r = self.roles[i]
-        return BC.arcane_candidates(self.kind) if r == "arcane" else BC.candidates(self.kind, self.item, r)
+        return A.slot_candidates(self.kind, self.item, self._arc_ordinal(i)) if r == "arcane" \
+            else BC.candidates(self.kind, self.item, r)
 
     def _locked(self, i) -> bool:
         r = self.roles[i]
@@ -591,6 +651,12 @@ class PlannerView(QWidget):
         if clash is not None and self.roles[slot] != "arcane":
             self._say(t("bs.clash", name=name, other=self.mods[clash][0]))
             return
+        if self.roles[slot] == "arcane":               # the game: the same Arcane only once on an item
+            dup = next((i for i, m in enumerate(self.mods) if m and i != slot and self.roles[i] == "arcane"
+                        and m[0] == name), None)
+            if dup is not None:
+                self._say(t("bs.arc.dup", name=name))
+                return
         mx = arcane_max(name) if self.roles[slot] == "arcane" else (BC.mod_info(name) or [0, 0, 0])[2]
         self.mods[slot] = (name, mx)
         # the next empty slot of the same kind gets selected: clicking mods one after the other fills the build
@@ -620,6 +686,12 @@ class PlannerView(QWidget):
         from PyQt6.QtGui import QGuiApplication
         a = m.addAction(t("share.import.clip"), lambda: self._import_image(True))
         a.setEnabled(not QGuiApplication.clipboard().image().isNull())
+        m.addAction(t("guide.import"), self.import_guide)
+        self._store_piece()
+        if any(p and p.get("item") for p in self.pieces.values()):
+            m.addSeparator()
+            m.addAction(t("share.overview"), lambda: self._overview(True))
+            m.addAction(t("share.overview.copy"), lambda: self._overview(False))
         if self.p and self.p.get("item"):
             m.addSeparator()
             share_actions(m, self, lambda: (self.kind, self.p), lambda: self.screen,
@@ -629,6 +701,106 @@ class PlannerView(QWidget):
             m.addSeparator()
             loadout_share_actions(m, self, lambda: (self.name.text().strip(), dict(self.pieces)), self._loadout_images)
         m.exec(self.btn_share.mapToGlobal(self.btn_share.rect().bottomLeft()))
+
+    def _overview(self, save: bool):
+        """One picture of the whole planned loadout to show it (not a build code: it cannot be imported), at most
+        2048 pixels on its longest side."""
+        from app.ui import overview_image as OV
+        from app.ui import buildshare as S
+        self._store_piece()
+        name = self.name.text().strip()
+        img = OV.render(name, {k: v for k, v in self.pieces.items() if v and v.get("item")}, self.get_owned() or {})
+        if img.isNull():
+            return
+        if not save:
+            S.copy_image(img)
+            QMessageBox.information(self, t("share.overview"), t("share.overview.copied"))
+            return
+        from PyQt6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getSaveFileName(self, t("share.overview"), f"{name or 'loadout'}.png", "PNG (*.png)")
+        if path:
+            img.save(path if path.lower().endswith(".png") else path + ".png", "PNG")
+
+    def import_guide(self):
+        """Builds from a guide on the web (a Google Doc, arbi.guide, wfpedia…): its text and its pictures."""
+        from app.ui.guide_dialog import GuideDialog
+        dlg = GuideDialog(self)
+        dlg.exec()
+
+    def add_guide_build(self, b: dict):
+        """A build found in a guide (guideimport): becomes the plan's piece of its kind."""
+        from app.game import guideimport as GI
+        piece = new_piece(b["kind"], b["item"])
+        roles = BC.plan_roles(b["kind"], b["item"])
+        if b.get("slots"):                              # read from a picture: already in their slots (buildocr)
+            mods = (list(b["slots"]) + [None] * len(roles))[:len(roles)]
+            unplaced = list(b.get("notes") or [])
+        else:
+            mods, unplaced = GI.place(b["kind"], b["item"], roles, b.get("mods") or [], b.get("arcanes") or [])
+        piece["configs"][0]["mods"] = mods
+        piece["forma"] = {}
+        if b.get("pols"):
+            piece["forma"] = {int(k): v for k, v in b["pols"].items()}
+        elif b.get("forma_fit", True):
+            for i, m in enumerate(mods):
+                if m and roles[i] != "arcane":
+                    info = BC.mod_info(m[0])
+                    base = BC.innate(b["kind"], b["item"], roles)[i]
+                    if info and info[0] and info[0] != base:
+                        piece["forma"][i] = info[0]
+        if b.get("shards") and b["kind"] == "warframe":
+            piece["shards"] = (list(b["shards"]) + [None] * 5)[:5]
+        if b.get("helminth"):
+            piece["helminth"] = b["helminth"]
+        self._store_piece()
+        self.pieces[b["kind"]] = piece
+        if not self.name.text().strip() and b.get("title"):
+            self.name.setText(b["title"][:60])
+        self._show_piece(b["kind"], piece)
+        n = sum(1 for m in mods if m)
+        self._say(t("guide.added", item=b["item"], n=n) + (" " + t("share.image.unplaced", names=", ".join(unplaced))
+                                                            if unplaced else ""))
+        return n
+
+    # ---------- cost ----------
+    def price_of(self, name):
+        """(rank 0 price, max-rank price) of a mod / Arcane on warframe.market (saved data), or Nones."""
+        mk = self.market
+        if mk is None:
+            return None, None
+        try:
+            slug = mk.slug_for_name(name)
+            c = mk.cached(slug) if slug else None
+        except Exception:
+            c = None
+        return ((c or {}).get("price"), (c or {}).get("pmax"))
+
+    def cost(self, all_configs=False) -> dict:
+        from app.game import buildcost as BCOST
+        self._store_piece()
+        return BCOST.cost({k: v for k, v in self.pieces.items() if v and v.get("item")}, self.get_owned() or {},
+                          self.price_of, all_configs)
+
+    def _cost_text(self):
+        """One line under the build: Endo to rank what you own, platinum for what you lack."""
+        if not any(v and v.get("item") for v in self.pieces.values()) and not (self.p and self.p.get("item")):
+            return ""
+        c = self.cost()
+        if not c["rows"]:
+            return ""
+        from app.core.uiutil import thousands
+        txt = t("cost.line", endo=thousands(c["endo"]), plat=round(c["plat"]), missing=c["missing"],
+                n=len(c["rows"]))
+        if not self.get_owned():
+            txt += " " + t("cost.noinv")
+        elif c["unpriced"]:
+            txt += " " + t("cost.unpriced", n=c["unpriced"])
+        return txt
+
+    def show_cost(self):
+        from app.ui.cost_dialog import CostDialog
+        CostDialog(self).exec()
+        self._draw()
 
     def _loadout_images(self) -> list:
         """A picture of every piece of the loadout, each drawn on the screen in turn (the shown one comes back)."""
@@ -802,8 +974,17 @@ class PlannerView(QWidget):
             mx = 8 if riven else (arcane_max(name) if r == "arcane" else (BC.mod_info(name) or [0, 0, 0])[2])
             if mx and not riven:
                 sub = m.addMenu(t("bs.menu.rank"))
+                arc = r == "arcane"
+                if arc:                                # Arcanes are ranked with copies: what each rank takes, what you own
+                    have = (self.get_owned() or {}).get(name) or {}
+                    info = QAction(t("bs.arc.own", c=int(have.get("c", have.get("n", 0)) or 0), r=int(have.get("rank", 0) or 0))
+                                   if have else t("bs.arc.own.none"), sub)
+                    info.setEnabled(False)
+                    sub.addAction(info)
+                    sub.addSeparator()
                 for k in range(mx + 1):
-                    a = QAction(t("builds.rank", rank=k, max=mx), sub, checkable=True)
+                    label = t("builds.rank", rank=k, max=mx) + (f"  ·  {t('bs.arc.copies', n=A.copies(k))}" if arc else "")
+                    a = QAction(label, sub, checkable=True)
                     a.setChecked(cur[1] == k)
                     a.triggered.connect(lambda _c=False, k=k: self._set_rank(i, k))
                     sub.addAction(a)
@@ -945,8 +1126,11 @@ class PlannerView(QWidget):
         pols = BC.slot_polarities(kind, item, roles, p["forma"])
         has_ex = "exilus" in roles
         locked = {"exilus": has_ex and not p.get("exilus", True), "arcane": kind in WEAPONS and not p.get("arcane", True)}
+        arcs = [(m[0], m[1]) for i, m in enumerate(self.mods) if m and roles[i] == "arcane"
+                and not (locked.get("arcane") and kind in WEAPONS)]
+        self._arcfx = A.build_effects(arcs, kind) if arcs and p.get("arcfx", True) else None
         calc = BC.evaluate(kind, item, roles, self.mods, pols, p.get("reactor", True), p.get("level", 30), locked=locked,
-                           shards=[x for x in piece_shards(p, kind) if x] or None)
+                           shards=[x for x in piece_shards(p, kind) if x] or None, extra=self._arcfx)
         slots = []
         for i, r in enumerate(roles):
             m = self.mods[i]
@@ -1040,6 +1224,18 @@ class PlannerView(QWidget):
             pct.setKeyboardTracking(False)
             pct.valueChanged.connect(lambda x: (v.__setitem__("pct", float(x)), self._draw()))
             h.addWidget(pct)
+        if "arcane" in self.roles:                     # the Arcanes' effects in the stats (conditions met, every stack)
+            cb = QCheckBox(t("bs.opt.arcfx"))
+            cb.setChecked(bool(p.get("arcfx", True)))
+            fx = getattr(self, "_arcfx", None)
+            tip = t("bs.opt.arcfx.tip")
+            if fx and fx.get("used"):
+                tip += "\n\n" + t("bs.opt.arcfx.used", names=", ".join(fx["used"]))
+            if fx and fx.get("skipped"):
+                tip += "\n" + t("bs.opt.arcfx.skipped") + "\n" + "\n".join("· " + x for x in fx["skipped"][:8])
+            cb.setToolTip(tip)
+            cb.toggled.connect(lambda c: self._set_opt("arcfx", bool(c)))
+            h.addWidget(cb)
         avail = INC.available(self.item) if kind in ("primary", "secondary", "melee") else None
         if avail:
             inc = p["incarnon"]
@@ -1215,11 +1411,18 @@ class PlannerView(QWidget):
             for w in (self.btn_actions, self.btn_remove):
                 w.setEnabled(True)
             self.hint.setText(t("plan.howto"))
+            try:
+                self.cost_label.setText(self._cost_text())
+            except Exception as e:                      # the cost line must never stop the planner from drawing
+                self.cost_label.setText("")
+                from app.core import logbus
+                logbus.error("planner", f"cost: {type(e).__name__}: {e}")
             cw = self.scaler.cw
             self.screen.show_model(self.model(), cw, extra_top=self._options())
             sel = self.selected if self.selected is not None and self.selected < len(self.roles) else None
             r = self.roles[sel] if sel is not None else "general"
-            names = BC.arcane_candidates(self.kind) if r == "arcane" else BC.candidates(self.kind, self.item, r)
+            names = A.slot_candidates(self.kind, self.item, self._arc_ordinal(sel)) if r == "arcane" and sel is not None \
+                else BC.candidates(self.kind, self.item, r)
             what = t("bs.lib.for", slot=t("builds.slot." + r)) if r != "general" else t("builds.sec.mods")
             self.library.set_mods(names, self.get_owned() or {}, arcane=r == "arcane", what=what, cw=max(130, int(cw * 0.8)))
             self.library.show()

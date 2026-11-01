@@ -446,8 +446,10 @@ def presets(inv: dict) -> dict:
 
 
 def owned_mods(inv: dict) -> dict:
-    """Mods and Arcanes you own: {name: {"n": copies, "rank": highest rank among them}} (Upgrades: ranked copies, one
-    entry each; RawUpgrades: unranked copies, counted). Rivens are left out (they are not picked by name)."""
+    """Mods and Arcanes you own: {name: {"n": copies, "rank": highest rank among them, "c": copies counting the ones a
+    ranked Arcane is made of (rank 5 = 21), "ranks": [rank of every ranked copy]}} (Upgrades: ranked copies, one entry
+    each; RawUpgrades: unranked copies, counted). Rivens are left out (they are not picked by name)."""
+    arcs = set(data().get("arc", {}))
     out = {}
     for u in inv.get("Upgrades") or []:
         path = str(u.get("ItemType") or "") if isinstance(u, dict) else ""
@@ -458,16 +460,19 @@ def owned_mods(inv: dict) -> dict:
         except (ValueError, TypeError, AttributeError):
             lvl = 0
         name = mod_name(path)[0]
-        e = out.setdefault(name, {"n": 0, "rank": 0})
+        e = out.setdefault(name, {"n": 0, "rank": 0, "c": 0, "ranks": []})
         e["n"] += 1
         e["rank"] = max(e["rank"], lvl)
+        e["ranks"].append(lvl)
+        e["c"] += (lvl + 1) * (lvl + 2) // 2 if name in arcs else 1
     for u in inv.get("RawUpgrades") or []:
         path = str(u.get("ItemType") or "") if isinstance(u, dict) else ""
         if not path or "/Randomized/" in path:
             continue
         name = mod_name(path)[0]
-        e = out.setdefault(name, {"n": 0, "rank": 0})
+        e = out.setdefault(name, {"n": 0, "rank": 0, "c": 0, "ranks": []})
         e["n"] += int(u.get("ItemCount") or 1)
+        e["c"] += int(u.get("ItemCount") or 1)
     return out
 
 

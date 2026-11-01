@@ -4,7 +4,9 @@
 Source: https://github.com/calamity-inc/warframe-public-export-plus (converted official game data).
 Usage:  python tools/build_rivens.py [--out data/rivens.json] [--cache download_folder]
   weapons: weapon path -> [English name, disposition]      (disposition = "omegaAttenuation" in the game data)
-  types:   riven mod type -> {stat tag: [base value, prefix, suffix, is percentage (0/1), English label]}
+  types:   riven mod type -> {stat tag: [base value, prefix, suffix, is percentage (0/1), English label,
+                                        can be positive (0/1), can be negative (0/1), restriction]}
+           restriction: "DamageTypes" (only weapons with that physical damage), "NotSentinel", "NotGrimoire" or ""
 """
 import argparse
 import json
@@ -46,8 +48,10 @@ def main():
             if not vals or "tag" not in e:
                 continue
             text = lang.get(vals[0].get("locTag", ""), "")
+            restr = sorted(set(e.get("buffRestrictions") or []) | set(e.get("curseRestrictions") or []))
             stats[e["tag"]] = [vals[0]["value"], lang.get(e.get("prefixTag", ""), ""), lang.get(e.get("suffixTag", ""), ""),
-                               1 if "%" in text else 0, clean_label(text)]
+                               1 if "%" in text else 0, clean_label(text), 1 if e.get("canBeBuff", True) else 0,
+                               1 if e.get("canBeCurse", True) else 0, restr[0] if restr else ""]
         if stats:
             types[path] = stats
     out = {"generated": datetime.now(timezone.utc).strftime("%Y-%m-%d"),

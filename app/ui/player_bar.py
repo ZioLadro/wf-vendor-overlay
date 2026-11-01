@@ -1,7 +1,7 @@
 """Player strip shown above every tab: name, mastery rank, trades left and a badge per syndicate with your rank.
 
 Badges are the syndicate logos taken from the Warframe wiki (see logos.py), saved as <SyndicateTag>.png in the 'icons'
-folder of the program's data folder (%LOCALAPPDATA%\\WFVendorOverlay\\icons; your own PNG files there are used as they
+folder of the program's data folder (%LOCALAPPDATA%\\TauTools\\icons; your own PNG files there are used as they
 are). Until a logo is there, a badge is drawn from the syndicate colours in the game data."""
 import time
 

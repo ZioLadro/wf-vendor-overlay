@@ -1,6 +1,7 @@
 """Build maths: slot polarities, mod drain, capacity and the Warframe stat recap (an approximation of the in-game screen).
 
-Not counted: Arcanes, Archon Shards, Helminth, set bonuses, conditional or per-enemy effects, Warframe rank below 30.
+Not counted: set bonuses, conditional or per-enemy effects of mods, Warframe rank below 30. Arcanes count through
+evaluate(extra=...) (the planner's "Arcane effects", conditions met and every stack); Archon Shards through shards.
 Polarity of a slot: the one set by Forma in the game file, otherwise the Warframe's / weapon's innate one (the public data lists
 the innate polarities in slot order, which is how they are assigned here)."""
 import math
@@ -204,10 +205,12 @@ def shard_bonus(shards, shield=True, energy=True) -> tuple:
 
 
 def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor: bool = True, level: int = 30,
-             locked: dict | None = None, shards=None) -> dict:
+             locked: dict | None = None, shards=None, extra: dict | None = None) -> dict:
     """mods: per slot (name, rank or None) or None. Returns {"slots": [{"drain","state","pol","mpol"}], "total", "used", "free",
     "stats": {...} (Warframes only), "bonus": {label: %} and "elements": [(element, fraction)] in slot order (weapons)}.
-    locked: {"exilus": True} when the Exilus slot has no adapter (its mod counts for nothing)."""
+    locked: {"exilus": True} when the Exilus slot has no adapter (its mod counts for nothing).
+    extra: bonuses from outside the mods (the Arcanes' effects, arcanes.build_effects): {"pct": {Warframe stat:
+    fraction}, "flat": {Warframe stat: amount}, "bonus": {weapon label: fraction}}."""
     locked = locked or {}
     elements, flat = [], {}
     out, used, aura_bonus = [], 0, 0
@@ -253,6 +256,13 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
                 lab = _plain(a.get("label", ""))
                 if a.get("pct") and a.get("value") is not None and (lab in ELEMENTS or lab in COMBINED):
                     elements.append((lab, a["value"] / 100))
+    extra = extra or {}
+    for k, v in (extra.get("pct") or {}).items():
+        if k in sums and kind == "warframe":
+            sums[k] += v
+    if kind != "warframe":
+        for k, v in (extra.get("bonus") or {}).items():
+            bonus[k] = bonus.get(k, 0) + v
     total = max(0, min(40, int(level))) * (2 if reactor else 1) + aura_bonus
     res = {"slots": out, "total": total, "used": used, "free": total - used, "stats": {}, "elements": elements,
            "flat": {k: round(v, 2) for k, v in flat.items()},
@@ -276,6 +286,9 @@ def evaluate(kind: str, item: str, roles: list, mods: list, pols: list, reactor:
         s["energy"] = int(cut(base["energy"] * (1 + sums["energy"])))
         for k, v in sflat.items():                   # Azure shards: added after every other bonus
             s[k] += int(v)
+        for k, v in (extra.get("flat") or {}).items():   # Arcanes: "+1,200 Armor", "+24 Max Health" x 50
+            if k in s:
+                s[k] += int(v)
         s["sprint"] = cut(fr[4] * (1 + sums["sprint"]), 2)
         s["duration"] = cut(max(12.5, 100 * (1 + sums["duration"])))
         s["efficiency"] = cut(min(175.0, max(25.0, 100 * (1 + sums["efficiency"]))))
@@ -568,7 +581,7 @@ def _candidates(kind: str, item: str, role: str) -> list:
     else:
         w = LO.data().get("weapons", {}).get(item)
         wtype = w[1] if w else ""
-        generic = GENERIC.get(kind, {}).get(wtype, set())
+        generic = GENERIC.get(kind, {}).get("Melee" if kind == "melee" else wtype, set())
         for n, m in mst.items():
             if role == "stance":
                 if m[4] == "T":

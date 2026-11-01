@@ -52,50 +52,6 @@ GROUPS = [
             ("sound_file", "text", "sound", False),
         ]),
     ]),
-    ("overlays", [
-        ("ov_prices", [                                  # prices over the vendor screen
-            ("show_volume", "bool", None, False),
-            ("volume_offset_y", "int", (-20, 40), False),
-            ("volume_low", "int", (1, 10000), False),
-            ("volume_high", "int", (2, 100000), False),
-            ("hide_zero_volume", "bool", None, False),
-            ("hide_operational_supply", "bool", None, False),
-            ("rec_overlay", "bool", None, False),
-            ("rec_overlay_top", "int", (1, 50), False),
-            ("ov_price_font", "int", (7, 24), False),
-            ("ov_vol_font", "int", (6, 20), False),
-            ("ov_bg_opacity", "int", (0, 100), False),
-            ("ov_price_color", "color", None, False),
-            ("ov_star_color", "color", None, False),
-        ]),
-        ("ov_goals_look", [                              # the Activities overlay: how it looks
-            ("goals_opacity", "int", (0, 100), False),
-            ("goals_font", "int", (8, 24), False),
-            ("goals_font_family", "font", "empty", False),
-            ("goals_title_color", "color", None, False),
-            ("goals_text_color", "color", None, False),
-            ("goals_ready_color", "color", None, False),
-            ("goals_hint_color", "color", None, False),
-            ("goals_soon_color", "color", None, False),
-            ("goals_interact", "choice", "goals_interact", False),
-            ("goals_unlock_s", "int", (2, 120), False),
-            ("goals_track_interact", "bool", None, False),
-        ]),
-        ("ov_goals_content", [                           # … and what it lists
-            ("goals_untracked", "activities", None, False),
-            ("goals_items", "int", (1, 40), False),
-            ("goals_per_vendor", "bool", None, False),
-            ("goals_repeat", "bool", None, False),
-            ("goals_by_reset", "bool", None, False),
-            ("goals_activities", "bool", None, False),
-            ("goals_only_short", "bool", None, False),
-            ("goals_where", "bool", None, False),
-            ("goals_weekly", "bool", None, False),
-            ("goals_quests", "bool", None, False),
-            ("goals_cal_rows", "int", (0, 20), False),
-            ("goals_routine", "bool", None, False),
-        ]),
-    ]),
     ("detection", [
         ("vendor", [                                     # is the screen read a vendor's, and which one
             ("auto_detect", "bool", None, False),
@@ -216,6 +172,61 @@ GROUPS = [
 ]
 
 
+# the Overlay tab (its own section of the main window since 0.7.0): the prices on the vendor screen and the Activities
+# overlay, one page each
+OVERLAY_GROUPS = [
+    ("ov_prices", [
+        ("ov_prices", [                                  # prices over the vendor screen
+            ("show_volume", "bool", None, False),
+            ("volume_offset_y", "int", (-20, 40), False),
+            ("volume_low", "int", (1, 10000), False),
+            ("volume_high", "int", (2, 100000), False),
+            ("hide_zero_volume", "bool", None, False),
+            ("hide_operational_supply", "bool", None, False),
+            ("rec_overlay", "bool", None, False),
+            ("rec_overlay_top", "int", (1, 50), False),
+            ("ov_theme", "choice", "ov_themes", False),
+            ("ov_price_font", "int", (7, 24), False),
+            ("ov_vol_font", "int", (6, 20), False),
+            ("ov_bg_opacity", "int", (0, 100), False),
+            ("ov_price_color", "color", None, False),
+            ("ov_star_color", "color", None, False),
+        ]),
+    ]),
+    ("ov_goals_look", [
+        ("ov_goals_look", [                              # the Activities overlay: how it looks
+            ("goals_theme", "choice", "goals_themes", False),
+            ("goals_opacity", "int", (0, 100), False),
+            ("goals_font", "int", (8, 24), False),
+            ("goals_font_family", "font", "empty", False),
+            ("goals_title_color", "color", None, False),
+            ("goals_text_color", "color", None, False),
+            ("goals_ready_color", "color", None, False),
+            ("goals_hint_color", "color", None, False),
+            ("goals_soon_color", "color", None, False),
+            ("goals_interact", "choice", "goals_interact", False),
+            ("goals_unlock_s", "int", (2, 120), False),
+            ("goals_track_interact", "bool", None, False),
+        ]),
+    ]),
+    ("ov_goals_content", [
+        ("ov_goals_content", [                           # … and what it lists
+            ("goals_untracked", "activities", None, False),
+            ("goals_items", "int", (1, 40), False),
+            ("goals_per_vendor", "bool", None, False),
+            ("goals_repeat", "bool", None, False),
+            ("goals_by_reset", "bool", None, False),
+            ("goals_activities", "bool", None, False),
+            ("goals_only_short", "bool", None, False),
+            ("goals_where", "bool", None, False),
+            ("goals_weekly", "bool", None, False),
+            ("goals_quests", "bool", None, False),
+            ("goals_cal_rows", "int", (0, 20), False),
+            ("goals_routine", "bool", None, False),
+        ]),
+    ]),
+]
+
 _KEY_TOKEN = re.compile(r"^(<[a-z0-9_]+>|[^<>+\s])$")
 
 
@@ -236,15 +247,23 @@ def _valid_hotkey(s: str) -> bool:
     return True
 
 
+HOTKEYS = ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals", "key_goals_interact")
+
+
 class SettingsTab(QWidget):
+    """A page of settings (sub-tabs of boxes of fields). The Settings section uses GROUPS; the Overlay section is the
+    same page with OVERLAY_GROUPS (and a preview of the overlays' colours)."""
     restart_requested = pyqtSignal()
 
-    def __init__(self):
+    def __init__(self, groups=None, overlay=False):
         super().__init__()
         self.widgets = {}                   # key -> (widget, kind, restart)
+        self.overlay = overlay
+        groups = GROUPS if groups is None else groups
+        self.update_box = None
 
         self.subtabs = QTabWidget()
-        for gname, boxes in GROUPS:
+        for gname, boxes in groups:
             page = QWidget()
             col = QVBoxLayout(page)
             for bname, fields in boxes:
@@ -272,7 +291,19 @@ class SettingsTab(QWidget):
             scroll.setWidgetResizable(True)
             scroll.setWidget(page)
             self.subtabs.addTab(scroll, t("group." + gname))
+        if overlay:                          # previews of the overlays with the values on the page (redrawn twice a second)
+            self.preview = OverlayPreview(self)
+            col = self.subtabs.widget(0).widget().layout()
+            col.insertWidget(0, self.preview)
+            self.goals_preview = GoalsPreview(self)
+            gl = self.subtabs.widget(1).widget().layout()
+            gl.insertWidget(0, self.goals_preview)
+            from PyQt6.QtCore import QTimer
+            self._prev_timer = QTimer(self, interval=500,
+                                      timeout=lambda: (self.preview.update(), self.goals_preview.update()))
         for key in ("theme", "ui_font", "ui_font_size"):
+            if key not in self.widgets:
+                continue
             w = self.widgets[key][0]
             (w.currentIndexChanged if key == "theme" else w.currentFontChanged if key == "ui_font"
              else w.valueChanged).connect(self._preview)
@@ -305,8 +336,7 @@ class SettingsTab(QWidget):
         self.btn_defaults.clicked.connect(self.restore_defaults)
         self.load()
 
-    @staticmethod
-    def _make(kind, opt):
+    def _make(self, kind, opt):
         if kind == "activities":                      # a button opening the list of the Activities overlay
             w = QPushButton(t("set.goals_untracked.button"))
             w.value = []
@@ -360,6 +390,15 @@ class SettingsTab(QWidget):
                 for tid in theme.ORDER:
                     kind_txt = theme.PRESETS[tid]["kind"]
                     w.addItem(t("theme." + tid) + (f"  ({t('theme.' + kind_txt)})" if kind_txt else ""), tid)
+                return w
+            if opt in ("goals_themes", "ov_themes"):     # the overlays: the program's theme, your colours, or any theme
+                from app.core import theme
+                w.addItem(t("ovtheme.program"), "program")
+                w.addItem(t("ovtheme.custom"), "custom")
+                if opt == "goals_themes":
+                    w.addItem(t("ovtheme.game"), "game")
+                for tid in theme.ORDER:
+                    w.addItem(t("theme." + tid), tid)
                 return w
             if opt == "goals_interact":
                 for v in ("hotkey", "cursor", "always"):
@@ -549,12 +588,21 @@ class SettingsTab(QWidget):
 
     def hideEvent(self, e):
         super().hideEvent(e)
-        from app.core import theme
-        theme.apply()
+        if self.overlay:
+            self._prev_timer.stop()
+        if "theme" in self.widgets:
+            from app.core import theme
+            theme.apply()
 
     def showEvent(self, e):
         super().showEvent(e)
         self.load()                          # picks up values changed elsewhere (e.g. the Recommendations tab)
+        if self.overlay:
+            self._prev_timer.start()
+
+    def values(self) -> dict:
+        """What the page shows now (saved or not): the overlay previews draw these."""
+        return {k: self._get(k) for k in self.widgets}
 
     def restore_defaults(self):
         self.load(DEFAULTS)
@@ -562,20 +610,20 @@ class SettingsTab(QWidget):
 
     def save(self, restart: bool):
         new = {k: self._get(k) for k in self.widgets}
-        for k in ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals", "key_goals_interact"):
+        keys = tuple(k for k in HOTKEYS if k in new)
+        for k in keys:
             new[k] = new[k].lower()
-        for k in ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals", "key_goals_interact"):
+        for k in keys:
             if not _valid_hotkey(new[k]):
                 self.msg.setText(t("settings.bad_key", key=new[k] or "∅"))
                 return
-        keys = ("key_menu", "key_scan", "key_clear", "key_quit", "key_goals", "key_goals_interact")
         sets = {k: set(new[k].split("+")) for k in keys}
         for a in keys:                       # pynput fires a hotkey whose keys are all held, extra keys or not
             for b in keys:
                 if a != b and sets[b] <= sets[a]:
                     self.msg.setText(t("settings.key_overlap", a=new[a], b=new[b]))
                     return
-        if new["volume_high"] <= new["volume_low"]:
+        if "volume_high" in new and new["volume_high"] <= new["volume_low"]:
             self.msg.setText(t("settings.bad_volume"))
             return
         changed_restart = [t("set." + k) for k, (_, _, r) in self.widgets.items() if r and new[k] != CFG[k]]
@@ -586,8 +634,9 @@ class SettingsTab(QWidget):
         if changed_restart:
             text += " " + t("settings.needs_restart", items=", ".join(changed_restart))
         self.msg.setText(text)
-        from app.core import theme
-        theme.apply()
+        if "theme" in self.widgets:
+            from app.core import theme
+            theme.apply()
         if restart:
             self.restart_requested.emit()
 
@@ -604,3 +653,110 @@ def _light(hexcolor: str) -> bool:
 def _config_path():
     from app.core.config import CONFIG_FILE
     return CONFIG_FILE
+
+
+def overlay_colors(values=None) -> dict:
+    """The price labels' look on the vendor screen: {"price", "star", "bg"} from the overlay theme (ov_theme): the
+    program's theme, one of the themes, or your own colours (ov_price_color / ov_star_color)."""
+    v = values or CFG
+    which = str(v.get("ov_theme") or "custom")
+    if which == "custom":
+        return {"price": v.get("ov_price_color") or "#78c8ff", "star": v.get("ov_star_color") or "#ffd228",
+                "bg": "#141414"}
+    from app.core import theme
+    p = theme.palette(str(CFG.get("theme") or "classic") if which == "program" else which)
+    return {"price": p["accent"], "star": p["accent2"], "bg": p["bg"]}
+
+
+class OverlayPreview(QWidget):
+    """How the prices will look over a vendor's screen with the values on the page (saved or not)."""
+
+    def __init__(self, page):
+        super().__init__()
+        self.page = page
+        self.setMinimumHeight(96)
+
+    def paintEvent(self, _e):
+        from PyQt6.QtGui import QColor, QFont, QPainter
+        v = dict(CFG)
+        try:
+            v.update(self.page.values())
+        except Exception:
+            pass
+        c = overlay_colors(v)
+        g = QPainter(self)
+        g.setRenderHint(QPainter.RenderHint.Antialiasing)
+        g.fillRect(self.rect(), QColor("#2a2f38"))
+        g.setPen(QColor("#9aa4b2"))
+        g.drawText(12, 22, t("ovprev.title"))
+        x = 14
+        for name, price, vol, star in (("Primed Continuity", 48, 63, True), ("Arcane Energize", 31, 9, False),
+                                      ("Vitality", 2, 140, False)):
+            g.setPen(QColor("#dfe6ee"))
+            g.setFont(QFont(self.font().family(), 10))
+            g.drawText(x, 48, name)
+            bg = QColor(c["bg"])
+            bg.setAlpha(int(255 * int(v.get("ov_bg_opacity", 88)) / 100))
+            f = QFont(self.font().family(), int(v.get("ov_price_font", 11)))
+            f.setBold(True)
+            g.setFont(f)
+            txt = ("★ " if star and v.get("rec_overlay", True) else "") + f"{price}p"
+            w = g.fontMetrics().horizontalAdvance(txt) + 10
+            g.fillRect(x, 54, w, g.fontMetrics().height() + 2, bg)
+            g.setPen(QColor(c["star"] if star else c["price"]))
+            g.drawText(x + 5, 54 + g.fontMetrics().ascent() + 1, txt)
+            if v.get("show_volume", True):
+                g.setFont(QFont(self.font().family(), int(v.get("ov_vol_font", 9))))
+                lo, hi = int(v.get("volume_low", 10)), int(v.get("volume_high", 50))
+                g.setPen(QColor("#e05a4f" if vol <= lo else "#4fbf6a" if vol >= hi else "#e0b83a"))
+                g.drawText(x + 5, 54 + 22 + int(v.get("volume_offset_y", 2)) + g.fontMetrics().ascent(), f"{vol}/24h")
+            x += 190
+        g.end()
+
+
+class GoalsPreview(QWidget):
+    """A few lines of the Activities overlay with the look on the page (theme, colours, font, opacity)."""
+
+    def __init__(self, page):
+        super().__init__()
+        self.page = page
+        self.setMinimumHeight(150)
+
+    def paintEvent(self, _e):
+        from PyQt6.QtGui import QColor, QFont, QLinearGradient, QPainter
+        from app.ui.goals_overlay import goals_colors
+        v = dict(CFG)
+        try:
+            v.update(self.page.values())
+        except Exception:
+            pass
+        c = goals_colors(v)
+        g = QPainter(self)
+        g.setRenderHint(QPainter.RenderHint.Antialiasing)
+        g.fillRect(self.rect(), QColor("#39404b"))
+        alpha = int(255 * max(0, min(100, int(v.get("goals_opacity", 45)))) / 100)
+        band = QLinearGradient(0, 0, 340, 0)
+        bc = QColor(c["band"])
+        for pos, k in ((0.0, 1.0), (0.75, 0.7), (1.0, 0.15)):
+            q = QColor(bc)
+            q.setAlpha(int(alpha * k))
+            band.setColorAt(pos, q)
+        g.setBrush(band)
+        g.setPen(QColor(0, 0, 0, 0))
+        g.drawRoundedRect(8, 8, 340, self.height() - 16, 6, 6)
+        fs = int(v.get("goals_font", 12))
+        fam = v.get("goals_font_family") or self.font().family()
+        y = 8 + fs + 8
+        for text, key, bold in ((t("goals.title").upper(), "title", True), ("Cephalon Suda · 8,250 / 22,000", "title", True),
+                                ("Vaykor Marelok — 25,000", "text", False), ("✔ Rakta Cernos — " + t("ovprev.ready"), "ready", False),
+                                (t("ovprev.hint"), "hint", False), (t("ovprev.soon"), "soon", False)):
+            f = QFont(fam)
+            f.setPixelSize(fs + (1 if bold else 0))
+            f.setBold(bold)
+            g.setFont(f)
+            g.setPen(QColor(0, 0, 0))
+            g.drawText(19, y + 1, text)
+            g.setPen(QColor(c[key]))
+            g.drawText(18, y, text)
+            y += fs + 9
+        g.end()

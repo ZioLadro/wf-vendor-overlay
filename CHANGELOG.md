@@ -3,6 +3,36 @@
 From 0.2.1 on, every release lists its changes here (the release page on GitHub shows the section of its version).
 Italian version: [CHANGELOG.it.md](CHANGELOG.it.md).
 
+## 0.7.0
+- **New name: TauTools.** The program was WF Vendor Overlay; the repository keeps its name. An installed 0.6.x updates
+  itself as usual (its releases carry the old package too) and keeps its shortcuts; the data folder moves from
+  `%LOCALAPPDATA%\WFVendorOverlay` to `%LOCALAPPDATA%\TauTools` by itself the first time (settings, prices, plans).
+- **Overlay section**: the options of the two in-game overlays left Settings for their own section of the sidebar, one
+  page each (prices on the vendor screen, Activities look, Activities content), with a live **preview**. **Colour
+  themes for the overlays**: the price labels and the Activities overlay follow the program's theme, any of the themes,
+  your own colours or (Activities) the game's gold quest tracker; also in the Activities ⚙ menu.
+- **Inventory sections** like AlecaFrame's: All parts · Relics · Mods · Arcanes · Misc · Sets · Everything as a row of
+  tabs with their item counts; each shows the filters and columns that fit it.
+- **Build planner**
+  - **Cost**: Endo, credits and platinum the loadout still needs, counting what you own (mod ranks, Arcane copies), in
+    a line under the build and in a window mod by mod; *Want-to-buy in Quantframe…* puts what you lack on Quantframe's
+    wish list, whose Live Scraper places want-to-buy orders on warframe.market.
+  - **Saved plans** in a drop-down grouped by their main item, each with its thumbnail.
+  - **Arcanes**: each slot offers only the Arcanes the item takes (an Arch-gun's second slot: Secondary Arcanes), each
+    Arcane once per item; ranks show the copies they take and how many you own; *Arcane effects* counts their effects
+    in the stats (conditions met, every stack).
+  - **Import from a guide**: the Aya farming Google Doc, arbi.guide, wfpedia's Endo guide or any page: the builds
+    written in it, and its build screenshots read with the picture import.
+  - **Overview picture** of the whole loadout (at most 2048 px), to show it; not importable.
+- **Riven calculator** (new section, after RivenLens): grade a Riven's stats (S … F) by typing them or from a picture,
+  the range of every stat, and the odds of Kuva cycles for the stats you want (several per slot, negative rules,
+  locked stat). The same grades in the Riven flip table and on Riven cards.
+- **Riven flip**: the deals show up **while the scan runs**, refreshed every few seconds, not only at its end.
+- **Vosfor** (new section): the Vosfor your Arcanes dissolve into, which to dissolve and which to sell, the Arcanes
+  that give the most Vosfor per platinum, and the expected platinum of each of Loid's collections.
+- Fixes: a few melee weapons listed as rifles in the source data get melee mods; Arcane ranks of planner plans read
+  from the game data's maximum.
+
 ## 0.6.6
 - **Beasts' claws**: each beast's claws have their own stats (damage and type, critical, status), from the wiki's
   *Claws (Beast)* table and each companion's page: shown in Builds (the claws of your Kubrow / Kavat / Predasite /

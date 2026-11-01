@@ -267,6 +267,9 @@ class PriceList(QWidget):
         self.world = WorldTab(market)
         self.settings = SettingsTab()
         self.settings.restart_requested.connect(self.restart_requested)
+        from app.ui.settings_tab import OVERLAY_GROUPS
+        self.overlay_tab = SettingsTab(OVERLAY_GROUPS, overlay=True)     # the overlays' options: their own section
+        self.overlay_tab.restart_requested.connect(self.restart_requested)
         self.player_bar = PlayerBar(market)
         from app.ui.world_strip import WorldStrip
         self.world_strip = WorldStrip()
@@ -274,6 +277,10 @@ class PriceList(QWidget):
         self.console = ConsoleTab()
         from app.ui.weekly_tab import WeeklyTab
         self.weekly = WeeklyTab(self.inventory, market)
+        from app.ui.riven_calc_tab import RivenCalcTab
+        self.riven_calc = RivenCalcTab()
+        from app.ui.vosfor_tab import VosforTab
+        self.vosfor = VosforTab(market, self.refresher, lambda: self.builds.owned, self.builds.installed_arcanes)
         from app.ui.navtabs import NavTabs
         self.tabs = NavTabs()                          # a sidebar of sections (the old tab bar)
         # price list and recommendations share one tab: the list on top, the recommendations below (splitter remembered)
@@ -291,7 +298,10 @@ class PriceList(QWidget):
         self.tabs.addTab(self.builds, t("tab.builds"), "⬢")
         self.tabs.addTab(self.weekly, t("tab.weekly"), "⟳")
         self.tabs.addTab(self.riven_flip, t("tab.rflip"), "✧")
+        self.tabs.addTab(self.riven_calc, t("tab.rcalc"), "⚖")
+        self.tabs.addTab(self.vosfor, t("tab.vosfor"), "✦")
         self.tabs.addTab(self.world, t("tab.world"), "◎")
+        self.tabs.addTab(self.overlay_tab, t("tab.overlay"), "▣")
         self.tabs.addTab(self.console, t("tab.console"), "≡")
         self.tabs.addTab(self.settings, t("tab.settings"), "⚙")
         # your standing and mastery (read from AlecaFrame's file, editable): a page of the Settings
@@ -374,6 +384,8 @@ class PriceList(QWidget):
             self.builds.refresh(force=force)
         elif w is self.riven_flip:
             self.riven_flip.refresh(force=force)
+        elif w is self.vosfor:
+            self.vosfor.refresh(force=force)
         elif w is self.settings and self.settings.subtabs.currentWidget() is self.profile:
             self.profile.refresh(force=force)
         elif w is self.world:
@@ -386,6 +398,7 @@ class PriceList(QWidget):
         self.recommend.set_busy(busy)
         self.builds.set_busy(busy)
         self.inv_tab.set_busy(busy)
+        self.vosfor.set_busy(busy)
 
     def _on_started(self, total):
         self._set_busy(True)

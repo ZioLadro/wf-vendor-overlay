@@ -3,7 +3,7 @@ Parsing is tolerant: a missing or renamed field only drops that line."""
 import requests
 
 URL = "https://api.warframestat.us/pc"
-UA = "WFVendorOverlay/1.6"
+UA = "TauTools/1.7"
 
 
 _last = {"t": 0.0, "ws": None}

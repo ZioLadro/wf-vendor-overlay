@@ -447,7 +447,7 @@ def build_rows(inv: Inventory, market, query="", category=None, min_plat=0, excl
         name = info["name"]
         if q and q not in name.lower():
             continue
-        if category is not None and info.get("category") != category:
+        if category is not None and info.get("category") not in ((category,) if isinstance(category, str) else category):
             continue
         if multiple and n + m < 2:
             continue

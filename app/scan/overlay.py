@@ -56,7 +56,9 @@ class Overlay(QWidget):
         self.update()
 
     def _pill(self, p, rect, text, color):
-        p.setBrush(QColor(20, 20, 20, int(255 * max(0, min(100, int(CFG.get("ov_bg_opacity", 88)))) / 100)))
+        bg = QColor(getattr(self, "_colors", {}).get("bg") or "#141414")
+        bg.setAlpha(int(255 * max(0, min(100, int(CFG.get("ov_bg_opacity", 88)))) / 100))
+        p.setBrush(bg)
         p.setPen(color)
         p.drawRoundedRect(rect, 6, 6)
         p.drawText(rect, Qt.AlignmentFlag.AlignCenter, text)
@@ -66,7 +68,9 @@ class Overlay(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         price_font = QFont("Segoe UI", int(CFG.get("ov_price_font", 11)), QFont.Weight.Bold)
         vol_font = QFont("Segoe UI", int(CFG.get("ov_vol_font", 9)), QFont.Weight.Bold)
-        price_color, star = QColor(CFG.get("ov_price_color") or "#78c8ff"), QColor(CFG.get("ov_star_color") or "#ffd228")
+        from app.ui.settings_tab import overlay_colors
+        self._colors = overlay_colors()                 # Overlay tab: the program's theme, a theme, or your colours
+        price_color, star = QColor(self._colors["price"]), QColor(self._colors["star"])
 
         rec_font = QFont("Segoe UI", 7, QFont.Weight.Bold)
         rec_text = "★ " + t("overlay.recommended") + " ★"

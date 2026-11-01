@@ -180,6 +180,34 @@ def _riven_lines(rv):
     return out
 
 
+def riven_grades_html(rv) -> str:
+    """How well each stat of a Riven rolled (the Riven calculator's grades, S … F): from the game file's exact roll
+    when it is there, else from the value shown."""
+    try:
+        from app.game import rivencalc as RC
+        from app.game import rivens as R
+        attrs = [a for a in rv.get("attributes") or [] if not a.get("spliced")]
+        if not attrs:
+            return ""
+        exact = all(a.get("raw") is not None for a in attrs)
+        graded = RC.grade_riven(rv.get("weapon", ""), attrs, int(rv.get("rank", 8) or 8)) if not exact else None
+        lines = []
+        for n, a in enumerate(attrs):
+            if exact:
+                norm = min(1.1, max(0.9, 0.9 + float(a["raw"]) / R.DENOM / 100.0))
+                q = (norm - 1) * 100
+                g = RC.letter(q)
+            else:
+                g, q = graded[n]["grade"], graded[n]["quality"]
+            if g == "?" or q is None:
+                continue
+            lines.append(f"<span style='color:{RC.GRADE_COLORS.get(g, '#ccc')}'><b>{g}</b></span> "
+                         f"{escape_html(str(a.get('label', '')).split(' (')[0])} ({q:+.1f}%)")
+        return ("<br>" + t("rcalc.grades") + "<br>" + "<br>".join(lines)) if lines else ""
+    except Exception:
+        return ""
+
+
 class Card(QWidget):
     """A mod / Arcane card drawn like the game's (landscape): the picture dimmed behind the name, the drain and the
     mod's polarity top right (green: matches the slot, red: does not), the slot's polarity top left, the rank as pips,
@@ -240,7 +268,9 @@ class Card(QWidget):
                 if s.get("role") not in (None, "general") else ""
         if s.get("riven"):
             rv = s["riven"]
-            return t("builds.riven.tip", weapon=rv.get("weapon", ""), rerolls=rv.get("rerolls", 0))
+            tip = t("builds.riven.tip", weapon=rv.get("weapon", ""), rerolls=rv.get("rerolls", 0))
+            grades = riven_grades_html(rv)
+            return (escape_html(tip).replace("\n", "<br>") + grades) if grades else tip
         arcane = s.get("role") == "arcane"
         eff = modtext.effect(n, s.get("rank"), s.get("max"), arcane=arcane)
         mx = eff.get("max") or s.get("max")

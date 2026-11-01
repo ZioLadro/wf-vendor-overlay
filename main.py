@@ -63,7 +63,7 @@ def main():
     if sys.platform == "win32":                  # own taskbar identity: the taskbar shows our icon, not python's
         try:
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ZioLadro.WFVendorOverlay")
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ZioLadro.TauTools")
         except Exception:
             pass
     app = QApplication(sys.argv)
@@ -169,7 +169,7 @@ def main():
     tray = None
     if QSystemTrayIcon.isSystemTrayAvailable():
         tray = QSystemTrayIcon(icon, app)
-        tray.setToolTip("WF Vendor Overlay " + __version__)
+        tray.setToolTip("TauTools " + __version__)
         tray_menu = QMenu()
         for text, fn in (
             (t("tray.pricelist", key=_k(CFG["key_menu"])), pricelist.toggle),

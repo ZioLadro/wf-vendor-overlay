@@ -1,14 +1,29 @@
 """Paths and settings. Settings can be changed from the Settings tab of the price list, or by editing
-%LOCALAPPDATA%\\WFVendorOverlay\\config.json (created on first run), also with the .exe.
+%LOCALAPPDATA%\\TauTools\\config.json (created on first run), also with the .exe.
+Before 0.7.0 the program was called WF Vendor Overlay and kept its data in %LOCALAPPDATA%\\WFVendorOverlay: that folder is
+moved to the new name the first time TauTools starts (copied when it cannot be moved).
 Missing keys = default values; unknown keys are ignored."""
 import json
 import os
 from pathlib import Path
 
 
+APP_NAME = "TauTools"
+OLD_APP_NAME = "WFVendorOverlay"          # the data folder's name before 0.7.0
+
+
 def _app_dir() -> Path:
-    base = os.environ.get("LOCALAPPDATA") or str(Path.home() / ".local" / "share")
-    d = Path(base) / "WFVendorOverlay"
+    base = Path(os.environ.get("LOCALAPPDATA") or str(Path.home() / ".local" / "share"))
+    d, old = base / APP_NAME, base / OLD_APP_NAME
+    if not d.exists() and old.is_dir():       # 0.6.x -> 0.7.0: settings, prices, plans and caches keep working
+        try:
+            old.rename(d)
+        except OSError:
+            try:
+                import shutil
+                shutil.copytree(old, d, ignore=shutil.ignore_patterns("wfupdate_*"))
+            except OSError:
+                return old                    # neither works (files in use): keep using the old folder
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -94,6 +109,8 @@ DEFAULTS = {
     "ov_bg_opacity": 88,           # price overlay: label background opacity (%)
     "ov_price_color": "#78c8ff",   # price overlay: price text colour
     "ov_star_color": "#ffd228",    # price overlay: Best here / Recommended stars colour
+    "ov_theme": "custom",          # price overlay colours: "custom" (the two above), "program" (the program's theme) or a theme id
+    "goals_theme": "program",      # Activities overlay colours: "program", "game" (gold quest tracker), "custom" (below) or a theme id
     "goals_font_family": "",       # Activities: font ("" = the program's font)
     "goals_title_color": "#ffd100",  # Activities: titles
     "goals_text_color": "#ffffff",   # Activities: objectives
@@ -120,6 +137,9 @@ DEFAULTS = {
     "hide_operational_supply": True, # leave out the event syndicate (Plague Star…) while no event runs
     "window_on_top": False,          # keep the program's window above every other window (the labels on the game always are)
     "inv_min_volume": 0,             # Inventory: hide items traded fewer times than this in 24 h (0 = off)
+    "rcalc_weapon": "",              # Riven calculator: the last weapon
+    "rcalc_rank": 8,                 # Riven calculator: the rank the values are read at
+    "inv_category": "parts",         # Inventory: the section shown (parts, relic, mod, arcane, other, set, all), like AlecaFrame's
     "hide_negative_ranks": False,    # player strip / Profile: hide syndicates with a negative rank
     "ducat_min_ratio": 10,       # advice: trade for ducats if ducats per platinum (adjusted for liquidity) >= this
     "advice_trend_weight": 50,   # advice: how much a price above its 30-day average is pulled towards it (0 = ignore the trend, 100 = use the average)

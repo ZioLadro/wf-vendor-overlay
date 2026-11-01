@@ -252,6 +252,10 @@ QLabel[role="small"] {{ color: {p['muted']}; font-size: {max(8, size - 3)}px; }}
 QLabel[role="heading"] {{ font-family: "{head}"; font-size: {size + 6}px; font-weight: 700; color: {p['text']}; }}
 QLabel[role="section"] {{ font-family: "{head}"; font-size: {hs + 1}px; font-weight: 700; color: {p['accent']}; }}
 QFrame#playerbar, QFrame#worldstrip {{ background: {p['panel']}; border: 1px solid {p['border']}; border-radius: 10px; }}
+QPushButton#invsec {{ background: transparent; border: 1px solid transparent; border-radius: 9px; padding: 7px 14px;
+    color: {p['muted']}; }}
+QPushButton#invsec:hover {{ background: {p['alt']}; color: {p['text']}; border: 1px solid {p['border']}; }}
+QPushButton#invsec:checked {{ background: {p['select']}; color: #ffffff; border: 1px solid {p['accent']}; }}
 QListWidget#nav {{ background: {_mix(p['bg'], p['panel'], 0.6)}; border: 1px solid {p['border']}; border-radius: 12px;
     padding: 8px 6px; font-family: "{head}"; font-size: {size + 3}px; font-weight: 600; }}
 QListWidget#nav::item {{ padding: 9px 12px; margin: 2px 0; border-radius: 8px; color: {p['muted']}; border-left: 3px solid transparent; }}
