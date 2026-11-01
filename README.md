@@ -1,6 +1,9 @@
-# WF Vendor Overlay
+# TauTools
 
 🇬🇧 English · [🇮🇹 Italiano](README.it.md)
+
+*Formerly **WF Vendor Overlay** (renamed in 0.7.0; the repository keeps its name, and an installed 0.6.x updates
+itself to TauTools with your settings and data).*
 
 A Windows companion for Warframe. Its core: when you open a vendor, it shows next to each item the **platinum price**
 (right of the name) and the **24-hour trade volume** (below the name; red = rarely traded, green = heavily traded),
@@ -9,7 +12,9 @@ from warframe.market, by reading the screen with OCR. Around it:
 - **Activities** (in game, F6): what to buy with your standing and how to earn it, the weekly vendor offers you follow,
   this week's Nightwave challenges and the 1999 Calendar, ticked off as you complete them.
 - **Price list window** (F7): every tradable item that costs standing, recommendations, your inventory with sell advice
-  and sell orders, Riven flipping, your in-game builds, weekly vendor limits, standing, world state.
+  and sell orders, Riven flipping and a Riven calculator, your in-game builds and a build planner (cost in Endo and
+  platinum, want-to-buy orders, builds imported from guides), a Vosfor calculator, weekly vendor limits, standing,
+  world state.
 
 The program never reads the game's memory, network traffic or files. What it knows about your account (standing,
 inventory, loadouts, purchases, challenges) comes from **AlecaFrame's** `lastData.dat`, read when AlecaFrame updates it;
@@ -17,12 +22,12 @@ without AlecaFrame the price overlay and the market features still work.
 
 **Contents:** [Getting started](#getting-started) · [Price overlay](#price-overlay-in-game) ·
 [Activities](#activities-in-game-f6) · [Price list window](#price-list-window-f7) · [Data sources](#data-sources) ·
-[Updates](#updates-current-version-038) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
+[Updates](#updates-current-version-070) · [Files and settings](#files-and-settings) · [Performance](#performance) ·
 [For developers](#for-developers) · [Notes and limits](#notes-and-limits)
 
 ## Getting started
-1. Download `WFVendorOverlay-windows.zip` from the [latest release](https://github.com/ZioLadro/wf-vendor-overlay/releases/latest),
-   unzip it anywhere and run `WFVendorOverlay.exe` (the exe is not code-signed, so Windows SmartScreen may warn).
+1. Download `TauTools-windows.zip` from the [latest release](https://github.com/ZioLadro/wf-vendor-overlay/releases/latest),
+   unzip it anywhere and run `TauTools.exe` (the exe is not code-signed, so Windows SmartScreen may warn).
 2. Run Warframe in **Borderless** windowed mode. If Warframe runs as administrator, run the overlay as administrator too.
 3. Optional: keep **AlecaFrame** running; its file is found by itself (`%LOCALAPPDATA%\AlecaFrame`).
 4. Language: English by default; Settings → General → Language (English / Italiano), then restart.
@@ -172,7 +177,11 @@ Your items with their market prices, sell advice and one-click sell orders (insp
   Warframe-style inventory JSON (`MiscItems`, `RawUpgrades`… with `ItemType` paths), any JSON pairing names with
   quantities (`{"Serration": 2}`), and CSV/TXT lines such as `Serration, 2, 10`, `3x Mirage Prime Set` or
   `Ash Prime Blueprint x2`. Names are matched to the market catalog (small typos tolerated); unmatched ones are listed.
-- **Categories** (Sets, Warframe parts, Weapon parts, Mods, Arcanes, Relics, Other) and **filters** like AlecaFrame's:
+- **Sections** as a row of tabs like AlecaFrame's: **All parts** (Warframe and weapon parts) · **Relics** · **Mods** ·
+  **Arcanes** · **Misc** · **Sets** · **Everything**, each with how many items it holds (and their platinum in the
+  tooltip); each section shows only the filters and columns that mean something for it (ducats for parts, max-rank
+  prices and rank filters for mods and Arcanes, vaulted for parts, relics and sets). The section is remembered.
+- **Filters** like AlecaFrame's:
   minimum platinum, more than one owned, prime / normal, vaulted, listed from here, *Exclude max-rank mods/arcanes*,
   *Exclude installed* (mods and Arcanes in one of your loadouts: never suggested for sale), *Min vol.*
 - **Value** = copies × rank 0 price + max-rank copies × max-rank price. **Update prices** refreshes the shown items.
@@ -207,7 +216,9 @@ Mind that Quantframe's Live Scraper may list stock items for sale or place buy o
 ### Riven flip
 **Scan the market** reads the riven listings of the next weapons on warframe.market (least recently scanned first;
 *Weapons per scan* and *Only these weapons* in Settings) and lists rivens priced **below what comparable ones are
-worth**, best **profit a day** first (or best profit: *Order*), with filters by riven type and weapon:
+worth**, best **profit a day** first (or best profit: *Order*), with filters by riven type and weapon. **The table fills
+while the scan runs** (every few seconds, as each weapon comes in; the selected row stays selected), not only at the end.
+Each stat of a listing carries its roll grade (S … F, the Riven calculator's scale):
 
 - **Price**: the direct-buy price against a *fair price* = median of comparable listings of the same weapon (stats score
   within ±15, at least 3) × *Expected resale* (default 85 %). warframe.market returns at most the 100 cheapest listings
@@ -288,6 +299,35 @@ asks); on "too many requests" it waits and stops after three in a row. The tab o
 *Open the auction* and *Copy whisper* (right click on a row) help you contact the seller: the whisper is
 `/w <seller> Hi, I would like to buy <weapon> <riven> for <price> platinum`, editable in Settings → Riven. Profit and fair price are estimates.
 
+### Riven calculator
+The grading and roll planner of [RivenLens](https://github.com/remesis/RivenLens), written again on the program's own
+Riven data (`app/game/rivencalc.py`):
+- **Grade a Riven**: pick the weapon (type to search; every weapon with a Riven) and the rank, then each stat with its
+  value as the game shows it, or **Read from a picture** of the card (a file or the clipboard). Every stat gets its
+  **grade** (S: +9.5 % or more from the average roll … B about average … F: -9.5 % or less), its distance from the
+  average and its **range**; the layout (2 or 3 positives, a negative or not) follows from what you typed. A value out
+  of its range is flagged (wrong stat, rank or sign).
+- **What every stat can roll**: the positive and negative range of every stat the weapon can roll, for a layout.
+- **Kuva cycling odds**: up to three wanted positives (each slot accepts several stats: *Critical Damage or
+  Multishot*), what the negative may be (whatever, none, none or an acceptable one, an acceptable one) and optionally a
+  **locked stat**: chance per cycle, expected cycles and Kuva, cycles for a 50 % / 90 % chance, odds per layout.
+
+Model: value = base × disposition × layout multiplier × (rank + 1), rolled 90-110 %; every weapon's disposition counts as
+1.2 (Hotfix 44.1.3), as RivenLens does. The same grades show in the Riven flip table and on Riven cards in Builds.
+
+### Vosfor
+How much **Vosfor** your Arcanes are worth, which Arcanes to trade into Vosfor and which of **Loid's collections** to buy
+([wiki](https://wiki.warframe.com/w/Vosfor)):
+- **Your Arcanes**: copies (a ranked Arcane counts the copies it is made of), Vosfor each and in all, price, value,
+  platinum given up per 100 Vosfor and the advice: *dissolve* (sold it gives less than its Vosfor buys at the best
+  collection), *sell*, *keep* (equipped on one of your loadouts) or *?* (no price yet).
+- **Most Vosfor per platinum**: every Arcane that can be dissolved by Vosfor per platinum: the cheapest Vosfor on the market.
+- **Loid's collections**: each costs 200 Vosfor and gives 3 Arcanes rolled on the collection's chances: expected
+  platinum of one purchase, platinum per 100 Vosfor, best drop, chance of a Legendary, the Vosfor you would get back,
+  and the contents with chance, price and Vosfor of each Arcane.
+
+*Update Arcane prices* asks warframe.market for the rank 0 price of every Arcane that can be dissolved.
+
 ### Builds
 Your in-game loadouts, shown like the game's loadout screen, from `lastData.dat` (*Reload from file* after AlecaFrame
 refreshed it).
@@ -352,6 +392,26 @@ refreshed it).
   count, capacity and stats follow every change. Every kind you fill is kept as a piece of the loadout (buttons on top
   switch between them; *+ add* adds a piece). *Save* keeps plans in `build_plans.json` (plans of older versions open as
   they were); *Copy from my loadout…* copies a whole in-game loadout or a single item. *Clear* starts an empty loadout.
+  The **saved plans** drop-down groups them by their main item (Warframe, primary…), each with the item's thumbnail and
+  the other items of the loadout in its tooltip.
+- **Cost** (planner, bottom bar): a line with the Endo and the platinum the loadout still needs, and the *Cost* window
+  mod by mod: what you own (rank, Arcane copies), what is left to rank (Endo `10 × rarity × 2^rank` per rank and
+  credits) and what to buy (rank 0 price, or already maxed when that is cheaper), counting each mod once even when
+  several items use it. *Update these prices*, *Copy the list*, and **Want-to-buy in Quantframe…**: what you lack goes to
+  Quantframe's wish list, whose Live Scraper places the **want-to-buy orders** on warframe.market.
+- **Arcanes**: each item takes only the Arcanes it can (Warframe, primary, secondary, melee, Arch-gun with its second slot
+  for Secondary Arcanes, Operator / Amp), each Arcane once per item; ranks show the copies they take ((r + 1)(r + 2) / 2,
+  rank 5 = 21) and how many you own. *Arcane effects* counts their effects in the stats (conditions met, every stack:
+  Molt Augmented's strength, Arcane Guardian's armour…); the tooltip lists what is counted and what is not.
+- **Import from a guide…** (Share menu): a guide on the web, its builds listed and put in the plan or saved one by one.
+  Offered: the [Aya farming Google Doc](https://docs.google.com/document/d/1DWYUPPW_VPuSEk2VJKV7m-vk2FGmKfxs-xmAv9UGm9k/edit?tab=t.xmhqee68riyo)
+  (the tab in the link is read), [arbi.guide](https://arbi.guide/) and [wfpedia's Endo guide](https://wfpedia.com/posts/endo/basics)
+  (its build pages too); any other page works the same. The names written in the page (Warframes and weapons start a
+  build; mods, Arcanes, Archon Shards and Helminth after them) are read; **Read the pictures** downloads the build
+  screenshots and reads them like *Import from a picture*. Check the result like any other import.
+- **Overview picture of the loadout** (Share menu): one picture of the whole planned loadout, every item with its mods,
+  Arcanes, shards and Helminth, at most 2048 pixels on its longest side. Only to show it: it is not a build code and
+  cannot be imported.
 - Also shown: the name you gave an item, its Focus lens, the Kuva / Tenet / Coda bonus element and percentage, gilded,
   and (tooltip) Exilus / Arcane slots unlocked and Valence Fusion.
 
@@ -414,10 +474,15 @@ each with its own accent and second accent, its background pattern, another patt
 family and size. The program uses the game's own text font, **Noto Sans**, and **Rajdhani** for titles, tabs and
 headers (both bundled, SIL Open Font License, `assets/fonts`). Since 0.5.0 the sections are a sidebar on the left (as in
 AlecaFrame), with rounded cards, flat tabs underlined in the accent and slim scroll bars. Previewed at once, kept
-only when you press Save. **Overlays** (one tab for both in-game overlays): the prices over the vendor screen (volume
-label and its colours, label sizes, background, price and star colours, hidden items) and the Activities overlay, its
-look (background, font, colours) and what it lists (also in its ⚙ menu). **Sounds**: a sound when a vendor scan, a riven scan or a price scan starts (the
+only when you press Save. **Sounds**: a sound when a vendor scan, a riven scan or a price scan starts (the
 system notification sound, or a `.wav` of yours).
+
+### Overlay
+The options of both in-game overlays have their own section since 0.7.0 (they were a Settings tab): **Prices on the
+vendor screen** (volume label and its colours, label sizes, background, hidden items, stars) and the **Activities**
+overlay, its look and what it lists (also in its ⚙ menu). Both take their **colours** from the program's theme (they
+change with it), from any of the themes, from your own colours, or (Activities) from the game's gold quest tracker. A
+**preview** at the top of each page shows the result before you save.
 
 ## Data sources
 | What | From |
@@ -439,13 +504,16 @@ system notification sound, or a `.wav` of yours).
 
 Every request identifies the program with its own `User-Agent` (name, version, repository) and results are cached.
 
-## Updates (current version 0.6.6)
+## Updates (current version 0.7.0)
 At start the program looks (in the background, setting *Check for updates at start*) for a newer **GitHub release**.
 The update window lists **what changed since your version** (every version in between, from the changelog in your
 language) and offers *Install now* / *Later* / *Skip this version*. You can also check in **Settings → Updates**.
 
-Installing downloads `WFVendorOverlay-windows.zip`, verifies its SHA-256 against the release's `.sha256` file, replaces
-the program files after it exits and restarts it. Your data (`%LOCALAPPDATA%\WFVendorOverlay`) is never touched. Each
+Installing downloads `TauTools-windows.zip`, verifies its SHA-256 against the release's `.sha256` file, replaces
+the program files after it exits and restarts it. Your data (`%LOCALAPPDATA%\TauTools`) is never touched. Releases also
+carry `WFVendorOverlay-windows.zip`, the same program for the updater of 0.6.x (still called WF Vendor Overlay): an
+installation started as `WFVendorOverlay.exe` keeps working, and its data folder is moved to the new name the first time
+TauTools starts. Each
 step goes to `update.log` in the data folder; as a manual fallback close the program and unzip the release over its
 folder. Only the packaged Windows build updates itself; from source use `git pull`. The checksum only proves the download
 was not corrupted: it trusts this repository's releases.
@@ -453,7 +521,7 @@ was not corrupted: it trusts this repository's releases.
 What changed in each version: [CHANGELOG.md](CHANGELOG.md) (from 0.2.1 on).
 
 ## Files and settings
-Everything lives in `%LOCALAPPDATA%\WFVendorOverlay`:
+Everything lives in `%LOCALAPPDATA%\TauTools` (`%LOCALAPPDATA%\WFVendorOverlay` before 0.7.0, moved by itself):
 
 | File | Content |
 |---|---|
@@ -505,7 +573,7 @@ py -3.12 -m venv .venv
 
 **Building the executable** (the OCR models are bundled):
 ```
-powershell -ExecutionPolicy Bypass -File build.ps1            # dist\WFVendorOverlay folder (recommended)
+powershell -ExecutionPolicy Bypass -File build.ps1            # dist\TauTools folder (recommended)
 powershell -ExecutionPolicy Bypass -File build.ps1 -Console   # with a console (to see errors)
 powershell -ExecutionPolicy Bypass -File build.ps1 -OneFile   # single .exe (slower startup)
 ```
@@ -526,11 +594,15 @@ app/
   trade/             warframe.market: market (catalog, prices, volumes), refresher, market_auth (sell orders),
                      recommend, advice, signals (trend, spikes, backtest), rivenmarket (riven listings), quantframe
   game/              game data and your account: vendors, standing, inventory, aleca (AlecaFrame file), loadouts,
-                     buildcalc, incarnon, rivens, weekly, weekly_ocr (offers read on the vendor screen), quests
-                     (Nightwave / Calendar), goals (Activities plan), world, arbi
+                     buildcalc, buildcost (Endo / platinum of a plan), arcanes (slots, ranks, effects, Vosfor),
+                     guideimport (builds from guides), incarnon, rivens, rivencalc (grades, ranges, cycling odds),
+                     vosfor, weekly, weekly_ocr (offers read on the vendor screen), quests (Nightwave / Calendar),
+                     goals (Activities plan), world, arbi
   ui/                windows and tabs: menu (main window), *_tab, *_dialog, goals_overlay (Activities), buildcards,
-                     buildscreen (the upgrade screen of Builds and the planner), player_bar, world_strip, update_box, logos, icons, previews
-data/                bundled game data (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places, player_icons .json)
+                     buildscreen (the upgrade screen of Builds and the planner), overview_image (the loadout's
+                     overview picture), player_bar, world_strip, update_box, logos, icons, previews
+data/                bundled game data (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places, player_icons,
+                     vosfor .json)
 assets/              icon.png, icon.ico
 tools/               builders of data/ (build_*.py: python tools/build_vendors.py …; build_places.py: where to buy), build_icon.py,
                      prepare_models.py (OCR models)

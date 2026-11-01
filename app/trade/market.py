@@ -27,7 +27,7 @@ HEADERS = {
     "Platform": "pc",
     "Crossplay": "true",
     "Accept": "application/json",
-    "User-Agent": f"WFVendorOverlay/{__version__} (+https://github.com/ZioLadro/wf-vendor-overlay)",
+    "User-Agent": f"TauTools/{__version__} (+https://github.com/ZioLadro/wf-vendor-overlay)",
 }
 CACHE_FILE = APP_DIR / "items_cache.json"
 STORE_FILE = APP_DIR / "prices.json"   # collected prices/volumes (persistent)

@@ -471,6 +471,7 @@ class RivenFlipTab(QWidget):
         self.btn_stop.setEnabled(True)
         self.bar.setVisible(True)
         self.bar.setRange(0, 0)
+        self._live_t, self._live_ver = 0.0, -1
         limiter = M.Limiter(market=self.market)
 
         def work():
@@ -484,13 +485,46 @@ class RivenFlipTab(QWidget):
             self.finished.emit(done, err)
         threading.Thread(target=work, daemon=True, name="riven-scan").start()
 
+    LIVE_EVERY = 4.0             # seconds between two refreshes of the table while a scan runs
+
     def _on_progress(self, done, total, name):
         self.bar.setRange(0, max(1, total))
         self.bar.setValue(done)
         if name:
             left = max(0, total - done) * M.Limiter().interval
             eta = t("rflip.eta.min", n=max(1, round(left / 60))) if left >= 90 else t("rflip.eta.sec", n=int(left))
-            self.summary.setText(t("rflip.scanning", done=done, total=total, name=name, eta=eta))
+            text = t("rflip.scanning", done=done, total=total, name=name, eta=eta)
+            if self._live_scan():
+                text += "  " + t("rflip.live.found", n=len(self._rows))
+            self.summary.setText(text)
+
+    def _live_scan(self) -> bool:
+        """While a scan runs: the deals found so far, refreshed every few seconds as weapons come in (not only at the
+        end). The selected row stays selected. False when nothing new could be shown."""
+        now = time.time()
+        if now - getattr(self, "_live_t", 0.0) < self.LIVE_EVERY or self.store.version == getattr(self, "_live_ver", -1):
+            return bool(getattr(self, "_rows", None)) and getattr(self, "_live_ver", -1) >= 0
+        self._live_t, self._live_ver = now, self.store.version
+        if not self._load_lists():
+            return False
+        try:
+            rows = M.opportunities(self.store, self._weapons, self._index)
+        except RuntimeError:                         # the scan changed a weapon's data right then: next time
+            return False
+        keep = self._selected()
+        key = (keep["listing"].get("id"), keep["weapon"]) if keep else None
+        self._rows = rows
+        self._fill()
+        if key:
+            for i, r in enumerate(self._shown_rows):
+                if (r["listing"].get("id"), r["weapon"]) == key:
+                    item = next((self.table.item(j, 0) for j in range(self.table.rowCount())
+                                 if self.table.item(j, 0) and self.table.item(j, 0).data(Qt.ItemDataRole.UserRole + 1) == i),
+                                None)
+                    if item is not None:
+                        self.table.selectRow(item.row())
+                    break
+        return True
 
     def _on_finished(self, done, err):
         self.running = False
@@ -719,8 +753,8 @@ class RivenFlipTab(QWidget):
         return " + ".join(names.get(tg, str(tg).replace("_", " ")) for tg in pair)
 
     def _graded(self, l, wtype):
-        """The stats with how well each rolled (S best … D worst of the game's 90-110 % range; ? = not known)."""
-        colors = {"S": "#e8c547", "A": "#4fbf6a", "B": "#5aa9e6", "C": "#b48ce0", "D": "#e0584a", "?": "#9aa4b2"}
+        """The stats with how well each rolled (S best … F worst of the game's 90-110 % range; ? = not known)."""
+        from app.game.rivencalc import GRADE_COLORS as colors
         parts = []
         for a, (tag, _v, g) in zip(l["attrs"], M.roll_grades(l, wtype, self._index)):
             label = describe_listing({"attrs": [a]}, self._index)

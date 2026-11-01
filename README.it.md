@@ -1,6 +1,9 @@
-# WF Vendor Overlay
+# TauTools
 
 [🇬🇧 English](README.md) · 🇮🇹 Italiano
+
+*Prima si chiamava **WF Vendor Overlay** (rinominato nella 0.7.0; il repository mantiene il suo nome, e una 0.6.x
+installata si aggiorna da sola a TauTools con le tue impostazioni e i tuoi dati).*
 
 Un compagno per Warframe su Windows. Il cuore: quando apri un vendor, mostra accanto a ogni oggetto il **prezzo in
 platino** (a destra del nome) e il **volume di scambio delle ultime 24 ore** (sotto il nome; rosso = poco scambiato,
@@ -9,8 +12,9 @@ verde = molto scambiato), da warframe.market, leggendo lo schermo con l'OCR. Int
 - **Attività** (in gioco, F6): cosa comprare con lo standing e come guadagnarlo, le offerte settimanali dei vendor che
   segui, le sfide Nightwave della settimana e il Calendario 1999, spuntate man mano che le completi.
 - **Finestra del listino** (F7): tutti gli oggetti scambiabili che costano standing, i consigli, il tuo inventario con
-  consigli di vendita e ordini di vendita, il flip dei Riven, le tue build di gioco, i limiti settimanali dei vendor, lo
-  standing, lo stato del mondo.
+  consigli di vendita e ordini di vendita, il flip dei Riven e un calcolatore di Riven, le tue build di gioco e un
+  pianificatore di build (costo in Endo e platino, ordini di acquisto, build importate dalle guide), un calcolatore di
+  Vosfor, i limiti settimanali dei vendor, lo standing, lo stato del mondo.
 
 Il programma non legge mai memoria, traffico di rete o file del gioco. Ciò che sa del tuo account (standing, inventario,
 loadout, acquisti, sfide) viene dal `lastData.dat` di **AlecaFrame**, letto quando AlecaFrame lo aggiorna; senza
@@ -18,12 +22,12 @@ AlecaFrame l'overlay dei prezzi e le funzioni di mercato funzionano comunque.
 
 **Indice:** [Per iniziare](#per-iniziare) · [Overlay dei prezzi](#overlay-dei-prezzi-in-gioco) ·
 [Attività](#attività-in-gioco-f6) · [Finestra del listino](#finestra-del-listino-f7) · [Fonti dei dati](#fonti-dei-dati) ·
-[Aggiornamenti](#aggiornamenti-versione-attuale-038) · [File e impostazioni](#file-e-impostazioni) ·
+[Aggiornamenti](#aggiornamenti-versione-attuale-070) · [File e impostazioni](#file-e-impostazioni) ·
 [Prestazioni](#prestazioni) · [Per sviluppatori](#per-sviluppatori) · [Note e limiti](#note-e-limiti)
 
 ## Per iniziare
-1. Scarica `WFVendorOverlay-windows.zip` dall'[ultima release](https://github.com/ZioLadro/wf-vendor-overlay/releases/latest),
-   estrailo dove vuoi e avvia `WFVendorOverlay.exe` (l'exe non è firmato, quindi Windows SmartScreen può avvisare).
+1. Scarica `TauTools-windows.zip` dall'[ultima release](https://github.com/ZioLadro/wf-vendor-overlay/releases/latest),
+   estrailo dove vuoi e avvia `TauTools.exe` (l'exe non è firmato, quindi Windows SmartScreen può avvisare).
 2. Avvia Warframe in finestra senza bordi (**Borderless**). Se Warframe gira come amministratore, avvia anche l'overlay
    come amministratore.
 3. Facoltativo: tieni aperto **AlecaFrame**; il suo file viene trovato da solo (`%LOCALAPPDATA%\AlecaFrame`).
@@ -188,7 +192,11 @@ Inventario di AlecaFrame).
   `ItemType`), qualunque JSON che abbini nomi e quantità (`{"Serration": 2}`), e righe CSV/TXT come `Serration, 2, 10`,
   `3x Mirage Prime Set` o `Ash Prime Blueprint x2`. I nomi vengono abbinati al catalogo del mercato (piccoli errori
   tollerati); quelli non abbinati vengono elencati.
-- **Categorie** (Set, Parti Warframe, Parti armi, Mod, Arcane, Reliquie, Altro) e **filtri** come quelli di AlecaFrame:
+- **Sezioni** come una fila di schede alla AlecaFrame: **Tutte le parti** (parti di Warframe e di armi) · **Reliquie** ·
+  **Mod** · **Arcani** · **Varie** · **Set** · **Tutto**, ognuna con quanti oggetti contiene (e il loro platino nel
+  suggerimento); ogni sezione mostra solo i filtri e le colonne che hanno senso per lei (ducati per le parti, prezzi al
+  rango massimo e filtri di rango per mod e Arcani, vaulted per parti, reliquie e set). La sezione viene ricordata.
+- **Filtri** come quelli di AlecaFrame:
   platino minimo, più di una copia, prime / normale, vaulted, messi in vendita da qui, *Escludi mod/arcane a rank
   massimo*, *Escludi installate* (mod e Arcane in uno dei tuoi loadout: mai suggerite per la vendita), *Vol. min*
 - **Valore** = copie × prezzo a rank 0 + copie a rank massimo × prezzo a rank massimo. **Aggiorna prezzi** aggiorna gli
@@ -227,7 +235,9 @@ stock o piazzare ordini d'acquisto, secondo le sue impostazioni.
 **Scansiona il mercato** legge gli annunci di riven delle armi successive su warframe.market (prima quelle scansionate
 meno di recente; *Armi per scansione* e *Solo queste armi* nelle Impostazioni) ed elenca i riven messi in vendita **sotto
 il valore di quelli comparabili**, dal miglior **profitto al giorno** (o dal profitto migliore: *Ordine*), con filtri per
-tipo di riven e arma:
+tipo di riven e arma. **La tabella si riempie mentre la scansione è in corso** (ogni pochi secondi, man mano che arriva
+ogni arma; la riga selezionata resta selezionata), non solo alla fine. Ogni statistica di un annuncio ha il voto del suo
+tiro (S … F, la scala del calcolatore di Riven):
 
 - **Prezzo**: il prezzo di acquisto diretto contro un *prezzo equo* = mediana degli annunci comparabili della stessa arma
   (punteggio statistiche entro ±15, almeno 3) × *Rivendita attesa* (default 85 %). warframe.market restituisce al massimo
@@ -313,6 +323,37 @@ warframe.market); a un "troppe richieste" aspetta e si ferma dopo tre di fila. L
 nulla. *Apri l'asta* e *Copia whisper* (clic destro su una riga) aiutano a contattare il venditore: il whisper è
 `/w <venditore> Hi, I would like to buy <arma> <riven> for <prezzo> platinum`, modificabile in Impostazioni → Riven. Profitto e prezzo equo sono stime.
 
+### Calcolatore Riven
+La valutazione e il pianificatore di tiri di [RivenLens](https://github.com/remesis/RivenLens), riscritti sui dati Riven
+del programma (`app/game/rivencalc.py`):
+- **Valuta un Riven**: scegli l'arma (scrivi per cercare; ogni arma che ha un Riven) e il rango, poi ogni statistica col
+  suo valore come lo mostra il gioco, oppure **Leggi da un'immagine** della carta (un file o gli appunti). Ogni
+  statistica riceve il suo **voto** (S: +9,5 % o più dal tiro medio … B circa nella media … F: -9,5 % o meno), la
+  distanza dalla media e il suo **intervallo**; la disposizione (2 o 3 positive, una negativa o no) segue da ciò che hai
+  scritto. Un valore fuori dal suo intervallo viene segnalato (statistica, rango o segno sbagliati).
+- **Cosa può tirare ogni statistica**: l'intervallo positivo e negativo di ogni statistica dell'arma, per una disposizione.
+- **Probabilità dei cicli con Kuva**: fino a tre positive desiderate (ogni posto accetta più statistiche: *Danno critico
+  o Multishot*), cosa può essere la negativa (qualunque, nessuna, nessuna o una accettabile, una accettabile) e
+  facoltativamente una **statistica bloccata**: probabilità per ciclo, cicli e Kuva attesi, cicli per il 50 % / 90 % di
+  probabilità, probabilità per disposizione.
+
+Modello: valore = base × disposizione × moltiplicatore della disposizione × (rango + 1), tirato dal 90 al 110 %; la
+disposizione di ogni arma vale 1,2 (Hotfix 44.1.3), come in RivenLens. Gli stessi voti compaiono nella tabella del Riven
+flip e sulle carte Riven delle Build.
+
+### Vosfor
+Quanto **Vosfor** valgono i tuoi Arcani, quali Arcani conviene trasformare in Vosfor e quali **collezioni di Loid**
+comprare ([wiki](https://wiki.warframe.com/w/Vosfor)):
+- **I tuoi Arcani**: copie (un Arcano rankato conta le copie di cui è fatto), Vosfor l'uno e in tutto, prezzo, valore,
+  platino a cui rinunci per 100 Vosfor e il consiglio: *dissolvi* (venduto dà meno di quanto compra il suo Vosfor nella
+  collezione migliore), *vendi*, *tieni* (montato su un tuo loadout) o *?* (ancora senza prezzo).
+- **Più Vosfor per platino**: ogni Arcano dissolvibile ordinato per Vosfor per platino: il Vosfor più economico sul mercato.
+- **Collezioni di Loid**: ognuna costa 200 Vosfor e dà 3 Arcani tirati con le probabilità della collezione: platino
+  atteso di un acquisto, platino per 100 Vosfor, drop migliore, probabilità di un Leggendario, il Vosfor che
+  riotterresti, e il contenuto con probabilità, prezzo e Vosfor di ogni Arcano.
+
+*Aggiorna i prezzi degli Arcani* chiede a warframe.market il prezzo a rango 0 di ogni Arcano dissolvibile.
+
 ### Build
 I tuoi loadout di gioco, mostrati come nella schermata dei loadout, da `lastData.dat` (*Ricarica dal file* dopo che
 AlecaFrame l'ha aggiornato).
@@ -379,7 +420,28 @@ AlecaFrame l'ha aggiornato).
   mod). Numero di Forma, capacità e statistiche seguono ogni modifica. Ogni tipo che compili resta come pezzo del loadout
   (i pulsanti in alto passano da uno all'altro; *+ aggiungi* aggiunge un pezzo). *Salva* tiene i piani in
   `build_plans.json` (i piani delle versioni precedenti si aprono com'erano); *Copia da un mio loadout…* copia un loadout
-  di gioco intero o un singolo oggetto. *Svuota* parte da un loadout vuoto.
+  di gioco intero o un singolo oggetto. *Svuota* parte da un loadout vuoto. Il menu a tendina dei **piani salvati** li
+  raggruppa per oggetto principale (Warframe, primaria…), ognuno con la miniatura dell'oggetto e gli altri oggetti del
+  loadout nel suggerimento.
+- **Costo** (pianificatore, barra in basso): una riga con l'Endo e il platino che servono ancora al loadout, e la finestra
+  *Costo* mod per mod: cosa possiedi (rango, copie degli Arcani), cosa resta da rankare (Endo `10 × rarità × 2^rango` per
+  rango e crediti) e cosa comprare (prezzo a rango 0, o già al massimo quando costa meno), contando ogni mod una volta
+  anche se la usano più oggetti. *Aggiorna questi prezzi*, *Copia la lista* e **Ordini di acquisto in Quantframe…**: ciò
+  che manca va nella lista desideri di Quantframe, il cui Live Scraper piazza gli **ordini want-to-buy** su warframe.market.
+- **Arcani**: ogni oggetto accetta solo gli Arcani che può montare (Warframe, primaria, secondaria, corpo a corpo,
+  Arch-gun col secondo slot per gli Arcani secondari, Operatore / Amp), ogni Arcano una volta per oggetto; i ranghi
+  mostrano le copie che richiedono ((r + 1)(r + 2) / 2, rango 5 = 21) e quante ne possiedi. *Effetti degli Arcani* conta
+  i loro effetti nelle statistiche (condizioni soddisfatte, ogni accumulo: la forza di Molt Augmented, l'armatura di
+  Arcane Guardian…); il suggerimento elenca cosa è contato e cosa no.
+- **Importa da una guida…** (menu Condividi): una guida sul web, le sue build elencate e messe nel piano o salvate una per
+  una. Proposte: il [Google Doc per farmare Aya](https://docs.google.com/document/d/1DWYUPPW_VPuSEk2VJKV7m-vk2FGmKfxs-xmAv9UGm9k/edit?tab=t.xmhqee68riyo)
+  (si legge la scheda del link), [arbi.guide](https://arbi.guide/) e la [guida Endo di wfpedia](https://wfpedia.com/posts/endo/basics)
+  (anche le sue pagine di build); qualsiasi altra pagina funziona allo stesso modo. Si leggono i nomi scritti nella pagina
+  (Warframe e armi aprono una build; mod, Arcani, Frammenti Archon e Helminth che seguono); **Leggi le immagini** scarica
+  gli screenshot delle build e li legge come *Importa da un'immagine*. Controlla il risultato come ogni importazione.
+- **Immagine riassuntiva del loadout** (menu Condividi): un'unica immagine di tutto il loadout pianificato, ogni oggetto
+  con mod, Arcani, frammenti e Helminth, al massimo 2048 pixel sul lato lungo. Solo da mostrare: non è un codice build e
+  non si può importare.
 - Mostrati anche: il nome che hai dato a un oggetto, la sua lente Focus, l'elemento bonus Kuva / Tenet / Coda con la
   percentuale, se è dorata, e (tooltip) slot Exilus / Arcano sbloccati e Fusione di valenza.
 
@@ -447,11 +509,15 @@ Duviri, Höllvania, Grineer, Lich Kuva, Corpus, Infested, Orokin, Sentient, Narm
 o niente; famiglia e dimensione del carattere. Il programma usa il carattere dei testi del gioco, **Noto Sans**, e
 **Rajdhani** per titoli, schede e intestazioni (entrambi inclusi, SIL Open Font License, `assets/fonts`). Dalla 0.5.0 le
 sezioni sono una barra laterale a sinistra (come in AlecaFrame), con riquadri arrotondati, schede piatte sottolineate
-nel colore d'accento e barre di scorrimento sottili. Anteprima immediata, mantenuta solo quando premi Salva. **Overlay** (una sola scheda per i due overlay in
-gioco): i prezzi sopra la schermata del vendor (etichetta del volume e i suoi colori, dimensioni, sfondo, colori del
-prezzo e della stella, oggetti nascosti) e l'overlay Attività, il suo aspetto (sfondo, carattere, colori) e cosa elenca
-(anche dal suo menu ⚙). **Suoni**: un suono quando parte una scansione dei vendor, delle riven o dei prezzi (il suono di notifica di
-sistema, o un tuo `.wav`).
+nel colore d'accento e barre di scorrimento sottili. Anteprima immediata, mantenuta solo quando premi Salva. **Suoni**: un
+suono quando parte una scansione dei vendor, delle riven o dei prezzi (il suono di notifica di sistema, o un tuo `.wav`).
+
+### Overlay
+Dalla 0.7.0 le opzioni dei due overlay in gioco hanno una sezione tutta loro (prima erano una scheda delle Impostazioni):
+**Prezzi sulla schermata del vendor** (etichetta del volume e i suoi colori, dimensioni, sfondo, oggetti nascosti,
+stelle) e l'overlay **Attività**, il suo aspetto e cosa elenca (anche dal suo menu ⚙). Entrambi prendono i **colori** dal
+tema del programma (cambiano con lui), da uno qualsiasi dei temi, dai tuoi colori, oppure (Attività) dal tracker oro
+delle missioni del gioco. Un'**anteprima** in cima a ogni pagina mostra il risultato prima di salvare.
 
 ## Fonti dei dati
 | Cosa | Da dove |
@@ -473,22 +539,24 @@ sistema, o un tuo `.wav`).
 
 Ogni richiesta identifica il programma con il suo `User-Agent` (nome, versione, repository) e i risultati sono in cache.
 
-## Aggiornamenti (versione attuale 0.6.6)
+## Aggiornamenti (versione attuale 0.7.0)
 All'avvio il programma cerca (in background, impostazione *Cerca aggiornamenti all'avvio*) una **release GitHub** più
 recente. La finestra di aggiornamento elenca **cosa è cambiato rispetto alla tua versione** (tutte le versioni
 intermedie, dal changelog nella tua lingua) e offre *Installa ora* / *Più tardi* / *Salta questa versione*. Puoi anche
 controllare da **Impostazioni → Aggiornamenti**.
 
-L'installazione scarica `WFVendorOverlay-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della release,
-sostituisce i file del programma dopo la sua chiusura e lo riavvia. I tuoi dati (`%LOCALAPPDATA%\WFVendorOverlay`) non
-vengono mai toccati. Ogni passaggio va in `update.log` nella cartella dei dati; come ripiego manuale chiudi il programma ed
+L'installazione scarica `TauTools-windows.zip`, ne verifica lo SHA-256 con il file `.sha256` della release,
+sostituisce i file del programma dopo la sua chiusura e lo riavvia. I tuoi dati (`%LOCALAPPDATA%\TauTools`) non
+vengono mai toccati. Le release contengono anche `WFVendorOverlay-windows.zip`, lo stesso programma per l'aggiornamento
+della 0.6.x (che si chiamava ancora WF Vendor Overlay): un'installazione avviata come `WFVendorOverlay.exe` continua a
+funzionare, e la sua cartella dei dati viene spostata al nuovo nome al primo avvio di TauTools. Ogni passaggio va in `update.log` nella cartella dei dati; come ripiego manuale chiudi il programma ed
 estrai la release sopra la sua cartella. Solo la versione Windows pacchettizzata si aggiorna da sola; dai sorgenti usa
 `git pull`. Il checksum dimostra solo che il download non è corrotto: si fida delle release di questo repository.
 
 Cosa è cambiato in ogni versione: [CHANGELOG.it.md](CHANGELOG.it.md) (dalla 0.2.1).
 
 ## File e impostazioni
-Tutto sta in `%LOCALAPPDATA%\WFVendorOverlay`:
+Tutto sta in `%LOCALAPPDATA%\TauTools` (`%LOCALAPPDATA%\WFVendorOverlay` prima della 0.7.0, spostata da sola):
 
 | File | Contenuto |
 |---|---|
@@ -540,7 +608,7 @@ py -3.12 -m venv .venv
 
 **Costruire l'eseguibile** (i modelli OCR sono inclusi):
 ```
-powershell -ExecutionPolicy Bypass -File build.ps1            # cartella dist\WFVendorOverlay (consigliato)
+powershell -ExecutionPolicy Bypass -File build.ps1            # cartella dist\TauTools (consigliato)
 powershell -ExecutionPolicy Bypass -File build.ps1 -Console   # con console (per vedere gli errori)
 powershell -ExecutionPolicy Bypass -File build.ps1 -OneFile   # singolo .exe (avvio più lento)
 ```
@@ -561,13 +629,16 @@ app/
   trade/             warframe.market: market (catalogo, prezzi, volumi), refresher, market_auth (ordini di vendita),
                      recommend, advice, signals (andamento, picchi, backtest), rivenmarket (annunci riven), quantframe
   game/              dati di gioco e il tuo account: vendors, standing, inventory, aleca (file di AlecaFrame),
-                     loadouts, buildcalc, incarnon, rivens, weekly, weekly_ocr (offerte lette sullo schermo del
-                     vendor), quests (Nightwave / Calendario), goals (piano di Attività),
-                     world, arbi
+                     loadouts, buildcalc, buildcost (Endo / platino di un piano), arcanes (slot, ranghi, effetti,
+                     Vosfor), guideimport (build dalle guide), incarnon, rivens, rivencalc (voti, intervalli,
+                     probabilità dei cicli), vosfor, weekly, weekly_ocr (offerte lette sullo schermo del
+                     vendor), quests (Nightwave / Calendario), goals (piano di Attività), world, arbi
   ui/                finestre e schede: menu (finestra principale), *_tab, *_dialog, goals_overlay (Attività),
-                     buildcards, buildscreen (la schermata potenziamenti di Build e del pianificatore), player_bar,
-                     world_strip, update_box, logos, icons, previews
-data/                dati di gioco inclusi (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places, player_icons .json)
+                     buildcards, buildscreen (la schermata potenziamenti di Build e del pianificatore),
+                     overview_image (l'immagine riassuntiva del loadout), player_bar, world_strip, update_box, logos,
+                     icons, previews
+data/                dati di gioco inclusi (vendors, gamenames, rivens, loadout_data, nodes, weekly, challenges, places, player_icons,
+                     vosfor .json)
 assets/              icon.png, icon.ico
 tools/               generatori di data/ (build_*.py: python tools/build_vendors.py …; build_places.py: dove comprare), build_icon.py,
                      prepare_models.py (modelli OCR)

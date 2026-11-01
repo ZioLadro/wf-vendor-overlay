@@ -1,8 +1,9 @@
 # Builds the Windows package and publishes it as a GitHub release when a version tag is pushed:
 #   git tag v0.1.0 && git push origin v0.1.0     (or: GitHub website -> Releases -> Draft a new release -> new tag)
 # If a build failed: fix, push, then Actions -> release -> Run workflow with the same tag.
-# The release gets WFVendorOverlay-windows.zip and WFVendorOverlay-windows.zip.sha256, which the program's
-# built-in updater downloads and verifies.
+# The release gets TauTools-windows.zip and TauTools-windows.zip.sha256, which the program's built-in updater downloads
+# and verifies. Versions before 0.7.0 (named WF Vendor Overlay) look for WFVendorOverlay-windows.zip with a
+# WFVendorOverlay.exe inside: that legacy package is the same build with a copy of the exe under the old name.
 name: release
 on:
   push:
@@ -43,7 +44,13 @@ jobs:
       - name: Package
         shell: powershell
         run: |
-          Compress-Archive -Path dist\WFVendorOverlay\* -DestinationPath WFVendorOverlay-windows.zip
+          Compress-Archive -Path dist\TauTools\* -DestinationPath TauTools-windows.zip
+          $h = (Get-FileHash TauTools-windows.zip -Algorithm SHA256).Hash.ToLower()
+          "$h  TauTools-windows.zip" | Out-File -Encoding ascii TauTools-windows.zip.sha256
+          # legacy package for the updater of 0.6.x and older (WF Vendor Overlay): the exe also as WFVendorOverlay.exe
+          Copy-Item dist\TauTools\TauTools.exe dist\TauTools\WFVendorOverlay.exe
+          Compress-Archive -Path dist\TauTools\* -DestinationPath WFVendorOverlay-windows.zip
+          Remove-Item dist\TauTools\WFVendorOverlay.exe
           $h = (Get-FileHash WFVendorOverlay-windows.zip -Algorithm SHA256).Hash.ToLower()
           "$h  WFVendorOverlay-windows.zip" | Out-File -Encoding ascii WFVendorOverlay-windows.zip.sha256
       - name: Publish
@@ -66,12 +73,12 @@ jobs:
           gh release view $tag 2>&1 | Out-Null
           if ($LASTEXITCODE -eq 0) {
             # the release already exists (created on the website): just attach the files
-            gh release upload $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --clobber
+            gh release upload $tag TauTools-windows.zip TauTools-windows.zip.sha256 WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --clobber
           } else {
             if (Test-Path notes.md) {
-              gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --target $sha --notes-file notes.md
+              gh release create $tag TauTools-windows.zip TauTools-windows.zip.sha256 WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --target $sha --notes-file notes.md
             } else {
-              gh release create $tag WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --target $sha --generate-notes
+              gh release create $tag TauTools-windows.zip TauTools-windows.zip.sha256 WFVendorOverlay-windows.zip WFVendorOverlay-windows.zip.sha256 --title $tag --target $sha --generate-notes
             }
           }
           if ($LASTEXITCODE -ne 0) { exit 1 }

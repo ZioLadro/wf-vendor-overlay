@@ -41,7 +41,7 @@ from app.core.version import __version__
 # warframe.market's rules: an own, descriptive User-Agent (never a browser's); contract (auction) searches are
 # expected to stay around 10-20 requests per minute, the general limit is 3 per second.
 HEADERS = {"Language": "en", "Platform": "pc", "Crossplay": "true", "Accept": "application/json",
-           "User-Agent": f"WFVendorOverlay/{__version__} (+https://github.com/ZioLadro/wf-vendor-overlay)"}
+           "User-Agent": f"TauTools/{__version__} (+https://github.com/ZioLadro/wf-vendor-overlay)"}
 MAX_RPM = 20
 WEAPONS_FILE = APP_DIR / "riven_weapons.json"
 ATTRS_FILE = APP_DIR / "riven_attributes_v1.json"
@@ -424,14 +424,13 @@ def positives(listing, index):
     return [index.get(a["url"]) or a["url"] for a in listing["attrs"] if a["positive"]]
 
 
-GRADES = ((0.9, "S"), (0.75, "A"), (0.5, "B"), (0.25, "C"), (0.0, "D"))
-
-
 def grade(q):
-    """A letter for how well a stat rolled (0 = the lowest roll, 1 = the highest; the game rolls 90-110 %)."""
+    """A letter for how well a stat rolled (0 = the lowest roll, 1 = the highest; the game rolls 90-110 %): the Riven
+    calculator's scale (rivencalc.GRADES, as RivenLens grades): S, A+, A, A-, B+, B (average), B-, C+, C, C-, F."""
     if q is None:
         return "?"
-    return next(g for lim, g in GRADES if q >= lim)
+    from app.game import rivencalc as RC
+    return RC.letter(q * 20.0 - 10.0)
 
 
 def roll_grades(listing, wtype, index, dispo=None):
@@ -855,7 +854,8 @@ def opportunities(store, weapons_by_url, index, factor=None, online_only=None, m
     calib = store.calibration()
     contacted = store.d.get("contacted") or {}
     rows = []
-    for url, wd in store.d["weapons"].items():
+    # a copy of the list: the scan's thread may add a weapon meanwhile (the table fills while it scans)
+    for url, wd in list(store.d["weapons"].items()):
         info = weapons_by_url.get(url) or {"name": wd.get("name", url), "type": ""}
         if not include_hidden and (R._norm(info["name"]) in hidden_w or R._norm(url) in hidden_w):
             continue

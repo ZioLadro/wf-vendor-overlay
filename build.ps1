@@ -1,5 +1,5 @@
 # Builds the executable with PyInstaller. Run from the project folder, with the .venv environment (Python 3.12):
-#   powershell -ExecutionPolicy Bypass -File build.ps1            -> dist\WFVendorOverlay folder (recommended)
+#   powershell -ExecutionPolicy Bypass -File build.ps1            -> dist\TauTools folder (recommended)
 #   powershell -ExecutionPolicy Bypass -File build.ps1 -Console   -> with a console window (to see errors)
 #   powershell -ExecutionPolicy Bypass -File build.ps1 -OneFile   -> single .exe (slower startup)
 param([switch]$Console, [switch]$OneFile)
@@ -11,7 +11,7 @@ if (-not (Test-Path $py)) { throw ".venv environment not found. Create it with: 
 Write-Host "Checking the OCR models..."
 & $py tools\prepare_models.py
 
-$piArgs = @("--noconfirm", "--clean", "--name", "WFVendorOverlay",
+$piArgs = @("--noconfirm", "--clean", "--name", "TauTools",
             "--collect-all", "rapidocr", "--collect-all", "onnxruntime",
             "--hidden-import", "pynput.keyboard._win32", "--hidden-import", "pynput.mouse._win32",
             "--add-data", "data;data", "--add-data", "assets\icon.png;assets", "--add-data", "assets\fonts;assets\fonts",
@@ -21,4 +21,4 @@ if (-not $Console) { $piArgs += "--noconsole" }
 $piArgs += "main.py"
 
 & $py -m PyInstaller @piArgs
-Write-Host "Done. Executable in: dist\WFVendorOverlay"
+Write-Host "Done. Executable in: dist\TauTools"

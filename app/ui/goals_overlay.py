@@ -92,6 +92,30 @@ def _n(v) -> str:
     return "–" if v is None else thousands(v)
 
 
+GAME_LOOK = {"title": "#ffd100", "text": "#ffffff", "ready": "#40ff40", "hint": "#a0a0a0", "soon": "#7fd7ff",
+             "band": "#000000", "button": "#c8b37a", "sub": "#b8b8b8"}
+
+
+def goals_colors(values=None) -> dict:
+    """The Activities overlay's colours (Overlay tab ▸ goals_theme): "program" = the program's colour theme, "game" = the
+    gold quest-tracker look, "custom" = the colours chosen one by one, or the id of any theme. Keys: title, text,
+    ready, hint, soon, band (the background band), button, sub."""
+    v = values or CFG
+    which = str(v.get("goals_theme") or "program")
+    if which == "game":
+        return dict(GAME_LOOK)
+    if which == "custom":
+        return dict(GAME_LOOK, title=v.get("goals_title_color") or "#ffd100", text=v.get("goals_text_color") or "#ffffff",
+                    ready=v.get("goals_ready_color") or "#40ff40", hint=v.get("goals_hint_color") or "#a0a0a0",
+                    soon=v.get("goals_soon_color") or "#7fd7ff")
+    from app.core import theme
+    p = theme.palette(str(CFG.get("theme") or "classic") if which == "program" else which)
+    mix = theme._mix
+    return {"title": p["accent"], "text": p["text"], "ready": mix("#4fe07a", p["accent"], 0.15),
+            "hint": p["muted"], "soon": p["accent2"], "band": p["bg"], "button": mix(p["muted"], p["accent"], 0.4),
+            "sub": p["muted"]}
+
+
 class GoalsOverlay(QWidget):
     def __init__(self, market, inv, store):
         super().__init__(None, Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool)
@@ -187,21 +211,23 @@ class GoalsOverlay(QWidget):
         """Look of a quest tracker: almost no panel, gold quest titles, white objectives with their progress, completed
         ones in green, small grey hints, every text with a dark outline so it reads over the game."""
         fs = int(CFG.get("goals_font", 12))
-        title, text = CFG.get("goals_title_color") or "#ffd100", CFG.get("goals_text_color") or "#ffffff"
-        ready, hint = CFG.get("goals_ready_color") or "#40ff40", CFG.get("goals_hint_color") or "#a0a0a0"
-        soon = CFG.get("goals_soon_color") or "#7fd7ff"
+        c = goals_colors()
+        title, text, ready, hint, soon = c["title"], c["text"], c["ready"], c["hint"], c["soon"]
         fam = CFG.get("goals_font_family") or ""
         family = f"font-family: '{fam}';" if fam else ""
-        self._style_sig = (fs, title, text, ready, hint, fam, soon)
+        self._style_sig = self._style_key()
+        q = QColor(title)
+        line = f"rgba({q.red()}, {q.green()}, {q.blue()}, 90)"
+        handle = f"rgba({q.red()}, {q.green()}, {q.blue()}, 70)"
         self.setStyleSheet(f"""
             QWidget {{ color: {text}; font-size: {fs}px; background: transparent; {family} }}
-            #goalshead {{ background: transparent; border-bottom: 1px solid rgba(255, 209, 0, 90); }}
+            #goalshead {{ background: transparent; border-bottom: 1px solid {line}; }}
             #goalstitle {{ font-weight: bold; color: {title}; letter-spacing: 1px; font-size: {fs + 1}px; }}
-            #goalsbtn {{ background: transparent; border: none; color: #c8b37a; padding: 0; font-size: {fs}px; }}
+            #goalsbtn {{ background: transparent; border: none; color: {c["button"]}; padding: 0; font-size: {fs}px; }}
             #goalsbtn:hover {{ color: {title}; }}
-            #goalsfoot {{ color: #9a9a9a; font-size: {max(9, fs - 2)}px; }}
+            #goalsfoot {{ color: {c["sub"]}; font-size: {max(9, fs - 2)}px; }}
             QLabel[g="quest"] {{ color: {title}; font-weight: bold; font-size: {fs + 1}px; }}
-            QLabel[g="sub"] {{ color: #b8b8b8; font-size: {max(9, fs - 1)}px; }}
+            QLabel[g="sub"] {{ color: {c["sub"]}; font-size: {max(9, fs - 1)}px; }}
             QLabel[g="obj"] {{ color: {text}; }}
             QLabel[g="ready"] {{ color: {ready}; }}
             QLabel[g="wait"] {{ color: {title}; }}
@@ -209,13 +235,13 @@ class GoalsOverlay(QWidget):
             QLabel[g="act"] {{ color: {hint}; font-size: {max(9, fs - 1)}px; font-style: italic; }}
             QLabel[g="done"] {{ color: {title}; font-weight: bold; }}
             QCheckBox {{ spacing: 5px; color: {text}; }}
-            QCheckBox::indicator {{ width: 10px; height: 10px; border: 1px solid #c8b37a; background: rgba(0, 0, 0, 120); }}
+            QCheckBox::indicator {{ width: 10px; height: 10px; border: 1px solid {c["button"]}; background: rgba(0, 0, 0, 120); }}
             QCheckBox::indicator:checked {{ background: {ready}; border-color: {ready}; }}
             QScrollBar:vertical {{ background: transparent; width: 6px; }}
-            QScrollBar::handle:vertical {{ background: rgba(255, 209, 0, 70); border-radius: 3px; min-height: 20px; }}
+            QScrollBar::handle:vertical {{ background: {handle}; border-radius: 3px; min-height: 20px; }}
             QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
-            QMenu {{ background: #1b1b1b; border: 1px solid #6e5a1e; color: #ffffff; }}
-            QMenu::item:selected {{ background: #3a3216; }}
+            QMenu {{ background: #1b1b1b; border: 1px solid {c["button"]}; color: #ffffff; }}
+            QMenu::item:selected {{ background: {line}; }}
         """)
 
     def paintEvent(self, _e):
@@ -225,15 +251,17 @@ class GoalsOverlay(QWidget):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         alpha = int(255 * max(0, min(100, int(CFG.get("goals_opacity", 45)))) / 100)
         grad = QLinearGradient(0, 0, self.width(), 0)
-        grad.setColorAt(0.0, QColor(0, 0, 0, alpha))
-        grad.setColorAt(0.75, QColor(0, 0, 0, int(alpha * 0.7)))
-        grad.setColorAt(1.0, QColor(0, 0, 0, int(alpha * 0.15)))
+        band = QColor(goals_colors()["band"])
+        for pos, k in ((0.0, 1.0), (0.75, 0.7), (1.0, 0.15)):
+            c = QColor(band)
+            c.setAlpha(int(alpha * k))
+            grad.setColorAt(pos, c)
         p.setPen(Qt.PenStyle.NoPen)
         p.setBrush(grad)
         p.drawRoundedRect(self.rect().adjusted(0, 0, -1, -1), 6, 6)
         if self._unlocked and self._clickable:            # unlocked with the key: an outline says it takes the mouse now
             p.setBrush(Qt.BrushStyle.NoBrush)
-            p.setPen(QPen(QColor(CFG.get("goals_title_color") or "#ffd100"), 1.5))
+            p.setPen(QPen(QColor(goals_colors()["title"]), 1.5))
             p.drawRoundedRect(self.rect().adjusted(1, 1, -2, -2), 6, 6)
 
     @staticmethod
@@ -310,6 +338,9 @@ class GoalsOverlay(QWidget):
                 a.setChecked(CFG.get(key) == v)
                 a.triggered.connect(lambda _c=False, k=key, val=v: self._set(k, val))
                 sub.addAction(a)
+        from app.core import theme as _theme
+        choice(t("set.goals_theme"), "goals_theme", ["program", "game", "custom"] + list(_theme.ORDER),
+               lambda v: t("ovtheme." + v) if v in ("program", "game", "custom") else t("theme." + v))
         choice(t("goals.opt.opacity"), "goals_opacity", [40, 60, 75, 82, 90, 100], lambda v: f"{v}%")
         choice(t("goals.opt.font"), "goals_font", [10, 11, 12, 13, 14, 16, 18], lambda v: f"{v}px")
         choice(t("goals.opt.items"), "goals_items", [3, 5, 8, 12, 20], str)
@@ -493,10 +524,13 @@ class GoalsOverlay(QWidget):
         g, r = self.frameGeometry(), self.devicePixelRatioF()
         return (g.x() * r, g.y() * r, g.width() * r, g.height() * r)
 
+    @staticmethod
+    def _style_key():
+        return (int(CFG.get("goals_font", 12)), CFG.get("goals_font_family") or "", CFG.get("theme"),
+                tuple(sorted(goals_colors().items())))
+
     def _style_changed(self) -> bool:
-        sig = (int(CFG.get("goals_font", 12)), CFG.get("goals_title_color") or "#ffd100", CFG.get("goals_text_color") or "#ffffff",
-               CFG.get("goals_ready_color") or "#40ff40", CFG.get("goals_hint_color") or "#a0a0a0", CFG.get("goals_font_family") or "",
-               CFG.get("goals_soon_color") or "#7fd7ff")
+        sig = self._style_key()
         return sig != getattr(self, "_style_sig", None)
 
     def refresh(self, force=False):

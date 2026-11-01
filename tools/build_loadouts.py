@@ -206,7 +206,10 @@ def wfcd(folder: Path, skip=frozenset()) -> dict:
                      ("Arch-Melee", "archmelee")):
         for w in load(fn):
             if w.get("name") and w.get("type") not in ("Zaw Component",):
-                weapons[w["name"]] = [kind, w.get("type") or "", w.get("polarities") or [], w.get("exilusPolarity") or "",
+                wtype = w.get("type") or ""
+                if kind == "melee" and wtype != "Melee":       # the source lists a few melee weapons as "Rifle"
+                    wtype = "Melee"
+                weapons[w["name"]] = [kind, wtype, w.get("polarities") or [], w.get("exilusPolarity") or "",
                                       w.get("stancePolarity") or ""]
     for w in load("SentinelWeapons"):                 # companions' weapons: robotic ones by name, beasts' claws as one
         if w.get("name"):

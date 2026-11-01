@@ -3,6 +3,39 @@
 Dalla 0.2.1 ogni release elenca qui le sue modifiche (la pagina della release su GitHub mostra la sezione della sua versione).
 Versione inglese: [CHANGELOG.md](CHANGELOG.md).
 
+## 0.7.0
+- **Nuovo nome: TauTools.** Il programma si chiamava WF Vendor Overlay; il repository mantiene il suo nome. Una 0.6.x
+  installata si aggiorna come sempre (le release contengono anche il vecchio pacchetto) e mantiene i suoi collegamenti;
+  la cartella dei dati passa da `%LOCALAPPDATA%\WFVendorOverlay` a `%LOCALAPPDATA%\TauTools` da sola al primo avvio
+  (impostazioni, prezzi, piani).
+- **Sezione Overlay**: le opzioni dei due overlay in gioco lasciano le Impostazioni per una sezione tutta loro nella barra
+  laterale, una pagina ciascuna (prezzi sulla schermata del vendor, aspetto delle Attività, contenuto delle Attività), con
+  un'**anteprima** dal vivo. **Temi di colore per gli overlay**: le etichette dei prezzi e l'overlay Attività seguono il
+  tema del programma, uno qualsiasi dei temi, i tuoi colori oppure (Attività) il tracker oro delle missioni del gioco;
+  anche dal menu ⚙ delle Attività.
+- **Sezioni dell'Inventario** come in AlecaFrame: Tutte le parti · Reliquie · Mod · Arcani · Varie · Set · Tutto in una
+  fila di schede col numero di oggetti; ognuna mostra i filtri e le colonne adatti.
+- **Pianificatore di build**
+  - **Costo**: Endo, crediti e platino che servono ancora al loadout, contando ciò che possiedi (ranghi delle mod, copie
+    degli Arcani), in una riga sotto la build e in una finestra mod per mod; *Ordini di acquisto in Quantframe…* mette ciò
+    che ti manca nella lista desideri di Quantframe, il cui Live Scraper piazza gli ordini want-to-buy su warframe.market.
+  - **Piani salvati** in un menu a tendina raggruppati per oggetto principale, ognuno con la sua miniatura.
+  - **Arcani**: ogni slot propone solo gli Arcani che l'oggetto accetta (il secondo slot di un'Arch-gun: Arcani
+    secondari), ogni Arcano una volta per oggetto; i ranghi mostrano le copie che richiedono e quante ne possiedi;
+    *Effetti degli Arcani* conta i loro effetti nelle statistiche (condizioni soddisfatte, ogni accumulo).
+  - **Importa da una guida**: il Google Doc per farmare Aya, arbi.guide, la guida Endo di wfpedia o qualsiasi pagina: le
+    build scritte nella pagina, e i suoi screenshot di build letti con l'importazione da immagine.
+  - **Immagine riassuntiva** di tutto il loadout (al massimo 2048 px), da mostrare; non si può importare.
+- **Calcolatore Riven** (nuova sezione, sul modello di RivenLens): voti delle statistiche di un Riven (S … F) scrivendole
+  o da un'immagine, l'intervallo di ogni statistica e le probabilità dei cicli con Kuva per le statistiche che vuoi (più
+  d'una per posto, regole per la negativa, statistica bloccata). Gli stessi voti nella tabella del Riven flip e sulle
+  carte Riven.
+- **Riven flip**: gli affari compaiono **mentre la scansione è in corso**, aggiornati ogni pochi secondi, non solo alla fine.
+- **Vosfor** (nuova sezione): il Vosfor in cui si dissolvono i tuoi Arcani, quali dissolvere e quali vendere, gli Arcani
+  che danno più Vosfor per platino e il platino atteso di ogni collezione di Loid.
+- Correzioni: alcune armi corpo a corpo elencate come fucili nei dati di origine ricevono le mod corpo a corpo; i ranghi
+  degli Arcani nei piani seguono il massimo dei dati di gioco.
+
 ## 0.6.6
 - **Artigli delle bestie**: gli artigli di ogni bestia hanno le loro statistiche (danno e tipo, critico, status), dalla
   tabella *Claws (Beast)* della wiki e dalla pagina di ogni companion: mostrate nelle Build (gli artigli del tuo

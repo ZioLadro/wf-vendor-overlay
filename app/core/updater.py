@@ -1,9 +1,11 @@
 """Self-update from the project's GitHub releases (Windows exe build).
 
-Flow: ask GitHub for the latest release -> if newer, download WFVendorOverlay-windows.zip -> check its SHA-256
+Flow: ask GitHub for the latest release -> if newer, download TauTools-windows.zip -> check its SHA-256
 against the .sha256 file of the same release -> unpack to a staging folder -> a small batch file waits for this
 program to exit, copies the files over the installation and starts the new version.
-Your data (settings, prices, inventory) lives in %LOCALAPPDATA%\\WFVendorOverlay and is never touched.
+Your data (settings, prices, inventory) lives in %LOCALAPPDATA%\\TauTools and is never touched.
+Before 0.7.0 the program was called WF Vendor Overlay: its releases also carry WFVendorOverlay-windows.zip (the same
+program with a WFVendorOverlay.exe copy as well), which is what the updater of those versions downloads.
 Only the program itself is replaced, and only after the user agrees. Nothing is installed when running from source."""
 import hashlib
 import os
@@ -23,13 +25,15 @@ from app.core.version import __version__
 
 REPO = "ZioLadro/wf-vendor-overlay"
 API = f"https://api.github.com/repos/{REPO}/releases/latest"
-ASSET = "WFVendorOverlay-windows.zip"
+ASSET = "TauTools-windows.zip"
+EXE = "TauTools.exe"
+LEGACY_EXE = "WFVendorOverlay.exe"           # the name before 0.7.0: an installation started that way keeps it
 RELEASES_PAGE = f"https://github.com/{REPO}/releases"
 ALLOWED_HOSTS = ("api.github.com", "github.com", "objects.githubusercontent.com",
                  "release-assets.githubusercontent.com")
 RAW = f"https://raw.githubusercontent.com/{REPO}"
 LIST_API = f"https://api.github.com/repos/{REPO}/releases?per_page=30"
-UA = f"WFVendorOverlay/{__version__}"
+UA = f"TauTools/{__version__}"
 
 
 class UpdateError(Exception):
@@ -180,16 +184,27 @@ def download(info: dict, progress=None, cancelled=lambda: False) -> Path:
             z.extractall(staging)
     except zipfile.BadZipFile:
         raise UpdateError("the package is not a valid zip")
-    exe = next(staging.rglob("WFVendorOverlay.exe"), None)
+    exe = next(staging.rglob(EXE), None) or next(staging.rglob(LEGACY_EXE), None)
     if exe is None:
-        raise UpdateError("the package does not contain WFVendorOverlay.exe")
+        raise UpdateError(f"the package does not contain {EXE}")
     return exe.parent
 
 
 LOG_FILE = APP_DIR / "update.log"
 
 
-def installer_script(staging: Path, dest: Path, pid: int, log: Path = LOG_FILE) -> str:
+def exe_name(staging: Path | None = None) -> str:
+    """The program file to start after the update: the one running now (TauTools.exe, or WFVendorOverlay.exe for an
+    installation from before 0.7.0 whose shortcuts point there), when the new package has it; else TauTools.exe."""
+    cur = Path(sys.executable).name if getattr(sys, "frozen", False) else EXE
+    if cur.lower() not in (EXE.lower(), LEGACY_EXE.lower()):
+        return EXE
+    if staging is not None and not (staging / cur).exists() and not (staging / EXE).exists():
+        return EXE
+    return cur
+
+
+def installer_script(staging: Path, dest: Path, pid: int, log: Path = LOG_FILE, exe: str = EXE) -> str:
     """Batch file: waits for this program to exit, copies the new files over the installation, starts the new
     version. Every step is written to update.log, to see what happened if it does not work."""
     return f"""@echo off
@@ -216,11 +231,13 @@ ping -n 3 127.0.0.1 >nul
 set /a n+=1
 if %n% LSS 20 goto copy
 echo [%time%] giving up: the old version is started again >> "%LOG%"
-start "" "{dest}\\WFVendorOverlay.exe"
+start "" "{dest}\\{exe}"
 exit /b 1
 :done
+rem an installation from before 0.7.0 is started as WFVendorOverlay.exe (shortcuts): it gets the new program too
+if exist "{dest}\\{LEGACY_EXE}" if exist "{dest}\\{EXE}" copy /Y "{dest}\\{EXE}" "{dest}\\{LEGACY_EXE}" >> "%LOG%" 2>&1
 echo [%time%] copied, starting the new version >> "%LOG%"
-start "" "{dest}\\WFVendorOverlay.exe"
+start "" "{dest}\\{exe}"
 rem the update's folder (download, files and this batch file): deleted by a separate cmd once this one has ended
 start "" /b cmd /c "ping -n 3 127.0.0.1 >nul & rmdir /S /Q "{_work_dir(staging)}""
 """
@@ -252,7 +269,7 @@ def cleanup(keep_hours: float = 1.0) -> int:
 def launch_installer(staging: Path):
     """Starts the batch file that replaces the files once this program has exited. The caller must quit."""
     bat = _work_dir(staging) / "install_update.bat"
-    bat.write_text(installer_script(staging, install_dir(), os.getpid()), encoding="utf-8")
+    bat.write_text(installer_script(staging, install_dir(), os.getpid(), exe=exe_name(staging)), encoding="utf-8")
     try:
         with open(LOG_FILE, "a", encoding="utf-8") as f:
             f.write(f"launching {bat} (install dir {install_dir()}, staging {staging})\n")

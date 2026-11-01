@@ -1,0 +1,475 @@
+{
+ "source": "https://wiki.warframe.com/w/Vosfor (October 2026)",
+ "pack_cost": 200,
+ "pack_credits": 50000,
+ "pack_size": 3,
+ "yield": {
+  "Exodia Contagion": null,
+  "Exodia Epidemic": null,
+  "Magus Accelerant": 12,
+  "Magus Anomaly": 12,
+  "Magus Drive": 12,
+  "Magus Firewall": 12,
+  "Magus Husk": 12,
+  "Magus Overload": 12,
+  "Magus Vigor": 12,
+  "Virtuos Null": 12,
+  "Virtuos Spike": 12,
+  "Virtuos Surge": 12,
+  "Virtuos Tempo": 12,
+  "Arcane Consequence": 14,
+  "Arcane Ice": 14,
+  "Arcane Momentum": 14,
+  "Arcane Nullifier": 14,
+  "Arcane Tempo": 14,
+  "Arcane Warmth": 14,
+  "Arcane Intention": 18,
+  "Exodia Triumph": 18,
+  "Exodia Valor": 18,
+  "Magus Aggress": 18,
+  "Magus Cadence": 18,
+  "Magus Cloud": 18,
+  "Magus Glitch": 18,
+  "Magus Repair": 18,
+  "Magus Replenish": 18,
+  "Melee Fortification": 18,
+  "Melee Retaliation": 18,
+  "Virtuos Forge": 18,
+  "Virtuos Fury": 18,
+  "Virtuos Strike": 18,
+  "Virtuos Trojan": 18,
+  "Arcane Blade Charger": 20,
+  "Arcane Bodyguard": 20,
+  "Arcane Pistoleer": 20,
+  "Arcane Primary Charger": 20,
+  "Arcane Tanker": 20,
+  "Primary Deadhead": 20,
+  "Primary Dexterity": 20,
+  "Primary Merciless": 20,
+  "Secondary Deadhead": 20,
+  "Secondary Dexterity": 20,
+  "Secondary Merciless": 20,
+  "Arcane Acceleration": 21,
+  "Arcane Agility": 21,
+  "Arcane Awakening": 21,
+  "Arcane Deflection": 21,
+  "Arcane Eruption": 21,
+  "Arcane Guardian": 21,
+  "Arcane Healing": 21,
+  "Arcane Phantasm": 21,
+  "Arcane Resistance": 21,
+  "Arcane Strike": 21,
+  "Arcane Trickery": 21,
+  "Arcane Velocity": 21,
+  "Arcane Victory": 21,
+  "Arcane Blessing": 22,
+  "Arcane Rise": 22,
+  "Cascadia Accuracy": 22,
+  "Cascadia Empowered": 22,
+  "Cascadia Flare": 22,
+  "Cascadia Overcharge": 22,
+  "Conjunction Voltage": 22,
+  "Emergence Dissipate": 22,
+  "Emergence Renewed": 22,
+  "Emergence Savior": 22,
+  "Eternal Eradicate": 22,
+  "Eternal Logistics": 22,
+  "Eternal Onslaught": 22,
+  "Fractalized Reset": 22,
+  "Molt Augmented": 22,
+  "Molt Efficiency": 22,
+  "Molt Reconstruct": 22,
+  "Molt Vigor": 22,
+  "Primary Frostbite": 22,
+  "Akimbo Slip Shot": 24,
+  "Arcane Battery": 24,
+  "Arcane Bellicose": 24,
+  "Arcane Camisado": 24,
+  "Arcane Crepuscular": 24,
+  "Arcane Double Back": 24,
+  "Arcane Ice Storm": 24,
+  "Arcane Impetus": 24,
+  "Arcane Power Ramp": 24,
+  "Arcane Steadfast": 24,
+  "Arcane Truculence": 24,
+  "Exodia Brave": 24,
+  "Exodia Force": 24,
+  "Exodia Hunt": 24,
+  "Exodia Might": 24,
+  "Magus Destruct": 24,
+  "Magus Elevate": 24,
+  "Magus Lockdown": 24,
+  "Magus Melt": 24,
+  "Magus Nourish": 24,
+  "Magus Revert": 24,
+  "Melee Afflictions": 24,
+  "Melee Animosity": 24,
+  "Melee Doughty": 24,
+  "Melee Exposure": 24,
+  "Melee Influence": 24,
+  "Melee Vortex": 24,
+  "Pax Bolt": 24,
+  "Pax Charge": 24,
+  "Pax Seeker": 24,
+  "Pax Soar": 24,
+  "Primary Blight": 24,
+  "Primary Crux": 24,
+  "Primary Exhilarate": 24,
+  "Primary Obstruct": 24,
+  "Primary Plated Round": 24,
+  "Residual Boils": 24,
+  "Residual Malodor": 24,
+  "Residual Shock": 24,
+  "Residual Viremia": 24,
+  "Secondary Encumber": 24,
+  "Secondary Enervate": 24,
+  "Secondary Fortifier": 24,
+  "Secondary Kinship": 24,
+  "Secondary Outburst": 24,
+  "Secondary Surge": 24,
+  "Shotgun Vendetta": 24,
+  "Theorem Contagion": 24,
+  "Theorem Demulcent": 24,
+  "Theorem Infection": 24,
+  "Virtuos Ghost": 24,
+  "Virtuos Shadow": 24,
+  "Arcane Aegis": 28,
+  "Arcane Arachne": 28,
+  "Arcane Avenger": 28,
+  "Arcane Fury": 28,
+  "Arcane Precision": 28,
+  "Arcane Pulse": 28,
+  "Arcane Rage": 28,
+  "Arcane Ultimatum": 28,
+  "Arcane Escapist": 84,
+  "Arcane Hot Shot": 84,
+  "Arcane Reaper": 84,
+  "Arcane Universal Fallout": 84,
+  "Longbow Sharpshot": 84,
+  "Melee Crescendo": 84,
+  "Melee Duplicate": 84,
+  "Secondary Shiver": 84,
+  "Arcane Barrier": 98,
+  "Arcane Energize": 98,
+  "Arcane Grace": 98
+ },
+ "collections": {
+  "cavia": {
+   "name": "Cavia",
+   "pools": [
+    [
+     "uncommon",
+     0.45,
+     [
+      "Melee Fortification",
+      "Melee Retaliation"
+     ]
+    ],
+    [
+     "rare",
+     0.5,
+     [
+      "Arcane Battery",
+      "Arcane Ice Storm",
+      "Melee Afflictions",
+      "Melee Animosity",
+      "Melee Exposure",
+      "Melee Influence",
+      "Melee Vortex",
+      "Secondary Fortifier",
+      "Secondary Surge"
+     ]
+    ],
+    [
+     "legendary",
+     0.05,
+     [
+      "Melee Crescendo",
+      "Melee Duplicate"
+     ]
+    ]
+   ]
+  },
+  "duviri": {
+   "name": "Duviri",
+   "pools": [
+    [
+     "uncommon",
+     0.45,
+     [
+      "Arcane Intention",
+      "Magus Aggress"
+     ]
+    ],
+    [
+     "rare",
+     0.5,
+     [
+      "Arcane Power Ramp",
+      "Primary Blight",
+      "Primary Exhilarate",
+      "Primary Obstruct",
+      "Shotgun Vendetta",
+      "Akimbo Slip Shot",
+      "Secondary Outburst"
+     ]
+    ],
+    [
+     "legendary",
+     0.05,
+     [
+      "Arcane Reaper",
+      "Longbow Sharpshot",
+      "Secondary Shiver"
+     ]
+    ]
+   ]
+  },
+  "eidolon": {
+   "name": "Eidolon",
+   "pools": [
+    [
+     "common",
+     0.4,
+     [
+      "Arcane Consequence",
+      "Arcane Ice",
+      "Arcane Momentum",
+      "Arcane Nullifier",
+      "Arcane Tempo",
+      "Arcane Warmth"
+     ]
+    ],
+    [
+     "uncommon",
+     0.35,
+     [
+      "Arcane Acceleration",
+      "Arcane Agility",
+      "Arcane Awakening",
+      "Arcane Deflection",
+      "Arcane Eruption",
+      "Arcane Guardian",
+      "Arcane Healing",
+      "Arcane Phantasm",
+      "Arcane Resistance",
+      "Arcane Strike",
+      "Arcane Trickery",
+      "Arcane Velocity",
+      "Arcane Victory"
+     ]
+    ],
+    [
+     "rare",
+     0.2,
+     [
+      "Arcane Aegis",
+      "Arcane Arachne",
+      "Arcane Avenger",
+      "Arcane Fury",
+      "Arcane Precision",
+      "Arcane Pulse",
+      "Arcane Rage",
+      "Arcane Ultimatum"
+     ]
+    ],
+    [
+     "legendary",
+     0.05,
+     [
+      "Arcane Barrier",
+      "Arcane Energize",
+      "Arcane Grace"
+     ]
+    ]
+   ]
+  },
+  "holdfasts": {
+   "name": "Holdfasts",
+   "pools": [
+    [
+     "rare",
+     1.0,
+     [
+      "Arcane Blessing",
+      "Arcane Rise",
+      "Molt Augmented",
+      "Molt Efficiency",
+      "Molt Reconstruct",
+      "Molt Vigor",
+      "Fractalized Reset",
+      "Primary Frostbite",
+      "Cascadia Accuracy",
+      "Cascadia Empowered",
+      "Cascadia Flare",
+      "Cascadia Overcharge",
+      "Conjunction Voltage",
+      "Emergence Dissipate",
+      "Emergence Renewed",
+      "Emergence Savior",
+      "Eternal Eradicate",
+      "Eternal Logistics",
+      "Eternal Onslaught"
+     ]
+    ]
+   ]
+  },
+  "hollvania": {
+   "name": "Höllvania",
+   "pools": [
+    [
+     "rare",
+     0.95,
+     [
+      "Arcane Bellicose",
+      "Arcane Camisado",
+      "Arcane Crepuscular",
+      "Arcane Impetus",
+      "Arcane Truculence",
+      "Melee Doughty",
+      "Primary Crux",
+      "Secondary Enervate"
+     ]
+    ],
+    [
+     "legendary",
+     0.05,
+     [
+      "Arcane Escapist",
+      "Arcane Hot Shot",
+      "Arcane Universal Fallout"
+     ]
+    ]
+   ]
+  },
+  "necralisk": {
+   "name": "Necralisk",
+   "pools": [
+    [
+     "rare",
+     1.0,
+     [
+      "Arcane Double Back",
+      "Arcane Steadfast",
+      "Theorem Contagion",
+      "Theorem Demulcent",
+      "Theorem Infection",
+      "Primary Plated Round",
+      "Secondary Encumber",
+      "Secondary Kinship",
+      "Residual Boils",
+      "Residual Malodor",
+      "Residual Shock",
+      "Residual Viremia"
+     ]
+    ]
+   ]
+  },
+  "ostron": {
+   "name": "Ostron",
+   "pools": [
+    [
+     "common",
+     0.1,
+     [
+      "Magus Husk",
+      "Magus Vigor",
+      "Virtuos Null",
+      "Virtuos Tempo"
+     ]
+    ],
+    [
+     "uncommon",
+     0.3,
+     [
+      "Exodia Triumph",
+      "Exodia Valor",
+      "Magus Cadence",
+      "Magus Cloud",
+      "Magus Replenish",
+      "Virtuos Fury",
+      "Virtuos Strike"
+     ]
+    ],
+    [
+     "rare",
+     0.6,
+     [
+      "Exodia Brave",
+      "Exodia Force",
+      "Exodia Hunt",
+      "Exodia Might",
+      "Magus Elevate",
+      "Magus Nourish",
+      "Virtuos Ghost",
+      "Virtuos Shadow"
+     ]
+    ]
+   ]
+  },
+  "solaris": {
+   "name": "Solaris",
+   "pools": [
+    [
+     "common",
+     0.15,
+     [
+      "Magus Accelerant",
+      "Magus Anomaly",
+      "Magus Drive",
+      "Magus Firewall",
+      "Magus Overload",
+      "Virtuos Spike",
+      "Virtuos Surge"
+     ]
+    ],
+    [
+     "uncommon",
+     0.15,
+     [
+      "Magus Glitch",
+      "Magus Repair",
+      "Virtuos Forge",
+      "Virtuos Trojan"
+     ]
+    ],
+    [
+     "rare",
+     0.7,
+     [
+      "Pax Bolt",
+      "Pax Charge",
+      "Pax Seeker",
+      "Pax Soar",
+      "Magus Destruct",
+      "Magus Lockdown",
+      "Magus Melt",
+      "Magus Revert"
+     ]
+    ]
+   ]
+  },
+  "steel": {
+   "name": "Steel",
+   "pools": [
+    [
+     "rare",
+     1.0,
+     [
+      "Arcane Blade Charger",
+      "Arcane Bodyguard",
+      "Arcane Pistoleer",
+      "Arcane Primary Charger",
+      "Arcane Tanker",
+      "Primary Deadhead",
+      "Primary Dexterity",
+      "Primary Merciless",
+      "Secondary Deadhead",
+      "Secondary Dexterity",
+      "Secondary Merciless"
+     ]
+    ]
+   ]
+  }
+ }
+}

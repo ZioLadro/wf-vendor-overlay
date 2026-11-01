@@ -581,7 +581,7 @@ class BuildsTab(QWidget):
         self.stack = QStackedWidget()
         self.stack.addWidget(psplit)
         self.stack.addWidget(split)
-        self.planner = PlannerView(lambda: self.loadouts, lambda: self.presets, lambda: self.owned)
+        self.planner = PlannerView(lambda: self.loadouts, lambda: self.presets, lambda: self.owned, market, refresher)
         self.view.on_simulate = self.simulate
         self.view.to_piece = self.planner.piece_from_loadout
         self.pview.detail.to_piece = self.planner.piece_from_loadout
@@ -723,6 +723,15 @@ class BuildsTab(QWidget):
                 self.planner._draw()
         finally:
             self.setUpdatesEnabled(True)
+
+    def installed_arcanes(self) -> set:
+        """The Arcanes equipped on any of your loadouts (the Vosfor calculator advises to keep them)."""
+        out = set()
+        for lo in self.loadouts or []:
+            for s in lo.get("slots") or []:
+                if s.get("role") == "arcane" and s.get("name"):
+                    out.add(s["name"])
+        return out
 
     # ---------- data ----------
     def _load_cache(self):
